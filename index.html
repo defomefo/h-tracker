@@ -158,12 +158,23 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .cf-sub b{color:var(--navy);font-weight:700}
 .cf-card{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:8px;padding:14px 16px}
 .cf-card h4{font-size:10px;letter-spacing:1.2px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;margin-bottom:8px}
-.cf-pri{display:flex;align-items:center;gap:14px}
-.cf-pri .pie-svg-box{flex-shrink:0}
+.cf-pri{display:flex;align-items:center;justify-content:center;gap:14px;min-height:240px;padding:6px 0}
+.cf-pri .pie-svg-box{flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .cf-pri .leg{display:flex;flex-direction:column;gap:3px;font-size:11px;flex:1}
 .cf-pri .leg span{display:flex;align-items:center;gap:6px;color:var(--ink)}
 .cf-pri .leg i{display:inline-block;width:8px;height:8px;border-radius:50%}
 .cf-pri .leg b{margin-left:auto;color:var(--navy);font-weight:700}
+
+/* Exploded-donut animation (country detail Pipeline mix) */
+.cf-pie-anim{display:block;overflow:visible}
+.cf-pie-anim .cf-slice{transform:translate(0,0);transform-origin:center;transition:transform 750ms cubic-bezier(.4,0,.2,1),filter 600ms cubic-bezier(.4,0,.2,1);filter:drop-shadow(0 2px 4px rgba(10,20,40,.18))}
+.cf-pie-anim .cf-slice.exploded{transform:translate(var(--dx,0),var(--dy,0));filter:drop-shadow(0 8px 14px rgba(10,20,40,.34)) drop-shadow(0 2px 4px rgba(10,20,40,.18))}
+.cf-pie-anim .cf-slice-label{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;font-size:11px;fill:var(--ink);opacity:0;pointer-events:none;transition:opacity 400ms ease 150ms,transform 600ms cubic-bezier(.4,0,.2,1) 150ms;transform:translate(0,0)}
+.cf-pie-anim .cf-slice-label tspan.cf-label-value{font-weight:800;fill:var(--navy);font-size:12px}
+.cf-pie-anim .cf-slice.exploded .cf-slice-label{opacity:1;transform:translate(var(--lx,0),var(--ly,0))}
+.cf-pie-anim .cf-slice-leader{stroke:var(--rule);stroke-width:1;stroke-dasharray:2,2;opacity:0;transition:opacity 400ms ease 100ms}
+.cf-pie-anim .cf-slice.exploded .cf-slice-leader{opacity:.55}
+.cf-pie-anim .cf-center-num{font-weight:800;fill:var(--ink);text-anchor:middle}
 .cf-progs{display:flex;flex-direction:column;gap:6px}
 .cf-progs .pr{display:grid;grid-template-columns:1fr 60px 36px;gap:8px;align-items:center;font-size:11px}
 .cf-progs .pr .nm{color:var(--ink);font-weight:600}
@@ -3146,12 +3157,135 @@ function cfPhase3Morph(country, durationMs) {
     document.getElementById('view-globe').classList.add('cf-fade-out');
     _animTick(() => { overlay.classList.add('in'); });
     setTimeout(() => { document.getElementById('cf-panel').classList.add('in'); }, 150);
+    // Pipeline-mix donut: trigger the exploded-slice sequence once the panel
+    // has finished sliding in (~600ms slide + small breath = 750ms after Phase 3 start)
+    setTimeout(() => cfAnimatePieExplode(), 750);
 
     setTimeout(resolve, durationMs);
   });
 }
 
 function _wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ---------- Exploded-donut renderer for Pipeline mix ----------
+// Each slice is its own <g class="cf-slice"> with CSS variables --dx/--dy
+// (radial translate vector along the slice bisector) and a paired text
+// label that fades + slides in as the slice "explodes" outward.
+function cfRenderPipelineMix(segments, size) {
+  size = size || 220;
+  const W = size, H = size * 0.78;
+  const cx = W/2, cy = H/2 - 2;
+  const rx = (W - 30) / 2;
+  const ry = rx * 0.55;
+  const innerRx = rx * 0.42, innerRy = ry * 0.42;
+  const depth = Math.round(rx * 0.14);
+  const explodeDist = rx * 0.38;
+
+  const segsIn = (segments || []).filter(s => s.value > 0);
+  const total = segsIn.reduce((s, x) => s + x.value, 0);
+  // Viewbox needs room for outer labels on all sides
+  const padL = 110, padR = 110, padT = 24, padB = 60;
+  const viewW = W + padL + padR, viewH = H + depth + padT + padB;
+  const viewX = -padL, viewY = -padT;
+
+  if (total === 0) {
+    return `<svg class="cf-pie-anim" viewBox="${viewX} ${viewY} ${viewW} ${viewH}" style="width:${viewW}px;max-width:100%;height:auto;display:block;overflow:visible">
+      <ellipse cx="${cx}" cy="${cy+depth}" rx="${rx}" ry="${ry}" fill="#9A968E" opacity="0.45"/>
+      <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#EEE"/>
+      <ellipse cx="${cx}" cy="${cy}" rx="${innerRx}" ry="${innerRy}" fill="#fff"/>
+    </svg>`;
+  }
+
+  function darken(hex, amt) {
+    const m = (typeof hex === "string" && hex.match(/^#([0-9a-f]{6})$/i));
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    const r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+    return `rgb(${Math.round(r*(1-amt))},${Math.round(g*(1-amt))},${Math.round(b*(1-amt))})`;
+  }
+
+  // Pre-compute slice geometry
+  let angle = -Math.PI / 2;
+  const slices = [];
+  segsIn.forEach((s) => {
+    const arc = (s.value / total) * Math.PI * 2;
+    const a1 = angle, a2 = angle + arc;
+    const bis = a1 + arc/2;
+    const ratio = ry / rx;
+    const dx = Math.cos(bis) * explodeDist;
+    const dy = Math.sin(bis) * explodeDist * ratio;
+    // Label position: outside slice along bisector, in the pre-exploded coord
+    const labelDist = rx + 18;
+    const lxBase = cx + Math.cos(bis) * labelDist;
+    const lyBase = cy + Math.sin(bis) * labelDist * ratio;
+    // The label uses its own CSS-var translate so it ends up further out than the slice
+    const labelExtraX = Math.cos(bis) * (explodeDist * 0.4);
+    const labelExtraY = Math.sin(bis) * (explodeDist * 0.4) * ratio;
+    const textAnchor = Math.cos(bis) > 0.25 ? 'start' : (Math.cos(bis) < -0.25 ? 'end' : 'middle');
+    const dyTextOffset = Math.sin(bis) > 0.4 ? 12 : (Math.sin(bis) < -0.4 ? -4 : 4);
+    // For staggering: bisector relative to bottom (Math.PI/2). Slices closer to
+    // bottom (sin near 1) animate first; going clockwise around then up.
+    const stagOrder = -Math.sin(bis);   // smaller = bottom-most first when sorted ascending
+    slices.push({ ...s, a1, a2, bis, dx, dy, lxBase, lyBase, labelExtraX, labelExtraY, textAnchor, dyTextOffset, stagOrder });
+    angle += arc;
+  });
+
+  // Build per-slice <g>
+  const sliceHtml = slices.map((sl, i) => {
+    const x1 = cx + rx*Math.cos(sl.a1);
+    const y1 = cy + ry*Math.sin(sl.a1);
+    const x2 = cx + rx*Math.cos(sl.a2);
+    const y2 = cy + ry*Math.sin(sl.a2);
+    const large = (sl.a2 - sl.a1) > Math.PI ? 1 : 0;
+    const topPath = `M${cx.toFixed(2)},${cy.toFixed(2)} L${x1.toFixed(2)},${y1.toFixed(2)} A${rx.toFixed(2)},${ry.toFixed(2)} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+
+    // Wall: only front-facing portion (angles intersected with [0, PI])
+    const visStart = Math.max(sl.a1, 0);
+    const visEnd   = Math.min(sl.a2, Math.PI);
+    let wallPath = '';
+    if (visStart < visEnd) {
+      const wx1 = cx + rx*Math.cos(visStart);
+      const wy1 = cy + ry*Math.sin(visStart);
+      const wx2 = cx + rx*Math.cos(visEnd);
+      const wy2 = cy + ry*Math.sin(visEnd);
+      const wLarge = (visEnd - visStart) > Math.PI ? 1 : 0;
+      wallPath = `M${wx1.toFixed(2)},${wy1.toFixed(2)} A${rx.toFixed(2)},${ry.toFixed(2)} 0 ${wLarge} 1 ${wx2.toFixed(2)},${wy2.toFixed(2)} L${wx2.toFixed(2)},${(wy2+depth).toFixed(2)} A${rx.toFixed(2)},${ry.toFixed(2)} 0 ${wLarge} 0 ${wx1.toFixed(2)},${(wy1+depth).toFixed(2)} Z`;
+    }
+
+    // Leader line from slice edge to its label
+    const edgeX = cx + Math.cos(sl.bis) * rx * 0.95;
+    const edgeY = cy + Math.sin(sl.bis) * ry * 0.95;
+    const leaderX2 = sl.lxBase + sl.labelExtraX * 0.4;
+    const leaderY2 = sl.lyBase + sl.labelExtraY * 0.4;
+
+    return `<g class="cf-slice" style="--dx:${sl.dx.toFixed(2)}px;--dy:${sl.dy.toFixed(2)}px" data-stag="${sl.stagOrder.toFixed(3)}">
+      ${wallPath ? `<path class="cf-slice-wall" d="${wallPath}" fill="${darken(sl.color, 0.42)}"/>` : ''}
+      <path class="cf-slice-top" d="${topPath}" fill="${sl.color}"/>
+      <line class="cf-slice-leader" x1="${edgeX.toFixed(2)}" y1="${edgeY.toFixed(2)}" x2="${leaderX2.toFixed(2)}" y2="${leaderY2.toFixed(2)}"/>
+      <text class="cf-slice-label" x="${sl.lxBase.toFixed(2)}" y="${(sl.lyBase + sl.dyTextOffset).toFixed(2)}" text-anchor="${sl.textAnchor}" style="--lx:${sl.labelExtraX.toFixed(2)}px;--ly:${sl.labelExtraY.toFixed(2)}px">${escape(sl.label)} <tspan class="cf-label-value">${sl.value}</tspan></text>
+    </g>`;
+  }).join('');
+
+  // Donut hole + center number
+  const hole = `<ellipse cx="${cx}" cy="${cy}" rx="${innerRx.toFixed(2)}" ry="${innerRy.toFixed(2)}" fill="#fff"/>`;
+  const numFontSize = Math.round(rx * 0.36);
+  const centerNum = `<text class="cf-center-num" x="${cx}" y="${(cy + numFontSize/3).toFixed(2)}" font-size="${numFontSize}">${total}</text>`;
+
+  return `<svg class="cf-pie-anim" viewBox="${viewX} ${viewY} ${viewW} ${viewH}" style="width:${viewW}px;max-width:100%;height:auto;display:block;overflow:visible">
+    ${sliceHtml}
+    ${hole}
+    ${centerNum}
+  </svg>`;
+}
+
+// Trigger the explode animation. Bottom-most slice animates first, then
+// progressing upward. Each slice ~110ms apart.
+function cfAnimatePieExplode() {
+  const slices = [...document.querySelectorAll('#cf-panel .cf-pie-anim .cf-slice')];
+  // Sort ascending by stag value (bottom-most = smallest)
+  slices.sort((a, b) => parseFloat(a.dataset.stag || 0) - parseFloat(b.dataset.stag || 0));
+  slices.forEach((sl, i) => setTimeout(() => sl.classList.add('exploded'), i * 110));
+}
 
 // ---------- Panel content (same data layout as before, cleaner styling) ----------
 function cfRenderPanel(country) {
@@ -3170,9 +3304,10 @@ function cfRenderPanel(country) {
     {label:"Not interested",value:a.byPrio["Not interested"]||0,color:"#6E6E6E"},
     {label:"Unclassified",  value:a.unclass||0,                 color:"#CCCCCC"},
   ];
-  const pieHtml = a ? `<div class="pie-svg-box">${makePieSvg(pieSegs, 110)}</div>
-    <div class="leg">${pieSegs.filter(s=>s.value>0).map(s =>
-      `<span><i style="background:${s.color}"></i>${s.label} <b>${s.value}</b></span>`).join("")}</div>` : "";
+  // Animated exploded-donut: each slice has its own bisector-aligned label
+  // that fades in as the slice translates outward. No static legend on the
+  // side — the labels themselves are the legend.
+  const pieHtml = a ? `<div class="pie-svg-box">${cfRenderPipelineMix(pieSegs, 240)}</div>` : "";
 
   const progRanked = !a ? [] : PROGRAMS.map(p => {
     let sum = 0; cohort.forEach(u => sum += (u.program_matches[p.id] || 0));
