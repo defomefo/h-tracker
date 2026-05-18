@@ -3051,32 +3051,33 @@ async function dramaticExit() {
   const feature = CF_STATE.feature;
   const globeView = document.getElementById('view-globe');
 
-  // Fade overlay + slide panel out
+  // ---- Parallel exit (~550ms total instead of the old ~1000ms sequential) ----
+  // 1) Overlay fades out (CSS opacity 1→0, 600ms)
   overlay.classList.remove('in');
-  await _wait(450);
-  overlay.classList.remove('live');
-  // Don't set inline display:none — the .cf-overlay base rule already has
-  // display:none. Inline styles would block the next .live add.
-
-  // Restore globe view (un-fade) — runs in parallel with the camera reverse
+  // 2) Globe un-fades (CSS opacity .15→1, 500ms)
   globeView.classList.remove('cf-fade-out');
-
-  // Reverse the Phase-1 camera move: rotate + zoom back to the pre-state.
-  // The globe is fading in from cf-fade-out at the same time, so the motion
-  // is visible (not snapped).
-  if (CF_STATE.preRotation && typeof CF_STATE.preZoom === 'number') {
-    await cfTweenCamera(CF_STATE.preRotation, CF_STATE.preZoom, 550);
-  } else {
-    await _wait(450);
+  // 3) Clone collapses + fades (CSS transition 400ms; uses existing transition rules)
+  if (clone) {
+    clone.style.transition = 'transform 450ms cubic-bezier(.4,0,.2,1), opacity 350ms ease, filter 350ms ease';
+    clone.style.opacity = '0';
+    clone.style.transform = 'translateY(0) scale(0.35)';
+    clone.style.filter = 'drop-shadow(0 1px 2px rgba(10,20,40,.1))';
   }
-  globeView.classList.remove('cf-fading');
+  // 4) Camera reverses to pre-state (500ms tween, runs concurrently with the above)
+  const camPromise = (CF_STATE.preRotation && typeof CF_STATE.preZoom === 'number')
+    ? cfTweenCamera(CF_STATE.preRotation, CF_STATE.preZoom, 500)
+    : _wait(450);
 
-  // Restore original country path visibility (it was hidden during lift)
+  await camPromise;
+  // A small breath so the overlay opacity transition (600ms) catches up
+  await _wait(100);
+
+  // Cleanup — runs after all four parallel animations have visibly completed
+  overlay.classList.remove('live');
+  globeView.classList.remove('cf-fading');
   if (feature) {
     globeSvg.selectAll('.country').filter(d => d === feature).style('opacity', null);
   }
-
-  // Cleanup clone
   if (clone && clone.parentElement) clone.parentElement.removeChild(clone);
   const host = document.getElementById('cf-clone-host');
   host.classList.remove('live');
@@ -3159,6 +3160,29 @@ function cfPhase2Lift(feature, durationMs) {
     const cw = (x1 - x0) * scaleX;
     const ch = (y1 - y0) * scaleY;
 
+    // Render the entities (city dots) of this country INSIDE the clone SVG.
+    // They use the same live projection so they land exactly on the country
+    // path. As the clone is morphed, the dots scale with it and stay visible
+    // throughout the lift/zoom and once the country is in its final slot.
+    const countryName = CF_STATE.country;
+    const cohort = UNIS.filter(u =>
+      (u.country_canonical || u.country) === countryName
+      && u.lat !== null && u.lng !== null
+    );
+    const dotsHtml = cohort.map((u, i) => {
+      // Deterministic jitter — entities that share a country centroid would
+      // otherwise stack on a single dot. Math.sin gives ~uniform spread.
+      const jx = Math.sin(i * 17.3) * 1.4;   // ±1.4° lng
+      const jy = Math.cos(i * 23.7) * 1.0;   // ±1° lat (narrower to stay inside the country shape)
+      const coords = projection([u.lng + jx, u.lat + jy]);
+      if (!coords) return '';
+      const [cxp, cyp] = coords;
+      const rPx = (u.priority === "Critical" || u.priority === "Hot") ? 3.6
+               : (u.priority === "Warm" || u.priority === "Up & Running") ? 3.0 : 2.4;
+      const color = PRIO_COLORS[u.priority] || "#999";
+      return `<circle cx="${cxp.toFixed(2)}" cy="${cyp.toFixed(2)}" r="${rPx}" fill="${color}" stroke="#fff" stroke-width="0.5" opacity="0.95"/>`;
+    }).join('');
+
     // Build the floating clone
     const host = document.getElementById('cf-clone-host');
     host.classList.add('live');
@@ -3170,7 +3194,7 @@ function cfPhase2Lift(feature, durationMs) {
     wrap.style.height = ch + 'px';
     wrap.style.transform = 'translateY(0) scale(1)';
     wrap.style.filter = 'drop-shadow(0 2px 4px rgba(10,20,40,.15))';
-    wrap.innerHTML = `<svg viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;overflow:visible"><path d="${d}"/></svg>`;
+    wrap.innerHTML = `<svg viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;overflow:visible"><path d="${d}"/>${dotsHtml}</svg>`;
     host.appendChild(wrap);
     CF_STATE.clone = wrap;
 
