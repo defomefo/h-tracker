@@ -3169,18 +3169,25 @@ function cfPhase2Lift(feature, durationMs) {
       (u.country_canonical || u.country) === countryName
       && u.lat !== null && u.lng !== null
     );
+    // Size dots and jitter spread relative to the country bbox so they look
+    // consistent regardless of country scale on the screen.
+    const bboxSize = Math.max(x1 - x0, y1 - y0);
+    const dotBaseR = bboxSize * 0.013;        // ~1.3% of bbox = ~7-8px when scaled to slot
+    const jitterAmp = bboxSize * 0.18;        // spread within ±18% of bbox
+    const strokeW = bboxSize * 0.003;
     const dotsHtml = cohort.map((u, i) => {
-      // Deterministic jitter — entities that share a country centroid would
-      // otherwise stack on a single dot. Math.sin gives ~uniform spread.
-      const jx = Math.sin(i * 17.3) * 1.4;   // ±1.4° lng
-      const jy = Math.cos(i * 23.7) * 1.0;   // ±1° lat (narrower to stay inside the country shape)
-      const coords = projection([u.lng + jx, u.lat + jy]);
+      const coords = projection([u.lng, u.lat]);
       if (!coords) return '';
-      const [cxp, cyp] = coords;
-      const rPx = (u.priority === "Critical" || u.priority === "Hot") ? 3.6
-               : (u.priority === "Warm" || u.priority === "Up & Running") ? 3.0 : 2.4;
+      // Deterministic projection-space jitter — entities sharing a country
+      // centroid would otherwise stack on a single dot. Math.sin spreads them.
+      const jx = Math.sin(i * 17.3) * jitterAmp;
+      const jy = Math.cos(i * 23.7) * jitterAmp;
+      const cxp = coords[0] + jx;
+      const cyp = coords[1] + jy;
+      const rMul = (u.priority === "Critical" || u.priority === "Hot") ? 1.15
+                 : (u.priority === "Warm" || u.priority === "Up & Running") ? 1.0 : 0.85;
       const color = PRIO_COLORS[u.priority] || "#999";
-      return `<circle cx="${cxp.toFixed(2)}" cy="${cyp.toFixed(2)}" r="${rPx}" fill="${color}" stroke="#fff" stroke-width="0.5" opacity="0.95"/>`;
+      return `<circle cx="${cxp.toFixed(2)}" cy="${cyp.toFixed(2)}" r="${(dotBaseR * rMul).toFixed(2)}" fill="${color}" stroke="#fff" stroke-width="${strokeW.toFixed(2)}" opacity="0.85"/>`;
     }).join('');
 
     // Build the floating clone
