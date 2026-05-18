@@ -6348,7 +6348,20 @@ function renderDatabaseView() {
     </tbody></table></div>`;
   el.innerHTML = html;
   const s = document.getElementById("db-search");
-  if (s) s.addEventListener("input", e => { STATE.search = e.target.value.toLowerCase().trim(); renderDatabaseView(); });
+  if (s) {
+    s.addEventListener("input", e => {
+      STATE.search = e.target.value.toLowerCase().trim();
+      renderDatabaseView();
+      // After re-render the DOM element is replaced — restore focus + caret so
+      // the user can keep typing without re-clicking the field after each key.
+      const fresh = document.getElementById("db-search");
+      if (fresh) {
+        fresh.focus();
+        const pos = fresh.value.length;
+        try { fresh.setSelectionRange(pos, pos); } catch {}
+      }
+    });
+  }
 }
 function dbSort(col) {
   if (DB_SORT.col === col) DB_SORT.dir = DB_SORT.dir === "desc" ? "asc" : "desc";
