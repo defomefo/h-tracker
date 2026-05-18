@@ -453,6 +453,22 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .outreach-add{font-size:11px;padding:6px 12px;background:var(--navy);color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:600;letter-spacing:.3px;font-family:inherit}
 .outreach-add:hover{background:var(--navy-light)}
 .outreach-empty{text-align:center;font-size:11px;color:var(--ink-soft);font-style:italic;padding:14px;background:var(--paper);border-radius:5px}
+
+/* Outreach log header bar — always-visible CTA at the top of the tracking tab */
+.outreach-actionbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,var(--gold-light) 0%,#FFF8F8 100%);border:1px solid var(--hf-red-soft);border-left:3px solid var(--hf-red);padding:10px 14px;border-radius:6px;margin-bottom:10px}
+.oab-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.oab-title{font-size:12px;font-weight:800;color:var(--navy);letter-spacing:.3px}
+.oab-sub{font-size:10px;color:var(--ink-soft);letter-spacing:.2px}
+.oab-add{background:var(--hf-red);color:#fff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.4px;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:background .12s}
+.oab-add:hover{background:var(--hf-red-deep)}
+
+/* Rich empty state — when nothing logged yet */
+.outreach-empty-rich{text-align:center;padding:24px 18px;background:linear-gradient(180deg,var(--paper) 0%,#fff 100%);border:1px dashed var(--rule);border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.oer-icon{font-size:36px;opacity:.55;line-height:1}
+.oer-title{font-size:13px;font-weight:800;color:var(--navy);letter-spacing:.2px}
+.oer-sub{font-size:11px;color:var(--ink-soft);line-height:1.45;max-width:360px}
+.oer-cta{margin-top:6px;background:var(--hf-red);color:#fff;border:none;padding:9px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.4px;font-family:inherit;transition:background .12s}
+.oer-cta:hover{background:var(--hf-red-deep)}
 .pitched-summary{font-size:11px;color:var(--ink);background:var(--gold-light);padding:8px 12px;border-radius:5px;margin-bottom:10px;line-height:1.5}
 .pitched-summary b{color:var(--navy)}
 
@@ -3420,8 +3436,7 @@ function detailHtml(u) {
           Contacts <span class="ct-badge">${sortedContacts.length}</span>
         </button>
         <button class="eng-tab" data-tab="tracking" onclick="switchEngTab(event,'tracking')">
-          Tracking <span class="ct-badge">${(OUTREACH[u.id] || []).length}</span>
-          <span class="add-btn" title="Log new outreach" onclick="event.stopPropagation();showOutreachForm('${u.id}')">+</span>
+          Outreach log <span class="ct-badge">${(OUTREACH[u.id] || []).length}</span>
         </button>
       </div>
       <div class="eng-panel active" data-panel="contacts">
@@ -3536,9 +3551,23 @@ function renderTrackingBody(entity) {
         </div>
       </div>
     </div>`;
-  }).join("")}</div>` : '<div class="outreach-empty">No outreach logged yet. Use the + button above to record the first email/call.</div>';
+  }).join("")}</div>` : `<div class="outreach-empty-rich">
+    <div class="oer-icon">✉️</div>
+    <div class="oer-title">No outreach logged yet</div>
+    <div class="oer-sub">Track every email, call, meeting or event with ${escape(entity.name)} here. Each entry can be exported as a branded PDF.</div>
+    <button class="oer-cta" onclick="showOutreachForm('${entity.id}')">+ Log your first outreach</button>
+  </div>`;
 
-  return `${summary}${list}`;
+  // Top action bar — always visible so users immediately see "this is where you log outreach".
+  const header = `<div class="outreach-actionbar">
+    <div class="oab-text">
+      <div class="oab-title">Outreach log</div>
+      <div class="oab-sub">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} on file · email, call, meeting, event</div>
+    </div>
+    <button class="oab-add" onclick="showOutreachForm('${entity.id}')">+ Log new outreach</button>
+  </div>`;
+
+  return `${header}${summary}${list}`;
 }
 
 function setEntityTeam(entityId, teamId) {
