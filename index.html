@@ -993,19 +993,32 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .sm-tip .vals{color:rgba(255,255,255,.75);font-size:10px;letter-spacing:.3px}
 .sm-tip .prio{display:inline-block;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:4px;text-transform:uppercase}
 .sm-side{display:flex;flex-direction:column;gap:12px;min-width:0}
-.sm-quad-card{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:10px 12px;border-top:3px solid var(--ink-mute)}
-.sm-quad-card.hero{border-top-color:var(--hf-red)}
-.sm-quad-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.sm-quad-name{font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--navy);text-transform:uppercase}
-.sm-quad-count{background:var(--paper);color:var(--navy);font-size:10px;padding:1px 7px;border-radius:9px;font-weight:700}
-.sm-quad-card.hero .sm-quad-count{background:var(--hf-red);color:#fff}
-.sm-quad-row{display:grid;grid-template-columns:1fr auto;gap:6px;padding:5px 0;border-bottom:1px dashed var(--rule);font-size:11px;cursor:pointer;transition:background .1s;align-items:center}
+/* Quadrant card — color-coded by chart position so users can map */
+/* sidebar entries back to where they sit in the 2×2 visually.    */
+.sm-quad-card{background:#fff;border:1px solid var(--rule);border-left:4px solid var(--quad-color,var(--ink-mute));border-radius:6px;padding:12px 14px;position:relative}
+.sm-quad-card.quad-tl{--quad-color:#C97A1A;--quad-bg:rgba(201,122,26,0.06)}   /* warm amber */
+.sm-quad-card.quad-tr{--quad-color:#1F6FB4;--quad-bg:rgba(31,111,180,0.06)}   /* navy */
+.sm-quad-card.quad-bl{--quad-color:#8E9AAB;--quad-bg:rgba(142,154,171,0.05)}  /* slate gray */
+.sm-quad-card.quad-br{--quad-color:#B0322E;--quad-bg:rgba(176,50,46,0.05)}    /* rust red */
+.sm-quad-card{background:linear-gradient(90deg,var(--quad-bg,transparent) 0%,#fff 35%)}
+.sm-quad-card.sm-hero{border-left-color:var(--hf-red);border-left-width:5px;box-shadow:0 0 0 1px var(--hf-red-soft) inset}
+.sm-quad-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.sm-quad-name{font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--quad-color,var(--navy));text-transform:uppercase}
+.sm-quad-card.sm-hero .sm-quad-name{color:var(--hf-red-deep)}
+.sm-quad-card .sm-quad-hero-tag{display:none}
+.sm-quad-card.sm-hero .sm-quad-hero-tag{display:inline-block;background:var(--hf-red);color:#fff;font-size:8px;font-weight:800;letter-spacing:.8px;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle}
+.sm-quad-count{background:var(--paper);color:var(--quad-color,var(--navy));font-size:10px;padding:2px 8px;border-radius:9px;font-weight:700;border:1px solid var(--rule);flex-shrink:0}
+.sm-quad-card.sm-hero .sm-quad-count{background:var(--hf-red);color:#fff;border-color:var(--hf-red)}
+/* Row layout — flex so name+meta stack on the left, score floats right.
+   Replaces the previous grid that overlapped at narrow widths. */
+.sm-quad-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--rule);cursor:pointer;transition:background .1s}
 .sm-quad-row:last-child{border-bottom:none}
 .sm-quad-row:hover{background:var(--paper)}
-.sm-quad-row .nm{font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sm-quad-row .meta{font-size:10px;color:var(--ink-soft);grid-column:1}
-.sm-quad-row .sc{grid-column:2;grid-row:1/3;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;align-self:center}
-.sm-quad-empty{padding:8px 0;font-size:11px;color:var(--ink-mute);font-style:italic;text-align:center}
+.sm-quad-row .text{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.sm-quad-row .nm{font-size:11px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.sm-quad-row .meta{font-size:10px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.sm-quad-row .sc{font-size:12px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;flex-shrink:0}
+.sm-quad-empty{padding:10px 4px;font-size:11px;color:var(--ink-mute);font-style:italic;text-align:center}
 .sm-banner{background:var(--brand-navy-soft);border-left:3px solid var(--brand-navy);padding:8px 12px;border-radius:0 5px 5px 0;font-size:11px;color:var(--brand-navy-deep);margin-bottom:12px;line-height:1.5}
 .sm-banner b{font-weight:700;color:var(--brand-navy-deep)}
 
@@ -6041,17 +6054,19 @@ function renderStrategicView() {
   const midX = plotL + plotW / 2;
   const midY = plotT + plotH / 2;
 
-  // Quadrant backgrounds — subtle stripes so the hero quad gets a faint H-FARM tint
-  const quadBgs = {
-    tl: ax.hero === "tl" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
-    tr: ax.hero === "tr" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
-    bl: ax.hero === "bl" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
-    br: ax.hero === "br" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
-  };
-  html += `<rect class="sm-quad-bg" x="${plotL}" y="${plotT}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.tl}"/>`;
-  html += `<rect class="sm-quad-bg" x="${midX}" y="${plotT}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.tr}"/>`;
-  html += `<rect class="sm-quad-bg" x="${plotL}" y="${midY}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.bl}"/>`;
-  html += `<rect class="sm-quad-bg" x="${midX}" y="${midY}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.br}"/>`;
+  // Quadrant backgrounds — position-based tints matching the sidebar card
+  // colors so users can map between the chart and the cards at a glance.
+  // The hero quadrant gets an additional H-FARM red wash on top.
+  const QUAD_TINT = { tl:"rgba(201,122,26,0.07)", tr:"rgba(31,111,180,0.07)", bl:"rgba(142,154,171,0.06)", br:"rgba(176,50,46,0.06)" };
+  const heroTint = "rgba(217,83,79,0.06)";
+  ["tl","tr","bl","br"].forEach(q => {
+    const x = q[1] === "l" ? plotL : midX;
+    const y = q[0] === "t" ? plotT : midY;
+    html += `<rect class="sm-quad-bg" x="${x}" y="${y}" width="${plotW/2}" height="${plotH/2}" fill="${QUAD_TINT[q]}"/>`;
+    if (ax.hero === q) {
+      html += `<rect class="sm-quad-bg" x="${x}" y="${y}" width="${plotW/2}" height="${plotH/2}" fill="${heroTint}"/>`;
+    }
+  });
 
   // Quadrant labels (in corners, inside plot area)
   const qLabelOff = 14;
@@ -6098,13 +6113,15 @@ function renderStrategicView() {
     const q = (y >= 50 ? (x >= 50 ? "tr" : "tl") : (x >= 50 ? "br" : "bl"));
     buckets[q].push(u);
   });
-  // Sort each bucket by partnership_score desc and render top 5
+  // Sort each bucket by partnership_score desc and render top 5.
+  // Each card carries a position class (quad-tl/quad-tr/quad-bl/quad-br) so
+  // the colour matches the corresponding chart quadrant background.
   ["tl","tr","bl","br"].forEach(q => {
     const items = buckets[q].sort((a,b) => b.partnership_score - a.partnership_score).slice(0, 5);
-    const heroCls = ax.hero === q ? ' hero' : '';
-    html += `<div class="sm-quad-card${heroCls}">
+    const heroCls = ax.hero === q ? ' sm-hero' : '';
+    html += `<div class="sm-quad-card quad-${q}${heroCls}">
       <div class="sm-quad-card-head">
-        <div class="sm-quad-name">${escape(ax[q])}</div>
+        <div class="sm-quad-name">${escape(ax[q])}<span class="sm-quad-hero-tag">★ Lead</span></div>
         <div class="sm-quad-count">${buckets[q].length}</div>
       </div>`;
     if (!items.length) {
@@ -6112,8 +6129,10 @@ function renderStrategicView() {
     } else {
       items.forEach(u => {
         html += `<div class="sm-quad-row" onclick="openDetail('${u.id}')">
-          <div class="nm">${escape(u.name)}</div>
-          <div class="meta">${escape(u.country_canonical || u.country || "—")} · ${u.priority || "Unclassified"}</div>
+          <div class="text">
+            <div class="nm">${escape(u.name)}</div>
+            <div class="meta">${escape(u.country_canonical || u.country || "—")} · ${escape(u.priority || "Unclassified")}</div>
+          </div>
           <div class="sc">${u.partnership_score}</div>
         </div>`;
       });
