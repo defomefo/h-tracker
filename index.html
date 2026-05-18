@@ -961,6 +961,54 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .fd-tiers .fdt-h{font-size:9px;letter-spacing:.3px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;padding:4px 2px;text-align:center}
 .fd-leak-card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 18px}
 
+/* ============== STRATEGIC 2x2 MAPS ============== */
+.sm-shell{padding:18px 24px 60px;max-width:1400px;margin:0 auto}
+.sm-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--rule)}
+.sm-tab{background:#fff;border:1px solid var(--rule);padding:8px 16px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);cursor:pointer;border-radius:18px;display:inline-flex;align-items:center;gap:8px;transition:all .12s}
+.sm-tab:hover{color:var(--navy);background:var(--paper);border-color:var(--navy)}
+.sm-tab.active{background:var(--hf-red);color:#fff;border-color:var(--hf-red);box-shadow:0 1px 4px rgba(217,83,79,.35)}
+.sm-tab.active:hover{background:var(--hf-red-deep);color:#fff;border-color:var(--hf-red-deep)}
+.sm-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap}
+.sm-toolbar-info{font-size:11px;color:var(--ink-soft)}
+.sm-toolbar-info b{color:var(--navy);font-weight:700}
+.sm-toolbar-info .sm-override-tag{margin-left:10px;background:var(--hf-red-soft);color:var(--hf-red-deep);padding:2px 8px;border-radius:9px;font-weight:700;font-size:10px;letter-spacing:.3px}
+.sm-toolbar-actions{display:flex;gap:8px}
+.sm-grid{display:grid;grid-template-columns:minmax(560px,1fr) minmax(280px,340px);gap:18px;align-items:start}
+@media (max-width:1100px){.sm-grid{grid-template-columns:1fr}}
+.sm-chart-wrap{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(10,37,64,.05)}
+.sm-chart-svg{display:block;width:100%;height:auto;max-width:760px;margin:0 auto;font-family:inherit}
+.sm-chart-svg .sm-axis-line{stroke:var(--ink);stroke-width:1.5;stroke-linecap:square}
+.sm-chart-svg .sm-mid-line{stroke:var(--rule);stroke-width:1;stroke-dasharray:4,4}
+.sm-chart-svg .sm-axis-label{font-size:11px;font-weight:700;letter-spacing:1.2px;fill:var(--navy);text-transform:uppercase}
+.sm-chart-svg .sm-axis-end{font-size:10px;fill:var(--ink-soft);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.sm-chart-svg .sm-quad-label{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;fill:var(--ink-soft)}
+.sm-chart-svg .sm-quad-label.hero{fill:var(--hf-red)}
+.sm-chart-svg .sm-quad-bg{opacity:.5}
+.sm-chart-svg .sm-bubble{cursor:grab;transition:r .12s ease, stroke-width .12s ease}
+.sm-chart-svg .sm-bubble:hover{stroke:var(--ink);stroke-width:2}
+.sm-chart-svg .sm-bubble.dragging{cursor:grabbing;stroke:var(--hf-red);stroke-width:2.5}
+.sm-chart-svg .sm-bubble.override{stroke:var(--hf-red);stroke-width:1.5;stroke-dasharray:2,2}
+.sm-tip{position:fixed;background:var(--ink);color:#fff;padding:8px 12px;border-radius:5px;font-size:11px;pointer-events:none;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:240px;line-height:1.45;display:none}
+.sm-tip .nm{font-weight:800;color:#fff;margin-bottom:3px}
+.sm-tip .vals{color:rgba(255,255,255,.75);font-size:10px;letter-spacing:.3px}
+.sm-tip .prio{display:inline-block;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:4px;text-transform:uppercase}
+.sm-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sm-quad-card{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:10px 12px;border-top:3px solid var(--ink-mute)}
+.sm-quad-card.hero{border-top-color:var(--hf-red)}
+.sm-quad-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sm-quad-name{font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--navy);text-transform:uppercase}
+.sm-quad-count{background:var(--paper);color:var(--navy);font-size:10px;padding:1px 7px;border-radius:9px;font-weight:700}
+.sm-quad-card.hero .sm-quad-count{background:var(--hf-red);color:#fff}
+.sm-quad-row{display:grid;grid-template-columns:1fr auto;gap:6px;padding:5px 0;border-bottom:1px dashed var(--rule);font-size:11px;cursor:pointer;transition:background .1s;align-items:center}
+.sm-quad-row:last-child{border-bottom:none}
+.sm-quad-row:hover{background:var(--paper)}
+.sm-quad-row .nm{font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sm-quad-row .meta{font-size:10px;color:var(--ink-soft);grid-column:1}
+.sm-quad-row .sc{grid-column:2;grid-row:1/3;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;align-self:center}
+.sm-quad-empty{padding:8px 0;font-size:11px;color:var(--ink-mute);font-style:italic;text-align:center}
+.sm-banner{background:var(--brand-navy-soft);border-left:3px solid var(--brand-navy);padding:8px 12px;border-radius:0 5px 5px 0;font-size:11px;color:var(--brand-navy-deep);margin-bottom:12px;line-height:1.5}
+.sm-banner b{font-weight:700;color:var(--brand-navy-deep)}
+
 /* DATABASE VIEW */
 .db-toolbar{padding:14px 28px;display:flex;gap:10px;align-items:center;background:#fff;border-bottom:1px solid var(--rule)}
 .db-toolbar input{flex:1;padding:8px 12px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:inherit;background:var(--paper)}
@@ -1159,6 +1207,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <button class="nav-item" data-view="globe" onclick="switchView('globe')"><span class="nav-label">Globe view</span></button>
       <button class="nav-item" data-view="pipeline" onclick="switchView('pipeline')"><span class="nav-label">Pipeline</span></button>
       <button class="nav-item" data-view="funnel" onclick="switchView('funnel')"><span class="nav-label">Funnel</span></button>
+      <button class="nav-item" data-view="strategy" onclick="switchView('strategy')"><span class="nav-label">Strategic Maps</span></button>
       <button class="nav-item" data-view="database" onclick="switchView('database')"><span class="nav-label">Database</span></button>
       <button class="nav-item" data-view="outreach" onclick="switchView('outreach')"><span class="nav-label">Outreach log</span></button>
 
@@ -1265,6 +1314,9 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 
     <!-- FUNNEL VIEW (Phase 2 placeholder) -->
     <section id="view-funnel" class="view hidden"></section>
+
+    <!-- STRATEGIC 2x2 MAPS VIEW -->
+    <section id="view-strategy" class="view hidden"></section>
 
     <!-- DATABASE VIEW -->
     <section id="view-database" class="view hidden"></section>
@@ -2580,6 +2632,7 @@ function switchView(viewId) {
   if (viewId === "home")      renderHomeView();
   if (viewId === "pipeline")  renderPipelineView();
   if (viewId === "funnel")    renderFunnelView();
+  if (viewId === "strategy")  renderStrategicView();
   if (viewId === "database")  renderDatabaseView();
   if (viewId === "outreach")  renderOutreachView();
   if (viewId === "brochures") renderBrochuresView();
@@ -5820,6 +5873,394 @@ function updateCounterfactual() {
   const baseline = monteCarloForecast(UNIS, 1000).p50;
   const lift = Math.round(n * 0.09);
   outEl.textContent = baseline + lift;
+}
+
+// ============================================================================
+// STRATEGIC 2x2 MAPS — three lenses (Effort×Fit, Reach×Readiness, Cost×ROI).
+// All formulas are deterministic from the entity record; manual drag-overrides
+// stored per-axis in localStorage. Top-50 by partnership score are plotted to
+// keep the chart readable for quarterly review exports.
+// ============================================================================
+const LS_STRAT_OVERRIDES = "hfarm_2x2_overrides";
+function _loadStratOverrides() {
+  try { return JSON.parse(localStorage.getItem(LS_STRAT_OVERRIDES) || "{}"); }
+  catch { return {}; }
+}
+const STRAT_STATE = {
+  axisKey: "effortFit",
+  overrides: _loadStratOverrides(),  // { effortFit: { entityId: {x,y} }, ... }
+  showAll: false,                    // top-50 by default
+};
+function _saveStratOverrides() {
+  localStorage.setItem(LS_STRAT_OVERRIDES, JSON.stringify(STRAT_STATE.overrides));
+}
+
+const STRAT_AXES = {
+  effortFit: {
+    label: "Effort × Fit",
+    xLabel: "Effort to land",  xMin: "Easy",     xMax: "Hard",
+    yLabel: "Fit",             yMin: "Poor",     yMax: "Excellent",
+    // Quadrant labels (BCG-style; hero = the high-leverage one)
+    bl: "Easy Passes",         br: "Don't Bother",
+    tl: "Quick Wins",          tr: "Strategic Bets",
+    hero: "tl",
+    computeX: u => {
+      const prio  = PRIO_URGENCY[u.priority] !== undefined ? PRIO_URGENCY[u.priority] : 1.5; // 0..5
+      const dorm  = (u.days_dormant === null || u.days_dormant === undefined) ? 120 : u.days_dormant;
+      const stage = STAGE_URGENCY[u.pipeline_stage] || 1.0;
+      let effort = 55;
+      effort -= prio * 8;                              // high priority = lower effort
+      effort += Math.min(40, dorm / 4.5);              // stale = harder
+      effort += (1.7 - stage) * 12;                    // earlier stage = harder
+      return Math.max(0, Math.min(100, Math.round(effort)));
+    },
+    computeY: u => u.top_program_score || 0,
+  },
+  reachReadiness: {
+    label: "Reach × Readiness",
+    xLabel: "Reach",           xMin: "Niche",    xMax: "Broad",
+    yLabel: "Readiness",       yMin: "Dormant",  yMax: "Ready",
+    bl: "Triage",              br: "Wake-up Calls",
+    tl: "Long Shots",          tr: "Active Wins",
+    hero: "tr",
+    computeX: u => {
+      const tierMap = { "Prestige Hub":85, "Established Partner":70, "Digital Pioneer":58, "Applied Leader":45 };
+      let reach = tierMap[u.strategic_tier] || 32;
+      // Contact density bumps reach slightly (more contacts = broader institutional footprint)
+      const contacts = (u.contacts || []).length;
+      reach += Math.min(15, contacts * 5);
+      return Math.max(0, Math.min(100, reach));
+    },
+    computeY: u => ({"Ready":100,"Warming":75,"Early":50,"Cold":25,"Dormant":10}[u.partnership_readiness] || 30),
+  },
+  costRoi: {
+    label: "Cost × ROI",
+    xLabel: "Cost to develop",  xMin: "Cheap",   xMax: "Expensive",
+    yLabel: "ROI",              yMin: "Low",     yMax: "High",
+    bl: "Quick Wins",           br: "Money Pit",
+    tl: "Star Deals",           tr: "Worth Fighting",
+    hero: "tl",
+    computeX: u => {
+      const contMap = { "Europe":20, "Middle East":40, "Central Asia":50, "Asia":65, "North America":70, "Latin America":80, "Oceania":90 };
+      let cost = contMap[u.continent] !== undefined ? contMap[u.continent] : 55;
+      const hasEmail = (u.contacts || []).some(c => c.email);
+      if (!hasEmail) cost = Math.min(100, cost + 12);          // missing contact = comm friction
+      if (u.type === "university") cost = Math.min(100, cost + 6);  // universities are slower (legal, committees)
+      return Math.max(0, Math.min(100, cost));
+    },
+    computeY: u => u.partnership_score || 0,
+  },
+};
+
+function stratComputeXY(u, axisKey) {
+  const ax = STRAT_AXES[axisKey];
+  const o = (STRAT_STATE.overrides[axisKey] || {})[u.id];
+  if (o) return { x: o.x, y: o.y, override: true };
+  return { x: ax.computeX(u), y: ax.computeY(u), override: false };
+}
+
+function stratSaveOverride(entityId, axisKey, x, y) {
+  if (!STRAT_STATE.overrides[axisKey]) STRAT_STATE.overrides[axisKey] = {};
+  STRAT_STATE.overrides[axisKey][entityId] = { x: Math.round(x), y: Math.round(y) };
+  _saveStratOverrides();
+}
+function stratResetOverrides(axisKey) {
+  if (!confirm(`Reset all manual overrides for ${STRAT_AXES[axisKey].label}?`)) return;
+  delete STRAT_STATE.overrides[axisKey];
+  _saveStratOverrides();
+  renderStrategicView();
+}
+function stratClearAllOverrides() {
+  if (!confirm("Clear ALL manual overrides across all three maps?")) return;
+  STRAT_STATE.overrides = {};
+  _saveStratOverrides();
+  renderStrategicView();
+}
+
+function renderStrategicView() {
+  const el = document.getElementById("view-strategy");
+  if (!el) return;
+  if (typeof UNIS === "undefined" || !UNIS.length) {
+    el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--ink-mute)"><h2>No data loaded yet</h2></div>';
+    return;
+  }
+  const axisKey = STRAT_STATE.axisKey;
+  const ax = STRAT_AXES[axisKey];
+  const filtered = applyFilters(UNIS);
+  // Sort by partnership_score desc, take top 50 unless "show all"
+  const sorted = filtered.slice().sort((a, b) => b.partnership_score - a.partnership_score);
+  const cohort = STRAT_STATE.showAll ? sorted : sorted.slice(0, 50);
+  const overrideCount = Object.keys(STRAT_STATE.overrides[axisKey] || {}).length;
+
+  // Header
+  let html = `<div class="view-header">
+    <h1>Strategic 2×2 Maps</h1>
+    <p>Position every partner across three strategic lenses. Drag any bubble to override its position — overrides persist in your browser. Top 50 by partnership score shown by default; toggle to see all.</p>
+  </div>`;
+
+  html += `<div class="sm-shell">`;
+
+  // Tab strip
+  html += `<div class="sm-tabs">`;
+  Object.entries(STRAT_AXES).forEach(([k, a]) => {
+    const ov = Object.keys(STRAT_STATE.overrides[k] || {}).length;
+    html += `<button class="sm-tab ${k === axisKey ? 'active' : ''}" onclick="stratSwitchAxis('${k}')">${escape(a.label)}${ov ? ` <span style="background:rgba(255,255,255,.25);padding:1px 6px;border-radius:8px;font-size:9px">${ov}</span>` : ''}</button>`;
+  });
+  html += `</div>`;
+
+  // Tip banner
+  html += `<div class="sm-banner"><b>Reading the chart:</b> top-left & top-right are the high-value quadrants; bottom-right is where to deprioritise. Bubble size = partnership score, color = priority. <b>${escape(ax.xLabel)}</b> goes left→right (low to high); <b>${escape(ax.yLabel)}</b> goes bottom→top.</div>`;
+
+  // Toolbar
+  html += `<div class="sm-toolbar">
+    <div class="sm-toolbar-info">
+      Showing <b>${cohort.length}</b> of ${filtered.length} entities${STRAT_STATE.showAll ? '' : ' (top 50 by score)'} ·
+      <b>${escape(ax.label)}</b>
+      ${overrideCount ? `<span class="sm-override-tag">${overrideCount} manual override${overrideCount === 1 ? '' : 's'}</span>` : ''}
+    </div>
+    <div class="sm-toolbar-actions">
+      <button class="btn outline" onclick="stratToggleShowAll()">${STRAT_STATE.showAll ? 'Show top 50' : 'Show all'}</button>
+      ${overrideCount ? `<button class="btn outline" onclick="stratResetOverrides('${axisKey}')">↺ Reset overrides</button>` : ''}
+      <button class="btn gold" onclick="stratExportPng()">⬇ Export PNG</button>
+    </div>
+  </div>`;
+
+  // Grid: chart + sidebar
+  html += `<div class="sm-grid">`;
+
+  // ---- Chart ----
+  html += `<div class="sm-chart-wrap"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
+
+  // Plot area coords
+  const padL = 90, padR = 30, padT = 50, padB = 70;
+  const plotL = padL, plotT = padT;
+  const plotW = 760 - padL - padR;   // 640
+  const plotH = 700 - padT - padB;   // 580
+  const plotR = plotL + plotW;
+  const plotB = plotT + plotH;
+  const midX = plotL + plotW / 2;
+  const midY = plotT + plotH / 2;
+
+  // Quadrant backgrounds — subtle stripes so the hero quad gets a faint H-FARM tint
+  const quadBgs = {
+    tl: ax.hero === "tl" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
+    tr: ax.hero === "tr" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
+    bl: ax.hero === "bl" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
+    br: ax.hero === "br" ? "rgba(217,83,79,0.05)" : "rgba(0,0,0,0)",
+  };
+  html += `<rect class="sm-quad-bg" x="${plotL}" y="${plotT}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.tl}"/>`;
+  html += `<rect class="sm-quad-bg" x="${midX}" y="${plotT}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.tr}"/>`;
+  html += `<rect class="sm-quad-bg" x="${plotL}" y="${midY}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.bl}"/>`;
+  html += `<rect class="sm-quad-bg" x="${midX}" y="${midY}" width="${plotW/2}" height="${plotH/2}" fill="${quadBgs.br}"/>`;
+
+  // Quadrant labels (in corners, inside plot area)
+  const qLabelOff = 14;
+  html += `<text class="sm-quad-label ${ax.hero === 'tl' ? 'hero' : ''}" x="${plotL + qLabelOff}"  y="${plotT + qLabelOff + 4}" text-anchor="start">${escape(ax.tl)}</text>`;
+  html += `<text class="sm-quad-label ${ax.hero === 'tr' ? 'hero' : ''}" x="${plotR - qLabelOff}" y="${plotT + qLabelOff + 4}" text-anchor="end">${escape(ax.tr)}</text>`;
+  html += `<text class="sm-quad-label ${ax.hero === 'bl' ? 'hero' : ''}" x="${plotL + qLabelOff}" y="${plotB - qLabelOff}"     text-anchor="start">${escape(ax.bl)}</text>`;
+  html += `<text class="sm-quad-label ${ax.hero === 'br' ? 'hero' : ''}" x="${plotR - qLabelOff}" y="${plotB - qLabelOff}"     text-anchor="end">${escape(ax.br)}</text>`;
+
+  // Mid-lines (crosshairs)
+  html += `<line class="sm-mid-line" x1="${plotL}" y1="${midY}" x2="${plotR}" y2="${midY}"/>`;
+  html += `<line class="sm-mid-line" x1="${midX}" y1="${plotT}" x2="${midX}" y2="${plotB}"/>`;
+
+  // Axes
+  html += `<line class="sm-axis-line" x1="${plotL}" y1="${plotB}" x2="${plotR}" y2="${plotB}"/>`;
+  html += `<line class="sm-axis-line" x1="${plotL}" y1="${plotT}" x2="${plotL}" y2="${plotB}"/>`;
+
+  // Axis titles + endpoint labels
+  html += `<text class="sm-axis-label" x="${midX}" y="${plotB + 42}" text-anchor="middle">${escape(ax.xLabel)} →</text>`;
+  html += `<text class="sm-axis-end"   x="${plotL}" y="${plotB + 22}" text-anchor="start">${escape(ax.xMin)}</text>`;
+  html += `<text class="sm-axis-end"   x="${plotR}" y="${plotB + 22}" text-anchor="end">${escape(ax.xMax)}</text>`;
+  html += `<text class="sm-axis-label" transform="translate(${plotL - 50},${midY}) rotate(-90)" text-anchor="middle">↑ ${escape(ax.yLabel)}</text>`;
+  html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotT}) rotate(-90)" text-anchor="end">${escape(ax.yMax)}</text>`;
+  html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotB}) rotate(-90)" text-anchor="start">${escape(ax.yMin)}</text>`;
+
+  // Bubbles
+  cohort.forEach(u => {
+    const { x, y, override } = stratComputeXY(u, axisKey);
+    const cx = plotL + (x / 100) * plotW;
+    const cy = plotT + (1 - y / 100) * plotH;
+    const r  = Math.max(5, Math.min(14, 5 + Math.sqrt(u.partnership_score) * 0.75));
+    const color = PRIO_COLORS[u.priority] || "#999";
+    html += `<circle class="sm-bubble${override ? ' override' : ''}" data-id="${u.id}"
+              cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}"
+              fill="${color}" fill-opacity="0.7" stroke="#fff" stroke-width="1.2"/>`;
+  });
+
+  html += `</svg></div>`;
+
+  // ---- Sidebar: top 5 per quadrant ----
+  html += `<div class="sm-side">`;
+  const buckets = { tl: [], tr: [], bl: [], br: [] };
+  cohort.forEach(u => {
+    const { x, y } = stratComputeXY(u, axisKey);
+    const q = (y >= 50 ? (x >= 50 ? "tr" : "tl") : (x >= 50 ? "br" : "bl"));
+    buckets[q].push(u);
+  });
+  // Sort each bucket by partnership_score desc and render top 5
+  ["tl","tr","bl","br"].forEach(q => {
+    const items = buckets[q].sort((a,b) => b.partnership_score - a.partnership_score).slice(0, 5);
+    const heroCls = ax.hero === q ? ' hero' : '';
+    html += `<div class="sm-quad-card${heroCls}">
+      <div class="sm-quad-card-head">
+        <div class="sm-quad-name">${escape(ax[q])}</div>
+        <div class="sm-quad-count">${buckets[q].length}</div>
+      </div>`;
+    if (!items.length) {
+      html += `<div class="sm-quad-empty">No entities in this quadrant.</div>`;
+    } else {
+      items.forEach(u => {
+        html += `<div class="sm-quad-row" onclick="openDetail('${u.id}')">
+          <div class="nm">${escape(u.name)}</div>
+          <div class="meta">${escape(u.country_canonical || u.country || "—")} · ${u.priority || "Unclassified"}</div>
+          <div class="sc">${u.partnership_score}</div>
+        </div>`;
+      });
+    }
+    html += `</div>`;
+  });
+  html += `</div>`;  // /sm-side
+
+  html += `</div>`;  // /sm-grid
+  html += `</div>`;  // /sm-shell
+
+  el.innerHTML = html;
+
+  // Wire drag, hover, click on bubbles
+  stratWireBubbleInteractions(plotL, plotT, plotW, plotH);
+}
+
+function stratSwitchAxis(key) {
+  STRAT_STATE.axisKey = key;
+  renderStrategicView();
+}
+function stratToggleShowAll() {
+  STRAT_STATE.showAll = !STRAT_STATE.showAll;
+  renderStrategicView();
+}
+
+function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
+  const svg = document.getElementById("sm-chart");
+  if (!svg) return;
+  const bubbles = svg.querySelectorAll(".sm-bubble");
+
+  // Tooltip element (singleton in body)
+  let tip = document.getElementById("sm-tip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "sm-tip";
+    tip.className = "sm-tip";
+    document.body.appendChild(tip);
+  }
+
+  function clientToData(ev) {
+    const pt = svg.createSVGPoint();
+    pt.x = ev.clientX; pt.y = ev.clientY;
+    const local = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const xData = ((local.x - plotL) / plotW) * 100;
+    const yData = (1 - (local.y - plotT) / plotH) * 100;
+    return { x: Math.max(0, Math.min(100, xData)), y: Math.max(0, Math.min(100, yData)) };
+  }
+
+  bubbles.forEach(b => {
+    const id = b.dataset.id;
+    const u  = UNIS.find(x => x.id === id);
+    if (!u) return;
+
+    // Hover tooltip
+    b.addEventListener("mouseenter", (ev) => {
+      const { x, y } = stratComputeXY(u, STRAT_STATE.axisKey);
+      const ax = STRAT_AXES[STRAT_STATE.axisKey];
+      tip.innerHTML = `<div class="nm">${escape(u.name)}</div>
+        <div class="vals">${escape(ax.xLabel)}: <b>${x}</b> · ${escape(ax.yLabel)}: <b>${y}</b><br>
+          ${escape(u.country_canonical || u.country || "—")} · score ${u.partnership_score}</div>
+        ${u.priority ? `<span class="prio" style="background:${PRIO_COLORS[u.priority]}">${escape(u.priority)}</span>` : ''}`;
+      tip.style.display = "block";
+    });
+    b.addEventListener("mousemove", (ev) => {
+      tip.style.left = (ev.clientX + 14) + "px";
+      tip.style.top  = (ev.clientY + 14) + "px";
+    });
+    b.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+
+    // Pointer-based drag with click vs drag distinction
+    let dragging = false, startX = 0, startY = 0, moved = 0;
+    b.addEventListener("pointerdown", (ev) => {
+      dragging = true;
+      moved = 0;
+      startX = ev.clientX; startY = ev.clientY;
+      b.classList.add("dragging");
+      b.setPointerCapture(ev.pointerId);
+    });
+    b.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      moved = Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY);
+      if (moved < 3) return;
+      // Move bubble live
+      const pt = svg.createSVGPoint();
+      pt.x = ev.clientX; pt.y = ev.clientY;
+      const local = pt.matrixTransform(svg.getScreenCTM().inverse());
+      const cx = Math.max(plotL + 4, Math.min(plotL + plotW - 4, local.x));
+      const cy = Math.max(plotT + 4, Math.min(plotT + plotH - 4, local.y));
+      b.setAttribute("cx", cx);
+      b.setAttribute("cy", cy);
+      // Refresh tooltip live
+      const xData = ((cx - plotL) / plotW) * 100;
+      const yData = (1 - (cy - plotT) / plotH) * 100;
+      const ax = STRAT_AXES[STRAT_STATE.axisKey];
+      tip.innerHTML = `<div class="nm">${escape(u.name)} <span style="opacity:.6">(dragging)</span></div>
+        <div class="vals">${escape(ax.xLabel)}: <b>${Math.round(xData)}</b> · ${escape(ax.yLabel)}: <b>${Math.round(yData)}</b></div>`;
+      tip.style.left = (ev.clientX + 14) + "px";
+      tip.style.top  = (ev.clientY + 14) + "px";
+      tip.style.display = "block";
+    });
+    b.addEventListener("pointerup", (ev) => {
+      if (!dragging) return;
+      dragging = false;
+      b.classList.remove("dragging");
+      b.releasePointerCapture(ev.pointerId);
+      if (moved >= 3) {
+        // Persist override
+        const data = clientToData(ev);
+        stratSaveOverride(id, STRAT_STATE.axisKey, data.x, data.y);
+        // Re-render to refresh sidebar quadrant assignment + override badge
+        renderStrategicView();
+      } else {
+        // Click — open detail panel
+        openDetail(id);
+      }
+    });
+  });
+}
+
+function stratExportPng() {
+  const svg = document.getElementById("sm-chart");
+  if (!svg) return;
+  // Serialize SVG → blob → image → canvas → PNG
+  const ax = STRAT_AXES[STRAT_STATE.axisKey];
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svg);
+  const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    const scale = 2;  // hi-DPI for slide decks
+    const c = document.createElement("canvas");
+    c.width = 760 * scale; c.height = 700 * scale;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#FAFAF5";  // off-white background
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    c.toBlob((pngBlob) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(pngBlob);
+      a.download = `HFARM_2x2_${ax.label.replace(/[^A-Za-z0-9]+/g, "_")}_${new Date().toISOString().slice(0,10)}.png`;
+      a.click();
+    }, "image/png");
+  };
+  img.src = url;
 }
 
 // DATABASE — sortable HTML table of all entities
