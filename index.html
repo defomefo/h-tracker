@@ -485,6 +485,23 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .outreach-form button.save{background:var(--gold);color:var(--ink);border:none;padding:8px 16px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:700;letter-spacing:.3px;font-family:inherit}
 .outreach-form button.save:hover{background:var(--navy);color:#fff}
 
+/* AI draft button inside outreach form */
+.ai-draft-row{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--hf-red-soft) 0%,#FFF8F8 100%);padding:10px 14px;border-radius:6px;border-left:3px solid var(--hf-red);margin-bottom:4px}
+.btn-ai-draft{background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.3px;font-family:inherit;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;transition:background .12s}
+.btn-ai-draft:hover{background:var(--hf-red);color:#fff}
+.btn-ai-draft:disabled{background:var(--rule);cursor:not-allowed;color:var(--ink-soft)}
+.btn-ai-draft .ai-spark{font-size:14px;display:inline-block}
+.btn-ai-draft.loading .ai-spark{animation:ai-spin 1s linear infinite}
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+.ai-draft-hint{font-size:11px;color:var(--ink-soft);line-height:1.4}
+.ai-draft-hint b{color:var(--navy);font-weight:700}
+.ai-draft-error{font-size:11px;color:var(--crit);font-weight:600;padding:6px 10px;background:#FCE4E4;border-radius:4px;margin-top:6px}
+/* "Coming soon" state — feature visible but not yet activated server-side */
+.ai-draft-row.ai-pending{background:linear-gradient(135deg,var(--paper) 0%,#fff 100%);border-left-color:var(--ink-mute);opacity:.85}
+.ai-draft-row.ai-pending .btn-ai-draft{background:var(--ink-mute);cursor:help}
+.ai-draft-row.ai-pending .btn-ai-draft:hover{background:var(--ink-soft)}
+.ai-soon-badge{font-size:8px;font-weight:800;letter-spacing:.8px;background:var(--hf-red);color:#fff;padding:1px 6px;border-radius:8px;margin-left:4px}
+
 /* Knowledge-base modal */
 #hfarm-info-body{padding:20px 24px 28px}
 .kb-section{margin-bottom:24px}
@@ -3626,6 +3643,15 @@ function showOutreachForm(entityId, entryId) {
   document.getElementById("outreach-form-body").innerHTML = `
     <input type="hidden" id="ol-id" value="${e.id}"/>
     <input type="hidden" id="ol-entity" value="${entityId}"/>
+    <div class="ai-draft-row${AI_ENABLED ? '' : ' ai-pending'}">
+      <button type="button" class="btn-ai-draft" id="ai-draft-btn" onclick="aiDraftOutreach('${entityId}')">
+        <span class="ai-spark">✨</span> <span class="ai-draft-label">Draft with AI</span>
+        ${AI_ENABLED ? '' : '<span class="ai-soon-badge">SOON</span>'}
+      </button>
+      <span class="ai-draft-hint">${AI_ENABLED
+        ? `Fills <b>Subject</b> + <b>Email body</b> below with a tailored intro email, using ${escape(entity.name)}'s profile + the recommended H-FARM offering.`
+        : `<b>Coming soon</b> — generates a tailored intro email from this partner's profile. Awaiting admin to configure the AI integration.`}</span>
+    </div>
     <div class="form-row">
       <label>Date <input type="date" id="ol-date" value="${e.date}"/></label>
       <label>Channels (multi-select)
@@ -3703,6 +3729,106 @@ function showOutreachForm(entityId, entryId) {
 
 function closeOutreachForm() {
   document.getElementById("outreach-modal").classList.remove("open");
+}
+
+// AI gating — backend /api/health reports whether the ANTHROPIC_API_KEY
+// is configured. Until then the "Draft with AI" button stays hidden so
+// end users never click a non-functional control. Developers flip this
+// on by adding the key to .env and restarting Flask.
+let AI_ENABLED = false;
+async function checkAiAvailability() {
+  try {
+    const r = await fetch("/api/health", { cache: "no-store" });
+    if (!r.ok) return;
+    const j = await r.json();
+    AI_ENABLED = !!j.key_set;
+  } catch { /* backend not running (static-only serve) — leave AI off */ }
+}
+
+// ---- AI draft outreach -----------------------------------------------
+// Calls the Flask backend (/api/draft-outreach) which proxies Anthropic.
+// Reads the current form state (entity, recipient, sender team) so the
+// draft already reflects whatever the user picked in the modal.
+async function aiDraftOutreach(entityId) {
+  const entity = UNIS.find(u => u.id === entityId);
+  if (!entity) return;
+  // Feature not yet activated by the admin — short-circuit with a friendly
+  // message instead of hitting the backend (which would 500).
+  if (!AI_ENABLED) {
+    alert("AI drafting isn't activated yet.\n\nIt'll appear here once your admin configures the API key on the server. The feature is ready — just waiting on the key.");
+    return;
+  }
+  const btn = document.getElementById("ai-draft-btn");
+  const label = btn.querySelector(".ai-draft-label");
+  const hintEl = btn.parentElement.querySelector(".ai-draft-hint");
+  const origLabel = label.textContent;
+  // Clear any prior error
+  const oldErr = btn.parentElement.parentElement.querySelector(".ai-draft-error");
+  if (oldErr) oldErr.remove();
+
+  btn.disabled = true;
+  btn.classList.add("loading");
+  label.textContent = "Drafting…";
+
+  // Build payload from the live form state
+  const collab = recommendCollabFormat(entity);
+  const teamId = document.getElementById("ol-team").value || currentOwner(entity);
+  const team   = TEAM_BY_ID[teamId];
+  const contactSel = document.getElementById("ol-contact");
+  const recipient = (contactSel && contactSel.value !== "")
+    ? (entity.contacts || [])[parseInt(contactSel.value, 10)] || {}
+    : {
+        name:  document.getElementById("ol-recipient-name").value || "",
+        email: document.getElementById("ol-recipient-email").value || "",
+      };
+
+  try {
+    const resp = await fetch("/api/draft-outreach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entity: {
+          name: entity.name,
+          type: entity.type,
+          type_label: ENTITY_LABELS[entity.type] || entity.type,
+          country: entity.country,
+          focus_areas: entity.focus_areas,
+          strategic_tier: entity.strategic_tier,
+          priority: entity.priority,
+          partnership_readiness: entity.partnership_readiness,
+          notes: (entity.notes || "").slice(0, 500),
+        },
+        kb: {
+          org_name: HFARM_KB.organization && HFARM_KB.organization.name,
+          location: HFARM_KB.organization && HFARM_KB.organization.location,
+          website:  HFARM_KB.organization && HFARM_KB.organization.website,
+        },
+        recommended: collab || {},
+        team: team ? { name: team.name, remit: team.remit } : {},
+        recipient: {
+          name: recipient.name || "",
+          role: recipient.role || "",
+          email: recipient.email || "",
+        },
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+
+    document.getElementById("ol-subject").value = data.subject || "";
+    document.getElementById("ol-body").value    = data.body    || "";
+    label.textContent = "✨ Re-draft";
+    hintEl.innerHTML = `Drafted with <b>${escape(data.model || "Claude")}</b> · ${data.usage ? (data.usage.input_tokens + data.usage.output_tokens) + " tokens" : ""}. Edit freely before saving.`;
+  } catch (err) {
+    label.textContent = origLabel;
+    const errEl = document.createElement("div");
+    errEl.className = "ai-draft-error";
+    errEl.textContent = "AI drafting failed: " + (err.message || err);
+    btn.parentElement.parentElement.insertBefore(errEl, btn.parentElement.nextSibling);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove("loading");
+  }
 }
 
 function submitOutreachForm() {
@@ -5383,6 +5509,8 @@ function showGlobeTip(event, u) {
 function hideGlobeTip() { if (tooltipEl) tooltipEl.style.display = "none"; }
 
 window.addEventListener("DOMContentLoaded", async () => {
+  // Probe AI availability in parallel — never blocks app startup
+  checkAiAvailability();
   try {
     await loadKnowledgeBase();
   } catch (e) {
