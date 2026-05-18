@@ -133,6 +133,34 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .live-badge::before{content:"";width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* PIVOT TABLE (region × priority) */
+/* ACTION QUEUE — replaces the old Reach×Priority pivot on the globe view */
+.aq-wrap{background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(10,37,64,.06);min-width:0;width:100%;display:flex;flex-direction:column}
+.aq-wrap h4{font-size:10px;letter-spacing:1.2px;font-weight:700;color:var(--navy);text-transform:uppercase;padding:9px 12px 7px;background:var(--paper);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.aq-wrap h4 .aq-hint{font-size:9px;letter-spacing:.4px;color:var(--ink-soft);font-weight:600;text-transform:none;flex:1}
+.aq-wrap h4 .pv-clear{background:none;border:1px solid var(--rule);color:var(--ink-soft);font-size:9px;padding:2px 7px;border-radius:3px;cursor:pointer;letter-spacing:.5px;font-weight:600;font-family:inherit;flex-shrink:0}
+.aq-wrap h4 .pv-clear:hover{color:var(--crit);border-color:var(--crit)}
+.aq-scope{font-size:10px;color:var(--ink-soft);padding:7px 12px;background:#FAFAF5;border-bottom:1px solid var(--rule);font-style:italic;letter-spacing:.2px}
+.aq-scope b{color:var(--navy);font-style:normal;font-weight:700}
+.aq-list{display:flex;flex-direction:column}
+.aq-row{display:grid;grid-template-columns:28px 1fr 50px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .12s}
+.aq-row:last-child{border-bottom:none}
+.aq-row:hover{background:var(--paper)}
+.aq-rank{font-size:14px;font-weight:800;color:var(--ink-mute);text-align:center;font-variant-numeric:tabular-nums}
+.aq-row:nth-child(1) .aq-rank{color:var(--hf-red)}
+.aq-main{min-width:0}
+.aq-name{font-size:12px;font-weight:700;color:var(--navy);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.aq-reasons{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.aq-chip{font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 6px;border-radius:8px;color:#fff;text-transform:uppercase;white-space:nowrap}
+.aq-chip.crit{background:var(--crit)}.aq-chip.hot{background:var(--hot)}.aq-chip.warm{background:var(--warm);color:var(--ink)}
+.aq-chip.cold{background:var(--cold)}.aq-chip.cs{background:var(--cs)}.aq-chip.ur{background:var(--ur)}.aq-chip.ni{background:var(--ni)}
+.aq-chip.none{background:var(--rule);color:var(--ink-soft)}
+.aq-chip.stage{background:var(--navy);color:#fff;text-transform:none;letter-spacing:.2px;font-weight:600}
+.aq-chip.dorm{background:var(--paper);color:var(--ink-soft);font-weight:600;letter-spacing:.2px}
+.aq-chip.dorm.warn{background:#FAEFD8;color:#7A5215}
+.aq-chip.dorm.bad{background:var(--hf-red-soft);color:var(--hf-red-deep)}
+.aq-score{font-size:16px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;text-align:right}
+.aq-empty{padding:18px 14px;text-align:center;font-size:11px;color:var(--ink-soft);font-style:italic}
+
 .pivot-wrap{background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(10,37,64,.06);min-width:0;width:100%}
 .pivot-wrap h4{font-size:10px;letter-spacing:1.2px;font-weight:700;color:var(--navy);text-transform:uppercase;padding:9px 12px 7px;background:var(--paper);border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center}
 .pivot-wrap h4 .pv-clear{background:none;border:1px solid var(--rule);color:var(--ink-soft);font-size:9px;padding:2px 7px;border-radius:3px;cursor:pointer;letter-spacing:.5px;font-weight:600;font-family:inherit}
@@ -1114,11 +1142,12 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <div>
       <span class="live-badge">Live &middot; from your data source</span>
       <div class="hero-title">Where <span class="accent">H-FARM</span> is in conversation.</div>
-      <div class="hero-sub">Click a region row, a priority column, or any cell to filter. Click the globe to toggle a continent. Click any dot for full detail.</div>
+      <div class="hero-sub">Click any region on the globe (or country in the panel) to filter. The action queue below auto-updates to show the top picks in your current scope.</div>
     </div>
-    <div class="pivot-wrap">
-      <h4>Reach &times; Pipeline <button class="pv-clear" onclick="clearFilters()">RESET</button></h4>
-      <table class="pivot-table" id="pivot-table"></table>
+    <div class="aq-wrap">
+      <h4>Action queue <span class="aq-hint">Ranked by urgency · click any entity to open</span><button class="pv-clear" onclick="clearFilters()">RESET</button></h4>
+      <div class="aq-scope" id="aq-scope">Across all 285 entities</div>
+      <div class="aq-list" id="aq-list"></div>
     </div>
   </aside>
 </section>
@@ -2558,8 +2587,9 @@ function buildMatrix() {
 }
 
 function renderPivotTable() {
-  const { matrix, rowTotals, colTotals, grandTotal } = buildMatrix();
   const table = document.getElementById("pivot-table");
+  if (!table) return;  // Pivot widget removed from globe view in favor of Action Queue
+  const { matrix, rowTotals, colTotals, grandTotal } = buildMatrix();
 
   // Header row
   let html = `<thead><tr><th class="corner">Region \\ Priority</th>`;
@@ -2590,6 +2620,86 @@ function renderPivotTable() {
   html += `<td class="grand">${grandTotal}</td></tr></tbody>`;
 
   table.innerHTML = html;
+}
+
+// ============================================================================
+// ACTION QUEUE — replaces the old Reach×Priority pivot on the globe view.
+// Ranks entities by an "act-on-this-now" urgency score that combines:
+//   priority weight × pipeline-stage weight × dormancy-sweet-spot × score.
+// Filter-aware: reads applyFilters(UNIS) so picking a country/continent
+// auto-narrows the queue.
+// ============================================================================
+const PRIO_URGENCY = {
+  "Critical": 5.0, "Hot": 4.0, "Warm": 2.5, "Cold": 1.5,
+  "Cold-storage": 0.8, "Up & Running": 0.4, "Not interested": 0.0, "": 1.5,
+};
+const STAGE_URGENCY = {
+  identified: 0.6, first_touch: 1.0, engaged: 1.6,
+  discovery: 1.4, proposal: 1.7, negotiation: 1.5,
+  signed: 0.4, active: 0.3,
+};
+function _dormFactor(d) {
+  if (d === null || d === undefined) return 1.2;  // never contacted but in DB
+  if (d < 7)   return 0.3;   // just contacted — don't pester
+  if (d < 30)  return 1.0;   // sweet spot
+  if (d < 90)  return 1.5;   // overdue — push
+  if (d < 180) return 1.2;   // stale but recoverable
+  return 0.6;                 // very cold — hard revival
+}
+function actionUrgency(u) {
+  const prio  = PRIO_URGENCY[u.priority] !== undefined ? PRIO_URGENCY[u.priority] : 1.5;
+  const stage = STAGE_URGENCY[u.pipeline_stage] || 1.0;
+  const dorm  = _dormFactor(u.days_dormant);
+  const base  = (u.partnership_score || 0) / 100;
+  return prio * stage * dorm * (0.5 + base);
+}
+function actionReasons(u) {
+  const chips = [];
+  if (u.priority) chips.push({ text: u.priority, cls: 'aq-chip ' + (PRIO_CLASS[u.priority] || 'none') });
+  else chips.push({ text: 'Unclassified', cls: 'aq-chip none' });
+  const stage = STAGE_BY_ID[u.pipeline_stage];
+  if (stage) chips.push({ text: stage.short, cls: 'aq-chip stage' });
+  const d = u.days_dormant;
+  if (d === null || d === undefined) chips.push({ text: 'never contacted', cls: 'aq-chip dorm warn' });
+  else if (d > 90) chips.push({ text: `${d}d stale`, cls: 'aq-chip dorm bad' });
+  else if (d > 30) chips.push({ text: `${d}d ago`, cls: 'aq-chip dorm warn' });
+  else if (d < 7)  chips.push({ text: `${d}d ago`, cls: 'aq-chip dorm' });
+  return chips;
+}
+function renderActionQueue() {
+  const root = document.getElementById("aq-list");
+  if (!root) return;
+  const scopeEl = document.getElementById("aq-scope");
+  const cohort = applyFilters(UNIS);
+  // Describe current scope for the header strip
+  if (scopeEl) {
+    const conts = [...STATE.filters.continent];
+    const ctys  = [...STATE.filters.country];
+    let scope;
+    if (ctys.length)       scope = `In <b>${escape(ctys.join(", "))}</b>`;
+    else if (conts.length) scope = `Across <b>${escape(conts.join(", "))}</b>`;
+    else                   scope = `Across all <b>${UNIS.length}</b> entities`;
+    scopeEl.innerHTML = `${scope} · <b>${cohort.length}</b> match current filter${cohort.length === 1 ? '' : 's'}`;
+  }
+  if (!cohort.length) {
+    root.innerHTML = '<div class="aq-empty">No entities match current filters. Reset to see the global queue.</div>';
+    return;
+  }
+  const top = cohort
+    .map(u => ({ u, urgency: actionUrgency(u) }))
+    .sort((a, b) => b.urgency - a.urgency)
+    .slice(0, 5);
+  root.innerHTML = top.map(({ u }, i) => {
+    const chips = actionReasons(u).map(c => `<span class="${c.cls}">${escape(c.text)}</span>`).join("");
+    return `<div class="aq-row" onclick="openDetail('${u.id}')" title="Click to open detail">
+      <div class="aq-rank">${i + 1}</div>
+      <div class="aq-main">
+        <div class="aq-name">${escape(u.name)}</div>
+        <div class="aq-reasons">${chips}</div>
+      </div>
+      <div class="aq-score" title="Partnership score">${u.partnership_score}</div>
+    </div>`;
+  }).join("");
 }
 
 function togglePivotRow(continent) { toggleContinent(continent); }
@@ -3248,6 +3358,8 @@ function sortUnis(unis) {
 }
 
 function render() {
+  // Keep the Action Queue in sync with any filter change.
+  renderActionQueue();
   const filtered = applyFilters(UNIS);
   const sorted = sortUnis(filtered);
   document.getElementById("result-count").textContent = sorted.length;
