@@ -678,6 +678,47 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .help-fab{position:fixed;bottom:18px;right:18px;width:42px;height:42px;border-radius:50%;background:var(--hf-red);color:#fff;border:2px solid #fff;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(217,83,79,.4);z-index:90;transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .help-fab:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 6px 20px rgba(217,83,79,.55);background:var(--hf-red-deep)}
 
+/* ============== CHAT-WITH-YOUR-DATA (demo) ============== */
+.chat-fab{position:fixed;bottom:72px;right:18px;width:52px;height:52px;border-radius:50%;background:var(--navy);color:#fff;border:2px solid var(--hf-red);font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(10,20,40,.32);z-index:90;transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.chat-fab:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 8px 22px rgba(10,20,40,.42);background:var(--hf-red);border-color:var(--hf-red)}
+.chat-fab.has-panel-open{display:none}
+.chat-panel{position:fixed;bottom:18px;right:18px;width:420px;max-width:calc(100vw - 36px);height:580px;max-height:calc(100vh - 100px);background:#fff;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.28);display:none;flex-direction:column;z-index:95;overflow:hidden}
+.chat-panel.open{display:flex;animation:chat-rise .22s ease}
+@keyframes chat-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.chat-head{background:var(--navy);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--hf-red);flex-shrink:0}
+.chat-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.3px}
+.chat-title .chat-spark{font-size:16px}
+.chat-demo-pill{font-size:9px;background:var(--hf-red);color:#fff;padding:2px 7px;border-radius:9px;font-weight:800;letter-spacing:.8px}
+.chat-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0 4px;font-family:inherit}
+.chat-close:hover{color:var(--hf-red-soft)}
+.chat-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.chat-msg{font-size:12px;line-height:1.5;max-width:92%}
+.chat-msg.user{align-self:flex-end;background:var(--hf-red);color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;font-weight:500}
+.chat-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--rule);padding:10px 14px;border-radius:14px 14px 14px 4px;color:var(--ink)}
+.chat-msg.bot b{color:var(--navy);font-weight:700}
+.chat-msg.bot em{color:var(--hf-red);font-style:normal;font-weight:600}
+.chat-msg-intro{margin-bottom:6px}
+.chat-msg-results{margin-top:8px;background:var(--paper);border:1px solid var(--rule);border-radius:6px;overflow:hidden;font-size:11px}
+.chat-result-row{display:grid;grid-template-columns:1fr auto;gap:6px;padding:7px 10px;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .1s}
+.chat-result-row:last-child{border-bottom:none}
+.chat-result-row:hover{background:#fff}
+.chat-result-name{font-weight:700;color:var(--navy);font-size:11px}
+.chat-result-meta{font-size:10px;color:var(--ink-soft);margin-top:1px}
+.chat-result-tag{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;font-size:11px;align-self:center}
+.chat-no-results{font-style:italic;color:var(--ink-soft);padding:10px;text-align:center;background:var(--paper);border-radius:5px;font-size:11px}
+.chat-examples{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.chat-example{font-size:11px;background:var(--paper);border:1px solid var(--rule);padding:7px 11px;border-radius:14px;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink);transition:all .12s;line-height:1.4}
+.chat-example:hover{background:var(--gold-light);border-color:var(--gold);color:var(--navy)}
+.chat-example::before{content:"› ";color:var(--hf-red);font-weight:800}
+.chat-fallback{background:#FAF3EA;border-left:3px solid var(--warm);padding:8px 10px;border-radius:0 5px 5px 0;font-size:11px;color:var(--ink);line-height:1.4;margin-top:6px}
+.chat-fallback b{color:var(--navy)}
+.chat-input-bar{border-top:1px solid var(--rule);background:#fff;padding:10px 12px;display:flex;gap:8px;flex-shrink:0}
+.chat-input-bar input{flex:1;padding:8px 12px;border:1px solid var(--rule);border-radius:18px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink)}
+.chat-input-bar input:focus{outline:none;border-color:var(--gold);background:#fff}
+.chat-send-btn{background:var(--hf-red);color:#fff;border:none;padding:8px 16px;border-radius:18px;cursor:pointer;font-weight:700;font-family:inherit;font-size:12px;letter-spacing:.3px}
+.chat-send-btn:hover{background:var(--hf-red-deep)}
+.chat-send-btn:disabled{background:var(--rule);cursor:not-allowed;color:var(--ink-soft)}
+
 /* PIPELINE KANBAN */
 .kb-shell{padding:18px 24px 60px;background:var(--off-white);min-height:calc(100vh - 60px)}
 .kb-header{display:flex;align-items:center;gap:18px;margin-bottom:14px;flex-wrap:wrap}
@@ -1160,6 +1201,20 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 
 <!-- Floating help button — re-opens the onboarding tour -->
 <button class="help-fab" id="help-fab" onclick="startOnboarding()" title="Re-open the tour" aria-label="Re-open tour">?</button>
+
+<!-- Chat-with-your-data: floating action button + slide-up panel -->
+<button class="chat-fab" id="chat-fab" onclick="openChat()" title="Ask the platform" aria-label="Open chat">&#x2728;</button>
+<aside class="chat-panel" id="chat-panel" aria-hidden="true">
+  <div class="chat-head">
+    <div class="chat-title"><span class="chat-spark">&#x2728;</span> Ask the platform <span class="chat-demo-pill">DEMO</span></div>
+    <button class="chat-close" onclick="closeChat()" aria-label="Close chat">&times;</button>
+  </div>
+  <div class="chat-body" id="chat-body"></div>
+  <form class="chat-input-bar" onsubmit="event.preventDefault();chatSendInput()">
+    <input type="text" id="chat-input" placeholder="Ask anything about your partnerships…" autocomplete="off"/>
+    <button type="submit" class="chat-send-btn">Send</button>
+  </form>
+</aside>
 
 <script>
 "use strict";
@@ -3729,6 +3784,224 @@ function showOutreachForm(entityId, entryId) {
 
 function closeOutreachForm() {
   document.getElementById("outreach-modal").classList.remove("open");
+}
+
+// ========================================================================
+// CHAT-WITH-YOUR-DATA (DEMO) — limited set of canned queries that execute
+// real filters/sorts over UNIS, returning real entities. Free-text input
+// falls back to a friendly "in the live version Claude would handle this"
+// message. Backend swap-in point is the runQuery() function below.
+// ========================================================================
+const CHAT_STATE = { history: [], opened: false };
+
+function pitchedSet(programId) {
+  const s = new Set();
+  Object.values(OUTREACH || {}).forEach(arr => arr.forEach(e => {
+    if ((e.programs || []).includes(programId)) s.add(e.entityId);
+  }));
+  return s;
+}
+
+const CHAT_DEMO_QUERIES = [
+  {
+    id: "untapped-fashion",
+    label: "Top 5 untapped Fashion Lab fits",
+    keywords: ["fashion", "untapped", "lab", "couture", "luxury"],
+    intro: "Five highest-fit candidates for the <b>AI Fashion Lab</b> summer programme that haven't been pitched yet:",
+    run: () => {
+      const pitched = pitchedSet("fashion");
+      return UNIS
+        .filter(u => (u.program_matches?.fashion || 0) >= 50 && !pitched.has(u.id))
+        .sort((a,b) => (b.program_matches.fashion||0) - (a.program_matches.fashion||0))
+        .slice(0, 5);
+    },
+    tagOf: u => `${u.program_matches.fashion}/100`,
+    metaOf: u => `${ENTITY_LABELS[u.type] || u.type} · ${u.country_canonical || u.country || "—"}`,
+  },
+  {
+    id: "stuck-discovery",
+    label: "Who's stuck at the Discovery stage?",
+    keywords: ["stuck", "stalled", "discovery", "dormant"],
+    intro: "Entities at the <b>Discovery</b> stage with no follow-up in 30+ days, most stale first:",
+    run: () => UNIS
+      .filter(u => u.pipeline_stage === "discovery")
+      .filter(u => u.days_dormant === null || u.days_dormant > 30)
+      .sort((a,b) => (b.days_dormant ?? 9999) - (a.days_dormant ?? 9999))
+      .slice(0, 10),
+    tagOf: u => u.days_dormant === null ? "never" : u.days_dormant + "d",
+    metaOf: u => `${u.country_canonical || u.country || "—"} · score ${u.partnership_score}`,
+  },
+  {
+    id: "critical-no-email",
+    label: "Critical accounts missing contact email",
+    keywords: ["critical", "no contact", "no email", "missing"],
+    intro: "Your <b>Critical</b>-priority accounts with no email captured on file — high-leverage to fix:",
+    run: () => UNIS
+      .filter(u => u.priority === "Critical")
+      .filter(u => !(u.contacts || []).some(c => c.email))
+      .sort((a,b) => b.partnership_score - a.partnership_score),
+    tagOf: u => `score ${u.partnership_score}`,
+    metaOf: u => `${u.country_canonical || u.country || "—"} · ${ENTITY_LABELS[u.type] || u.type}`,
+  },
+  {
+    id: "rewarming-europe",
+    label: "Re-warming opportunities in Europe",
+    keywords: ["re-warm", "rewarm", "warm", "europe", "european", "cold-storage", "cold storage"],
+    intro: "European <b>Cold-storage</b> entities with a meaningful partnership score (40+) — worth a re-warming touch:",
+    run: () => UNIS
+      .filter(u => u.continent === "Europe" && u.priority === "Cold-storage" && u.partnership_score >= 40)
+      .sort((a,b) => b.partnership_score - a.partnership_score)
+      .slice(0, 10),
+    tagOf: u => `score ${u.partnership_score}`,
+    metaOf: u => `${u.country_canonical || u.country || "—"} · last contact ${u.last_contacted || "never"}`,
+  },
+  {
+    id: "best-startup-fit",
+    label: "Best fits for Startup Summer programme",
+    keywords: ["startup", "entrepreneur", "venture", "summer"],
+    intro: "Highest-scoring matches for <b>Startup Summer (AD)Venture</b> across the whole portfolio:",
+    run: () => UNIS
+      .filter(u => (u.program_matches?.startup || 0) >= 50)
+      .sort((a,b) => (b.program_matches.startup||0) - (a.program_matches.startup||0))
+      .slice(0, 10),
+    tagOf: u => `${u.program_matches.startup}/100`,
+    metaOf: u => `${u.country_canonical || u.country || "—"} · ${u.priority || "Unclassified"}`,
+  },
+  {
+    id: "not-contacted-6mo",
+    label: "Not contacted in the last 6 months",
+    keywords: ["not contacted", "haven't contacted", "old", "6 month", "stale"],
+    intro: "Anyone in your pipeline dormant 180+ days. Either re-warm or archive:",
+    run: () => UNIS
+      .filter(u => u.days_dormant !== null && u.days_dormant > 180)
+      .sort((a,b) => b.days_dormant - a.days_dormant)
+      .slice(0, 12),
+    tagOf: u => Math.round(u.days_dormant/30) + "mo",
+    metaOf: u => `${u.country_canonical || u.country || "—"} · ${u.priority || "Unclassified"}`,
+  },
+  {
+    id: "top-italy-uni",
+    label: "Top 10 Italian universities by partnership score",
+    keywords: ["italy", "italian", "university", "universities"],
+    intro: "Italian universities ranked by partnership readiness score:",
+    run: () => UNIS
+      .filter(u => u.type === "university")
+      .filter(u => (u.country_canonical || u.country || "").toLowerCase().includes("ital"))
+      .sort((a,b) => b.partnership_score - a.partnership_score)
+      .slice(0, 10),
+    tagOf: u => `score ${u.partnership_score}`,
+    metaOf: u => `${u.country_canonical || u.country || "—"} · ${u.priority || "Unclassified"}`,
+  },
+  {
+    id: "engaged-no-proposal",
+    label: "Engaged partners without a proposal yet",
+    keywords: ["engaged", "proposal", "no proposal", "next step"],
+    intro: "Entities that engaged (replied) but you haven't sent a proposal to yet — clear next-action queue:",
+    run: () => UNIS
+      .filter(u => u.pipeline_stage === "engaged")
+      .sort((a,b) => b.partnership_score - a.partnership_score),
+    tagOf: u => `score ${u.partnership_score}`,
+    metaOf: u => `${u.country_canonical || u.country || "—"} · ${ENTITY_LABELS[u.type] || u.type}`,
+  },
+];
+
+function chatInit() {
+  if (CHAT_STATE.opened) return;
+  CHAT_STATE.opened = true;
+  const intro = `Hi! I'm a demo of <em>chat-with-your-data</em>. Pick a query below — each runs a real filter over your <b>${UNIS.length}</b> entities. Free-form questions will get a placeholder for now.`;
+  CHAT_STATE.history.push({ role: "bot", html: intro, examples: true });
+  renderChat();
+}
+
+function openChat() {
+  document.getElementById("chat-fab").classList.add("has-panel-open");
+  const panel = document.getElementById("chat-panel");
+  panel.classList.add("open");
+  panel.setAttribute("aria-hidden", "false");
+  chatInit();
+  setTimeout(() => document.getElementById("chat-input")?.focus(), 100);
+}
+function closeChat() {
+  document.getElementById("chat-fab").classList.remove("has-panel-open");
+  const panel = document.getElementById("chat-panel");
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden", "true");
+}
+
+function chatExampleClick(qid) {
+  const q = CHAT_DEMO_QUERIES.find(x => x.id === qid);
+  if (q) chatRunQuery(q, q.label);
+}
+function chatSendInput() {
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  // Match against known queries by keyword
+  const lower = text.toLowerCase();
+  const match = CHAT_DEMO_QUERIES.find(q => q.keywords.some(kw => lower.includes(kw.toLowerCase())));
+  if (match) {
+    chatRunQuery(match, text);
+  } else {
+    CHAT_STATE.history.push({ role: "user", html: escape(text) });
+    CHAT_STATE.history.push({ role: "bot", html: "This is a <em>demo</em> — only a fixed set of queries is wired up. In the live version, Claude would answer freely from your data.", fallback: true });
+    renderChat();
+  }
+}
+function chatRunQuery(q, userText) {
+  CHAT_STATE.history.push({ role: "user", html: escape(userText) });
+  let results = [];
+  try { results = q.run() || []; } catch (e) { console.error("chat query failed", e); }
+  CHAT_STATE.history.push({
+    role: "bot",
+    html: q.intro,
+    results: results.map(u => ({
+      id: u.id,
+      name: u.name,
+      meta: q.metaOf ? q.metaOf(u) : "",
+      tag:  q.tagOf  ? q.tagOf(u)  : "",
+    })),
+  });
+  renderChat();
+}
+
+function renderChat() {
+  const body = document.getElementById("chat-body");
+  if (!body) return;
+  const html = CHAT_STATE.history.map(m => {
+    if (m.role === "user") return `<div class="chat-msg user">${m.html}</div>`;
+    let inner = `<div class="chat-msg-intro">${m.html}</div>`;
+    if (m.results) {
+      if (m.results.length === 0) {
+        inner += `<div class="chat-no-results">No entities match — try a different query.</div>`;
+      } else {
+        inner += `<div class="chat-msg-results">${m.results.map(r =>
+          `<div class="chat-result-row" onclick="chatOpenEntity('${r.id}')">
+             <div>
+               <div class="chat-result-name">${escape(r.name)}</div>
+               <div class="chat-result-meta">${escape(r.meta || "")}</div>
+             </div>
+             <div class="chat-result-tag">${escape(r.tag || "")}</div>
+           </div>`).join("")}</div>`;
+      }
+    }
+    if (m.examples) {
+      inner += `<div class="chat-examples">${CHAT_DEMO_QUERIES.map(q =>
+        `<button class="chat-example" type="button" onclick="chatExampleClick('${q.id}')">${escape(q.label)}</button>`
+      ).join("")}</div>`;
+    }
+    if (m.fallback) {
+      inner += `<div class="chat-fallback"><b>Hook-up point for developers:</b> wire this to <code>POST /api/chat-query</code> and call Claude with the user's text + UNIS context. Drop the matched entities into the result list and they'll render exactly like the canned queries above.</div>`;
+    }
+    return `<div class="chat-msg bot">${inner}</div>`;
+  }).join("");
+  body.innerHTML = html;
+  body.scrollTop = body.scrollHeight;
+}
+
+function chatOpenEntity(id) {
+  // Keep the chat panel open; just open the detail side-panel behind it.
+  if (typeof openDetail === 'function') openDetail(id);
 }
 
 // AI gating — backend /api/health reports whether the ANTHROPIC_API_KEY
