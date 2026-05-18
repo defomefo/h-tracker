@@ -636,6 +636,31 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .pipeline-shell{padding:20px 28px}
 .pipeline-shell .pivot-wrap{margin:0 auto}
 
+/* ONBOARDING TOUR */
+.tour-overlay{position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9000;animation:tour-fade .25s ease}
+@keyframes tour-fade{from{opacity:0}to{opacity:1}}
+.tour-spotlight{position:absolute;border:3px solid var(--hf-red);border-radius:8px;box-shadow:0 0 0 9999px rgba(10,20,40,.55),0 0 28px rgba(217,83,79,.55);pointer-events:none;transition:top .25s ease,left .25s ease,width .25s ease,height .25s ease;z-index:9001}
+.tour-bubble{position:absolute;background:#fff;border-radius:10px;width:340px;max-width:calc(100vw - 40px);box-shadow:0 16px 48px rgba(0,0,0,.35);z-index:9002;border-top:4px solid var(--hf-red);font-family:inherit;animation:tour-fade .2s ease}
+.tour-head{padding:14px 18px 4px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.tour-eyebrow{font-size:9px;letter-spacing:1.8px;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.tour-title{font-size:16px;font-weight:800;color:var(--navy);line-height:1.3}
+.tour-close{background:none;border:none;color:var(--ink-soft);font-size:22px;cursor:pointer;line-height:1;padding:0 4px;font-family:inherit}
+.tour-close:hover{color:var(--crit)}
+.tour-body{padding:6px 18px 12px;font-size:13px;color:var(--ink);line-height:1.55}
+.tour-body strong{color:var(--navy);font-weight:700}
+.tour-body em{color:var(--hf-red);font-style:normal;font-weight:600;background:var(--hf-red-soft);padding:0 4px;border-radius:3px}
+.tour-foot{display:flex;justify-content:space-between;align-items:center;padding:12px 18px 14px;border-top:1px solid var(--rule);gap:10px}
+.tour-progress{font-size:11px;color:var(--ink-soft);font-weight:600;letter-spacing:.3px}
+.tour-progress b{color:var(--navy);font-weight:800}
+.tour-buttons{display:flex;gap:6px}
+.tour-btn{padding:6px 14px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.3px;cursor:pointer;font-family:inherit;border:1px solid;transition:all .12s}
+.tour-btn.ghost{background:#fff;border-color:var(--rule);color:var(--ink-soft)}
+.tour-btn.ghost:hover{border-color:var(--navy);color:var(--navy)}
+.tour-btn.primary{background:var(--hf-red);border-color:var(--hf-red);color:#fff}
+.tour-btn.primary:hover{background:var(--hf-red-deep);border-color:var(--hf-red-deep)}
+.help-fab{position:fixed;bottom:18px;right:18px;width:42px;height:42px;border-radius:50%;background:var(--hf-red);color:#fff;border:2px solid #fff;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(217,83,79,.4);z-index:90;transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.help-fab:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 6px 20px rgba(217,83,79,.55);background:var(--hf-red-deep)}
+
 /* PIPELINE KANBAN */
 .kb-shell{padding:18px 24px 60px;background:var(--off-white);min-height:calc(100vh - 60px)}
 .kb-header{display:flex;align-items:center;gap:18px;margin-bottom:14px;flex-wrap:wrap}
@@ -1115,6 +1140,9 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <div class="compare-body" id="compare-body"></div>
   </div>
 </div>
+
+<!-- Floating help button — re-opens the onboarding tour -->
+<button class="help-fab" id="help-fab" onclick="startOnboarding()" title="Re-open the tour" aria-label="Re-open tour">?</button>
 
 <script>
 "use strict";
@@ -1614,6 +1642,231 @@ function submitAdminEdit() {
   if (typeof render === "function") render();
 }
 
+// ========================================================================
+// ONBOARDING TOUR — 10-step guided walkthrough on first visit.
+// Re-trigger any time from the floating "?" help button.
+// ========================================================================
+const LS_ONBOARDING_KEY = "hfarm_onboarded_v1";
+const ONBOARDING_STEPS = [
+  {
+    target: null,
+    eyebrow: "Welcome",
+    title: "H-FARM Global Partnerships Tracker",
+    body: "60-second tour of what's where. You can skip anytime — and re-open this tour from the <strong>?</strong> button bottom-right.",
+    view: "home",
+  },
+  {
+    target: '.nav-sidebar',
+    placement: 'right',
+    eyebrow: "Navigation",
+    title: "Two sections in the sidebar",
+    body: "<strong>Explore</strong> = views on your partnership data. <strong>H-FARM</strong> = your in-house knowledge (brochures, teams, programmes, contracts).",
+  },
+  {
+    target: '.home-kpis',
+    placement: 'bottom',
+    eyebrow: "Home",
+    title: "Pipeline at a glance",
+    body: "Eight KPI tiles show how many entities sit at each priority level. Click any tile to jump into the Database filtered by that priority.",
+    view: "home",
+  },
+  {
+    target: '.globe-wrap',
+    placement: 'left',
+    eyebrow: "Globe view",
+    title: "Where your partners live",
+    body: "3D globe with a dot per entity. <strong>Drag</strong> to rotate, <strong>scroll</strong> to zoom, <strong>click a country</strong> to filter. The pivot table on the right cross-cuts Region × Priority.",
+    view: "globe",
+  },
+  {
+    target: '.kb-board-wrap',
+    placement: 'top',
+    eyebrow: "Pipeline",
+    title: "8-stage Kanban with drag-and-drop",
+    body: "Every entity sits in one of 8 stages (Identified → Active). <strong>Drag a card</strong> to move it manually — overrides save automatically. Stalled entities (30+ days dormant) get a red outline.",
+    view: "pipeline",
+  },
+  {
+    target: '.fd-shell',
+    placement: 'top',
+    eyebrow: "Funnel",
+    title: "Where deals die",
+    body: "Conversion diagnostic with industry benchmarks, biggest-bottleneck call-out, and a 90-day Monte Carlo signing forecast (10,000 runs). Identifies exactly which stage leaks and what to do about it.",
+    view: "funnel",
+  },
+  {
+    target: '.db-table-wrap',
+    placement: 'top',
+    eyebrow: "Database & Outreach log",
+    title: "Every entity, one table",
+    body: "Sortable, searchable, CSV-exportable. Click any row to open the full detail panel — score breakdown, contacts, programme fit, and the <em>Outreach log</em> where you record every email/call/meeting with PDF export.",
+    view: "database",
+  },
+  {
+    target: 'button[data-view="brochures"]',
+    placement: 'right',
+    eyebrow: "H-FARM section",
+    title: "Brochures · Contracts · Teams · About",
+    body: "Reference content you send or consult: brochure links, MoU tracking, team workload, and the embedded H-FARM knowledge base.",
+    view: "brochures",
+  },
+  {
+    target: '.admin-shell',
+    placement: 'top',
+    eyebrow: "Admin",
+    title: "Edit the knowledge base without code",
+    body: "Ten tabs for programs, teams, brochures, collab formats, bachelors, masters and more. Edits stage in your browser; <em>Download JSON</em> exports the file so changes go live for everyone.",
+    view: "admin",
+  },
+  {
+    target: '.nav-bottom',
+    placement: 'right',
+    eyebrow: "Data & settings",
+    title: "Reload + reconfigure",
+    body: "<strong>Refresh data</strong> re-fetches your Google Sheet. <strong>Settings</strong> changes the CSV URL. The line above tells you when the data was last synced.",
+  },
+];
+
+let TOUR_STATE = { stepIdx: 0, active: false };
+
+function startOnboarding() {
+  TOUR_STATE.stepIdx = 0;
+  TOUR_STATE.active = true;
+  buildTourOverlay();
+  showTourStep(0);
+}
+
+function buildTourOverlay() {
+  if (document.getElementById('tour-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'tour-overlay';
+  overlay.className = 'tour-overlay';
+  document.body.appendChild(overlay);
+  const spotlight = document.createElement('div');
+  spotlight.id = 'tour-spotlight';
+  spotlight.className = 'tour-spotlight';
+  spotlight.style.display = 'none';
+  document.body.appendChild(spotlight);
+  const bubble = document.createElement('div');
+  bubble.id = 'tour-bubble';
+  bubble.className = 'tour-bubble';
+  document.body.appendChild(bubble);
+}
+
+function destroyTourOverlay() {
+  ['tour-overlay','tour-spotlight','tour-bubble'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
+}
+
+function showTourStep(idx) {
+  const step = ONBOARDING_STEPS[idx];
+  if (!step) { endOnboarding(true); return; }
+  TOUR_STATE.stepIdx = idx;
+  // Auto-switch view if this step targets a different one
+  if (step.view && typeof switchView === 'function') {
+    switchView(step.view);
+  }
+  // Wait for the view to render before positioning
+  setTimeout(() => positionTourBubble(step, idx), step.view ? 220 : 0);
+}
+
+function positionTourBubble(step, idx) {
+  const bubble = document.getElementById('tour-bubble');
+  const spotlight = document.getElementById('tour-spotlight');
+  if (!bubble || !spotlight) return;
+  const total = ONBOARDING_STEPS.length;
+  const isLast = idx === total - 1;
+  const isFirst = idx === 0;
+  bubble.innerHTML = `
+    <div class="tour-head">
+      <div>
+        <div class="tour-eyebrow">${escape(step.eyebrow)}</div>
+        <div class="tour-title">${escape(step.title)}</div>
+      </div>
+      <button class="tour-close" onclick="endOnboarding(false)" title="Skip tour">&times;</button>
+    </div>
+    <div class="tour-body">${step.body}</div>
+    <div class="tour-foot">
+      <div class="tour-progress">Step <b>${idx+1}</b> of ${total}</div>
+      <div class="tour-buttons">
+        ${!isFirst ? '<button class="tour-btn ghost" onclick="tourPrev()">&larr; Back</button>' : ''}
+        ${isLast
+          ? '<button class="tour-btn primary" onclick="endOnboarding(true)">Done</button>'
+          : '<button class="tour-btn primary" onclick="tourNext()">Next &rarr;</button>'}
+      </div>
+    </div>
+  `;
+
+  // Centered (no target)
+  const target = step.target ? document.querySelector(step.target) : null;
+  if (!target) {
+    spotlight.style.display = 'none';
+    bubble.style.top = '50%';
+    bubble.style.left = '50%';
+    bubble.style.transform = 'translate(-50%, -50%)';
+    return;
+  }
+
+  // Scroll target into view only when it's actually off-screen AND smaller
+  // than the viewport (taller-than-viewport elements like the sidebar
+  // can't be centered — scrolling would loop forever on sticky positions).
+  const tRect = target.getBoundingClientRect();
+  const offscreen = tRect.bottom < 0 || tRect.top > window.innerHeight;
+  const fits      = tRect.height < window.innerHeight - 120;
+  if (offscreen && fits) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => positionTourBubble(step, idx), 320);
+    return;
+  }
+
+  // Spotlight on target
+  spotlight.style.display = 'block';
+  spotlight.style.top  = (tRect.top - 4) + 'px';
+  spotlight.style.left = (tRect.left - 4) + 'px';
+  spotlight.style.width  = (tRect.width + 8) + 'px';
+  spotlight.style.height = (tRect.height + 8) + 'px';
+
+  // Place bubble next to target
+  bubble.style.transform = 'none';
+  const placement = step.placement || 'right';
+  const bw = bubble.offsetWidth || 340;
+  const bh = bubble.offsetHeight || 200;
+  const gap = 16;
+  let top, left;
+  if (placement === 'right')      { top = tRect.top + tRect.height/2 - bh/2; left = tRect.right + gap; }
+  else if (placement === 'left')  { top = tRect.top + tRect.height/2 - bh/2; left = tRect.left - bw - gap; }
+  else if (placement === 'bottom'){ top = tRect.bottom + gap;                left = tRect.left + tRect.width/2 - bw/2; }
+  else                            { top = tRect.top - bh - gap;              left = tRect.left + tRect.width/2 - bw/2; }
+  // Clamp to viewport
+  top  = Math.max(16, Math.min(top,  window.innerHeight - bh - 16));
+  left = Math.max(16, Math.min(left, window.innerWidth  - bw - 16));
+  bubble.style.top  = top + 'px';
+  bubble.style.left = left + 'px';
+}
+
+function tourNext() {
+  if (TOUR_STATE.stepIdx + 1 >= ONBOARDING_STEPS.length) endOnboarding(true);
+  else showTourStep(TOUR_STATE.stepIdx + 1);
+}
+function tourPrev() {
+  if (TOUR_STATE.stepIdx > 0) showTourStep(TOUR_STATE.stepIdx - 1);
+}
+function endOnboarding(completed) {
+  destroyTourOverlay();
+  TOUR_STATE.active = false;
+  if (completed) localStorage.setItem(LS_ONBOARDING_KEY, "1");
+}
+
+// Re-position bubble on resize (so it tracks layout shifts)
+window.addEventListener("resize", () => {
+  if (TOUR_STATE.active) {
+    const step = ONBOARDING_STEPS[TOUR_STATE.stepIdx];
+    if (step) positionTourBubble(step, TOUR_STATE.stepIdx);
+  }
+});
+
 function adminDelete(schemaKey, itemKey) {
   const schema = KB_SCHEMA[schemaKey];
   if (!confirm(`Delete this entry from "${schema.title}"?`)) return;
@@ -2108,6 +2361,12 @@ async function parseAndRender(csvText) {
   // Land on the last-used view (default = Home, not Globe).
   const initial = localStorage.getItem("hfarm_view") || "home";
   switchView(initial);
+
+  // First-visit tour — auto-fire ~600ms after the app appears so the user
+  // sees the platform paint first. The "?" floating button re-opens it.
+  if (!localStorage.getItem(LS_ONBOARDING_KEY)) {
+    setTimeout(() => { if (!TOUR_STATE.active) startOnboarding(); }, 600);
+  }
 }
 
 // =====================================================================
