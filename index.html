@@ -3331,9 +3331,15 @@ function cfPhase2Lift(feature, durationMs) {
       const k = u.lat.toFixed(4) + ',' + u.lng.toFixed(4);
       (_coordGroups[k] = _coordGroups[k] || []).push(u);
     });
+    // Allow a small slack around the bbox so dots near the coastline aren't
+    // culled; reject anything well outside (e.g. an entity whose `city` value
+    // resolves to a foreign city like "Brussels (HQ)" on an Italy-labeled row).
+    const slack = bboxSize * 0.05;
     const dotsHtml = cohort.map((u, i) => {
       const coords = projection([u.lng, u.lat]);
       if (!coords) return '';
+      if (coords[0] < x0 - slack || coords[0] > x1 + slack
+       || coords[1] < y0 - slack || coords[1] > y1 + slack) return '';
       const k = u.lat.toFixed(4) + ',' + u.lng.toFixed(4);
       const grp = _coordGroups[k];
       const dupIdx = grp.indexOf(u);
