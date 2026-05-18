@@ -1,0 +1,33 @@
+{
+  "tiers": ["Connect", "Empower"],
+  "formats": [
+    "Challenge",
+    "H-FARM College Hackathon",
+    "AI Transformation Lab",
+    "AI Assessment",
+    "AI Workshop",
+    "Co-Design Lab",
+    "Future-Proof Employer",
+    "Lumina Consulting Agency project",
+    "FARMedia content project"
+  ],
+  "classroom": [
+    "Scholarships",
+    "Sponsorships",
+    "Guest lecturers",
+    "Project work"
+  ],
+  "outside": [
+    "Inspirational Talks",
+    "Company Visits",
+    "H-ACK",
+    "Challenges",
+    "Labs",
+    "Workshops"
+  ],
+  "onTheJob": [
+    "Student Agencies",
+    "Job on Campus",
+    "Internship"
+  ]
+}

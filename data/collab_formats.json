@@ -1,0 +1,50 @@
+[
+  {
+    "id": "som-foc",
+    "name": "Start Online · Finish On Campus",
+    "duration": "2 months (1 online + 1 on-campus)",
+    "group": "12–25 students",
+    "ideal": "Universities with strong tech/business profile that can release a cohort for 2 months. Real challenges with Italian companies.",
+    "case": "Georgetown McDonough × EssilorLuxottica (2024) and × Dolce&Gabbana (2025)"
+  },
+  {
+    "id": "week-week",
+    "name": "One Week H-FARM · One Week Home",
+    "duration": "2 weeks",
+    "group": "15–30 students",
+    "ideal": "Universities wanting a quick, intense hybrid experience without releasing a full cohort. Italian company visits.",
+    "case": "FIT NYC: 'AI and the New Fashion Value Chain' (Venice + NYC)"
+  },
+  {
+    "id": "bootcamp",
+    "name": "Startup Bootcamp",
+    "duration": "1–2 weeks intensive",
+    "group": "flexible",
+    "ideal": "Universities with strong entrepreneurship centres or eager to build one. Real-project teamwork with H-FARM Startup Center experts.",
+    "case": "Custom bootcamps with partner universities"
+  },
+  {
+    "id": "global-e",
+    "name": "Global Entrepreneurship Program",
+    "duration": "4–6 weeks",
+    "group": "20–40 students",
+    "ideal": "Top-tier universities (MBA, advanced business) wanting the deepest immersion: theory + company visits + idea-scouting with managers.",
+    "case": "The flagship long-form offer"
+  },
+  {
+    "id": "exchange",
+    "name": "Exchange Program",
+    "duration": "3 weeks – 2 months",
+    "group": "per agreement",
+    "ideal": "Established mutual-exchange partnerships. Two-way student flow.",
+    "case": "Lynn University (Miami) bi-directional exchange"
+  },
+  {
+    "id": "jterm",
+    "name": "J-Term",
+    "duration": "2–4 weeks in January",
+    "group": "per agreement",
+    "ideal": "US/Canadian universities with January mini-term. Single-course full focus.",
+    "case": "Designed for North American academic calendars"
+  }
+]

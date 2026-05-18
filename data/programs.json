@@ -1,0 +1,110 @@
+[
+  {
+    "id": "ootb",
+    "name": "Out of the Box — Discover Yourself",
+    "topic": "Career orientation & self-discovery",
+    "age": "16-18",
+    "lang": "English",
+    "color": "#1F6FB4",
+    "audience": "Pre-university orientation",
+    "primary_kw": ["orientation", "self-discovery", "liberal arts", "general studies", "international baccalaureate", "career counseling", "gymnasium"],
+    "secondary_kw": ["education", "studies", "mindset", "high school", "secondary", "preparatory", "ib", "american", "british curriculum"],
+    "pitch_to": "High schools with broad/IB curricula, liberal-arts colleges, intercultural orgs (Intercultura, AFSAI)"
+  },
+  {
+    "id": "startup",
+    "name": "Startup Summer (AD)Venture",
+    "topic": "Entrepreneurship & innovation with AI",
+    "age": "16-17 / 18-25",
+    "lang": "English",
+    "color": "#D9534F",
+    "audience": "Aspiring founders, future entrepreneurs",
+    "primary_kw": ["entrepreneurship", "startup", "innovation", "entrepreneurial", "venture", "accelerator", "incubator", "business creation"],
+    "secondary_kw": ["business", "management", "mba", "commerce", "economics", "strategy", "leadership", "design thinking", "pitch", "prototype", "ai", "artificial intelligence", "applied ai"],
+    "pitch_to": "Business schools (Bocconi, Corvinus, Warwick), MBA programmes, JEBO/Junior Enterprise, AIESEC"
+  },
+  {
+    "id": "iot",
+    "name": "Designing Connected Futures (IoT & AI)",
+    "topic": "IoT, sensors, AI hardware, smart systems",
+    "age": "16-17 / 18-25",
+    "lang": "English",
+    "color": "#2E7D5B",
+    "audience": "Engineering / CS students",
+    "primary_kw": ["iot", "internet of things", "robotics", "embedded", "sensors", "mechatronics", "electrical engineering", "mechanical engineering", "automation"],
+    "secondary_kw": ["engineering", "computer science", "cs", "tech", "technology", "ai", "data", "informatics", "computing", "systems", "smart", "applied ai"],
+    "pitch_to": "Engineering schools (CTU Prague, KTU, TalTech), polytechnics, BEST chapters"
+  },
+  {
+    "id": "cyber",
+    "name": "Defending Digital Worlds (Cybersecurity & AI)",
+    "topic": "Cybersecurity, AI security, networks",
+    "age": "16-17 / 18-25",
+    "lang": "English",
+    "color": "#6B4C7D",
+    "audience": "CS students with security focus",
+    "primary_kw": ["cybersecurity", "cyber", "infosec", "information security", "data protection", "privacy", "network security", "penetration testing"],
+    "secondary_kw": ["security", "computer science", "cs", "it", "ai", "data", "digital", "networks", "cloud", "defense"],
+    "pitch_to": "CS departments, IT-focused unis, defense/intelligence academies, ELSA (cyber-law)"
+  },
+  {
+    "id": "brand",
+    "name": "Brand Building & Personal Branding (AI era)",
+    "topic": "Digital marketing, personal brand, AI tools",
+    "age": "18-25",
+    "lang": "English",
+    "color": "#C97A1A",
+    "audience": "Marketing & communications students",
+    "primary_kw": ["marketing", "branding", "digital marketing", "advertising", "communications", "public relations", "content", "social media"],
+    "secondary_kw": ["business", "mba", "commerce", "media", "strategy", "ai", "digital", "creative"],
+    "pitch_to": "Marketing/comms programmes, business schools, AIESEC, AEGEE, FARMedia-style student agencies"
+  },
+  {
+    "id": "fashion",
+    "name": "AI Fashion Lab",
+    "topic": "AI + fashion + creative industry",
+    "age": "18-25",
+    "lang": "English",
+    "color": "#B85C8E",
+    "audience": "Fashion / design / creative tech students",
+    "primary_kw": ["fashion", "apparel", "textile", "luxury", "beauty", "runway", "couture", "aesthetic", "wearable"],
+    "secondary_kw": ["design", "creative", "art", "arts", "industry", "media", "ai", "tech", "made in italy"],
+    "pitch_to": "Fashion institutes (FIT NYC, Polimoda), design schools, creative arts, luxury programmes"
+  },
+  {
+    "id": "game",
+    "name": "Emerals IRL: The Game",
+    "topic": "Gamification, networking, multiplayer social",
+    "age": "18-25",
+    "lang": "English",
+    "color": "#0A8A6B",
+    "audience": "Social / networking-oriented students",
+    "primary_kw": ["game", "gaming", "gamification", "multiplayer", "interactive", "experience design", "social"],
+    "secondary_kw": ["network", "networking", "design", "media", "creative", "entertainment", "play", "esports"],
+    "pitch_to": "Social/networking orgs (ESN, AEGEE, Rotaract), game design programmes"
+  },
+  {
+    "id": "finance",
+    "name": "Finanza per il tuo futuro",
+    "topic": "Italian-language financial markets course",
+    "age": "18-25",
+    "lang": "Italian",
+    "color": "#8B1A1A",
+    "audience": "Italian-speaking finance/econ students",
+    "primary_kw": ["finance", "financial", "economics", "banking", "investment", "markets", "trading", "accounting", "wealth", "capital", "tax"],
+    "secondary_kw": ["business", "mba", "commerce", "money", "equity", "fintech"],
+    "pitch_to": "Italian universities, business schools w/ finance focus, ELSA (financial-law track)"
+  },
+  {
+    "id": "world-ai",
+    "name": "The World of AI: Marketing & Creativity",
+    "topic": "AI's impact on marketing and creative industries",
+    "age": "18-25",
+    "lang": "English",
+    "color": "#1F6FB4",
+    "audience": "Marketing / creative / digital students",
+    "primary_kw": ["marketing", "creativity", "creative", "advertising", "generative ai", "content"],
+    "secondary_kw": ["media", "digital", "ai", "artificial intelligence", "branding", "communications", "design"],
+    "pitch_to": "Marketing programmes, design schools, communications students"
+  }
+]

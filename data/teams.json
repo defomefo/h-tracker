@@ -1,0 +1,92 @@
+[
+  {
+    "id": "admissions",
+    "name": "Admissions",
+    "color": "#1A1A1A",
+    "email": "admission.edu@h-farm.com",
+    "phone": "+39 0422 789611",
+    "remit": "All admission inquiries from prospects, agents, schools. Whatsapp + email channel.",
+    "handles": ["agency", "school", "org"]
+  },
+  {
+    "id": "intl",
+    "name": "International & Corporate Relations",
+    "color": "#1F6FB4",
+    "email": "",
+    "phone": "",
+    "remit": "University partnerships globally; corporate (Talent H-UB) relations. Headed by Silvia Dell'Acqua.",
+    "handles": ["university"]
+  },
+  {
+    "id": "marketing",
+    "name": "Marketing",
+    "color": "#C97A1A",
+    "email": "marketing.college@h-farm.com",
+    "phone": "",
+    "remit": "Brand, channels, campaigns. Owns Summer Programs outreach + student-org partnerships.",
+    "handles": ["org", "school"]
+  },
+  {
+    "id": "career",
+    "name": "Career Service",
+    "color": "#2E7D5B",
+    "email": "",
+    "phone": "",
+    "remit": "Career Day, internships, employer relations. Connects HFC students to companies.",
+    "handles": ["org"]
+  },
+  {
+    "id": "startupctr",
+    "name": "Entrepreneurship & Startup Center",
+    "color": "#D9534F",
+    "email": "",
+    "phone": "",
+    "remit": "Lumina, FARMedia, Startup Bootcamp, Job-on-Campus agencies. Hosts visiting university cohorts on entrepreneurship formats.",
+    "handles": ["university", "org"]
+  },
+  {
+    "id": "studentoffice",
+    "name": "Student Office",
+    "color": "#6B4C7D",
+    "email": "",
+    "phone": "",
+    "remit": "Life on Campus, Student Clubs, Student wellbeing, scholarships, accommodation handoffs.",
+    "handles": ["school"]
+  },
+  {
+    "id": "press",
+    "name": "Press / PR",
+    "color": "#8E9AAB",
+    "email": "press@h-farm.com",
+    "phone": "",
+    "remit": "Media inquiries; H-FARM news coverage.",
+    "handles": []
+  },
+  {
+    "id": "accommodation",
+    "name": "Accommodation",
+    "color": "#4A6B8A",
+    "email": "accommodation@h-farm.com",
+    "phone": "",
+    "remit": "Housing for incoming students + visiting cohorts.",
+    "handles": []
+  },
+  {
+    "id": "exec",
+    "name": "Executive (Antonella Sannella)",
+    "color": "#8B1A1A",
+    "email": "",
+    "phone": "",
+    "remit": "Strategic / Critical accounts — escalation tier.",
+    "handles": []
+  },
+  {
+    "id": "ai",
+    "name": "H-FARM AI",
+    "color": "#1F6FB4",
+    "email": "",
+    "phone": "",
+    "remit": "Powers AI Transformation Lab, AI Assessment, AI Workshop for partner companies.",
+    "handles": []
+  }
+]
