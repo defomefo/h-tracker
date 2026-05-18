@@ -133,6 +133,61 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .live-badge::before{content:"";width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* PIVOT TABLE (region × priority) */
+/* ============================================================ */
+/* COUNTRY FOCUS — cinematic transition from globe to detail    */
+/* ============================================================ */
+/* Floating clone host — exists outside any container so it can */
+/* freely travel from globe screen-position to the final slot.  */
+.cf-clone-host{position:fixed;inset:0;pointer-events:none;z-index:200;display:none}
+.cf-clone-host.live{display:block}
+.cf-clone-svg{position:absolute;overflow:visible;will-change:transform,left,top,width,height,filter;transition:left 700ms cubic-bezier(.4,0,.2,1),top 700ms cubic-bezier(.4,0,.2,1),width 700ms cubic-bezier(.4,0,.2,1),height 700ms cubic-bezier(.4,0,.2,1),filter 700ms cubic-bezier(.4,0,.2,1),transform 500ms cubic-bezier(.2,.7,.3,1.1)}
+.cf-clone-svg path{fill:#E8C97A;stroke:var(--ink);stroke-width:0.6;vector-effect:non-scaling-stroke}
+
+/* Full overlay that takes over the viewport once the country has landed */
+.cf-overlay{position:fixed;top:60px;left:0;right:0;bottom:0;background:linear-gradient(180deg,#fff 0%,var(--off-white) 100%);z-index:150;display:none;opacity:0;transition:opacity 600ms ease}
+.cf-overlay.live{display:block}
+.cf-overlay.in{opacity:1}
+.cf-shell{display:grid;grid-template-columns:1fr 1fr;gap:36px;padding:40px 48px;height:100%;align-items:stretch;max-width:1500px;margin:0 auto;box-sizing:border-box}
+.cf-shape-slot{position:relative;display:flex;align-items:center;justify-content:center}
+.cf-panel{display:flex;flex-direction:column;gap:14px;overflow-y:auto;padding-right:6px}
+.cf-panel.in{animation:cf-slide-in 600ms cubic-bezier(.4,0,.2,1) both}
+@keyframes cf-slide-in{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+.cf-eyebrow{font-size:10px;letter-spacing:1.6px;color:var(--hf-red);font-weight:800;text-transform:uppercase}
+.cf-title{font-size:42px;font-weight:800;color:var(--navy);letter-spacing:-.6px;line-height:1.05;margin:4px 0 2px}
+.cf-sub{font-size:12px;color:var(--ink-soft)}
+.cf-sub b{color:var(--navy);font-weight:700}
+.cf-card{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:8px;padding:14px 16px}
+.cf-card h4{font-size:10px;letter-spacing:1.2px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.cf-pri{display:flex;align-items:center;gap:14px}
+.cf-pri .pie-svg-box{flex-shrink:0}
+.cf-pri .leg{display:flex;flex-direction:column;gap:3px;font-size:11px;flex:1}
+.cf-pri .leg span{display:flex;align-items:center;gap:6px;color:var(--ink)}
+.cf-pri .leg i{display:inline-block;width:8px;height:8px;border-radius:50%}
+.cf-pri .leg b{margin-left:auto;color:var(--navy);font-weight:700}
+.cf-progs{display:flex;flex-direction:column;gap:6px}
+.cf-progs .pr{display:grid;grid-template-columns:1fr 60px 36px;gap:8px;align-items:center;font-size:11px}
+.cf-progs .pr .nm{color:var(--ink);font-weight:600}
+.cf-progs .pr .bar{height:6px;background:var(--paper);border-radius:3px;overflow:hidden}
+.cf-progs .pr .bar > div{height:100%}
+.cf-progs .pr .sc{font-variant-numeric:tabular-nums;font-weight:800;color:var(--navy);text-align:right}
+.cf-entities{background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column}
+.cf-entities-head{padding:10px 14px;background:var(--paper);border-bottom:1px solid var(--rule);font-size:10px;letter-spacing:1.2px;font-weight:700;color:var(--navy);text-transform:uppercase;flex-shrink:0}
+.cf-entities-list{overflow-y:auto;flex:1}
+.cf-ent{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .1s;font-size:12px}
+.cf-ent:last-child{border-bottom:none}
+.cf-ent:hover{background:var(--paper)}
+.cf-ent .nm{font-weight:700;color:var(--navy)}
+.cf-ent .meta{font-size:10px;color:var(--ink-soft);margin-top:1px}
+.cf-ent .prio{font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 7px;border-radius:9px;color:#fff;text-transform:uppercase;white-space:nowrap}
+.cf-ent .sc{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;min-width:28px;text-align:right}
+.cf-close{position:absolute;top:18px;left:24px;background:#fff;border:1px solid var(--rule);color:var(--ink);font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.4px;padding:7px 14px;border-radius:5px;cursor:pointer;z-index:5;transition:all .15s;opacity:0;transform:translateX(-8px)}
+.cf-overlay.in .cf-close{opacity:1;transform:translateX(0);transition-delay:300ms}
+.cf-close:hover{border-color:var(--hf-red);color:var(--hf-red)}
+
+/* While transitioning, the globe view stays visible underneath, gently fading */
+#view-globe.cf-fading{transition:opacity 500ms ease,filter 500ms ease}
+#view-globe.cf-fade-out{opacity:.15;filter:blur(2px);pointer-events:none}
+
 /* ACTION QUEUE — replaces the old Reach×Priority pivot on the globe view */
 .aq-wrap{background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(10,37,64,.06);min-width:0;width:100%;display:flex;flex-direction:column}
 .aq-wrap h4{font-size:10px;letter-spacing:1.2px;font-weight:700;color:var(--navy);text-transform:uppercase;padding:9px 12px 7px;background:var(--paper);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -1243,6 +1298,17 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <div class="compare-body" id="compare-body"></div>
   </div>
 </div>
+
+<!-- Country focus mode — cinematic overlay (hidden by default) -->
+<div id="cf-overlay" class="cf-overlay" aria-hidden="true">
+  <div class="cf-shell">
+    <div class="cf-shape-slot" id="cf-shape-slot"></div>
+    <div class="cf-panel" id="cf-panel"></div>
+  </div>
+  <button class="cf-close" id="cf-close" onclick="dramaticExit()" aria-label="Back to globe">&larr; Back to globe</button>
+</div>
+<!-- Country path clone during transitions — floats above the globe, then docks into cf-shape-slot -->
+<div id="cf-clone-host" class="cf-clone-host" aria-hidden="true"></div>
 
 <!-- Floating help button — re-opens the onboarding tour -->
 <button class="help-fab" id="help-fab" onclick="startOnboarding()" title="Re-open the tour" aria-label="Re-open tour">?</button>
@@ -2818,15 +2884,311 @@ function toggleCountry(country) {
   const adding = !STATE.filters.country.has(country);
   if (adding) {
     STATE.filters.country.add(country);
-    spinToCountry(country);
+    if (typeof renderCountryPanel === 'function') renderCountryPanel();
+    renderFilterChips();
+    renderRegionAnalysis();
+    render();
+    drawDots();
+    // Cinematic transition into focus mode (camera move → lift → morph)
+    dramaticEnter(country);
   } else {
     STATE.filters.country.delete(country);
+    if (CF_STATE.country === country) {
+      dramaticExit();   // exit reverses transition; renderers run on completion
+    } else {
+      if (typeof renderCountryPanel === 'function') renderCountryPanel();
+      renderFilterChips();
+      renderRegionAnalysis();
+      render();
+      drawDots();
+    }
   }
+}
+
+// ============================================================================
+// COUNTRY FOCUS — cinematic transition (camera→lift→morph) from globe to
+// detail. Honours the choreography:
+//   Phase 1 (600ms)  spin & zoom the orthographic projection toward country
+//   Phase 2 (500ms)  clone the country path, lift it off, fade the globe down
+//   Phase 3 (700ms)  morph clone into final slot + reveal data panel
+// ============================================================================
+const CF_STATE = { country: null, feature: null, clone: null, transitioning: false };
+
+// Country-name → topojson feature lookup. Lazy-cached on first dramaticEnter.
+let CF_WORLD = null;
+const CF_NAME_ALIASES = {
+  "USA":["United States of America","United States"],
+  "UK":["United Kingdom"],
+  "Czech Rep.":["Czech Republic","Czechia"],
+  "Korea":["South Korea","Republic of Korea"],
+  "South Korea":["Korea","Republic of Korea"],
+  "Arab Emirates":["United Arab Emirates","UAE"],
+  "UAE":["United Arab Emirates","Arab Emirates"],
+  "N. Macedonia":["North Macedonia","Macedonia"],
+};
+function cfFindFeature(name) {
+  if (!CF_WORLD) {
+    const paths = globeSvg.selectAll('.country').data();
+    CF_WORLD = paths;  // re-uses the same feature objects already on the globe
+  }
+  if (!CF_WORLD || !name) return null;
+  const tries = [name, ...(CF_NAME_ALIASES[name] || [])];
+  for (const t of tries) {
+    const f = CF_WORLD.find(x => x.properties.name === t);
+    if (f) return f;
+  }
+  const lower = name.toLowerCase();
+  return CF_WORLD.find(x => x.properties.name.toLowerCase().includes(lower)) || null;
+}
+
+async function dramaticEnter(country) {
+  if (CF_STATE.transitioning) return;
+  const feature = cfFindFeature(country);
+  if (!feature) { console.warn("[cf] no feature for", country); return; }
+  CF_STATE.transitioning = true;
+  CF_STATE.country = country;
+  CF_STATE.feature = feature;
+
+  // Prepare panel content NOW so it's ready when overlay reveals
+  cfRenderPanel(country);
+
+  try {
+    await cfPhase1Camera(feature, 600);
+    await cfPhase2Lift(feature, 500);
+    await cfPhase3Morph(country, 700);
+  } catch (e) {
+    console.error("[cf] transition failed:", e);
+  }
+  CF_STATE.transitioning = false;
+}
+
+async function dramaticExit() {
+  if (CF_STATE.transitioning || !CF_STATE.country) return;
+  CF_STATE.transitioning = true;
+
+  const overlay = document.getElementById('cf-overlay');
+  const clone = CF_STATE.clone;
+  const feature = CF_STATE.feature;
+  const globeView = document.getElementById('view-globe');
+
+  // Fade overlay + slide panel out
+  overlay.classList.remove('in');
+  await _wait(450);
+  overlay.classList.remove('live');
+  // Don't set inline display:none — the .cf-overlay base rule already has
+  // display:none. Inline styles would block the next .live add.
+
+  // Restore globe view
+  globeView.classList.remove('cf-fade-out');
+  // Allow it to fade back in fully, then strip the helper class
+  await _wait(450);
+  globeView.classList.remove('cf-fading');
+
+  // Restore original country path visibility (it was hidden during lift)
+  if (feature) {
+    globeSvg.selectAll('.country').filter(d => d === feature).style('opacity', null);
+  }
+
+  // Cleanup clone
+  if (clone && clone.parentElement) clone.parentElement.removeChild(clone);
+  const host = document.getElementById('cf-clone-host');
+  host.classList.remove('live');
+
+  // Clear filter + state, refresh everything
+  STATE.filters.country.delete(CF_STATE.country);
+  CF_STATE.country = null; CF_STATE.feature = null; CF_STATE.clone = null;
   if (typeof renderCountryPanel === 'function') renderCountryPanel();
-  renderFilterChips();
-  renderRegionAnalysis();
-  render();
-  drawDots();
+  renderFilterChips(); renderRegionAnalysis(); render(); drawDots();
+
+  CF_STATE.transitioning = false;
+}
+
+// Animation driver — prefers rAF but falls back to setTimeout when the page
+// is throttled (e.g. headless test browsers report document.hidden=true).
+function _animTick(cb) {
+  let fired = false;
+  const wrapped = (t) => { if (fired) return; fired = true; cb(t || performance.now()); };
+  requestAnimationFrame(wrapped);
+  setTimeout(wrapped, 18);  // setTimeout fallback at ~55fps
+}
+
+// ---------- Phase 1: spin + zoom together ----------
+function cfPhase1Camera(feature, durationMs) {
+  return new Promise(resolve => {
+    const centroid = d3.geoCentroid(feature);  // [lng, lat]
+    const startRot = STATE.rotation.slice();
+    const startZoom = STATE.zoom;
+    const targetRot = [-centroid[0], -centroid[1]];
+    // Shortest path around the longitude axis
+    let dx = targetRot[0] - startRot[0];
+    while (dx > 180)  dx -= 360;
+    while (dx < -180) dx += 360;
+    const dy = targetRot[1] - startRot[1];
+    const targetZoom = 2.2;
+
+    const t0 = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - t0) / durationMs);
+      const e = 1 - Math.pow(1 - t, 3);   // easeOutCubic
+      STATE.rotation = [startRot[0] + dx * e, Math.max(-90, Math.min(90, startRot[1] + dy * e))];
+      STATE.zoom = startZoom + (targetZoom - startZoom) * e;
+      projection.rotate(STATE.rotation);
+      projection.scale(BASE_RADIUS * STATE.zoom);
+      globeSvg.select('.bg').attr('r', BASE_RADIUS * STATE.zoom);
+      if (gratPath) gratPath.attr('d', path);
+      globeSvg.selectAll('.country').attr('d', path);
+      drawDots();
+      if (t < 1) _animTick(step); else resolve();
+    }
+    _animTick(step);
+  });
+}
+
+// ---------- Phase 2: lift the country path off the globe ----------
+function cfPhase2Lift(feature, durationMs) {
+  return new Promise(resolve => {
+    // Compute country's current screen position via the live projection
+    const pathGen = d3.geoPath().projection(projection);
+    const d = pathGen(feature);
+    if (!d) { resolve(); return; }
+    const [[x0, y0], [x1, y1]] = pathGen.bounds(feature);
+    const svgEl = document.getElementById('globe');
+    const svgRect = svgEl.getBoundingClientRect();
+    const vb = svgEl.viewBox.baseVal;
+    const scaleX = svgRect.width  / vb.width;
+    const scaleY = svgRect.height / vb.height;
+    const screenX = svgRect.left + x0 * scaleX;
+    const screenY = svgRect.top  + y0 * scaleY;
+    const cw = (x1 - x0) * scaleX;
+    const ch = (y1 - y0) * scaleY;
+
+    // Build the floating clone
+    const host = document.getElementById('cf-clone-host');
+    host.classList.add('live');
+    const wrap = document.createElement('div');
+    wrap.className = 'cf-clone-svg';
+    wrap.style.left = screenX + 'px';
+    wrap.style.top  = screenY + 'px';
+    wrap.style.width  = cw + 'px';
+    wrap.style.height = ch + 'px';
+    wrap.style.transform = 'translateY(0) scale(1)';
+    wrap.style.filter = 'drop-shadow(0 2px 4px rgba(10,20,40,.15))';
+    wrap.innerHTML = `<svg viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;overflow:visible"><path d="${d}"/></svg>`;
+    host.appendChild(wrap);
+    CF_STATE.clone = wrap;
+
+    // Hide original country path on the globe + dim other paths
+    globeSvg.selectAll('.country').filter(dd => dd === feature).style('opacity', 0);
+    document.getElementById('view-globe').classList.add('cf-fading');
+
+    // Trigger the lift on next frame so the CSS transition picks up
+    _animTick(() => {
+      wrap.style.transform = 'translateY(-22px) scale(1.12)';
+      wrap.style.filter = 'drop-shadow(0 22px 32px rgba(10,20,40,.45)) drop-shadow(0 6px 10px rgba(10,20,40,.25))';
+    });
+    setTimeout(resolve, durationMs);
+  });
+}
+
+// ---------- Phase 3: morph clone into final slot + reveal data panel ----------
+function cfPhase3Morph(country, durationMs) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('cf-overlay');
+    const slot = document.getElementById('cf-shape-slot');
+    const clone = CF_STATE.clone;
+    if (!clone) { resolve(); return; }
+
+    // Bring overlay live (display:block) so we can measure the slot's rect.
+    // Don't set opacity inline — let the .in class CSS rule handle the fade-in
+    // transition. Inline styles beat class rules, which was breaking the reveal.
+    overlay.style.display = '';  // clear any inline display:none left over from exit
+    overlay.style.opacity = '';  // clear any inline opacity left over
+    overlay.classList.add('live');
+    // Force a reflow so layout is computed before we measure
+    void overlay.offsetWidth;
+
+    const slotRect = slot.getBoundingClientRect();
+    // The slot is large — make the country fill ~80% of its smaller dimension
+    const slotSize = Math.min(slotRect.width, slotRect.height) * 0.82;
+    const targetW = slotSize, targetH = slotSize;
+    const targetX = slotRect.left + (slotRect.width  - targetW) / 2;
+    const targetY = slotRect.top  + (slotRect.height - targetH) / 2;
+
+    // Begin morph
+    clone.style.transform = 'translateY(0) scale(1)';
+    clone.style.left = targetX + 'px';
+    clone.style.top  = targetY + 'px';
+    clone.style.width  = targetW + 'px';
+    clone.style.height = targetH + 'px';
+    clone.style.filter = 'drop-shadow(0 32px 44px rgba(10,20,40,.32)) drop-shadow(0 10px 14px rgba(10,20,40,.18))';
+
+    // Crossfade: globe view fades out, overlay fades in. Panel slides in slightly after.
+    document.getElementById('view-globe').classList.add('cf-fade-out');
+    _animTick(() => { overlay.classList.add('in'); });
+    setTimeout(() => { document.getElementById('cf-panel').classList.add('in'); }, 150);
+
+    setTimeout(resolve, durationMs);
+  });
+}
+
+function _wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ---------- Panel content (same data layout as before, cleaner styling) ----------
+function cfRenderPanel(country) {
+  const cohort = UNIS.filter(u => (u.country_canonical || u.country) === country);
+  const a = cohort.length ? analyzeCohort(cohort, country) : null;
+  const avgScore = cohort.length ? Math.round(cohort.reduce((s,u)=>s+u.partnership_score,0)/cohort.length) : 0;
+  const outreachCount = cohort.reduce((s,u)=>s + (OUTREACH[u.id] || []).length, 0);
+
+  const pieSegs = !a ? [] : [
+    {label:"Critical",      value:a.byPrio["Critical"]||0,      color:"#8B1A1A"},
+    {label:"Hot",           value:a.byPrio["Hot"]||0,           color:"#D9534F"},
+    {label:"Warm",          value:a.byPrio["Warm"]||0,          color:"#E0A93B"},
+    {label:"Cold",          value:a.byPrio["Cold"]||0,          color:"#4A6B8A"},
+    {label:"Cold-storage",  value:a.byPrio["Cold-storage"]||0,  color:"#8E9AAB"},
+    {label:"Up & Running",  value:a.byPrio["Up & Running"]||0,  color:"#2E7D5B"},
+    {label:"Not interested",value:a.byPrio["Not interested"]||0,color:"#6E6E6E"},
+    {label:"Unclassified",  value:a.unclass||0,                 color:"#CCCCCC"},
+  ];
+  const pieHtml = a ? `<div class="pie-svg-box">${makePieSvg(pieSegs, 110)}</div>
+    <div class="leg">${pieSegs.filter(s=>s.value>0).map(s =>
+      `<span><i style="background:${s.color}"></i>${s.label} <b>${s.value}</b></span>`).join("")}</div>` : "";
+
+  const progRanked = !a ? [] : PROGRAMS.map(p => {
+    let sum = 0; cohort.forEach(u => sum += (u.program_matches[p.id] || 0));
+    return { ...p, avg: Math.round(sum / cohort.length) };
+  }).sort((x,y) => y.avg - x.avg).slice(0, 4);
+  const progHtml = progRanked.map(p => `<div class="pr">
+    <span class="nm"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;vertical-align:middle"></i>${escape(p.name)}</span>
+    <span class="bar"><div style="width:${p.avg}%;background:${p.color}"></div></span>
+    <span class="sc">${p.avg}</span>
+  </div>`).join("");
+
+  const sorted = cohort.slice().sort((x,y) => y.partnership_score - x.partnership_score);
+  const entHtml = sorted.length ? sorted.map(u => `<div class="cf-ent" onclick="openDetail('${u.id}')">
+    <div>
+      <div class="nm">${escape(u.name)}</div>
+      <div class="meta">${ENTITY_LABELS[u.type] || u.type}${u.city ? ' · ' + escape(u.city) : ''}</div>
+    </div>
+    ${u.priority ? `<div class="prio" style="background:${PRIO_COLORS[u.priority]}">${escape(u.priority)}</div>` : '<div></div>'}
+    <div class="sc">${u.partnership_score}</div>
+  </div>`).join("") : '<div style="padding:24px;text-align:center;font-style:italic;color:var(--ink-soft);font-size:12px">No entities on file for this country yet.</div>';
+
+  document.getElementById('cf-panel').innerHTML = `
+    <div>
+      <div class="cf-eyebrow">${cohort.length ? cohort[0].continent : ''}</div>
+      <div class="cf-title">${escape(country)}</div>
+      <div class="cf-sub"><b>${cohort.length}</b> entit${cohort.length === 1 ? 'y' : 'ies'} · avg score <b>${avgScore}</b> · <b>${outreachCount}</b> outreach</div>
+    </div>
+    ${a ? `<div class="cf-card"><h4>Pipeline mix</h4><div class="cf-pri">${pieHtml}</div></div>` : ''}
+    ${a ? `<div class="cf-card"><h4>H-FARM Summer fit · top 4</h4><div class="cf-progs">${progHtml}</div></div>` : ''}
+    <div class="cf-entities">
+      <div class="cf-entities-head">Entities · click to open detail</div>
+      <div class="cf-entities-list">${entHtml}</div>
+    </div>
+  `;
+  // Reset panel class so the slide-in animation re-fires each entrance
+  document.getElementById('cf-panel').classList.remove('in');
 }
 
 // ====== STRATEGIC REGION ANALYSIS ======
