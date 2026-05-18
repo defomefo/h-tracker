@@ -2183,32 +2183,173 @@ const CITY_TO_COUNTRY = {
   "Lima":"Peru","Tirana":"Albania",
 };
 
-function lookupGeo(country, regionLabel) {
-  // Returns [continent, lat, lng, canonical_country]
+// City-level coordinates for top partner countries — keyed by display name
+// (case-insensitive lookup via _cityGeoLc below). When a CSV row has a known
+// city in its `city` column, OR its `country` field contains "City, Country"
+// like "Lugano, Switzerland", we override the country-centroid lat/lng with
+// these so dots land on real cities instead of stacking on one point.
+const CITY_GEO = {
+  // Italy
+  "Treviso":[45.67,12.24],"Milan":[45.46,9.19],"Milano":[45.46,9.19],
+  "Rome":[41.90,12.50],"Roma":[41.90,12.50],"Florence":[43.77,11.25],"Firenze":[43.77,11.25],
+  "Bologna":[44.49,11.34],"Venice":[45.44,12.32],"Venezia":[45.44,12.32],
+  "Padova":[45.41,11.88],"Padua":[45.41,11.88],"Turin":[45.07,7.69],"Torino":[45.07,7.69],
+  "Naples":[40.85,14.27],"Napoli":[40.85,14.27],"Genoa":[44.41,8.94],"Genova":[44.41,8.94],
+  "Verona":[45.44,10.99],"Bari":[41.12,16.87],"Catania":[37.50,15.09],"Palermo":[38.12,13.36],
+  "Pisa":[43.72,10.40],"Trento":[46.07,11.12],"Trieste":[45.65,13.78],
+  "Bergamo":[45.70,9.67],"Brescia":[45.54,10.22],"Mantua":[45.16,10.79],"Mantova":[45.16,10.79],
+  "Modena":[44.65,10.93],"Parma":[44.80,10.33],"Reggio Emilia":[44.70,10.63],
+  "Ferrara":[44.84,11.62],"Ravenna":[44.42,12.20],"Rimini":[44.06,12.57],
+  "Lecce":[40.35,18.17],"Cagliari":[39.22,9.12],"Sassari":[40.73,8.56],
+  "Udine":[46.06,13.23],"Ancona":[43.62,13.52],"Perugia":[43.11,12.39],
+  "Como":[45.81,9.08],"Vicenza":[45.55,11.55],"Salerno":[40.68,14.76],
+  "Pescara":[42.46,14.21],"Siena":[43.32,11.33],
+  // Turkey
+  "Istanbul":[41.01,28.98],"Ankara":[39.93,32.87],"Izmir":[38.42,27.13],
+  "Antalya":[36.90,30.71],"Bursa":[40.18,29.07],"Eskisehir":[39.78,30.52],"Adana":[37.00,35.32],
+  // UAE / Gulf
+  "Dubai":[25.20,55.27],"Abu Dhabi":[24.45,54.38],"Sharjah":[25.34,55.43],
+  "Riyadh":[24.71,46.68],"Jeddah":[21.49,39.19],"Doha":[25.29,51.53],"Manama":[26.23,50.59],
+  "Kuwait City":[29.38,47.99],"Amman":[31.95,35.93],"Beirut":[33.89,35.50],
+  "Cairo":[30.04,31.24],"Alexandria":[31.20,29.92],
+  // UK & Ireland
+  "London":[51.51,-0.13],"Edinburgh":[55.95,-3.19],"Manchester":[53.48,-2.24],
+  "Oxford":[51.75,-1.26],"Cambridge":[52.20,0.12],"Glasgow":[55.86,-4.25],
+  "Bristol":[51.45,-2.59],"Dublin":[53.35,-6.26],
+  // France
+  "Paris":[48.85,2.35],"Lyon":[45.76,4.83],"Marseille":[43.30,5.37],
+  "Toulouse":[43.60,1.44],"Bordeaux":[44.84,-0.58],"Lille":[50.63,3.06],"Nice":[43.71,7.26],
+  // Germany / Austria
+  "Berlin":[52.52,13.41],"Munich":[48.14,11.58],"München":[48.14,11.58],
+  "Hamburg":[53.55,9.99],"Frankfurt":[50.11,8.68],"Cologne":[50.94,6.96],"Köln":[50.94,6.96],
+  "Stuttgart":[48.78,9.18],"Düsseldorf":[51.23,6.78],"Leipzig":[51.34,12.37],
+  "Vienna":[48.21,16.37],"Wien":[48.21,16.37],"Graz":[47.07,15.44],"Salzburg":[47.81,13.04],
+  // Spain / Portugal
+  "Madrid":[40.42,-3.70],"Barcelona":[41.39,2.16],"Valencia":[39.47,-0.38],
+  "Seville":[37.39,-5.99],"Sevilla":[37.39,-5.99],"Bilbao":[43.26,-2.92],"Pamplona":[42.81,-1.64],
+  "Lisbon":[38.72,-9.14],"Lisboa":[38.72,-9.14],"Porto":[41.15,-8.61],
+  // Benelux
+  "Amsterdam":[52.37,4.90],"Rotterdam":[51.92,4.48],"The Hague":[52.07,4.30],
+  "Den Haag":[52.07,4.30],"Utrecht":[52.09,5.12],"Eindhoven":[51.44,5.48],
+  "Brussels":[50.85,4.35],"Bruxelles":[50.85,4.35],"Antwerp":[51.22,4.40],
+  "Antwerpen":[51.22,4.40],"Ghent":[51.05,3.73],"Gent":[51.05,3.73],"Leuven":[50.88,4.70],
+  "Liege":[50.63,5.57],"Luxembourg":[49.61,6.13],
+  // Switzerland
+  "Zurich":[47.38,8.54],"Zürich":[47.38,8.54],"Geneva":[46.20,6.15],"Genève":[46.20,6.15],
+  "Lausanne":[46.52,6.63],"Basel":[47.56,7.59],"Bern":[46.95,7.45],"Lugano":[46.00,8.95],
+  "St. Gallen":[47.42,9.37],"Fribourg":[46.80,7.15],"Lucerne":[47.05,8.31],
+  // Nordic
+  "Oslo":[59.91,10.75],"Bergen":[60.39,5.32],"Trondheim":[63.43,10.39],
+  "Stockholm":[59.33,18.07],"Gothenburg":[57.71,11.97],"Göteborg":[57.71,11.97],
+  "Malmö":[55.60,13.00],"Uppsala":[59.86,17.64],
+  "Helsinki":[60.17,24.94],"Tampere":[61.50,23.78],"Oulu":[65.01,25.47],
+  "Copenhagen":[55.68,12.57],"København":[55.68,12.57],"Aarhus":[56.16,10.20],
+  "Reykjavik":[64.13,-21.94],
+  // Baltics
+  "Tallinn":[59.44,24.75],"Tartu":[58.38,26.73],
+  "Vilnius":[54.69,25.28],"Kaunas":[54.90,23.90],"Riga":[56.95,24.11],
+  // Central / Eastern Europe
+  "Prague":[50.08,14.44],"Praha":[50.08,14.44],"Brno":[49.20,16.61],
+  "Budapest":[47.50,19.04],"Debrecen":[47.53,21.63],
+  "Warsaw":[52.23,21.01],"Warszawa":[52.23,21.01],"Krakow":[50.06,19.94],
+  "Kraków":[50.06,19.94],"Wroclaw":[51.11,17.04],"Poznan":[52.41,16.93],
+  "Bratislava":[48.15,17.11],
+  // Balkans
+  "Athens":[37.98,23.73],"Thessaloniki":[40.64,22.94],
+  "Belgrade":[44.79,20.45],"Beograd":[44.79,20.45],"Novi Sad":[45.27,19.83],
+  "Zagreb":[45.81,15.98],"Split":[43.51,16.44],
+  "Ljubljana":[46.05,14.51],
+  "Tirana":[41.33,19.82],"Sarajevo":[43.86,18.41],
+  "Skopje":[41.99,21.43],"Podgorica":[42.44,19.26],"Pristina":[42.66,21.16],
+  "Sofia":[42.70,23.32],"Plovdiv":[42.14,24.75],
+  "Bucharest":[44.43,26.10],"Cluj-Napoca":[46.77,23.59],
+  "Nicosia":[35.17,33.36],
+  // North America
+  "New York":[40.71,-74.01],"NYC":[40.71,-74.01],
+  "Los Angeles":[34.05,-118.24],"San Francisco":[37.77,-122.42],
+  "Boston":[42.36,-71.06],"Chicago":[41.88,-87.63],"Miami":[25.76,-80.19],
+  "Washington":[38.91,-77.04],"Philadelphia":[39.95,-75.17],"Seattle":[47.61,-122.33],
+  "Atlanta":[33.75,-84.39],"Houston":[29.76,-95.37],"Dallas":[32.78,-96.80],
+  "Pittsburgh":[40.44,-79.99],
+  "Toronto":[43.65,-79.38],"Montreal":[45.50,-73.57],"Vancouver":[49.28,-123.12],
+  // Latin America
+  "Sao Paulo":[-23.55,-46.63],"São Paulo":[-23.55,-46.63],
+  "Rio de Janeiro":[-22.91,-43.18],"Mexico City":[19.43,-99.13],
+  "Buenos Aires":[-34.61,-58.38],"Lima":[-12.05,-77.04],"Santiago":[-33.45,-70.67],
+  "Bogota":[4.71,-74.07],"Bogotá":[4.71,-74.07],
+  // Asia Pacific
+  "Tokyo":[35.68,139.65],"Osaka":[34.69,135.50],"Kyoto":[35.01,135.77],
+  "Seoul":[37.57,126.98],"Busan":[35.18,129.08],
+  "Singapore":[1.35,103.82],"Hong Kong":[22.32,114.17],
+  "Beijing":[39.90,116.41],"Shanghai":[31.23,121.47],
+  "Bangkok":[13.76,100.50],"Phuket":[7.88,98.39],
+  "Hanoi":[21.03,105.85],"Ho Chi Minh":[10.82,106.63],
+  "Mumbai":[19.08,72.88],"New Delhi":[28.61,77.21],"Bangalore":[12.97,77.59],
+  "Sydney":[-33.87,151.21],"Melbourne":[-37.81,144.96],
+};
+// Case-insensitive index built once at startup
+const _cityGeoLc = Object.fromEntries(
+  Object.entries(CITY_GEO).map(([k, v]) => [k.toLowerCase(), v])
+);
+function _cityCoords(country, city) {
+  // Build a list of candidate keys, trying the most specific first. For each
+  // input we also push a parenthetical-stripped variant so values like
+  // "Bergamo (Lombardy)" or "Brussels (HQ)" still match "Bergamo" / "Brussels".
+  const push = (arr, raw) => {
+    if (!raw) return;
+    const s = String(raw).trim();
+    if (!s) return;
+    arr.push(s);
+    const stripped = s.replace(/\s*\(.*?\)\s*/g, "").trim();
+    if (stripped && stripped !== s) arr.push(stripped);
+    // Also try the first comma-separated token (e.g. "Milan, Italy" → "Milan")
+    if (s.includes(",")) s.split(",").forEach(p => { const t = p.trim(); if (t) arr.push(t); });
+  };
+  const cand = [];
+  push(cand, city);
+  push(cand, country);
+  for (const k of cand) {
+    const hit = _cityGeoLc[k.toLowerCase()];
+    if (hit) return hit;
+  }
+  return null;
+}
+
+function lookupGeo(country, regionLabel, city) {
+  // Returns [continent, lat, lng, canonical_country]. When a known city is
+  // present (in `city` arg or embedded in the country string), the country-
+  // level lat/lng is overridden with the city's precise coordinates so dots
+  // land on real places instead of stacking on the country centroid.
+  const cityHit = _cityCoords(country, city);
+  function withCity(result) {
+    if (!cityHit) return result;
+    return [result[0], cityHit[0], cityHit[1], result[3]];
+  }
+
   if (!country) {
-    if (regionLabel && REGION_FALLBACK[regionLabel]) return [...REGION_FALLBACK[regionLabel], "Unknown"];
-    return ["Unknown", null, null, "Unknown"];
+    if (regionLabel && REGION_FALLBACK[regionLabel]) return withCity([...REGION_FALLBACK[regionLabel], "Unknown"]);
+    return withCity(["Unknown", null, null, "Unknown"]);
   }
   let s = String(country).trim();
-  if (GEO[s]) return [...GEO[s], s];
+  if (GEO[s]) return withCity([...GEO[s], s]);
   let c = s.replace(/\(.*?\)/g,"").trim();
-  if (GEO[c]) return [...GEO[c], c];
+  if (GEO[c]) return withCity([...GEO[c], c]);
   if (c.includes(",")) {
     const last = c.split(",").pop().trim();
-    if (GEO[last]) return [...GEO[last], last];
+    if (GEO[last]) return withCity([...GEO[last], last]);
     const first = c.split(",")[0].trim();
-    if (GEO[first]) return [...GEO[first], first];
+    if (GEO[first]) return withCity([...GEO[first], first]);
   }
   const parts = c.split(/[\n/+]/);
   for (const p of parts) {
     const t = p.trim();
-    if (GEO[t]) return [...GEO[t], t];
+    if (GEO[t]) return withCity([...GEO[t], t]);
   }
-  for (const city in CITY_TO_COUNTRY) {
-    if (c.toLowerCase().includes(city.toLowerCase())) return [...GEO[CITY_TO_COUNTRY[city]], CITY_TO_COUNTRY[city]];
+  for (const cty in CITY_TO_COUNTRY) {
+    if (c.toLowerCase().includes(cty.toLowerCase())) return withCity([...GEO[CITY_TO_COUNTRY[cty]], CITY_TO_COUNTRY[cty]]);
   }
-  if (regionLabel && REGION_FALLBACK[regionLabel]) return [...REGION_FALLBACK[regionLabel], s];
-  return ["Unknown", null, null, s];
+  if (regionLabel && REGION_FALLBACK[regionLabel]) return withCity([...REGION_FALLBACK[regionLabel], s]);
+  return withCity(["Unknown", null, null, s]);
 }
 
 const PRIORITIES = ["Critical","Hot","Warm","Cold","Cold-storage","Up & Running","Not interested"];
@@ -2230,7 +2371,7 @@ const PRIO_SCORE = {"Critical":100,"Hot":90,"Warm":70,"Cold":45,"Cold-storage":2
 function normalizeRow(row, idx) {
   const country = row.country || "";
   const regionLabel = row.region_label || "";
-  const [continent, lat, lng, country_canonical] = lookupGeo(country, regionLabel);
+  const [continent, lat, lng, country_canonical] = lookupGeo(country, regionLabel, row.city);
 
   const contacts = [];
   for (let i = 1; i <= 3; i++) {
@@ -3175,13 +3316,23 @@ function cfPhase2Lift(feature, durationMs) {
     const dotBaseR = bboxSize * 0.013;        // ~1.3% of bbox = ~7-8px when scaled to slot
     const jitterAmp = bboxSize * 0.18;        // spread within ±18% of bbox
     const strokeW = bboxSize * 0.003;
+    // Group cohort by lat/lng — entities with unique city coords get exact
+    // placement; only duplicates (same coords) get deterministic jitter so they
+    // don't stack on a single dot.
+    const _coordGroups = {};
+    cohort.forEach(u => {
+      const k = u.lat.toFixed(4) + ',' + u.lng.toFixed(4);
+      (_coordGroups[k] = _coordGroups[k] || []).push(u);
+    });
     const dotsHtml = cohort.map((u, i) => {
       const coords = projection([u.lng, u.lat]);
       if (!coords) return '';
-      // Deterministic projection-space jitter — entities sharing a country
-      // centroid would otherwise stack on a single dot. Math.sin spreads them.
-      const jx = Math.sin(i * 17.3) * jitterAmp;
-      const jy = Math.cos(i * 23.7) * jitterAmp;
+      const k = u.lat.toFixed(4) + ',' + u.lng.toFixed(4);
+      const grp = _coordGroups[k];
+      const dupIdx = grp.indexOf(u);
+      const needsJitter = grp.length > 1;
+      const jx = needsJitter ? Math.sin(dupIdx * 17.3) * jitterAmp * 0.35 : 0;
+      const jy = needsJitter ? Math.cos(dupIdx * 23.7) * jitterAmp * 0.35 : 0;
       const cxp = coords[0] + jx;
       const cyp = coords[1] + jy;
       const rMul = (u.priority === "Critical" || u.priority === "Hot") ? 1.15
@@ -6906,9 +7057,20 @@ function drawDots() {
   dotsGroup.selectAll("*").remove();
   const filtered = applyFilters(UNIS);
   const visible = filtered.filter(u => u.lat !== null && u.lng !== null);
+  // Group by coords — entities with unique city placement render exactly;
+  // only collisions get deterministic jitter so they don't stack.
+  const coordGroups = {};
+  visible.forEach(u => {
+    const k = u.lat.toFixed(4) + ',' + u.lng.toFixed(4);
+    (coordGroups[k] = coordGroups[k] || []).push(u);
+  });
   visible.forEach((u, i) => {
-    const jx = ((i * 37) % 7 - 3) * 0.4;
-    const jy = ((i * 53) % 7 - 3) * 0.4;
+    const k = u.lat.toFixed(4) + ',' + u.lng.toFixed(4);
+    const grp = coordGroups[k];
+    const dupIdx = grp.indexOf(u);
+    const needsJitter = grp.length > 1;
+    const jx = needsJitter ? Math.sin(dupIdx * 17.3) * 0.45 : 0;
+    const jy = needsJitter ? Math.cos(dupIdx * 23.7) * 0.45 : 0;
     const lng = u.lng + jx, lat = u.lat + jy;
     const coords = projection([lng, lat]);
     if (!coords) return;
