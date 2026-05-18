@@ -2912,7 +2912,7 @@ function toggleCountry(country) {
 //   Phase 2 (500ms)  clone the country path, lift it off, fade the globe down
 //   Phase 3 (700ms)  morph clone into final slot + reveal data panel
 // ============================================================================
-const CF_STATE = { country: null, feature: null, clone: null, transitioning: false };
+const CF_STATE = { country: null, feature: null, clone: null, transitioning: false, preRotation: null, preZoom: null };
 
 // Country-name → topojson feature lookup. Lazy-cached on first dramaticEnter.
 let CF_WORLD = null;
@@ -2948,6 +2948,9 @@ async function dramaticEnter(country) {
   CF_STATE.transitioning = true;
   CF_STATE.country = country;
   CF_STATE.feature = feature;
+  // Snapshot camera so dramaticExit can restore it
+  CF_STATE.preRotation = STATE.rotation.slice();
+  CF_STATE.preZoom = STATE.zoom;
 
   // Prepare panel content NOW so it's ready when overlay reveals
   cfRenderPanel(country);
@@ -2978,10 +2981,17 @@ async function dramaticExit() {
   // Don't set inline display:none — the .cf-overlay base rule already has
   // display:none. Inline styles would block the next .live add.
 
-  // Restore globe view
+  // Restore globe view (un-fade) — runs in parallel with the camera reverse
   globeView.classList.remove('cf-fade-out');
-  // Allow it to fade back in fully, then strip the helper class
-  await _wait(450);
+
+  // Reverse the Phase-1 camera move: rotate + zoom back to the pre-state.
+  // The globe is fading in from cf-fade-out at the same time, so the motion
+  // is visible (not snapped).
+  if (CF_STATE.preRotation && typeof CF_STATE.preZoom === 'number') {
+    await cfTweenCamera(CF_STATE.preRotation, CF_STATE.preZoom, 550);
+  } else {
+    await _wait(450);
+  }
   globeView.classList.remove('cf-fading');
 
   // Restore original country path visibility (it was hidden during lift)
@@ -2997,6 +3007,7 @@ async function dramaticExit() {
   // Clear filter + state, refresh everything
   STATE.filters.country.delete(CF_STATE.country);
   CF_STATE.country = null; CF_STATE.feature = null; CF_STATE.clone = null;
+  CF_STATE.preRotation = null; CF_STATE.preZoom = null;
   if (typeof renderCountryPanel === 'function') renderCountryPanel();
   renderFilterChips(); renderRegionAnalysis(); render(); drawDots();
 
@@ -3012,36 +3023,45 @@ function _animTick(cb) {
   setTimeout(wrapped, 18);  // setTimeout fallback at ~55fps
 }
 
-// ---------- Phase 1: spin + zoom together ----------
-function cfPhase1Camera(feature, durationMs) {
+// Generic camera tween — spin + zoom over `durationMs` to a target rotation
+// + zoom level. Used by both enter (toward country centroid) and exit
+// (back to the saved pre-state).
+function cfTweenCamera(targetRot, targetZoom, durationMs) {
   return new Promise(resolve => {
-    const centroid = d3.geoCentroid(feature);  // [lng, lat]
     const startRot = STATE.rotation.slice();
     const startZoom = STATE.zoom;
-    const targetRot = [-centroid[0], -centroid[1]];
     // Shortest path around the longitude axis
     let dx = targetRot[0] - startRot[0];
     while (dx > 180)  dx -= 360;
     while (dx < -180) dx += 360;
     const dy = targetRot[1] - startRot[1];
-    const targetZoom = 2.2;
+    const dz = targetZoom - startZoom;
 
     const t0 = performance.now();
     function step(now) {
       const t = Math.min(1, (now - t0) / durationMs);
       const e = 1 - Math.pow(1 - t, 3);   // easeOutCubic
       STATE.rotation = [startRot[0] + dx * e, Math.max(-90, Math.min(90, startRot[1] + dy * e))];
-      STATE.zoom = startZoom + (targetZoom - startZoom) * e;
+      STATE.zoom = startZoom + dz * e;
       projection.rotate(STATE.rotation);
       projection.scale(BASE_RADIUS * STATE.zoom);
       globeSvg.select('.bg').attr('r', BASE_RADIUS * STATE.zoom);
       if (gratPath) gratPath.attr('d', path);
       globeSvg.selectAll('.country').attr('d', path);
       drawDots();
+      // Update the zoom-level pill so the user sees the live zoom value
+      const lvl = document.getElementById('zoom-level');
+      if (lvl) lvl.textContent = STATE.zoom.toFixed(1) + '×';
       if (t < 1) _animTick(step); else resolve();
     }
     _animTick(step);
   });
+}
+
+// ---------- Phase 1: spin + zoom together (toward country centroid) ----------
+function cfPhase1Camera(feature, durationMs) {
+  const centroid = d3.geoCentroid(feature);  // [lng, lat]
+  return cfTweenCamera([-centroid[0], -centroid[1]], 2.2, durationMs);
 }
 
 // ---------- Phase 2: lift the country path off the globe ----------
