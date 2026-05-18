@@ -8,6 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Three.js for the optional Satellite globe mode -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <style>
 :root {
   /* H-FARM College brand tokens (per BRAND_GUIDE.md) */
@@ -40,6 +42,14 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .nav-bottom .nav-status{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.3px;line-height:1.4;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)}
 .nav-bottom button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;padding:7px 10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.3px;font-weight:600;text-align:left}
 .nav-bottom button:hover{background:var(--hf-red);color:#fff;border-color:var(--hf-red)}
+.globe-mode-row{display:flex;flex-direction:column;gap:4px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)}
+.globe-mode-label{font-size:9px;letter-spacing:1.3px;color:rgba(255,255,255,.55);font-weight:700;text-transform:uppercase}
+.globe-mode-seg{display:flex;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:5px;overflow:hidden}
+.globe-mode-seg button{flex:1;background:transparent;border:none;color:rgba(255,255,255,.65);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.4px;padding:6px 4px;cursor:pointer;transition:all .12s}
+.globe-mode-seg button:hover{background:rgba(255,255,255,.06);color:#fff;border:none}
+.globe-mode-seg button.active{background:var(--hf-red);color:#fff}
+.globe-mode-seg button.active:hover{background:var(--hf-red-deep);border:none}
+@media (max-width:980px){.globe-mode-row{display:none}}
 .main-content{min-width:0}
 .view{display:block}
 .view.hidden{display:none}
@@ -90,6 +100,12 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .globe-wrap{position:relative;padding:14px 8px;display:flex;align-items:center;justify-content:center;min-height:580px;overflow:hidden}
 #globe{width:100%;height:100%;min-height:560px;cursor:grab;overflow:visible}
 #globe:active{cursor:grabbing}
+/* Satellite mode canvas — fills the same .globe-wrap container as the SVG. */
+#globe-canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:none;cursor:grab;border-radius:50%}
+#globe-canvas:active{cursor:grabbing}
+.globe-wrap.satellite #globe{display:none}
+.globe-wrap.satellite #globe-canvas{display:block}
+.globe-wrap.satellite{background:radial-gradient(ellipse at center, #08101F 0%, #02060E 100%);border-radius:50%}
 
 /* COUNTRY PANEL (LEFT) — accordion: continents collapsed by default, expand on click */
 .country-panel{padding:18px 14px 18px 18px;display:flex;flex-direction:column;align-self:start;min-height:0;max-height:calc(580px + 28px)}
@@ -1172,6 +1188,13 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 
     <div class="nav-bottom">
       <div class="nav-status" id="data-status">—</div>
+      <div class="globe-mode-row">
+        <div class="globe-mode-label">Globe</div>
+        <div class="globe-mode-seg" id="globe-mode-seg">
+          <button data-mode="svg"       onclick="setGlobeMode('svg')">Classic</button>
+          <button data-mode="satellite" onclick="setGlobeMode('satellite')">Satellite</button>
+        </div>
+      </div>
       <button onclick="loadData(true)"><span class="nav-label">Refresh data</span></button>
       <button onclick="showConfig()"><span class="nav-label">Settings</span></button>
     </div>
@@ -1196,6 +1219,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 
   <div class="globe-wrap">
     <svg id="globe" viewBox="0 0 700 600" preserveAspectRatio="xMidYMid meet"></svg>
+    <canvas id="globe-canvas" aria-hidden="true"></canvas>
     <div class="globe-controls">
       <button class="gc-btn" id="zoom-in" title="Zoom in">+</button>
       <button class="gc-btn" id="zoom-out" title="Zoom out">&minus;</button>
@@ -6118,6 +6142,28 @@ function compareTable(us) {
   return html;
 }
 
+// ============================================================================
+// GLOBE MODE — "svg" (classic D3 orthographic) vs "satellite" (Three.js sphere
+// + NASA Blue Marble texture + clouds + atmosphere halo). Persists in
+// localStorage; toggle in the sidebar bottom; both modes share the same
+// data layer and click handlers below.
+// ============================================================================
+const LS_GLOBE_MODE = "hfarm_globe_mode";
+let GLOBE_MODE = localStorage.getItem(LS_GLOBE_MODE) || "svg";
+function setGlobeMode(mode) {
+  if (mode !== "svg" && mode !== "satellite") return;
+  if (mode === GLOBE_MODE) return;
+  localStorage.setItem(LS_GLOBE_MODE, mode);
+  // Simplest reliable swap: full reload. Each mode has its own init path
+  // hooked into the boot sequence; mid-flight swapping is fragile.
+  location.reload();
+}
+function syncGlobeModeUi() {
+  document.querySelectorAll("#globe-mode-seg button").forEach(b =>
+    b.classList.toggle("active", b.dataset.mode === GLOBE_MODE));
+  document.querySelector(".globe-wrap")?.classList.toggle("satellite", GLOBE_MODE === "satellite");
+}
+
 // ====== GLOBE ======
 const globeSvg = d3.select("#globe");
 // Canvas 700x600 fits the new 3-column hero; smaller globe lets the cards
@@ -6439,7 +6485,288 @@ function showGlobeTip(event, u) {
 }
 function hideGlobeTip() { if (tooltipEl) tooltipEl.style.display = "none"; }
 
+// ============================================================================
+// SATELLITE GLOBE (Three.js) — Apple-keynote-style Earth with NASA Blue Marble
+// + cloud overlay + atmosphere halo. Activated when GLOBE_MODE === "satellite".
+// All public globe functions (renderGlobe, drawDots, applyZoom, attachZoomControls)
+// are wrapped at the bottom of this block to dispatch by mode — the original
+// D3/SVG implementation stays untouched.
+// ============================================================================
+const TJ = {
+  inited: false, scene: null, camera: null, renderer: null,
+  world: null, earth: null, clouds: null, atmosphere: null, dotsGroup: null,
+  raycaster: null, _dotTex: null,
+  zoomDist: 2.8,                       // camera distance from origin
+  defaultRotation: { x: 0.55, y: -0.17 }, // start facing central Europe-ish
+};
+
+function initSatGlobe() {
+  if (TJ.inited) return;
+  if (typeof THREE === "undefined") {
+    console.error("[sat-globe] Three.js not loaded — reverting to classic SVG");
+    localStorage.setItem(LS_GLOBE_MODE, "svg");
+    location.reload();
+    return;
+  }
+  const canvas = document.getElementById("globe-canvas");
+  if (!canvas) return;
+
+  TJ.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  TJ.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  TJ.renderer.setClearColor(0x000000, 0);
+
+  TJ.scene = new THREE.Scene();
+  TJ.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  TJ.camera.position.set(0, 0, TJ.zoomDist);
+
+  // Soft fill + warm sun light
+  TJ.scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  const sun = new THREE.DirectionalLight(0xfff2dc, 1.05);
+  sun.position.set(5, 3, 5);
+  TJ.scene.add(sun);
+
+  // World group — both Earth & clouds rotate together when user drags
+  TJ.world = new THREE.Group();
+  TJ.world.rotation.x = TJ.defaultRotation.x;
+  TJ.world.rotation.y = TJ.defaultRotation.y;
+  TJ.scene.add(TJ.world);
+
+  const loader = new THREE.TextureLoader();
+
+  // Earth sphere — NASA Blue Marble day texture
+  loader.load("textures/earth-day.jpg", (tex) => {
+    if ("colorSpace" in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    const geo = new THREE.SphereGeometry(1, 96, 96);
+    const mat = new THREE.MeshPhongMaterial({ map: tex, specular: 0x222a36, shininess: 12 });
+    TJ.earth = new THREE.Mesh(geo, mat);
+    TJ.world.add(TJ.earth);
+    tjResize();
+    tjDrawDots();
+  });
+
+  // Cloud sphere — slightly larger, slow auto-drift
+  loader.load("textures/earth-clouds.jpg", (tex) => {
+    const geo = new THREE.SphereGeometry(1.012, 96, 96);
+    const mat = new THREE.MeshPhongMaterial({
+      map: tex, transparent: true, opacity: 0.55,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    TJ.clouds = new THREE.Mesh(geo, mat);
+    TJ.world.add(TJ.clouds);
+  });
+
+  // Atmosphere halo — back-facing sphere with fresnel shader (cyan glow on rim)
+  const atmoGeo = new THREE.SphereGeometry(1.18, 64, 64);
+  const atmoMat = new THREE.ShaderMaterial({
+    vertexShader: `varying vec3 vNormal; varying vec3 vPos;
+      void main() { vNormal = normalize(normalMatrix * normal);
+        vPos = (modelViewMatrix * vec4(position,1.0)).xyz;
+        gl_Position = projectionMatrix * vec4(vPos,1.0); }`,
+    fragmentShader: `varying vec3 vNormal; varying vec3 vPos;
+      void main() {
+        float intensity = pow(0.72 - dot(vNormal, normalize(-vPos)), 2.6);
+        gl_FragColor = vec4(0.45, 0.7, 1.0, 1.0) * intensity;
+      }`,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    transparent: true,
+  });
+  TJ.atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
+  TJ.scene.add(TJ.atmosphere);
+
+  // Dots layer (entity markers) — also rotates with the world
+  TJ.dotsGroup = new THREE.Group();
+  TJ.world.add(TJ.dotsGroup);
+
+  TJ.raycaster = new THREE.Raycaster();
+
+  tjAttachInteraction();
+
+  // Resize tracking — uses the parent .globe-wrap dimensions
+  const ro = new ResizeObserver(tjResize);
+  ro.observe(canvas.parentElement);
+  tjResize();
+
+  // Render loop
+  function loop() {
+    if (TJ.clouds) TJ.clouds.rotation.y += 0.0006;  // gentle drift
+    TJ.renderer.render(TJ.scene, TJ.camera);
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  TJ.inited = true;
+}
+
+function tjResize() {
+  if (!TJ.renderer) return;
+  const canvas = TJ.renderer.domElement;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  TJ.renderer.setSize(w, h, false);
+  TJ.camera.aspect = w / h;
+  TJ.camera.updateProjectionMatrix();
+}
+
+function tjAttachInteraction() {
+  const canvas = TJ.renderer.domElement;
+  let prev = null, dragDist = 0;
+  canvas.addEventListener("pointerdown", (e) => {
+    prev = { x: e.clientX, y: e.clientY };
+    dragDist = 0;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!prev) return;
+    const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    prev = { x: e.clientX, y: e.clientY };
+    dragDist += Math.abs(dx) + Math.abs(dy);
+    TJ.world.rotation.y += dx * 0.005;
+    TJ.world.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, TJ.world.rotation.x + dy * 0.005));
+  });
+  canvas.addEventListener("pointerup", (e) => {
+    if (!prev) return;
+    prev = null;
+    canvas.releasePointerCapture(e.pointerId);
+    if (dragDist < 4) tjHandleClick(e);
+  });
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    TJ.zoomDist *= (e.deltaY < 0 ? 0.92 : 1.08);
+    TJ.zoomDist = Math.max(1.6, Math.min(6, TJ.zoomDist));
+    TJ.camera.position.z = TJ.zoomDist;
+    const lvl = document.getElementById("zoom-level");
+    if (lvl) lvl.textContent = (2.8 / TJ.zoomDist).toFixed(1) + "×";
+  }, { passive: false });
+
+  // Wire the existing zoom buttons
+  const zin = document.getElementById("zoom-in");
+  const zout = document.getElementById("zoom-out");
+  const zres = document.getElementById("zoom-reset");
+  if (zin)  zin.onclick  = () => { TJ.zoomDist = Math.max(1.6, TJ.zoomDist * 0.85); TJ.camera.position.z = TJ.zoomDist; updateZoomLevelUi(); };
+  if (zout) zout.onclick = () => { TJ.zoomDist = Math.min(6, TJ.zoomDist * 1.18);  TJ.camera.position.z = TJ.zoomDist; updateZoomLevelUi(); };
+  if (zres) zres.onclick = () => {
+    TJ.zoomDist = 2.8; TJ.camera.position.z = TJ.zoomDist;
+    TJ.world.rotation.x = TJ.defaultRotation.x;
+    TJ.world.rotation.y = TJ.defaultRotation.y;
+    updateZoomLevelUi();
+  };
+  function updateZoomLevelUi() {
+    const lvl = document.getElementById("zoom-level");
+    if (lvl) lvl.textContent = (2.8 / TJ.zoomDist).toFixed(1) + "×";
+  }
+}
+
+function tjDotTexture() {
+  if (TJ._dotTex) return TJ._dotTex;
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const ctx = c.getContext("2d");
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 30);
+  g.addColorStop(0,   "rgba(255,255,255,1)");
+  g.addColorStop(0.45,"rgba(255,255,255,0.95)");
+  g.addColorStop(1,   "rgba(255,255,255,0)");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
+  TJ._dotTex = new THREE.CanvasTexture(c);
+  return TJ._dotTex;
+}
+
+function latLngToVec3(lat, lng, radius) {
+  const phi   = (90 - lat) * Math.PI / 180;
+  const theta = -(lng + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    radius * Math.sin(phi) * Math.cos(theta),
+    radius * Math.cos(phi),
+    radius * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+function tjDrawDots() {
+  if (!TJ.dotsGroup) return;
+  while (TJ.dotsGroup.children.length) TJ.dotsGroup.remove(TJ.dotsGroup.children[0]);
+  if (typeof UNIS === "undefined" || !UNIS.length) return;
+  const filtered = applyFilters(UNIS);
+  filtered.forEach(u => {
+    if (u.lat === null || u.lng === null) return;
+    const pos = latLngToVec3(u.lat, u.lng, 1.015);
+    const color = new THREE.Color(PRIO_COLORS[u.priority] || "#cccccc");
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      color, map: tjDotTexture(), transparent: true, depthWrite: false,
+    }));
+    sprite.position.copy(pos);
+    const r = (u.priority === "Critical" || u.priority === "Hot") ? 0.04
+            : (u.priority === "Warm" || u.priority === "Up & Running") ? 0.034 : 0.028;
+    sprite.scale.setScalar(r);
+    sprite.userData.entityId = u.id;
+    TJ.dotsGroup.add(sprite);
+  });
+}
+
+function tjHandleClick(e) {
+  const canvas = TJ.renderer.domElement;
+  const rect = canvas.getBoundingClientRect();
+  const ndc = {
+    x:  ((e.clientX - rect.left) / rect.width)  * 2 - 1,
+    y: -((e.clientY - rect.top)  / rect.height) * 2 + 1,
+  };
+  TJ.raycaster.setFromCamera(ndc, TJ.camera);
+  // Threshold raycaster so sprites are clickable at small screen size
+  TJ.raycaster.params.Sprite = { threshold: 0.02 };
+  const hits = TJ.raycaster.intersectObjects(TJ.dotsGroup.children, false);
+  if (hits.length) {
+    const id = hits[0].object.userData.entityId;
+    if (id) openDetail(id);
+  }
+}
+
+// ---- Dispatch wrappers — both modes share the public function names ----
+const _origRenderGlobe       = renderGlobe;
+const _origDrawDots          = drawDots;
+const _origApplyZoom         = applyZoom;
+const _origAttachZoomCtrl    = attachZoomControls;
+
+renderGlobe = function() {
+  if (GLOBE_MODE === "satellite") { initSatGlobe(); return; }
+  return _origRenderGlobe.apply(this, arguments);
+};
+drawDots = function() {
+  if (GLOBE_MODE === "satellite") { tjDrawDots(); return; }
+  return _origDrawDots.apply(this, arguments);
+};
+applyZoom = function(z) {
+  if (GLOBE_MODE === "satellite") {
+    if (typeof z === "number") {
+      TJ.zoomDist = Math.max(1.6, Math.min(6, 2.8 / z));
+      if (TJ.camera) TJ.camera.position.z = TJ.zoomDist;
+      const lvl = document.getElementById("zoom-level");
+      if (lvl) lvl.textContent = z.toFixed(1) + "×";
+    }
+    return;
+  }
+  return _origApplyZoom.apply(this, arguments);
+};
+attachZoomControls = function() {
+  if (GLOBE_MODE === "satellite") return;  // satellite mode wires its own
+  return _origAttachZoomCtrl.apply(this, arguments);
+};
+
+// Cinematic country lift uses SVG-only operations — skip Phase 1+2 in
+// satellite mode so the country detail still opens (just without the
+// camera/lift theatrics). The data panel + pie explode still play.
+const _origCfPhase1Camera = cfPhase1Camera;
+const _origCfPhase2Lift   = cfPhase2Lift;
+cfPhase1Camera = function() {
+  if (GLOBE_MODE === "satellite") return Promise.resolve();
+  return _origCfPhase1Camera.apply(this, arguments);
+};
+cfPhase2Lift = function() {
+  if (GLOBE_MODE === "satellite") return Promise.resolve();
+  return _origCfPhase2Lift.apply(this, arguments);
+};
+
 window.addEventListener("DOMContentLoaded", async () => {
+  // Reflect the persisted globe mode on the sidebar toggle + .globe-wrap class
+  syncGlobeModeUi();
   // Probe AI availability in parallel — never blocks app startup
   checkAiAvailability();
   try {
