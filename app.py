@@ -20,6 +20,7 @@ from google import genai
 from google.genai import types as genai_types
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request, send_from_directory
+from flask_cors import CORS
 
 load_dotenv()
 
@@ -28,6 +29,25 @@ MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 DB_PATH = Path(os.environ.get("HFARM_DB_PATH", ROOT / "h-tracker.db"))
 
 app = Flask(__name__, static_folder=str(ROOT), static_url_path="")
+
+# CORS — the production frontend lives on Vercel while the API runs on Fly,
+# so the browser will make cross-origin requests for every /api/*. We whitelist
+# the deployed Vercel origins (override via HFARM_CORS_ORIGINS env var, comma-
+# separated) and always allow localhost for dev.
+_cors_default = (
+    "https://h-tracker-blue.vercel.app,"
+    "http://127.0.0.1:8000,"
+    "http://localhost:8000"
+)
+_cors_origins = [o.strip() for o in os.environ.get("HFARM_CORS_ORIGINS", _cors_default).split(",") if o.strip()]
+CORS(
+    app,
+    resources={r"/api/*": {"origins": _cors_origins}},
+    allow_headers=["Content-Type", "X-Session-Id", "X-Display-Name"],
+    expose_headers=["Content-Type"],
+    supports_credentials=False,
+    max_age=600,
+)
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 gemini_client = genai.Client(api_key=GEMINI_KEY) if GEMINI_KEY else None

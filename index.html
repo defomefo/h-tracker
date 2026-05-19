@@ -1425,6 +1425,29 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 "use strict";
 
 // ============================================================================
+// API_BASE — where the Flask backend lives.
+// ----------------------------------------------------------------------------
+//   • When the page is served BY Flask itself (e.g. python app.py on
+//     localhost:8000), API_BASE stays "" → relative URLs like /api/health
+//     work the way they always did.
+//   • When the page is served by a static host (Vercel, Netlify, GitHub
+//     Pages, …) the Flask backend lives on a different origin. We detect
+//     that and point at the Fly.io API. Override per-environment by
+//     setting <meta name="hfarm-api-base" content="https://my-api.example">
+//     in the deployed index.html if you ever change hosts.
+// ============================================================================
+const API_BASE = (() => {
+  const meta = document.querySelector('meta[name="hfarm-api-base"]');
+  if (meta && meta.content) return meta.content.trim().replace(/\/$/, "");
+  const host = window.location.hostname;
+  // Static-hosting domains where Flask is NOT present — point at Fly.
+  if (/\.vercel\.app$|\.netlify\.app$|\.pages\.dev$|\.github\.io$/.test(host)) {
+    return "https://h-tracker-api.fly.dev";
+  }
+  return "";   // same-origin (local dev or self-hosted Flask)
+})();
+
+// ============================================================================
 // CONSTANTS - same as Python normalizer
 // ============================================================================
 // ========================================================================
@@ -4677,7 +4700,7 @@ let _presenceTimer = null;
 
 async function _heartbeatNow() {
   try {
-    await fetch("/api/presence/ping", {
+    await fetch(API_BASE + "/api/presence/ping", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -4692,8 +4715,8 @@ async function _heartbeatNow() {
 async function _refreshPresence() {
   try {
     const [pres, edits] = await Promise.all([
-      fetch("/api/presence",         { cache: "no-store" }).then(r => r.json()),
-      fetch("/api/edits/recent?limit=5", { cache: "no-store" }).then(r => r.json()),
+      fetch(API_BASE + "/api/presence",         { cache: "no-store" }).then(r => r.json()),
+      fetch(API_BASE + "/api/edits/recent?limit=5", { cache: "no-store" }).then(r => r.json()),
     ]);
     PRESENCE_STATE.sessions = pres.sessions || [];
     PRESENCE_STATE.serverNow = pres.now;
@@ -4789,13 +4812,13 @@ function promptDisplayName() {
 
 const kvStore = {
   async fetchAll(ns) {
-    const r = await fetch("/api/state/kv/" + encodeURIComponent(ns), { cache: "no-store" });
+    const r = await fetch(API_BASE + "/api/state/kv/" + encodeURIComponent(ns), { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
   },
   async put(ns, key, value) {
     const r = await fetch(
-      "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
+      API_BASE + "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
       {
         method: "PUT",
         headers: { "Content-Type": "application/json", ..._identityHeaders() },
@@ -4807,7 +4830,7 @@ const kvStore = {
   },
   async del(ns, key) {
     const r = await fetch(
-      "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
+      API_BASE + "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
       { method: "DELETE", headers: _identityHeaders() },
     );
     if (!r.ok) throw new Error("HTTP " + r.status);
@@ -4815,7 +4838,7 @@ const kvStore = {
   },
   async import_(ns, blob) {
     const r = await fetch(
-      "/api/state/kv/" + encodeURIComponent(ns) + "/_import",
+      API_BASE + "/api/state/kv/" + encodeURIComponent(ns) + "/_import",
       {
         method: "POST",
         headers: { "Content-Type": "application/json", ..._identityHeaders() },
@@ -4848,7 +4871,7 @@ function _writeLocalOutreach(log) {
 let OUTREACH = _readLocalOutreach();   // start with cache so UI renders instantly
 
 async function _fetchRemoteOutreach() {
-  const r = await fetch("/api/state/outreach", { cache: "no-store" });
+  const r = await fetch(API_BASE + "/api/state/outreach", { cache: "no-store" });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return await r.json();
 }
@@ -4862,7 +4885,7 @@ async function _migrateLocalToRemote() {
     return;
   }
   try {
-    const r = await fetch("/api/state/outreach/import", {
+    const r = await fetch(API_BASE + "/api/state/outreach/import", {
       method: "POST",
       headers: { "Content-Type": "application/json", ..._identityHeaders() },
       body: JSON.stringify(local),
@@ -4907,7 +4930,7 @@ async function upsertOutreach(entry) {
   _writeLocalOutreach(OUTREACH);
 
   try {
-    const r = await fetch("/api/state/outreach/" + encodeURIComponent(entry.id), {
+    const r = await fetch(API_BASE + "/api/state/outreach/" + encodeURIComponent(entry.id), {
       method: "PUT",
       headers: { "Content-Type": "application/json", ..._identityHeaders() },
       body: JSON.stringify(entry),
@@ -4930,7 +4953,7 @@ async function deleteOutreach(entityId, entryId) {
   if (STATE.detailId === entityId) openDetail(entityId);
 
   try {
-    const r = await fetch("/api/state/outreach/" + encodeURIComponent(entryId), {
+    const r = await fetch(API_BASE + "/api/state/outreach/" + encodeURIComponent(entryId), {
       method: "DELETE", headers: _identityHeaders(),
     });
     if (!r.ok && r.status !== 404) throw new Error("HTTP " + r.status);
@@ -5331,7 +5354,7 @@ async function chatSendInput() {
   } catch {}
 
   try {
-    const r = await fetch("/api/chat-query", {
+    const r = await fetch(API_BASE + "/api/chat-query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -5433,7 +5456,7 @@ function chatOpenEntity(id) {
 let AI_ENABLED = false;
 async function checkAiAvailability() {
   try {
-    const r = await fetch("/api/health", { cache: "no-store" });
+    const r = await fetch(API_BASE + "/api/health", { cache: "no-store" });
     if (!r.ok) return;
     const j = await r.json();
     AI_ENABLED = !!j.key_set;
@@ -5478,7 +5501,7 @@ async function aiDraftOutreach(entityId) {
       };
 
   try {
-    const resp = await fetch("/api/draft-outreach", {
+    const resp = await fetch(API_BASE + "/api/draft-outreach", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

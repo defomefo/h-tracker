@@ -1,0 +1,29 @@
+# Don't ship the local venv or caches into the image
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Don't ship local secrets or local DB files
+.env
+h-tracker.db
+h-tracker.db-journal
+h-tracker.db-wal
+h-tracker.db-shm
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# VCS
+.git/
+.gitignore
+
+# Deploy artifacts that have no business inside the image
+.vercel/
+fly.toml
+Dockerfile
+.dockerignore

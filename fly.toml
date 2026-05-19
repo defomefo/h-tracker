@@ -1,0 +1,46 @@
+# Fly.io app config for the H-FARM Global Partnerships Flask backend.
+# Deploy with:  flyctl deploy
+# Set secrets with:  flyctl secrets set GEMINI_API_KEY=...
+#
+# The first `flyctl launch` will ask whether to deploy now — say NO so we can
+# set the secret and create the volume first (see DEPLOY.md), then `flyctl deploy`.
+
+app = "h-tracker-api"
+primary_region = "fra"          # Frankfurt — close to Treviso. Change with --region.
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  # CORS whitelist for the deployed frontend(s). Comma-separated. Override
+  # without redeploying via: flyctl secrets set HFARM_CORS_ORIGINS="..."
+  HFARM_CORS_ORIGINS = "https://h-tracker-blue.vercel.app,http://127.0.0.1:8000,http://localhost:8000"
+
+# Single mountable persistent volume for SQLite. Created once via:
+#   flyctl volumes create hfarm_data --size 1 --region fra
+# 1 GB is wildly overprovisioned for an outreach log — bump only if needed.
+[mounts]
+  source      = "hfarm_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines  = "stop"     # idle? machine stops, saving free-tier hours
+  auto_start_machines = true        # next request wakes it up (~1-2s cold start)
+  min_machines_running = 0          # 0 = fully scale-to-zero
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period   = "10s"
+    interval       = "30s"
+    method         = "GET"
+    timeout        = "5s"
+    path           = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
