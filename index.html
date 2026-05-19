@@ -1118,14 +1118,14 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .team-prios{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .team-pill{font-size:9px;padding:2px 7px;border-radius:9px;font-weight:700;letter-spacing:.3px}
 
-/* PRESENCE CHIP — bottom-right floating, expands on hover */
-.presence-chip{position:fixed;bottom:14px;right:14px;z-index:300;display:none;align-items:center;gap:8px;background:#fff;border:1px solid var(--rule);border-radius:18px;padding:7px 14px;font-size:11px;color:var(--ink);box-shadow:0 4px 14px rgba(10,37,64,.12);cursor:pointer;font-weight:600;font-family:inherit;max-width:380px}
-.presence-chip:hover{border-color:var(--navy);box-shadow:0 6px 20px rgba(10,37,64,.18)}
-.presence-chip .pc-dot{width:8px;height:8px;border-radius:50%;background:#2E7D5B;box-shadow:0 0 0 3px rgba(46,125,91,.18);flex-shrink:0}
-.presence-chip .pc-count{color:var(--navy);font-weight:700;letter-spacing:.3px}
-.presence-chip .pc-sep{color:var(--ink-soft);font-weight:400}
-.presence-chip .pc-last{color:var(--ink-soft);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.presence-chip .pc-pop{position:absolute;bottom:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:12px 14px;width:300px;box-shadow:0 12px 32px rgba(10,37,64,.22);opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .12s,transform .12s,visibility .12s;text-align:left}
+/* PRESENCE CHIP — compact pill at bottom-right, sits LEFT of the help/chat
+   FABs so it doesn't cover them. Detail (online users + recent edits) lives
+   in the hover popover so the chip itself stays small and uncluttered. */
+.presence-chip{position:fixed;bottom:26px;right:80px;z-index:300;display:none;align-items:center;gap:6px;background:#fff;border:1px solid var(--rule);border-radius:14px;padding:5px 11px;font-size:11px;color:var(--ink);box-shadow:0 3px 10px rgba(10,37,64,.12);cursor:pointer;font-weight:600;font-family:inherit;line-height:1.2}
+.presence-chip:hover{border-color:var(--navy);box-shadow:0 6px 18px rgba(10,37,64,.18)}
+.presence-chip .pc-dot{width:7px;height:7px;border-radius:50%;background:#2E7D5B;box-shadow:0 0 0 2px rgba(46,125,91,.22);flex-shrink:0}
+.presence-chip .pc-count{color:var(--navy);font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.presence-chip .pc-pop{position:absolute;bottom:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:12px 14px;width:300px;box-shadow:0 12px 32px rgba(10,37,64,.22);opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .12s,transform .12s,visibility .12s;text-align:left;font-weight:500}
 .presence-chip:hover .pc-pop{opacity:1;visibility:visible;transform:translateY(0)}
 .presence-chip .pc-pop-head{font-size:11px;color:var(--ink);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--rule);font-weight:500}
 .presence-chip .pc-pop-head b{color:var(--navy);font-weight:700}
@@ -4777,18 +4777,17 @@ function renderPresenceChip() {
     document.body.appendChild(chip);
   }
   const n = PRESENCE_STATE.sessions.length;
-  const others = PRESENCE_STATE.sessions.filter(s => s.session_id !== SESSION_ID);
   const me = getDisplayName() || "Anonymous";
   const lastEdit = PRESENCE_STATE.edits[0];
-  const lastText = lastEdit
-    ? `${_resourceLabel(lastEdit.resource)} · ${escape(lastEdit.display_name || "Anonymous")} · ${_timeAgo(lastEdit.occurred_at)}`
+  const lastTooltip = lastEdit
+    ? `Last edit: ${_resourceLabel(lastEdit.resource)} · ${lastEdit.display_name || "Anonymous"} · ${_timeAgo(lastEdit.occurred_at)}`
     : "No recent edits";
 
+  // Compact chip = just the count + green dot. Detail lives in hover popover.
+  chip.title = lastTooltip;
   chip.innerHTML = `
     <span class="pc-dot"></span>
     <span class="pc-count">${n} online</span>
-    <span class="pc-sep">·</span>
-    <span class="pc-last" title="Last shared edit">${escape(lastText)}</span>
     <div class="pc-pop">
       <div class="pc-pop-head">You are <b>${escape(me)}</b> <span class="pc-edit-hint">(click to change)</span></div>
       <div class="pc-pop-section-title">Online now</div>
