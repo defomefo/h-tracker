@@ -1117,6 +1117,24 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .team-remit{font-size:11px;color:var(--ink-soft);line-height:1.4}
 .team-prios{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .team-pill{font-size:9px;padding:2px 7px;border-radius:9px;font-weight:700;letter-spacing:.3px}
+
+/* PRESENCE CHIP — bottom-right floating, expands on hover */
+.presence-chip{position:fixed;bottom:14px;right:14px;z-index:300;display:none;align-items:center;gap:8px;background:#fff;border:1px solid var(--rule);border-radius:18px;padding:7px 14px;font-size:11px;color:var(--ink);box-shadow:0 4px 14px rgba(10,37,64,.12);cursor:pointer;font-weight:600;font-family:inherit;max-width:380px}
+.presence-chip:hover{border-color:var(--navy);box-shadow:0 6px 20px rgba(10,37,64,.18)}
+.presence-chip .pc-dot{width:8px;height:8px;border-radius:50%;background:#2E7D5B;box-shadow:0 0 0 3px rgba(46,125,91,.18);flex-shrink:0}
+.presence-chip .pc-count{color:var(--navy);font-weight:700;letter-spacing:.3px}
+.presence-chip .pc-sep{color:var(--ink-soft);font-weight:400}
+.presence-chip .pc-last{color:var(--ink-soft);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.presence-chip .pc-pop{position:absolute;bottom:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:12px 14px;width:300px;box-shadow:0 12px 32px rgba(10,37,64,.22);opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .12s,transform .12s,visibility .12s;text-align:left}
+.presence-chip:hover .pc-pop{opacity:1;visibility:visible;transform:translateY(0)}
+.presence-chip .pc-pop-head{font-size:11px;color:var(--ink);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--rule);font-weight:500}
+.presence-chip .pc-pop-head b{color:var(--navy);font-weight:700}
+.presence-chip .pc-edit-hint{color:var(--ink-soft);font-size:10px;font-weight:400}
+.presence-chip .pc-pop-section-title{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:8px 0 4px}
+.presence-chip .pc-row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:11px;align-items:center}
+.presence-chip .pc-row.is-me .pc-row-name{color:var(--navy);font-weight:700}
+.presence-chip .pc-row-name{color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.presence-chip .pc-row-meta{color:var(--ink-soft);font-weight:400;font-size:10px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -4623,6 +4641,152 @@ function setEntityTeam(entityId, teamId) {
 //   - server (/api/state/kv/<ns>) is the source of truth
 //   - mutations are optimistic local + mirror to server
 // ===================================================================
+// --- Session identity (Phase 4 placeholder for Phase 5 SSO) ---
+// session_id is stable per browser session (random); display_name is a
+// self-claimed handle stored in localStorage. Both ride along every
+// mutation request as headers so the server's audit log can attribute
+// edits without any auth wiring yet.
+const LS_DISPLAY_NAME_KEY = "hfarm_display_name";
+function _newSessionId() {
+  return "s_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
+const SESSION_ID = (sessionStorage.getItem("hfarm_sid") || (() => {
+  const sid = _newSessionId();
+  sessionStorage.setItem("hfarm_sid", sid);
+  return sid;
+})());
+function getDisplayName() {
+  return localStorage.getItem(LS_DISPLAY_NAME_KEY) || "";
+}
+function setDisplayName(name) {
+  if (name) localStorage.setItem(LS_DISPLAY_NAME_KEY, name);
+  else      localStorage.removeItem(LS_DISPLAY_NAME_KEY);
+  _heartbeatNow();   // push the new name to presence right away
+}
+function _identityHeaders() {
+  return {
+    "X-Session-Id": SESSION_ID,
+    "X-Display-Name": getDisplayName() || "Anonymous",
+  };
+}
+
+// --- Presence + recent edits (Phase 4) ---
+const PRESENCE_STATE = { sessions: [], edits: [], serverNow: null, ttl: 90 };
+const PRESENCE_HEARTBEAT_MS = 30000;
+let _presenceTimer = null;
+
+async function _heartbeatNow() {
+  try {
+    await fetch("/api/presence/ping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: SESSION_ID,
+        display_name: getDisplayName() || "Anonymous",
+        current_view: (typeof STATE !== "undefined" && STATE.currentView) || null,
+      }),
+    });
+  } catch {}
+}
+
+async function _refreshPresence() {
+  try {
+    const [pres, edits] = await Promise.all([
+      fetch("/api/presence",         { cache: "no-store" }).then(r => r.json()),
+      fetch("/api/edits/recent?limit=5", { cache: "no-store" }).then(r => r.json()),
+    ]);
+    PRESENCE_STATE.sessions = pres.sessions || [];
+    PRESENCE_STATE.serverNow = pres.now;
+    PRESENCE_STATE.ttl = pres.ttl_seconds || 90;
+    PRESENCE_STATE.edits = edits.edits || [];
+    renderPresenceChip();
+  } catch {
+    // Server unreachable — hide chip
+    const chip = document.getElementById("presence-chip");
+    if (chip) chip.style.display = "none";
+  }
+}
+
+function startPresence() {
+  if (_presenceTimer) return;
+  _heartbeatNow();
+  _refreshPresence();
+  _presenceTimer = setInterval(async () => {
+    await _heartbeatNow();
+    _refreshPresence();
+  }, PRESENCE_HEARTBEAT_MS);
+}
+
+function _timeAgo(iso) {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 5)   return "just now";
+  if (s < 60)  return s + "s ago";
+  if (s < 3600) return Math.round(s / 60) + "m ago";
+  return Math.round(s / 3600) + "h ago";
+}
+
+function _resourceLabel(resource) {
+  if (resource === "outreach") return "Outreach log";
+  if (resource && resource.startsWith("kv:")) {
+    return ({
+      "kv:team_assignment":  "Team assignment",
+      "kv:stage_override":   "Pipeline stage",
+      "kv:map2x2_override":  "2×2 position",
+      "kv:kb_draft":         "Knowledge base",
+    })[resource] || resource.slice(3);
+  }
+  return resource;
+}
+
+function renderPresenceChip() {
+  let chip = document.getElementById("presence-chip");
+  if (!chip) {
+    chip = document.createElement("div");
+    chip.id = "presence-chip";
+    chip.className = "presence-chip";
+    chip.onclick = () => promptDisplayName();
+    document.body.appendChild(chip);
+  }
+  const n = PRESENCE_STATE.sessions.length;
+  const others = PRESENCE_STATE.sessions.filter(s => s.session_id !== SESSION_ID);
+  const me = getDisplayName() || "Anonymous";
+  const lastEdit = PRESENCE_STATE.edits[0];
+  const lastText = lastEdit
+    ? `${_resourceLabel(lastEdit.resource)} · ${escape(lastEdit.display_name || "Anonymous")} · ${_timeAgo(lastEdit.occurred_at)}`
+    : "No recent edits";
+
+  chip.innerHTML = `
+    <span class="pc-dot"></span>
+    <span class="pc-count">${n} online</span>
+    <span class="pc-sep">·</span>
+    <span class="pc-last" title="Last shared edit">${escape(lastText)}</span>
+    <div class="pc-pop">
+      <div class="pc-pop-head">You are <b>${escape(me)}</b> <span class="pc-edit-hint">(click to change)</span></div>
+      <div class="pc-pop-section-title">Online now</div>
+      ${PRESENCE_STATE.sessions.map(s => `
+        <div class="pc-row${s.session_id === SESSION_ID ? ' is-me' : ''}">
+          <span class="pc-row-name">${escape(s.display_name || "Anonymous")}${s.session_id === SESSION_ID ? " (you)" : ""}</span>
+          <span class="pc-row-meta">${s.current_view ? escape(s.current_view) : ""}</span>
+        </div>`).join("")}
+      <div class="pc-pop-section-title">Recent edits</div>
+      ${PRESENCE_STATE.edits.length ? PRESENCE_STATE.edits.map(e => `
+        <div class="pc-row">
+          <span class="pc-row-name">${escape(_resourceLabel(e.resource))}</span>
+          <span class="pc-row-meta">${escape(e.display_name || "Anonymous")} · ${_timeAgo(e.occurred_at)}</span>
+        </div>`).join("") : '<div class="pc-row"><span class="pc-row-meta">No edits yet</span></div>'}
+    </div>`;
+  chip.style.display = "flex";
+}
+
+function promptDisplayName() {
+  const current = getDisplayName() || "";
+  const next = prompt("Display name for the presence chip (visible to other users):", current);
+  if (next !== null) setDisplayName(next.trim());
+}
+
 const kvStore = {
   async fetchAll(ns) {
     const r = await fetch("/api/state/kv/" + encodeURIComponent(ns), { cache: "no-store" });
@@ -4634,7 +4798,7 @@ const kvStore = {
       "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
       {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ..._identityHeaders() },
         body: JSON.stringify(value),
       },
     );
@@ -4644,7 +4808,7 @@ const kvStore = {
   async del(ns, key) {
     const r = await fetch(
       "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
-      { method: "DELETE" },
+      { method: "DELETE", headers: _identityHeaders() },
     );
     if (!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
@@ -4654,7 +4818,7 @@ const kvStore = {
       "/api/state/kv/" + encodeURIComponent(ns) + "/_import",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ..._identityHeaders() },
         body: JSON.stringify(blob),
       },
     );
@@ -4700,7 +4864,7 @@ async function _migrateLocalToRemote() {
   try {
     const r = await fetch("/api/state/outreach/import", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
       body: JSON.stringify(local),
     });
     if (r.ok) {
@@ -4745,7 +4909,7 @@ async function upsertOutreach(entry) {
   try {
     const r = await fetch("/api/state/outreach/" + encodeURIComponent(entry.id), {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
       body: JSON.stringify(entry),
     });
     if (!r.ok) throw new Error("HTTP " + r.status);
@@ -4766,7 +4930,9 @@ async function deleteOutreach(entityId, entryId) {
   if (STATE.detailId === entityId) openDetail(entityId);
 
   try {
-    const r = await fetch("/api/state/outreach/" + encodeURIComponent(entryId), { method: "DELETE" });
+    const r = await fetch("/api/state/outreach/" + encodeURIComponent(entryId), {
+      method: "DELETE", headers: _identityHeaders(),
+    });
     if (!r.ok && r.status !== 404) throw new Error("HTTP " + r.status);
     OUTREACH_BACKEND = "remote";
   } catch (e) {
@@ -5105,7 +5271,9 @@ const CHAT_DEMO_QUERIES = [
 function chatInit() {
   if (CHAT_STATE.opened) return;
   CHAT_STATE.opened = true;
-  const intro = `Hi! I'm a demo of <em>chat-with-your-data</em>. Pick a query below — each runs a real filter over your <b>${UNIS.length}</b> entities. Free-form questions will get a placeholder for now.`;
+  const intro = AI_ENABLED
+    ? `Ask me anything about your <b>${UNIS.length}</b> partners — I'll surface the ones that matter and explain why. Try a quick query below or type your own.`
+    : `Hi! Pick a query below — each runs a real filter over your <b>${UNIS.length}</b> entities. Free-form questions become live once <code>GEMINI_API_KEY</code> is set in <code>.env</code>.`;
   CHAT_STATE.history.push({ role: "bot", html: intro, examples: true });
   renderChat();
 }
@@ -5129,21 +5297,78 @@ function chatExampleClick(qid) {
   const q = CHAT_DEMO_QUERIES.find(x => x.id === qid);
   if (q) chatRunQuery(q, q.label);
 }
-function chatSendInput() {
+async function chatSendInput() {
   const input = document.getElementById("chat-input");
   const text = input.value.trim();
   if (!text) return;
   input.value = "";
-  // Match against known queries by keyword
-  const lower = text.toLowerCase();
-  const match = CHAT_DEMO_QUERIES.find(q => q.keywords.some(kw => lower.includes(kw.toLowerCase())));
-  if (match) {
-    chatRunQuery(match, text);
-  } else {
-    CHAT_STATE.history.push({ role: "user", html: escape(text) });
-    CHAT_STATE.history.push({ role: "bot", html: "This is a <em>demo</em> — only a fixed set of queries is wired up. In the live version, Claude would answer freely from your data.", fallback: true });
-    renderChat();
+
+  // Render user turn + typing placeholder immediately
+  CHAT_STATE.history.push({ role: "user", html: escape(text), text });
+  const pending = { role: "bot", html: "<em>Thinking…</em>", pending: true };
+  CHAT_STATE.history.push(pending);
+  renderChat();
+
+  // Conversational history for the server — last few turns, plain text.
+  // The fallback `text` is the unescaped original; otherwise strip tags.
+  const history = CHAT_STATE.history
+    .filter(m => m.role === "user" || m.role === "bot")
+    .slice(-7, -1)   // exclude the just-pushed pending bot turn
+    .map(m => ({
+      role: m.role === "user" ? "user" : "assistant",
+      text: m.text || (m.html || "").replace(/<[^>]+>/g, "").slice(0, 600),
+    }));
+
+  // Send the currently-filtered set if any filter is active, else full UNIS.
+  // Lets the user scope the assistant via the filter chips on the cards view.
+  let scope = UNIS;
+  try {
+    if (typeof applyFilters === "function") {
+      const filtered = applyFilters(UNIS);
+      // Only narrow if filters are actually changing the set
+      if (filtered.length && filtered.length !== UNIS.length) scope = filtered;
+    }
+  } catch {}
+
+  try {
+    const r = await fetch("/api/chat-query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_text: text,
+        history,
+        entities: scope,
+      }),
+    });
+    const out = await r.json();
+    // Replace the pending placeholder in place so renderChat order is stable
+    const idx = CHAT_STATE.history.indexOf(pending);
+    if (idx >= 0) {
+      if (!r.ok) {
+        CHAT_STATE.history[idx] = {
+          role: "bot",
+          html: `<em>${escape(out.error || "Couldn't reach the assistant.")}</em>`,
+          fallback: !!out.error && /key/i.test(out.error),
+        };
+      } else {
+        CHAT_STATE.history[idx] = {
+          role: "bot",
+          html: out.intro || "",
+          results: out.results || [],
+          text: out.intro || "",
+        };
+      }
+    }
+  } catch (e) {
+    const idx = CHAT_STATE.history.indexOf(pending);
+    if (idx >= 0) {
+      CHAT_STATE.history[idx] = {
+        role: "bot",
+        html: `<em>Couldn't reach the assistant — ${escape(e.message)}.</em>`,
+      };
+    }
   }
+  renderChat();
 }
 function chatRunQuery(q, userText) {
   CHAT_STATE.history.push({ role: "user", html: escape(userText) });
@@ -5188,7 +5413,7 @@ function renderChat() {
       ).join("")}</div>`;
     }
     if (m.fallback) {
-      inner += `<div class="chat-fallback"><b>Hook-up point for developers:</b> wire this to <code>POST /api/chat-query</code> and call Claude with the user's text + UNIS context. Drop the matched entities into the result list and they'll render exactly like the canned queries above.</div>`;
+      inner += `<div class="chat-fallback"><b>AI is not configured.</b> Set <code>GEMINI_API_KEY</code> in <code>.env</code> and restart Flask. The chat endpoint at <code>POST /api/chat-query</code> is already wired — the moment a key is present, free-form questions start working.</div>`;
     }
     return `<div class="chat-msg bot">${inner}</div>`;
   }).join("");
@@ -5201,8 +5426,8 @@ function chatOpenEntity(id) {
   if (typeof openDetail === 'function') openDetail(id);
 }
 
-// AI gating — backend /api/health reports whether the ANTHROPIC_API_KEY
-// is configured. Until then the "Draft with AI" button stays hidden so
+// AI gating — backend /api/health reports whether GEMINI_API_KEY is
+// configured. Until then the "Draft with AI" button stays hidden so
 // end users never click a non-functional control. Developers flip this
 // on by adding the key to .env and restarting Flask.
 let AI_ENABLED = false;
@@ -7473,6 +7698,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   syncTeamAssignmentsFromServer();
   syncStageOverridesFromServer();
   syncStratOverridesFromServer();
+  startPresence();
   try {
     await loadKnowledgeBase();
   } catch (e) {

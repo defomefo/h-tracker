@@ -16,18 +16,21 @@ import sqlite3
 import threading
 from pathlib import Path
 
-import anthropic
+from google import genai
+from google.genai import types as genai_types
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request, send_from_directory
 
 load_dotenv()
 
 ROOT = Path(__file__).parent
-MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 DB_PATH = Path(os.environ.get("HFARM_DB_PATH", ROOT / "h-tracker.db"))
 
 app = Flask(__name__, static_folder=str(ROOT), static_url_path="")
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+gemini_client = genai.Client(api_key=GEMINI_KEY) if GEMINI_KEY else None
 
 
 # ---------- SQLite plumbing ----------
@@ -79,6 +82,33 @@ def _ensure_schema():
                 );
                 CREATE INDEX IF NOT EXISTS idx_kv_ns
                     ON kv_store(namespace);
+
+                -- Live sessions, refreshed via /api/presence/ping every ~30s.
+                -- Rows older than PRESENCE_TTL_SECONDS are considered offline.
+                CREATE TABLE IF NOT EXISTS presence (
+                    session_id   TEXT PRIMARY KEY,
+                    display_name TEXT NOT NULL,
+                    current_view TEXT,
+                    last_seen    TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_presence_seen
+                    ON presence(last_seen);
+
+                -- Append-only edit log so the "last edit by X, 12s ago" chip
+                -- can show what just changed. We could derive this from the
+                -- other tables' updated_at columns, but having one explicit
+                -- audit trail keeps the query trivial and survives deletes.
+                CREATE TABLE IF NOT EXISTS edit_log (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    occurred_at  TEXT NOT NULL,
+                    session_id   TEXT,
+                    display_name TEXT,
+                    resource     TEXT NOT NULL,   -- e.g. "outreach", "kv:team_assignment"
+                    action       TEXT NOT NULL,   -- "upsert" | "delete" | "import"
+                    key          TEXT             -- entry id or namespace key
+                );
+                CREATE INDEX IF NOT EXISTS idx_edit_log_at
+                    ON edit_log(occurred_at);
                 """
             )
         _db_ready = True
@@ -101,6 +131,33 @@ def _close_db(_exc):
 
 def _now_iso():
     return _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+PRESENCE_TTL_SECONDS = 90
+
+
+def _record_edit(resource, action, key=None):
+    """Best-effort audit-log write. Reads display_name from request headers
+    (set by the frontend's fetch wrapper) so we don't have to plumb auth."""
+    try:
+        db = get_db()
+        db.execute(
+            """INSERT INTO edit_log
+                   (occurred_at, session_id, display_name, resource, action, key)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                _now_iso(),
+                request.headers.get("X-Session-Id", ""),
+                request.headers.get("X-Display-Name", ""),
+                resource,
+                action,
+                key,
+            ),
+        )
+        db.commit()
+    except Exception as e:  # noqa: BLE001
+        # Audit failures must never break the underlying mutation
+        print(f"[edit_log] write failed: {e}")
 
 
 # ---------- Static file serving ----------
@@ -145,7 +202,8 @@ def health():
         {
             "ok": True,
             "model": MODEL,
-            "key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
+            "key_set": bool(GEMINI_KEY),
+            "provider": "gemini",
             "db": str(DB_PATH.name),
         }
     )
@@ -201,6 +259,7 @@ def outreach_upsert(entry_id):
         (entry_id, entity_id, json.dumps(entry), _now_iso()),
     )
     db.commit()
+    _record_edit("outreach", "upsert", entry_id)
     return jsonify({"ok": True, "id": entry_id})
 
 
@@ -215,6 +274,7 @@ def outreach_delete(entry_id):
     db.commit()
     if cur.rowcount == 0:
         return jsonify({"error": "Not found."}), 404
+    _record_edit("outreach", "delete", entry_id)
     return jsonify({"ok": True, "id": entry_id})
 
 
@@ -276,6 +336,7 @@ def kv_put(ns, key):
         (ns, key, json.dumps(body), _now_iso()),
     )
     db.commit()
+    _record_edit(f"kv:{ns}", "upsert", key)
     return jsonify({"ok": True, "namespace": ns, "key": key})
 
 
@@ -292,6 +353,7 @@ def kv_delete(ns, key):
     db.commit()
     if cur.rowcount == 0:
         return jsonify({"ok": True, "noop": True})  # idempotent
+    _record_edit(f"kv:{ns}", "delete", key)
     return jsonify({"ok": True})
 
 
@@ -370,16 +432,93 @@ def outreach_import():
             existing.add(eid)
             inserted += 1
     db.commit()
+    _record_edit("outreach", "import")
     return jsonify({"ok": True, "inserted": inserted, "skipped": skipped})
+
+
+# ============================================================================
+# PRESENCE — who's online right now + most recent shared-state edits
+# ----------------------------------------------------------------------------
+# The frontend posts a heartbeat every ~30s. Rows older than
+# PRESENCE_TTL_SECONDS are excluded from the live list (and lazily cleaned
+# up on each query). No auth: display_name is self-claimed.
+# ============================================================================
+@app.route("/api/presence/ping", methods=["POST"])
+def presence_ping():
+    body = request.get_json(force=True, silent=True) or {}
+    sid = (body.get("session_id") or "").strip()
+    name = (body.get("display_name") or "").strip() or "Anonymous"
+    view = (body.get("current_view") or "").strip() or None
+    if not sid:
+        return jsonify({"error": "session_id is required."}), 400
+
+    db = get_db()
+    db.execute(
+        """INSERT INTO presence (session_id, display_name, current_view, last_seen)
+                VALUES (?, ?, ?, ?)
+           ON CONFLICT(session_id) DO UPDATE SET
+                display_name = excluded.display_name,
+                current_view = excluded.current_view,
+                last_seen    = excluded.last_seen""",
+        (sid, name, view, _now_iso()),
+    )
+    # Lazy cleanup of stale rows
+    cutoff = (
+        _dt.datetime.utcnow() - _dt.timedelta(seconds=PRESENCE_TTL_SECONDS * 4)
+    ).replace(microsecond=0).isoformat() + "Z"
+    db.execute("DELETE FROM presence WHERE last_seen < ?", (cutoff,))
+    db.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/presence", methods=["GET"])
+def presence_list():
+    """Active sessions in the last PRESENCE_TTL_SECONDS."""
+    db = get_db()
+    cutoff = (
+        _dt.datetime.utcnow() - _dt.timedelta(seconds=PRESENCE_TTL_SECONDS)
+    ).replace(microsecond=0).isoformat() + "Z"
+    rows = db.execute(
+        """SELECT session_id, display_name, current_view, last_seen
+             FROM presence
+            WHERE last_seen >= ?
+            ORDER BY last_seen DESC""",
+        (cutoff,),
+    ).fetchall()
+    return jsonify(
+        {
+            "now": _now_iso(),
+            "ttl_seconds": PRESENCE_TTL_SECONDS,
+            "sessions": [dict(r) for r in rows],
+        }
+    )
+
+
+@app.route("/api/edits/recent", methods=["GET"])
+def edits_recent():
+    """Most recent N edits across all shared-state buckets."""
+    try:
+        limit = max(1, min(100, int(request.args.get("limit", 10))))
+    except ValueError:
+        limit = 10
+    db = get_db()
+    rows = db.execute(
+        """SELECT occurred_at, session_id, display_name, resource, action, key
+             FROM edit_log
+            ORDER BY id DESC
+            LIMIT ?""",
+        (limit,),
+    ).fetchall()
+    return jsonify({"now": _now_iso(), "edits": [dict(r) for r in rows]})
 
 
 @app.route("/api/draft-outreach", methods=["POST"])
 def draft_outreach():
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not GEMINI_KEY:
         return (
             jsonify(
                 {
-                    "error": "ANTHROPIC_API_KEY is not set on the server. Add it to .env and restart Flask."
+                    "error": "GEMINI_API_KEY is not set on the server. Add it to .env and restart Flask."
                 }
             ),
             500,
@@ -389,25 +528,35 @@ def draft_outreach():
     user_msg = _build_prompt(data)
 
     try:
-        resp = client.messages.create(
+        resp = gemini_client.models.generate_content(
             model=MODEL,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_msg}],
+            contents=user_msg,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                max_output_tokens=1024,
+                temperature=0.7,
+                # Force JSON so we don't have to defensively strip markdown
+                response_mime_type="application/json",
+                # Disable hidden "thinking" — for structured short outputs
+                # the reasoning budget just eats max_output_tokens with no
+                # quality gain. Keeps responses fast and predictable.
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+            ),
         )
-    except anthropic.APIError as e:
-        return jsonify({"error": f"Anthropic API error: {e}"}), 502
+    except Exception as e:  # noqa: BLE001 — Gemini SDK surfaces several exception types
+        return jsonify({"error": f"Gemini API error: {e}"}), 502
 
-    text = resp.content[0].text.strip()
+    text = (resp.text or "").strip()
     parsed = _parse_email_json(text)
+    usage_md = getattr(resp, "usage_metadata", None)
     return jsonify(
         {
             "subject": parsed.get("subject", ""),
             "body": parsed.get("body", ""),
             "model": MODEL,
             "usage": {
-                "input_tokens": resp.usage.input_tokens,
-                "output_tokens": resp.usage.output_tokens,
+                "input_tokens":  getattr(usage_md, "prompt_token_count",     0) if usage_md else 0,
+                "output_tokens": getattr(usage_md, "candidates_token_count", 0) if usage_md else 0,
             },
             # Only echo the raw response when parsing failed, so the
             # frontend can show a debug fallback instead of a blank form.
@@ -496,12 +645,159 @@ def _parse_email_json(text):
     return {}
 
 
+# ============================================================================
+# CHAT ASSISTANT — read-only Q&A grounded on the live UNIS array
+# ----------------------------------------------------------------------------
+# Frontend posts: { user_text, history?, entities }
+#   - entities: the full UNIS array (client is source of truth for filters)
+#   - history: last N {role, text} turns for conversational continuity
+# Gemini returns JSON: { intro, entity_ids[] }
+# Server resolves entity_ids → result rows and returns them so the existing
+# chat UI can render exactly as it does for the canned demo queries.
+# ============================================================================
+CHAT_SYSTEM_PROMPT = """You are a senior analyst assistant for the H-FARM College Global Partnerships tracker — a CRM-style tool for managing relationships with universities, agencies, schools and student organisations.
+
+Your job: answer the user's question about the partner portfolio they've shown you, and surface the SPECIFIC entities that are relevant. You are READ-ONLY — you never propose data changes, never invent entities, never speculate beyond the data.
+
+Entity fields you can rely on (per entity):
+  id, name, type (university|agency|school|org), country, continent,
+  priority (Critical|Hot|Warm|Cold|Cold-storage|Up & Running|Not interested),
+  strategic_tier (Digital Pioneer|Prestige Hub|Applied Leader|Established Partner),
+  partnership_score (0-100), partnership_readiness (Ready|Warming|Early|Cold|Dormant),
+  days_dormant (int|null), focus_areas (string), notes (string),
+  top_program_id (id of best-fit H-FARM offering), top_program_score (0-100)
+
+Rules:
+- The `intro` field: 1-3 short sentences in plain English. Specific, not generic. If a number is relevant, include it. No hedging, no "I would suggest", no "Based on the data".
+- The `entity_ids` array: ids that match the user's question, ranked best-first. If the question is broad (e.g. "what should I focus on?"), return up to 8. If it's specific (e.g. "tell me about TalTech"), return just that one. If nothing matches, return an empty array — `intro` should say so plainly.
+- Never invent ids. Only use ids that appear in the provided entities list.
+
+Return ONLY a JSON object with this exact shape, no markdown, no commentary:
+{"intro": "...", "entity_ids": ["...", "..."]}"""
+
+
+# Fields we send to Gemini per entity — analytically rich but keeps the
+# payload around 30-40KB for ~300 entities (well within Flash's window).
+_CHAT_FIELDS = (
+    "id", "name", "type", "country", "continent",
+    "priority", "strategic_tier", "partnership_score",
+    "partnership_readiness", "days_dormant",
+    "focus_areas", "top_program_id", "top_program_score", "notes",
+)
+
+
+def _slim_entities(entities):
+    out = []
+    if not isinstance(entities, list):
+        return out
+    for u in entities:
+        if not isinstance(u, dict) or not u.get("id"):
+            continue
+        out.append({k: u.get(k) for k in _CHAT_FIELDS if u.get(k) not in (None, "")})
+    return out
+
+
+@app.route("/api/chat-query", methods=["POST"])
+def chat_query():
+    if not GEMINI_KEY:
+        return (
+            jsonify({"error": "GEMINI_API_KEY is not set on the server. Add it to .env and restart Flask."}),
+            500,
+        )
+
+    data = request.get_json(force=True) or {}
+    user_text = (data.get("user_text") or "").strip()
+    if not user_text:
+        return jsonify({"error": "user_text is required."}), 400
+
+    entities = _slim_entities(data.get("entities") or [])
+    history = data.get("history") or []
+    # Keep history short — last 6 turns is plenty of context
+    history = history[-6:] if isinstance(history, list) else []
+
+    # Build a single user-message payload. (Gemini supports multi-turn but
+    # one-shot keeps the wire format simple, and we're already passing the
+    # full entity context every turn so there's no caching to optimise here.)
+    history_block = "\n".join(
+        f"{'User' if m.get('role') == 'user' else 'Assistant'}: {m.get('text', '')}"
+        for m in history if isinstance(m, dict)
+    )
+    prompt_parts = [
+        "## Recent conversation",
+        history_block or "(no prior turns)",
+        "",
+        "## Current question",
+        user_text,
+        "",
+        "## Available entities (live snapshot from the user's filtered view)",
+        json.dumps(entities, ensure_ascii=False),
+        "",
+        "Respond with JSON only.",
+    ]
+    prompt = "\n".join(prompt_parts)
+
+    try:
+        resp = gemini_client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=CHAT_SYSTEM_PROMPT,
+                max_output_tokens=1024,
+                temperature=0.4,
+                response_mime_type="application/json",
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": f"Gemini API error: {e}"}), 502
+
+    text = (resp.text or "").strip()
+    parsed = _parse_email_json(text)   # tolerant JSON extractor — same shape
+    intro = parsed.get("intro") or "I couldn't make sense of that question — try rephrasing?"
+    ids = parsed.get("entity_ids") or []
+    if not isinstance(ids, list):
+        ids = []
+
+    # Resolve ids → full result rows so the UI renders consistently. Drop
+    # any hallucinated ids that aren't actually in the entities list.
+    by_id = {u.get("id"): u for u in (data.get("entities") or []) if isinstance(u, dict)}
+    results = []
+    for eid in ids:
+        u = by_id.get(eid)
+        if not u:
+            continue
+        results.append({
+            "id":   eid,
+            "name": u.get("name", ""),
+            "meta": " · ".join(filter(None, [
+                u.get("country", ""),
+                u.get("priority", ""),
+                f"Score {u.get('partnership_score')}" if u.get("partnership_score") is not None else "",
+            ])),
+            "tag":  u.get("strategic_tier", ""),
+        })
+
+    usage_md = getattr(resp, "usage_metadata", None)
+    return jsonify(
+        {
+            "intro": intro,
+            "results": results,
+            "model": MODEL,
+            "usage": {
+                "input_tokens":  getattr(usage_md, "prompt_token_count",     0) if usage_md else 0,
+                "output_tokens": getattr(usage_md, "candidates_token_count", 0) if usage_md else 0,
+            },
+            "raw": text if not parsed else None,
+        }
+    )
+
+
 if __name__ == "__main__":
     print(
         f"H-FARM tracker backend starting on http://127.0.0.1:8000 (model: {MODEL})"
     )
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not GEMINI_KEY:
         print(
-            "⚠️  ANTHROPIC_API_KEY not set — /api/draft-outreach will return 500. Add it to .env and restart."
+            "⚠️  GEMINI_API_KEY not set — /api/draft-outreach and /api/chat-query will return 500. Add it to .env and restart."
         )
     app.run(host="127.0.0.1", port=8000, debug=False)
