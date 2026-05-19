@@ -1587,13 +1587,65 @@ const KB_SCHEMA = {
 // for that dataset. "Download JSON" exports the current state so the user
 // can drop it back into data/ to persist for everyone.
 // ========================================================================
-function kbDraftLoad(lsKey) {
-  try { const raw = localStorage.getItem(lsKey); return raw ? JSON.parse(raw) : null; }
+// KB drafts now live on the server (kv_store namespace `kb_draft`, keyed
+// by schemaKey). localStorage holds a per-browser cache so the editor
+// stays responsive offline and on first paint. The KB_DRAFTS in-memory
+// map is the read source — populated by loadKnowledgeBase() during boot
+// and kept in sync by kbDraftSave / kbDraftClear.
+const LS_KB_MIGRATED_KEY = "hfarm_kb_drafts_migrated_v1";
+let KB_DRAFTS = {};   // { schemaKey: raw_value } — server-truth, cached locally
+
+function _lsKeyFor(schemaKey) { return KB_SCHEMA[schemaKey].lsKey; }
+function _readLocalDraft(schemaKey) {
+  try { const raw = localStorage.getItem(_lsKeyFor(schemaKey)); return raw ? JSON.parse(raw) : null; }
   catch { return null; }
 }
-function kbDraftSave(lsKey, data) { localStorage.setItem(lsKey, JSON.stringify(data)); }
-function kbDraftClear(lsKey) { localStorage.removeItem(lsKey); }
-function kbHasDraft(schemaKey) { return !!localStorage.getItem(KB_SCHEMA[schemaKey].lsKey); }
+function _writeLocalDraft(schemaKey, data) {
+  if (data === null || data === undefined) {
+    try { localStorage.removeItem(_lsKeyFor(schemaKey)); } catch {}
+  } else {
+    try { localStorage.setItem(_lsKeyFor(schemaKey), JSON.stringify(data)); } catch {}
+  }
+}
+
+function kbDraftLoad(schemaKey) {
+  if (schemaKey in KB_DRAFTS) return KB_DRAFTS[schemaKey];
+  return _readLocalDraft(schemaKey);
+}
+async function kbDraftSave(schemaKey, data) {
+  KB_DRAFTS[schemaKey] = data;
+  _writeLocalDraft(schemaKey, data);
+  try { await kvStore.put("kb_draft", schemaKey, data); }
+  catch (e) { console.warn("[kb_draft] save deferred (offline):", e.message); }
+}
+async function kbDraftClear(schemaKey) {
+  delete KB_DRAFTS[schemaKey];
+  _writeLocalDraft(schemaKey, null);
+  try { await kvStore.del("kb_draft", schemaKey); }
+  catch (e) { console.warn("[kb_draft] clear deferred (offline):", e.message); }
+}
+function kbHasDraft(schemaKey) {
+  if (schemaKey in KB_DRAFTS) return true;
+  return !!localStorage.getItem(_lsKeyFor(schemaKey));
+}
+
+async function _migrateKbDraftsToServer(currentServerDrafts) {
+  // Run once: push any localStorage drafts the server doesn't already know
+  // about. Server wins on conflict, so re-running this is safe.
+  if (localStorage.getItem(LS_KB_MIGRATED_KEY)) return;
+  const toUpload = {};
+  for (const schemaKey of Object.keys(KB_SCHEMA)) {
+    const local = _readLocalDraft(schemaKey);
+    if (local !== null && !(schemaKey in (currentServerDrafts || {}))) {
+      toUpload[schemaKey] = local;
+    }
+  }
+  if (Object.keys(toUpload).length) {
+    try { await kvStore.import_("kb_draft", toUpload); }
+    catch (e) { console.warn("[kb_draft] migration deferred:", e.message); return; }
+  }
+  localStorage.setItem(LS_KB_MIGRATED_KEY, "1");
+}
 
 async function fetchJson(path) {
   const resp = await fetch(path + "?_cb=" + Date.now());
@@ -1602,7 +1654,9 @@ async function fetchJson(path) {
 }
 
 async function loadKnowledgeBase() {
-  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub] = await Promise.all([
+  // Files + server drafts in parallel. If the server is unreachable we
+  // gracefully degrade to localStorage cache → bundled files.
+  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, serverDrafts] = await Promise.all([
     fetchJson(KB_SCHEMA.programs.file),
     fetchJson(KB_SCHEMA.teams.file),
     fetchJson(KB_SCHEMA.collab.file),
@@ -1614,18 +1668,37 @@ async function loadKnowledgeBase() {
     fetchJson(KB_SCHEMA.experiences.file),
     fetchJson(KB_SCHEMA.exchange_only.file),
     fetchJson(KB_SCHEMA.talentHub.file),
+    kvStore.fetchAll("kb_draft").catch(() => null),
   ]);
-  PROGRAMS       = kbDraftLoad(KB_SCHEMA.programs.lsKey)  || progs;
-  TEAMS          = kbDraftLoad(KB_SCHEMA.teams.lsKey)     || teams;
-  COLLAB_FORMATS = kbDraftLoad(KB_SCHEMA.collab.lsKey)    || collab;
-  BROCHURES      = kbDraftLoad(KB_SCHEMA.brochures.lsKey) || brochures;
+  // One-shot migrate localStorage → server, then refresh draft map
+  let drafts = serverDrafts;
+  if (drafts !== null) {
+    await _migrateKbDraftsToServer(drafts);
+    drafts = await kvStore.fetchAll("kb_draft").catch(() => drafts);
+  }
+  KB_DRAFTS = drafts || {};
+  // Refresh local cache from server-of-truth (keeps offline next-load fresh)
+  if (drafts !== null) {
+    for (const sk of Object.keys(KB_SCHEMA)) {
+      _writeLocalDraft(sk, sk in drafts ? drafts[sk] : null);
+    }
+  }
+  // Resolve each dataset: server/cached draft if present, else file
+  const resolve = (schemaKey, fileValue) => {
+    const d = kbDraftLoad(schemaKey);
+    return d !== null && d !== undefined ? d : fileValue;
+  };
+  PROGRAMS       = resolve("programs",  progs);
+  TEAMS          = resolve("teams",     teams);
+  COLLAB_FORMATS = resolve("collab",    collab);
+  BROCHURES      = resolve("brochures", brochures);
   HFARM_KB.organization = org;
-  HFARM_KB.bachelors    = kbDraftLoad(KB_SCHEMA.bachelors.lsKey)     || bach;
-  HFARM_KB.masters      = kbDraftLoad(KB_SCHEMA.masters.lsKey)       || masters;
-  HFARM_KB.preparatory  = kbDraftLoad(KB_SCHEMA.preparatory.lsKey)   || prep;
-  HFARM_KB.experiences  = kbDraftLoad(KB_SCHEMA.experiences.lsKey)   || exp;
-  HFARM_KB.exchangeOnly = kbDraftLoad(KB_SCHEMA.exchange_only.lsKey) || exOnly;
-  HFARM_KB.talentHub    = kbDraftLoad(KB_SCHEMA.talentHub.lsKey)     || talentHub;
+  HFARM_KB.bachelors    = resolve("bachelors",     bach);
+  HFARM_KB.masters      = resolve("masters",       masters);
+  HFARM_KB.preparatory  = resolve("preparatory",   prep);
+  HFARM_KB.experiences  = resolve("experiences",   exp);
+  HFARM_KB.exchangeOnly = resolve("exchange_only", exOnly);
+  HFARM_KB.talentHub    = resolve("talentHub",     talentHub);
   PROG_BY_ID = Object.fromEntries(PROGRAMS.map(p => [p.id, p]));
   TEAM_BY_ID = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 }
@@ -1709,7 +1782,7 @@ function kbApply(schemaKey, raw) {
 function kbSet(schemaKey, arr) {
   const raw = shapeFromArray(schemaKey, arr);
   kbApply(schemaKey, raw);
-  kbDraftSave(KB_SCHEMA[schemaKey].lsKey, raw);
+  kbDraftSave(schemaKey, raw);   // async, fire-and-forget — UI already updated
 }
 
 function kbDownloadJson(schemaKey) {
@@ -1723,7 +1796,7 @@ function kbDownloadJson(schemaKey) {
 
 async function kbResetToFile(schemaKey) {
   if (!confirm(`Discard any draft for "${KB_SCHEMA[schemaKey].title}" and reload from ${KB_SCHEMA[schemaKey].file}?`)) return;
-  kbDraftClear(KB_SCHEMA[schemaKey].lsKey);
+  await kbDraftClear(schemaKey);
   const fresh = await fetchJson(KB_SCHEMA[schemaKey].file);
   kbApply(schemaKey, fresh);
   renderAdminView();
@@ -1745,7 +1818,7 @@ function renderAdminView() {
 
   let html = `<div class="view-header">
     <h1>Admin · Knowledge base</h1>
-    <p>Programs, teams, collaboration formats and brochures referenced across the platform. Changes are staged in your browser (localStorage). Click <b>Download JSON</b> to export and replace the file in <code>data/</code> to make changes permanent for everyone.</p>
+    <p>Programs, teams, collaboration formats and brochures referenced across the platform. Changes are saved to the shared server and sync across all browsers; click <b>Download JSON</b> to export the current state into <code>data/</code> for permanent commits.</p>
   </div>`;
 
   html += `<div class="admin-shell">`;
@@ -1762,7 +1835,7 @@ function renderAdminView() {
   html += `<div class="admin-toolbar">
     <button class="btn gold" onclick="adminEdit('${cur}', null)">+ Add new</button>
     <div class="admin-toolbar-spacer"></div>
-    ${kbHasDraft(cur) ? `<span class="admin-draft-tag">⚠ Draft changes in this browser only</span>` : ``}
+    ${kbHasDraft(cur) ? `<span class="admin-draft-tag">⚠ Draft active — overrides ${escape(KB_SCHEMA[cur].file)}</span>` : ``}
     <button class="btn outline" onclick="kbDownloadJson('${cur}')">⬇ Download JSON</button>
     <button class="btn outline" onclick="kbResetToFile('${cur}')">⟲ Reset to file</button>
   </div>`;
@@ -2596,20 +2669,86 @@ function programFitReasoning(u, programId) {
 // Team assignment — recommends owner team(s) per entity, persists overrides
 // in localStorage so the assignment travels with the browser session.
 // ========================================================================
-const LS_TEAM_KEY = "hfarm_team_assignments";
-function loadTeamAssignments() {
+const LS_TEAM_KEY = "hfarm_team_assignments";          // localStorage cache
+const LS_TEAM_MIGRATED_KEY = "hfarm_team_migrated_v1";
+function _readLocalTeams() {
   try { return JSON.parse(localStorage.getItem(LS_TEAM_KEY) || "{}"); }
   catch { return {}; }
 }
-let TEAM_ASSIGNMENTS = loadTeamAssignments();
+function _writeLocalTeams(map) {
+  try { localStorage.setItem(LS_TEAM_KEY, JSON.stringify(map)); } catch {}
+}
+let TEAM_ASSIGNMENTS = _readLocalTeams();
+
+// --- Stage overrides (kanban manual drag) ---
+const LS_STAGE_KEY = "hfarm_stage_override";
+const LS_STAGE_MIGRATED_KEY = "hfarm_stage_migrated_v1";
+function _readLocalStageOverrides() {
+  try { return JSON.parse(localStorage.getItem(LS_STAGE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function _writeLocalStageOverrides(map) {
+  try { localStorage.setItem(LS_STAGE_KEY, JSON.stringify(map)); } catch {}
+}
+let STAGE_OVERRIDES = _readLocalStageOverrides();
+
+async function syncStageOverridesFromServer() {
+  try {
+    if (!localStorage.getItem(LS_STAGE_MIGRATED_KEY)) {
+      const local = _readLocalStageOverrides();
+      if (Object.keys(local).length) {
+        try { await kvStore.import_("stage_override", local); } catch {}
+      }
+      localStorage.setItem(LS_STAGE_MIGRATED_KEY, "1");
+    }
+    const remote = await kvStore.fetchAll("stage_override");
+    STAGE_OVERRIDES = remote;
+    _writeLocalStageOverrides(remote);
+    if (STATE.currentView === "pipeline" && typeof renderPipelineView === "function") {
+      renderPipelineView();
+    }
+    return true;
+  } catch (e) {
+    console.warn("[stages] server unreachable, using local cache:", e.message);
+    return false;
+  }
+}
+
+async function syncTeamAssignmentsFromServer() {
+  try {
+    if (!localStorage.getItem(LS_TEAM_MIGRATED_KEY)) {
+      const local = _readLocalTeams();
+      if (Object.keys(local).length) {
+        try { await kvStore.import_("team_assignment", local); } catch {}
+      }
+      localStorage.setItem(LS_TEAM_MIGRATED_KEY, "1");
+    }
+    const remote = await kvStore.fetchAll("team_assignment");
+    TEAM_ASSIGNMENTS = remote;
+    _writeLocalTeams(remote);
+    if (STATE.detailId) openDetail(STATE.detailId);
+    return true;
+  } catch (e) {
+    console.warn("[teams] server unreachable, using local cache:", e.message);
+    return false;
+  }
+}
 
 function assignedTeam(entityId) {
   return TEAM_ASSIGNMENTS[entityId] || "";  // empty = use recommendation
 }
-function setAssignment(entityId, teamId) {
+async function setAssignment(entityId, teamId) {
+  // Optimistic local write
   if (teamId) TEAM_ASSIGNMENTS[entityId] = teamId;
   else delete TEAM_ASSIGNMENTS[entityId];
-  localStorage.setItem(LS_TEAM_KEY, JSON.stringify(TEAM_ASSIGNMENTS));
+  _writeLocalTeams(TEAM_ASSIGNMENTS);
+  // Mirror to server
+  try {
+    if (teamId) await kvStore.put("team_assignment", entityId, teamId);
+    else        await kvStore.del("team_assignment", entityId);
+  } catch (e) {
+    console.warn("[teams] save deferred (offline):", e.message);
+  }
 }
 
 // Recommend a primary + supporting team for an entity, based on its profile.
@@ -2761,7 +2900,7 @@ async function parseAndRender(csvText) {
 
   const search = document.getElementById("search");
   if (!search._wired) {
-    search.addEventListener("input", e => { STATE.search = e.target.value.toLowerCase().trim(); render(); });
+    search.addEventListener("input", e => { STATE.search = e.target.value; render(); });
     search._wired = true;
   }
 
@@ -4115,8 +4254,11 @@ function applyFilters(unis) {
       if (!ok) return false;
     }
     if (STATE.search) {
-      const blob = `${u.name} ${u.country} ${u.focus_areas} ${u.programs}`.toLowerCase();
-      if (!blob.includes(STATE.search)) return false;
+      const q = STATE.search.toLowerCase().trim();
+      if (q) {
+        const blob = `${u.name} ${u.country} ${u.focus_areas} ${u.programs}`.toLowerCase();
+        if (!blob.includes(q)) return false;
+      }
     }
     return true;
   });
@@ -4472,30 +4614,166 @@ function setEntityTeam(entityId, teamId) {
 // OUTREACH LOG — per-entity record of email/call/meeting touchpoints.
 // Persists to localStorage and supports PDF export of any entry.
 // =====================================================================
-const LS_OUTREACH_KEY = "hfarm_outreach_log";
-function loadOutreachLog() {
+// ===================================================================
+// SHARED STATE — generic KV wrapper (Phase 2)
+// -------------------------------------------------------------------
+// Used by team assignments, stage overrides, 2x2 overrides, and any
+// future "single value per entity" bucket. Pattern matches outreach:
+//   - localStorage is the cache (fast first paint, offline fallback)
+//   - server (/api/state/kv/<ns>) is the source of truth
+//   - mutations are optimistic local + mirror to server
+// ===================================================================
+const kvStore = {
+  async fetchAll(ns) {
+    const r = await fetch("/api/state/kv/" + encodeURIComponent(ns), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  },
+  async put(ns, key, value) {
+    const r = await fetch(
+      "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(value),
+      },
+    );
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  },
+  async del(ns, key) {
+    const r = await fetch(
+      "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
+      { method: "DELETE" },
+    );
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  },
+  async import_(ns, blob) {
+    const r = await fetch(
+      "/api/state/kv/" + encodeURIComponent(ns) + "/_import",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(blob),
+      },
+    );
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  },
+};
+
+// Storage model (Phase 1):
+//   - Source of truth is the SQLite-backed API (/api/state/outreach).
+//   - localStorage is now a cache + offline fallback. If the server is
+//     unreachable, mutations stay local and resync next time it's reachable.
+//   - On first successful load against the server, we one-shot-import any
+//     pre-existing localStorage entries so nobody loses history.
+const LS_OUTREACH_KEY = "hfarm_outreach_log";          // legacy local cache
+const LS_OUTREACH_MIGRATED_KEY = "hfarm_outreach_migrated_v1";
+let OUTREACH_BACKEND = "local";   // "remote" once the API responds successfully
+let OUTREACH_PENDING_FLUSH = false;
+
+function _readLocalOutreach() {
   try { return JSON.parse(localStorage.getItem(LS_OUTREACH_KEY) || "{}"); }
   catch { return {}; }
 }
-function saveOutreachLog(log) {
-  localStorage.setItem(LS_OUTREACH_KEY, JSON.stringify(log));
+function _writeLocalOutreach(log) {
+  try { localStorage.setItem(LS_OUTREACH_KEY, JSON.stringify(log)); } catch {}
 }
-let OUTREACH = loadOutreachLog();
+let OUTREACH = _readLocalOutreach();   // start with cache so UI renders instantly
+
+async function _fetchRemoteOutreach() {
+  const r = await fetch("/api/state/outreach", { cache: "no-store" });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return await r.json();
+}
+
+async function _migrateLocalToRemote() {
+  if (localStorage.getItem(LS_OUTREACH_MIGRATED_KEY)) return;
+  const local = _readLocalOutreach();
+  const hasAny = Object.values(local).some(arr => Array.isArray(arr) && arr.length);
+  if (!hasAny) {
+    localStorage.setItem(LS_OUTREACH_MIGRATED_KEY, "1");
+    return;
+  }
+  try {
+    const r = await fetch("/api/state/outreach/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(local),
+    });
+    if (r.ok) {
+      const out = await r.json();
+      console.info("[outreach] migrated localStorage → server:", out);
+      localStorage.setItem(LS_OUTREACH_MIGRATED_KEY, "1");
+    }
+  } catch (e) {
+    console.warn("[outreach] migration deferred — server unreachable:", e.message);
+  }
+}
+
+async function syncOutreachFromServer() {
+  // Called on startup and after coming back online. Pulls authoritative
+  // state from the server and overwrites the in-memory + cache copies.
+  try {
+    await _migrateLocalToRemote();
+    const remote = await _fetchRemoteOutreach();
+    OUTREACH = remote;
+    _writeLocalOutreach(remote);   // refresh cache for offline next-load
+    OUTREACH_BACKEND = "remote";
+    if (STATE.detailId) openDetail(STATE.detailId);  // refresh visible panel
+    return true;
+  } catch (e) {
+    OUTREACH_BACKEND = "local";
+    console.warn("[outreach] server unreachable, using local cache:", e.message);
+    return false;
+  }
+}
+
 function outreachForEntity(entityId) {
   return (OUTREACH[entityId] || []).slice().sort((a,b) => (b.date || "").localeCompare(a.date || ""));
 }
-function upsertOutreach(entry) {
+
+async function upsertOutreach(entry) {
+  // Optimistic local write first — UI stays snappy. Then mirror to server.
   const list = OUTREACH[entry.entityId] || (OUTREACH[entry.entityId] = []);
   const idx = list.findIndex(e => e.id === entry.id);
   if (idx >= 0) list[idx] = entry; else list.push(entry);
-  saveOutreachLog(OUTREACH);
+  _writeLocalOutreach(OUTREACH);
+
+  try {
+    const r = await fetch("/api/state/outreach/" + encodeURIComponent(entry.id), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    OUTREACH_BACKEND = "remote";
+  } catch (e) {
+    OUTREACH_BACKEND = "local";
+    OUTREACH_PENDING_FLUSH = true;
+    console.warn("[outreach] save deferred (offline):", e.message);
+  }
 }
-function deleteOutreach(entityId, entryId) {
+
+async function deleteOutreach(entityId, entryId) {
   if (!confirm("Delete this outreach entry?")) return;
   if (!OUTREACH[entityId]) return;
+  // Optimistic local removal
   OUTREACH[entityId] = OUTREACH[entityId].filter(e => e.id !== entryId);
-  saveOutreachLog(OUTREACH);
+  _writeLocalOutreach(OUTREACH);
   if (STATE.detailId === entityId) openDetail(entityId);
+
+  try {
+    const r = await fetch("/api/state/outreach/" + encodeURIComponent(entryId), { method: "DELETE" });
+    if (!r.ok && r.status !== 404) throw new Error("HTTP " + r.status);
+    OUTREACH_BACKEND = "remote";
+  } catch (e) {
+    OUTREACH_BACKEND = "local";
+    OUTREACH_PENDING_FLUSH = true;
+    console.warn("[outreach] delete deferred (offline):", e.message);
+  }
 }
 
 // Unified program lookup across summer programs, collab formats, bachelors, masters, Talent H-UB
@@ -5531,8 +5809,8 @@ function renderPipelineView() {
     return;
   }
 
-  // Apply manual stage overrides from localStorage
-  const overrides = JSON.parse(localStorage.getItem("hfarm_stage_override") || "{}");
+  // Apply manual stage overrides (server-backed, cached in localStorage)
+  const overrides = STAGE_OVERRIDES;
   const effective = (u) => overrides[u.id] || u.pipeline_stage;
 
   // Group entities by stage
@@ -5677,31 +5955,39 @@ function kbDragLeave(ev) {
   // Only remove if leaving the actual column body
   if (ev.target === ev.currentTarget) ev.currentTarget.classList.remove("drag-over");
 }
-function kbDrop(ev) {
+async function kbDrop(ev) {
   ev.preventDefault();
   ev.currentTarget.classList.remove("drag-over");
   const id = ev.dataTransfer.getData("text/plain") || _kbDragId;
   const newStage = ev.currentTarget.dataset.stage;
   if (!id || !newStage) return;
-  // Save override (or clear it if dropping back to natural stage)
-  const overrides = JSON.parse(localStorage.getItem("hfarm_stage_override") || "{}");
+  // Optimistic local update
   const u = UNIS.find(x => x.id === id);
-  if (u && u.pipeline_stage === newStage) {
-    delete overrides[id];
-  } else {
-    overrides[id] = newStage;
-  }
-  localStorage.setItem("hfarm_stage_override", JSON.stringify(overrides));
+  const isNatural = u && u.pipeline_stage === newStage;
+  if (isNatural) delete STAGE_OVERRIDES[id];
+  else           STAGE_OVERRIDES[id] = newStage;
+  _writeLocalStageOverrides(STAGE_OVERRIDES);
   renderPipelineView();
-}
-function resetStageOverrides() {
-  const overrides = JSON.parse(localStorage.getItem("hfarm_stage_override") || "{}");
-  const count = Object.keys(overrides).length;
-  if (count === 0) { alert("No manual overrides to reset."); return; }
-  if (confirm(`Reset all ${count} manual stage overrides? Stages will revert to auto-derived from CSV.`)) {
-    localStorage.removeItem("hfarm_stage_override");
-    renderPipelineView();
+  // Mirror to server
+  try {
+    if (isNatural) await kvStore.del("stage_override", id);
+    else           await kvStore.put("stage_override", id, newStage);
+  } catch (e) {
+    console.warn("[stages] save deferred (offline):", e.message);
   }
+}
+async function resetStageOverrides() {
+  const count = Object.keys(STAGE_OVERRIDES).length;
+  if (count === 0) { alert("No manual overrides to reset."); return; }
+  if (!confirm(`Reset all ${count} manual stage overrides? Stages will revert to auto-derived from CSV.`)) return;
+  const ids = Object.keys(STAGE_OVERRIDES);
+  STAGE_OVERRIDES = {};
+  _writeLocalStageOverrides(STAGE_OVERRIDES);
+  renderPipelineView();
+  // Best-effort cleanup of every server row
+  try {
+    await Promise.all(ids.map(id => kvStore.del("stage_override", id).catch(() => null)));
+  } catch {}
 }
 function kbExpandColumn(stageId) {
   // For now, point users at the Database view (full list); inline expansion is a future task.
@@ -6090,6 +6376,7 @@ function updateCounterfactual() {
 // keep the chart readable for quarterly review exports.
 // ============================================================================
 const LS_STRAT_OVERRIDES = "hfarm_2x2_overrides";
+const LS_STRAT_MIGRATED_KEY = "hfarm_2x2_migrated_v1";
 function _loadStratOverrides() {
   try { return JSON.parse(localStorage.getItem(LS_STRAT_OVERRIDES) || "{}"); }
   catch { return {}; }
@@ -6100,7 +6387,55 @@ const STRAT_STATE = {
   showAll: false,                    // top-50 by default
 };
 function _saveStratOverrides() {
-  localStorage.setItem(LS_STRAT_OVERRIDES, JSON.stringify(STRAT_STATE.overrides));
+  // localStorage cache (synchronous, fast). Server mirror is handled
+  // explicitly at each mutation site so we can send focused PUT/DELETE
+  // rather than a full re-import per drag.
+  try { localStorage.setItem(LS_STRAT_OVERRIDES, JSON.stringify(STRAT_STATE.overrides)); } catch {}
+}
+
+// Flatten { axisKey: { entityId: {x,y} } } → { "axisKey::entityId": {x,y} }
+function _strat_flatten(nested) {
+  const out = {};
+  for (const ax in nested) {
+    for (const eid in (nested[ax] || {})) {
+      out[ax + "::" + eid] = nested[ax][eid];
+    }
+  }
+  return out;
+}
+function _strat_nest(flat) {
+  const out = {};
+  for (const k in flat) {
+    const idx = k.indexOf("::");
+    if (idx < 0) continue;
+    const ax = k.slice(0, idx), eid = k.slice(idx + 2);
+    if (!out[ax]) out[ax] = {};
+    out[ax][eid] = flat[k];
+  }
+  return out;
+}
+
+async function syncStratOverridesFromServer() {
+  try {
+    if (!localStorage.getItem(LS_STRAT_MIGRATED_KEY)) {
+      const local = _loadStratOverrides();
+      const flat = _strat_flatten(local);
+      if (Object.keys(flat).length) {
+        try { await kvStore.import_("map2x2_override", flat); } catch {}
+      }
+      localStorage.setItem(LS_STRAT_MIGRATED_KEY, "1");
+    }
+    const remote = await kvStore.fetchAll("map2x2_override");
+    STRAT_STATE.overrides = _strat_nest(remote);
+    _saveStratOverrides();
+    if (STATE.currentView === "strategy" && typeof renderStrategicView === "function") {
+      renderStrategicView();
+    }
+    return true;
+  } catch (e) {
+    console.warn("[2x2] server unreachable, using local cache:", e.message);
+    return false;
+  }
 }
 
 const STRAT_AXES = {
@@ -6167,22 +6502,33 @@ function stratComputeXY(u, axisKey) {
   return { x: ax.computeX(u), y: ax.computeY(u), override: false };
 }
 
-function stratSaveOverride(entityId, axisKey, x, y) {
+async function stratSaveOverride(entityId, axisKey, x, y) {
   if (!STRAT_STATE.overrides[axisKey]) STRAT_STATE.overrides[axisKey] = {};
-  STRAT_STATE.overrides[axisKey][entityId] = { x: Math.round(x), y: Math.round(y) };
+  const value = { x: Math.round(x), y: Math.round(y) };
+  STRAT_STATE.overrides[axisKey][entityId] = value;
   _saveStratOverrides();
+  try { await kvStore.put("map2x2_override", axisKey + "::" + entityId, value); }
+  catch (e) { console.warn("[2x2] save deferred (offline):", e.message); }
 }
-function stratResetOverrides(axisKey) {
+async function stratResetOverrides(axisKey) {
   if (!confirm(`Reset all manual overrides for ${STRAT_AXES[axisKey].label}?`)) return;
+  const ids = Object.keys(STRAT_STATE.overrides[axisKey] || {});
   delete STRAT_STATE.overrides[axisKey];
   _saveStratOverrides();
   renderStrategicView();
+  try {
+    await Promise.all(ids.map(eid => kvStore.del("map2x2_override", axisKey + "::" + eid).catch(() => null)));
+  } catch {}
 }
-function stratClearAllOverrides() {
+async function stratClearAllOverrides() {
   if (!confirm("Clear ALL manual overrides across all three maps?")) return;
+  const allKeys = Object.keys(_strat_flatten(STRAT_STATE.overrides));
   STRAT_STATE.overrides = {};
   _saveStratOverrides();
   renderStrategicView();
+  try {
+    await Promise.all(allKeys.map(k => kvStore.del("map2x2_override", k).catch(() => null)));
+  } catch {}
 }
 
 function renderStrategicView() {
@@ -6545,7 +6891,7 @@ function renderDatabaseView() {
   const s = document.getElementById("db-search");
   if (s) {
     s.addEventListener("input", e => {
-      STATE.search = e.target.value.toLowerCase().trim();
+      STATE.search = e.target.value;
       renderDatabaseView();
       // After re-render the DOM element is replaced — restore focus + caret so
       // the user can keep typing without re-clicking the field after each key.
@@ -7119,8 +7465,14 @@ function showGlobeTip(event, u) {
 function hideGlobeTip() { if (tooltipEl) tooltipEl.style.display = "none"; }
 
 window.addEventListener("DOMContentLoaded", async () => {
-  // Probe AI availability in parallel — never blocks app startup
+  // Probe AI availability + sync shared state in parallel — neither blocks startup.
+  // All four fire-and-forget; UI starts with localStorage cache and upgrades
+  // to server data as each call lands.
   checkAiAvailability();
+  syncOutreachFromServer();
+  syncTeamAssignmentsFromServer();
+  syncStageOverridesFromServer();
+  syncStratOverridesFromServer();
   try {
     await loadKnowledgeBase();
   } catch (e) {
@@ -7132,6 +7484,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   loadData(false);
+});
+
+// Re-sync when the tab regains focus — picks up changes made by other users.
+window.addEventListener("focus", () => {
+  if (typeof syncOutreachFromServer === "function")        syncOutreachFromServer();
+  if (typeof syncTeamAssignmentsFromServer === "function") syncTeamAssignmentsFromServer();
+  if (typeof syncStageOverridesFromServer === "function")  syncStageOverridesFromServer();
+  if (typeof syncStratOverridesFromServer === "function")  syncStratOverridesFromServer();
 });
 </script>
 </body>

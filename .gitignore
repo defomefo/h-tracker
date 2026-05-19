@@ -1,6 +1,12 @@
 # Secrets
 .env
 
+# SQLite (per-deploy state)
+h-tracker.db
+h-tracker.db-journal
+h-tracker.db-wal
+h-tracker.db-shm
+
 # Python
 venv/
 __pycache__/
