@@ -1,104 +1,111 @@
-# Deploying the backend to Fly.io
+# Deploying the backend to Render + Neon
 
 The Vercel deploy at `https://h-tracker-blue.vercel.app/` serves the static
-frontend. The Flask backend (AI, SQLite sync, presence) runs on Fly.io and
-the frontend automatically points at `https://h-tracker-api.fly.dev` when it
-detects it's running on a `*.vercel.app` host.
+frontend. The Flask backend runs on **Render.com** (free tier, no credit card)
+and the database is **Neon Postgres** (free tier, no credit card).
 
-## One-time setup (~10 minutes)
+When the frontend detects it's running on a `*.vercel.app` host, it
+automatically points its `/api/*` calls at `https://h-tracker-api.onrender.com`.
 
-### 1. Install flyctl
+## One-time setup (~15 minutes)
 
-```bash
-# macOS
-brew install flyctl
+### 1. Create the Neon Postgres database
 
-# Or via curl
-curl -L https://fly.io/install.sh | sh
-```
+1. Go to <https://neon.tech> → "Sign up with GitHub" (or email)
+2. Free tier: 0.5 GB storage, 100 hours/month compute — more than enough
+3. After signup, you'll see a default project. Click the **Connection details**
+   panel on the right.
+4. Make sure **Pooled connection** is selected (not Direct) — this gives the
+   shorter idle reconnect time Render needs.
+5. Copy the connection string. It looks like:
+   ```
+   postgresql://user:password@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+   ```
+6. **Save it somewhere safe** — you'll paste it into Render in step 3.
 
-### 2. Sign up + log in (free tier, credit card required for verification but not charged)
-
-```bash
-flyctl auth signup     # opens browser; or `flyctl auth login` if you already have an account
-```
-
-### 3. Create the app and DB volume (without deploying yet)
+### 2. Push the new code to GitHub
 
 ```bash
 cd /Users/defo/PycharmProjects/PythonProject4/h-tracker
-
-flyctl launch --no-deploy --name h-tracker-api --region fra --copy-config
-# When asked about Postgres, Redis, etc — say NO to all
-# When asked to use the existing fly.toml — say YES
-
-# Persistent volume for SQLite (1 GB free per app)
-flyctl volumes create hfarm_data --size 1 --region fra --yes
+git add app.py index.html requirements.txt render.yaml DEPLOY.md
+git commit -m "Add Postgres support + Render deploy config"
+git push
 ```
 
-### 4. Push your Gemini key as a Fly secret (never commit it!)
+### 3. Create the Render web service
+
+1. Go to <https://render.com> → "Sign up with GitHub"
+2. After authorizing GitHub, click **New +** → **Blueprint**
+3. Pick the `h-tracker` repo. Render reads `render.yaml` and shows the service it will create.
+4. Click **Apply**. Render starts the first build (~2-3 minutes).
+5. While it builds, click into the new `h-tracker-api` service → **Environment** tab.
+6. Add two secrets (these are marked `sync: false` in render.yaml so they're not in git):
+   * **`DATABASE_URL`** = paste the Neon connection string from step 1
+   * **`GEMINI_API_KEY`** = paste your Gemini key
+7. Click **Save Changes**. Render will rebuild + redeploy with the secrets.
+
+### 4. Verify
+
+Once the service shows **Live** in the Render dashboard:
 
 ```bash
-flyctl secrets set GEMINI_API_KEY="paste-your-key-here"
+curl https://h-tracker-api.onrender.com/api/health
+# → {"db":"neon/render","db_backend":"postgres","key_set":true,"model":"gemini-2.5-flash","ok":true,"provider":"gemini"}
 ```
 
-### 5. Deploy
-
-```bash
-flyctl deploy
-```
-
-You'll see Docker build + push + machine start. First deploy takes ~3 minutes;
-subsequent deploys ~30 seconds.
-
-### 6. Verify
-
-```bash
-# Health check should return {ok: true, key_set: true, ...}
-curl https://h-tracker-api.fly.dev/api/health
-```
-
-Then visit `https://h-tracker-blue.vercel.app/` and the chat + AI button
-should work — Vercel page → Fly API → Gemini.
+Then open `https://h-tracker-blue.vercel.app/` and hard-refresh (Cmd+Shift+R).
+- Chat answers free-form questions
+- "Draft with AI" loses the SOON badge
 
 ## Day-to-day
 
-* **Push a code change** — `git push` to GitHub triggers Vercel (frontend).
-  For backend changes, also run `flyctl deploy` from this folder.
-* **Rotate / update Gemini key** — `flyctl secrets set GEMINI_API_KEY=...`
-  (automatically redeploys).
-* **Check logs** — `flyctl logs` (live tail) or `flyctl logs --no-tail | tail`.
-* **SSH into the machine** — `flyctl ssh console` (useful for inspecting the
-  SQLite DB: `sqlite3 /data/h-tracker.db`).
-* **Pause the app to save free-tier hours** — `flyctl scale count 0`.
-  `flyctl scale count 1` to resume.
+* **Frontend changes** — `git push` triggers Vercel.
+* **Backend changes** — `git push` triggers Render (autoDeploy is on).
+* **Rotate Gemini key / change CORS** — Render dashboard → Environment → edit → Save Changes (redeploys).
+* **Check logs** — Render dashboard → service → Logs tab. Live streamed.
+* **Check the database** — Neon dashboard → SQL Editor. Query `SELECT * FROM outreach;` to inspect data.
 
-## Costs
+## Free-tier caveats
 
-Fly's free tier covers this app indefinitely at typical H-FARM usage:
+* **Render free instance sleeps after 15 min of inactivity.** First request
+  after sleep takes ~30-50 seconds to wake the container. Acceptable for an
+  internal team tool; if someone's actively using it the instance stays warm.
+  To eliminate cold starts, upgrade to Render Starter ($7/mo) which never sleeps.
+* **Neon free tier auto-pauses after 5 min idle** but wakes in <1 second
+  on the next query. Effectively invisible.
+* **Neon free storage is 0.5 GB.** This app's data will be <10 MB even with
+  thousands of outreach entries; you'll never hit this.
 
-* 3 shared-cpu-1x machines (we use 1)
-* 3 GB persistent volume (we use 1)
-* 160 GB/month outbound bandwidth (typical: <1 GB/month)
-* Machine auto-stops when idle (`auto_stop_machines = "stop"` in fly.toml)
-  so the free-tier hours go a long way.
+## Local development (still works exactly the same)
 
-If usage grows past free tier, expected cost is ~$5/month.
-
-## Adding a new frontend origin (e.g. a second Vercel preview URL)
-
-Update `HFARM_CORS_ORIGINS` and redeploy — no code change needed:
+Don't set `DATABASE_URL` locally. With no `DATABASE_URL`, the app uses
+SQLite at `h-tracker.db` exactly as before:
 
 ```bash
-flyctl secrets set HFARM_CORS_ORIGINS="https://h-tracker-blue.vercel.app,https://h-tracker-preview-xyz.vercel.app,http://127.0.0.1:8000,http://localhost:8000"
+cd /Users/defo/PycharmProjects/PythonProject4/h-tracker
+source venv/bin/activate
+python app.py
+# → uses local sqlite, available at http://127.0.0.1:8000
 ```
+
+If you want to test against the production Postgres locally, put the Neon
+connection string in your local `.env`:
+
+```bash
+echo 'DATABASE_URL=postgresql://...' >> .env
+python app.py
+# → now uses Neon Postgres
+```
+
+## Adding a new frontend origin
+
+Update `HFARM_CORS_ORIGINS` in Render's Environment tab (comma-separated)
+and click Save Changes. No code change needed.
 
 ## Why this setup
 
-* **Flask stays Flask** — no rewriting routes as serverless functions.
-* **SQLite stays SQLite** — one file on a persistent disk; backed up by
-  `flyctl ssh console` + `scp` if you ever want a copy.
-* **Vercel handles the static frontend** — fast global CDN, free, atomic
-  deploys on every git push. Doesn't try to run Python.
-* **CORS** — Flask is configured to accept requests from the Vercel domain
-  and from localhost for dev. Override via `HFARM_CORS_ORIGINS`.
+* **Render hosts Flask** — free tier, no card, autoDeploys on git push.
+* **Neon hosts Postgres** — free tier, no card, serverless (scales to zero).
+* **Vercel hosts the static frontend** — free, global CDN, atomic deploys.
+* **Dual SQLite/Postgres in app.py** — local dev stays simple (no Postgres
+  install needed), production uses real Postgres.

@@ -3,3 +3,6 @@ flask-cors>=5.0
 gunicorn>=23.0
 google-genai>=1.0
 python-dotenv>=1.0
+# Postgres driver for production (Neon/Render). SQLite is the fallback for
+# local dev when DATABASE_URL isn't set — sqlite3 is in the stdlib.
+psycopg[binary]>=3.2

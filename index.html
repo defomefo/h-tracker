@@ -1437,12 +1437,15 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 //     in the deployed index.html if you ever change hosts.
 // ============================================================================
 const API_BASE = (() => {
+  // First-class override: drop this <meta> in index.html to point anywhere.
+  //   <meta name="hfarm-api-base" content="https://my-api.example.com">
   const meta = document.querySelector('meta[name="hfarm-api-base"]');
   if (meta && meta.content) return meta.content.trim().replace(/\/$/, "");
   const host = window.location.hostname;
-  // Static-hosting domains where Flask is NOT present — point at Fly.
+  // Static-hosting domains where Flask is NOT present — point at Render.
+  // (Service hosted on render.com; URL follows the pattern below.)
   if (/\.vercel\.app$|\.netlify\.app$|\.pages\.dev$|\.github\.io$/.test(host)) {
-    return "https://h-tracker-api.fly.dev";
+    return "https://h-tracker-api.onrender.com";
   }
   return "";   // same-origin (local dev or self-hosted Flask)
 })();

@@ -1,0 +1,31 @@
+# Render.com Blueprint — declarative service config.
+# https://render.com/docs/blueprint-spec
+#
+# After first push to GitHub, on render.com click "New > Blueprint" and point
+# it at this repo. Render reads this file and provisions the service. You
+# still set secrets (GEMINI_API_KEY, DATABASE_URL) manually in the dashboard.
+
+services:
+  - type: web
+    name: h-tracker-api
+    runtime: python
+    plan: free                 # 750 hrs/mo free; sleeps after 15 min idle
+    region: frankfurt          # closest free region to Treviso
+    branch: main
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 60 --access-logfile - app:app
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      # CORS whitelist for the deployed frontend(s). Override in dashboard
+      # if you add more origins later.
+      - key: HFARM_CORS_ORIGINS
+        value: "https://h-tracker-blue.vercel.app,http://127.0.0.1:8000,http://localhost:8000"
+      # Secrets — set these manually in the Render dashboard, never commit them.
+      # (Listed here with sync:false so Render doesn't try to inject blanks.)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL       # Neon connection string (Pooled connection)
+        sync: false

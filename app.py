@@ -53,18 +53,81 @@ GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 gemini_client = genai.Client(api_key=GEMINI_KEY) if GEMINI_KEY else None
 
 
-# ---------- SQLite plumbing ----------
+# ============================================================================
+# DATABASE — dual SQLite (local dev) / Postgres (production) support
+# ----------------------------------------------------------------------------
+# When DATABASE_URL is set (Render, Neon, any postgres://), psycopg connects
+# to that. Otherwise we fall back to a local SQLite file. SQL stays mostly
+# the same — we translate `?` placeholders to `%s` for Postgres and emit a
+# small DDL difference for the auto-increment column. Everything else is
+# identical, including INSERT...ON CONFLICT (supported in both).
+# ============================================================================
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+try:
+    import psycopg
+    from psycopg.rows import dict_row as _pg_dict_row
+    _HAS_PG = True
+except ImportError:
+    _HAS_PG = False
+
+USE_PG = bool(DATABASE_URL) and _HAS_PG
+
 _db_init_lock = threading.Lock()
 _db_ready = False
 
 
+def _q(sql):
+    """Translate SQLite `?` placeholders to Postgres `%s`. No-op on SQLite."""
+    return sql.replace("?", "%s") if USE_PG else sql
+
+
+class _DB:
+    """Thin connection wrapper so the rest of the code stays backend-agnostic.
+
+    Both sqlite3.Connection and psycopg.Connection support `.execute()` that
+    returns a Cursor with `.fetchall()` / `.fetchone()` / `.rowcount`. We only
+    need to translate `?` placeholders before delegating.
+    """
+
+    __slots__ = ("_conn",)
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=()):
+        return self._conn.execute(_q(sql), params)
+
+    def cursor(self):
+        return self._conn.cursor()
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        return self._conn.close()
+
+
 def _connect():
+    """Return a fresh connection to the configured backend, wrapped in _DB."""
+    if USE_PG:
+        # Neon sometimes hands out URLs with `postgres://`; psycopg only
+        # accepts `postgresql://`. Normalise.
+        url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        return _DB(psycopg.connect(url, row_factory=_pg_dict_row, autocommit=False))
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     # Better concurrency for an internal multi-user tool
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+    return _DB(conn)
+
+
+_AUTOINC = "BIGSERIAL PRIMARY KEY" if USE_PG else "INTEGER PRIMARY KEY AUTOINCREMENT"
+_INT_DEFAULT_ZERO = "INTEGER NOT NULL DEFAULT 0"   # same syntax in both
 
 
 def _ensure_schema():
@@ -75,62 +138,59 @@ def _ensure_schema():
     with _db_init_lock:
         if _db_ready:
             return
-        with _connect() as c:
-            c.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS outreach (
+        statements = [
+            f"""CREATE TABLE IF NOT EXISTS outreach (
                     id          TEXT PRIMARY KEY,
                     entity_id   TEXT NOT NULL,
                     payload     TEXT NOT NULL,
                     updated_at  TEXT NOT NULL,
-                    deleted     INTEGER NOT NULL DEFAULT 0
-                );
-                CREATE INDEX IF NOT EXISTS idx_outreach_entity
-                    ON outreach(entity_id);
-                CREATE INDEX IF NOT EXISTS idx_outreach_updated
-                    ON outreach(updated_at);
-
-                -- Generic key/value bucket for simple per-entity overrides
-                -- (team assignments, kanban stage overrides, 2x2 positions, …).
-                -- One row per (namespace, key). Value is JSON-encoded.
-                CREATE TABLE IF NOT EXISTS kv_store (
+                    deleted     {_INT_DEFAULT_ZERO}
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_outreach_entity ON outreach(entity_id)",
+            "CREATE INDEX IF NOT EXISTS idx_outreach_updated ON outreach(updated_at)",
+            # Generic key/value bucket for simple per-entity overrides
+            # (team assignments, kanban stage overrides, 2x2 positions, …).
+            # One row per (namespace, key). Value is JSON-encoded.
+            """CREATE TABLE IF NOT EXISTS kv_store (
                     namespace  TEXT NOT NULL,
                     key        TEXT NOT NULL,
                     value      TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     PRIMARY KEY (namespace, key)
-                );
-                CREATE INDEX IF NOT EXISTS idx_kv_ns
-                    ON kv_store(namespace);
-
-                -- Live sessions, refreshed via /api/presence/ping every ~30s.
-                -- Rows older than PRESENCE_TTL_SECONDS are considered offline.
-                CREATE TABLE IF NOT EXISTS presence (
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_kv_ns ON kv_store(namespace)",
+            # Live sessions, refreshed via /api/presence/ping every ~30s.
+            # Rows older than PRESENCE_TTL_SECONDS are considered offline.
+            """CREATE TABLE IF NOT EXISTS presence (
                     session_id   TEXT PRIMARY KEY,
                     display_name TEXT NOT NULL,
                     current_view TEXT,
                     last_seen    TEXT NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS idx_presence_seen
-                    ON presence(last_seen);
-
-                -- Append-only edit log so the "last edit by X, 12s ago" chip
-                -- can show what just changed. We could derive this from the
-                -- other tables' updated_at columns, but having one explicit
-                -- audit trail keeps the query trivial and survives deletes.
-                CREATE TABLE IF NOT EXISTS edit_log (
-                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_presence_seen ON presence(last_seen)",
+            # Append-only edit log so the "last edit by X, 12s ago" chip
+            # can show what just changed. We could derive this from the
+            # other tables' updated_at columns, but having one explicit
+            # audit trail keeps the query trivial and survives deletes.
+            f"""CREATE TABLE IF NOT EXISTS edit_log (
+                    id           {_AUTOINC},
                     occurred_at  TEXT NOT NULL,
                     session_id   TEXT,
                     display_name TEXT,
-                    resource     TEXT NOT NULL,   -- e.g. "outreach", "kv:team_assignment"
-                    action       TEXT NOT NULL,   -- "upsert" | "delete" | "import"
-                    key          TEXT             -- entry id or namespace key
-                );
-                CREATE INDEX IF NOT EXISTS idx_edit_log_at
-                    ON edit_log(occurred_at);
-                """
-            )
+                    resource     TEXT NOT NULL,
+                    action       TEXT NOT NULL,
+                    key          TEXT
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_edit_log_at ON edit_log(occurred_at)",
+        ]
+        conn = _connect()
+        try:
+            cur = conn.cursor()
+            for stmt in statements:
+                cur.execute(stmt)
+            conn.commit()
+        finally:
+            conn.close()
         _db_ready = True
 
 
@@ -224,7 +284,8 @@ def health():
             "model": MODEL,
             "key_set": bool(GEMINI_KEY),
             "provider": "gemini",
-            "db": str(DB_PATH.name),
+            "db_backend": "postgres" if USE_PG else "sqlite",
+            "db": "neon/render" if USE_PG else str(DB_PATH.name),
         }
     )
 
