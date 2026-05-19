@@ -1118,6 +1118,29 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .team-prios{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .team-pill{font-size:9px;padding:2px 7px;border-radius:9px;font-weight:700;letter-spacing:.3px}
 
+/* HOME KPI strip header + info button */
+.home-kpis-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px;gap:12px}
+.home-kpis-title{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);font-weight:800}
+.kpi-info-btn{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);font-size:10px;letter-spacing:.4px;font-weight:600;padding:4px 10px;border-radius:11px;cursor:pointer;font-family:inherit;transition:all .12s;text-transform:uppercase}
+.kpi-info-btn:hover{border-color:var(--navy);color:var(--navy);background:#fff}
+
+/* PRIORITY DEFINITIONS MODAL — opened by the "?" button on home + the
+   priority filter chip. Click-out to close, ESC handled inline. */
+.priority-defs-overlay{position:fixed;inset:0;background:rgba(10,37,64,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:40px 20px;overflow-y:auto}
+.priority-defs-overlay.open{display:flex}
+.priority-defs-modal{background:#fff;border-radius:10px;width:100%;max-width:620px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;animation:pdfade .14s ease-out}
+@keyframes pdfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.priority-defs-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 12px;border-bottom:1px solid var(--rule)}
+.priority-defs-head h2{font-size:16px;color:var(--navy);font-weight:800;letter-spacing:.3px}
+.priority-defs-close{background:none;border:none;font-size:26px;line-height:1;color:var(--ink-soft);cursor:pointer;padding:0 6px;font-family:inherit}
+.priority-defs-close:hover{color:var(--hf-red)}
+.priority-defs-sub{padding:10px 22px 4px;font-size:12px;color:var(--ink-soft)}
+.priority-defs-list{padding:8px 14px 18px}
+.priority-defs-row{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:start;padding:10px 8px;background:none;border:none;border-radius:6px;width:100%;text-align:left;cursor:pointer;font-family:inherit;transition:background .1s}
+.priority-defs-row:hover{background:var(--paper)}
+.priority-defs-pill{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;text-align:center;letter-spacing:.3px;white-space:nowrap;justify-self:start}
+.priority-defs-desc{font-size:12px;color:var(--ink);line-height:1.5;padding-top:2px}
+
 /* PRESENCE CHIP — compact pill at bottom-right, sits LEFT of the help/chat
    FABs so it doesn't cover them. Detail (online users + recent edits) lives
    in the hover popover so the chip itself stays small and uncluttered. */
@@ -1309,7 +1332,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 <section class="explorer">
   <div class="filter-bar" id="filter-bar">
     <span class="filter-bar-label">Filter</span>
-    <input type="text" class="fb-search" id="search" placeholder="Search name, country, focus..." />
+    <input type="text" class="fb-search" id="search" placeholder="Search name, country, focus, priority (e.g. 'critical')..." />
     <div class="fb-dropdown" data-filter="continent"><button class="fb-btn" onclick="toggleFbDropdown(event,'continent')">Region <span class="fb-count" id="fb-count-continent">0</span><span class="fb-arrow">▾</span></button><div class="fb-panel" id="fb-panel-continent"></div></div>
     <div class="fb-dropdown" data-filter="type"><button class="fb-btn" onclick="toggleFbDropdown(event,'type')">Type <span class="fb-count" id="fb-count-type">0</span><span class="fb-arrow">▾</span></button><div class="fb-panel" id="fb-panel-type"></div></div>
     <div class="fb-dropdown" data-filter="owner"><button class="fb-btn" onclick="toggleFbDropdown(event,'owner')">Owner team <span class="fb-count" id="fb-count-owner">0</span><span class="fb-arrow">▾</span></button><div class="fb-panel" id="fb-panel-owner"></div></div>
@@ -4300,7 +4323,14 @@ function applyFilters(unis) {
     if (STATE.search) {
       const q = STATE.search.toLowerCase().trim();
       if (q) {
-        const blob = `${u.name} ${u.country} ${u.focus_areas} ${u.programs}`.toLowerCase();
+        // Searchable fields: name, country, focus_areas, programs, PLUS
+        // classification fields so users can just type "critical" or
+        // "digital pioneer" to filter to that segment.
+        const blob = [
+          u.name, u.country, u.focus_areas, u.programs,
+          u.priority, u.strategic_tier, u.partnership_readiness,
+          ENTITY_LABELS[u.type] || u.type,
+        ].filter(Boolean).join(" ").toLowerCase();
         if (!blob.includes(q)) return false;
       }
     }
@@ -5958,6 +5988,69 @@ function programOpenCountry(country) {
 // =====================================================================
 // VIEW RENDERERS
 // =====================================================================
+
+// Priority-level cheatsheet — shown as native tooltips on the home KPI
+// tiles and surfaced as a full popup via the "?" info button next to them.
+const PRIORITY_DEFINITIONS = {
+  "Critical":       "Must-engage this quarter. High strategic value or time-sensitive — losing the window means losing the partnership.",
+  "Hot":            "Active conversations with clear momentum. Likely to convert to a signed agreement in 4-8 weeks if we keep cadence.",
+  "Warm":           "Engaged interest, intro meetings done. Needs a concrete next artifact (proposal, MoU draft) to keep moving.",
+  "Cold":           "Initial contact made but stalled. Worth re-warming with a specific hook — fresh case study, event invite, or aligned programme.",
+  "Cold-storage":   "Parked indefinitely. Low immediate priority — revisit only if their context changes (new dean, strategy shift, etc.).",
+  "Up & Running":   "Live, signed partnership. Recurring touchpoints; success = retention + expansion, not acquisition.",
+  "Not interested": "Explicit decline or no fit. Do not re-engage for at least 12 months unless circumstances change.",
+  "Unclassified":   "Priority not yet set. Triage and assign one of the bands above so it shows up in the right queues.",
+};
+
+// Filter the globe view by a single priority and switch the user there.
+// Used by the home KPI tiles so clicking "Critical" lands you on the
+// filtered globe instead of dumping you in the database table.
+function goToGlobeWithPriority(p) {
+  // Reset existing priority filter, then add the clicked one. Don't touch
+  // other filter facets so users can layer this on top.
+  STATE.filters.priority.clear();
+  if (p) STATE.filters.priority.add(p);
+  switchView("globe");
+  if (typeof renderFilterChips === "function")   renderFilterChips();
+  if (typeof renderRegionAnalysis === "function") renderRegionAnalysis();
+  if (typeof renderCountryPanel === "function") renderCountryPanel();
+  if (typeof render === "function") render();
+  if (typeof drawDots === "function") drawDots();
+}
+
+// Lightweight modal popup explaining what each priority level means.
+// Triggered from the "?" badge on the home KPI strip + the priority filter chip.
+function showPriorityDefinitions() {
+  let overlay = document.getElementById("priority-defs-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "priority-defs-overlay";
+    overlay.className = "priority-defs-overlay";
+    overlay.onclick = (e) => { if (e.target === overlay) hidePriorityDefinitions(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div class="priority-defs-modal" role="dialog" aria-label="Priority level definitions">
+      <div class="priority-defs-head">
+        <h2>Priority levels</h2>
+        <button type="button" class="priority-defs-close" onclick="hidePriorityDefinitions()" aria-label="Close">×</button>
+      </div>
+      <p class="priority-defs-sub">What each band means in practice. Click any row to filter the globe view to that priority.</p>
+      <div class="priority-defs-list">
+        ${Object.entries(PRIORITY_DEFINITIONS).map(([name, desc]) => `
+          <button class="priority-defs-row" type="button" onclick="hidePriorityDefinitions();goToGlobeWithPriority(${name === 'Unclassified' ? "''" : "'" + name + "'"})">
+            <span class="priority-defs-pill ${PRIO_CLASS[name] || ''}" style="background:${PRIO_COLORS[name] || PRIO_COLORS['']};color:${name === 'Warm' ? 'var(--ink)' : '#fff'}">${escape(name)}</span>
+            <span class="priority-defs-desc">${escape(desc)}</span>
+          </button>`).join("")}
+      </div>
+    </div>`;
+  overlay.classList.add("open");
+}
+function hidePriorityDefinitions() {
+  const o = document.getElementById("priority-defs-overlay");
+  if (o) o.classList.remove("open");
+}
+
 // HOME — landing dashboard with KPIs + quick-jump tiles + spotlight
 function renderHomeView() {
   const el = document.getElementById("view-home");
@@ -5985,15 +6078,19 @@ function renderHomeView() {
         <p>${total} partnership entities under your watch — universities, agencies, schools and student-orgs. Pick a view from the left or start with the spotlight below.</p>
       </div>
 
+      <div class="home-kpis-head">
+        <span class="home-kpis-title">Pipeline at a glance</span>
+        <button type="button" class="kpi-info-btn" onclick="showPriorityDefinitions()" title="What does each priority mean?">? what do these mean</button>
+      </div>
       <div class="home-kpis">
-        <div class="hk crit" onclick="switchView('database')"><div class="num">${critical}</div><div class="lbl">Critical</div></div>
-        <div class="hk hot"  onclick="switchView('database')"><div class="num">${hot}</div><div class="lbl">Hot</div></div>
-        <div class="hk warm" onclick="switchView('database')"><div class="num">${warm}</div><div class="lbl">Warm</div></div>
-        <div class="hk"      onclick="switchView('database')"><div class="num">${cold}</div><div class="lbl">Cold</div></div>
-        <div class="hk"      onclick="switchView('database')"><div class="num">${cs}</div><div class="lbl">Cold-storage</div></div>
-        <div class="hk ur"   onclick="switchView('database')"><div class="num">${ur}</div><div class="lbl">Up &amp; Running</div></div>
-        <div class="hk"      onclick="switchView('database')"><div class="num">${ni}</div><div class="lbl">Not interested</div></div>
-        <div class="hk"      onclick="switchView('database')"><div class="num">${unclass}</div><div class="lbl">Unclassified</div></div>
+        <div class="hk crit" onclick="goToGlobeWithPriority('Critical')"       title="${escape(PRIORITY_DEFINITIONS['Critical'])}"><div class="num">${critical}</div><div class="lbl">Critical</div></div>
+        <div class="hk hot"  onclick="goToGlobeWithPriority('Hot')"            title="${escape(PRIORITY_DEFINITIONS['Hot'])}"     ><div class="num">${hot}</div><div class="lbl">Hot</div></div>
+        <div class="hk warm" onclick="goToGlobeWithPriority('Warm')"           title="${escape(PRIORITY_DEFINITIONS['Warm'])}"    ><div class="num">${warm}</div><div class="lbl">Warm</div></div>
+        <div class="hk"      onclick="goToGlobeWithPriority('Cold')"           title="${escape(PRIORITY_DEFINITIONS['Cold'])}"    ><div class="num">${cold}</div><div class="lbl">Cold</div></div>
+        <div class="hk"      onclick="goToGlobeWithPriority('Cold-storage')"   title="${escape(PRIORITY_DEFINITIONS['Cold-storage'])}"><div class="num">${cs}</div><div class="lbl">Cold-storage</div></div>
+        <div class="hk ur"   onclick="goToGlobeWithPriority('Up & Running')"   title="${escape(PRIORITY_DEFINITIONS['Up & Running'])}"><div class="num">${ur}</div><div class="lbl">Up &amp; Running</div></div>
+        <div class="hk"      onclick="goToGlobeWithPriority('Not interested')" title="${escape(PRIORITY_DEFINITIONS['Not interested'])}"><div class="num">${ni}</div><div class="lbl">Not interested</div></div>
+        <div class="hk"      onclick="goToGlobeWithPriority('')"               title="${escape(PRIORITY_DEFINITIONS['Unclassified'])}"><div class="num">${unclass}</div><div class="lbl">Unclassified</div></div>
       </div>
 
       <div class="home-grid">
@@ -7099,7 +7196,7 @@ function renderDatabaseView() {
   });
   let html = `<div class="view-header"><h1>Database</h1><p>Every entity in one sortable table. Click a column header to sort. Click a row to open its full detail.</p></div>`;
   html += `<div class="db-toolbar">
-    <input type="text" id="db-search" placeholder="Search name, country, focus…" value="${escape(STATE.search)}"/>
+    <input type="text" id="db-search" placeholder="Search name, country, focus, priority (e.g. 'critical', 'digital pioneer')…" value="${escape(STATE.search)}"/>
     <button class="btn outline" onclick="exportDbCsv()">⬇ Export CSV</button>
     <div class="db-count">${sorted.length} of ${UNIS.length}</div>
   </div>`;
@@ -7735,6 +7832,17 @@ window.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   loadData(false);
+});
+
+// ESC closes the priority-definitions modal (and could be extended to other
+// overlays). Keeps keyboard UX consistent with everywhere else.
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const o = document.getElementById("priority-defs-overlay");
+  if (o && o.classList.contains("open")) {
+    hidePriorityDefinitions();
+    e.stopPropagation();
+  }
 });
 
 // Re-sync when the tab regains focus — picks up changes made by other users.
