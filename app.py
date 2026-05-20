@@ -82,6 +82,24 @@ CORS(
 )
 
 
+@app.errorhandler(404)
+def _json_404(_e):
+    """Flask's default 404 is an HTML page, which makes the frontend's
+    `await r.json()` blow up with a confusing 'Unexpected token <' error.
+    For anything under /api/* (or any unmatched route) return JSON instead
+    so the client can handle it gracefully."""
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "not found", "path": request.path}), 404
+    return ("Not found", 404)
+
+
+@app.errorhandler(500)
+def _json_500(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "internal server error", "detail": str(e)}), 500
+    return ("Internal server error", 500)
+
+
 def auth_required(fn):
     """Decorator that 401s unless the request has a valid session cookie.
     No-op when HFARM_APP_PASSWORD is unset (local dev default)."""

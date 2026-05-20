@@ -2907,6 +2907,14 @@ function _writeLocalEntityOverrides(map) {
 }
 let ENTITY_OVERRIDES = _readLocalEntityOverrides();
 
+// In-memory snapshot of pristine CSV values for any field that has been
+// overridden. Built lazily — populated either by saveEntityField (first
+// edit) or by applyEntityOverridesToUnis (server overrides arriving on
+// boot). Used by revertEntityOverrides to restore CSV values without
+// having to re-fetch the CSV.
+const ENTITY_ORIGINALS = {};
+const _OVERRIDABLE_FIELDS = ["priority", "strategic_tier", "type", "focus_areas", "notes"];
+
 // Apply an override dict to an entity object in place + re-derive the
 // computed fields that depend on the changed inputs (partnership_score,
 // breakdown, readiness, pipeline_stage). Keeps the on-screen state honest
@@ -2964,11 +2972,15 @@ function applyEntityOverridesToUnis() {
     const ov = overrides[u.id];
     if (!ov) return;
     changed = true;
-    // Whitelist: only fields we explicitly allow editing override the CSV.
-    // Anything else in the override blob is ignored — defensive against
-    // stale data shapes.
-    const FIELDS = ["priority", "strategic_tier", "type", "focus_areas", "notes"];
-    FIELDS.forEach(f => { if (Object.prototype.hasOwnProperty.call(ov, f)) u[f] = ov[f]; });
+    // Snapshot CSV-pristine values BEFORE applying the override, so a
+    // later revert can restore them without re-fetching the CSV.
+    if (!ENTITY_ORIGINALS[u.id]) ENTITY_ORIGINALS[u.id] = {};
+    _OVERRIDABLE_FIELDS.forEach(f => {
+      if (Object.prototype.hasOwnProperty.call(ov, f) && !(f in ENTITY_ORIGINALS[u.id])) {
+        ENTITY_ORIGINALS[u.id][f] = u[f];
+      }
+      if (Object.prototype.hasOwnProperty.call(ov, f)) u[f] = ov[f];
+    });
     recomputeEntityDerived(u);
   });
   return changed;
@@ -3008,6 +3020,13 @@ async function syncEntityOverridesFromServer() {
 async function saveEntityField(entityId, field, value) {
   const u = UNIS.find(x => x.id === entityId);
   if (!u) return;
+  // Snapshot the CSV-pristine value the FIRST time this field is touched
+  // for this entity. Lets revertEntityOverrides restore correctly without
+  // re-fetching the CSV (which doesn't work for local-file uploads).
+  if (!ENTITY_ORIGINALS[entityId]) ENTITY_ORIGINALS[entityId] = {};
+  if (!(field in ENTITY_ORIGINALS[entityId])) {
+    ENTITY_ORIGINALS[entityId][field] = u[field];
+  }
   // Build new override blob: merge over what was already saved
   const next = Object.assign({}, ENTITY_OVERRIDES[entityId] || {}, { [field]: value });
   ENTITY_OVERRIDES[entityId] = next;
@@ -3032,16 +3051,34 @@ async function saveEntityField(entityId, field, value) {
   catch (e) { console.warn("[entity_override] save deferred (offline):", e.message); }
 }
 
-// Clear all overrides for an entity, reverting to CSV values. We don't have
-// the original CSV value cached, so we trigger a full reload by re-running
-// the data ingest (loadData). Cheap enough — CSV is local-ish.
+// Restore an entity's overridden fields to the snapshotted CSV-pristine
+// values. Works whether the data was loaded from a URL or a local file —
+// no CSV re-fetch involved. (If we ever wipe the snapshot map and reload,
+// applyEntityOverridesToUnis will rebuild it at the next CSV ingest.)
 async function revertEntityOverrides(entityId) {
-  if (!confirm("Revert this entity's edits and reload from the CSV source?")) return;
+  if (!confirm("Revert this entity's edits to the original CSV values?")) return;
+  const u = UNIS.find(x => x.id === entityId);
+  const orig = ENTITY_ORIGINALS[entityId] || {};
+  if (u) {
+    // Restore each snapshotted field
+    Object.entries(orig).forEach(([f, v]) => { u[f] = v; });
+    recomputeEntityDerived(u);
+  }
+  // Clear local maps
   delete ENTITY_OVERRIDES[entityId];
+  delete ENTITY_ORIGINALS[entityId];
   _writeLocalEntityOverrides(ENTITY_OVERRIDES);
-  try { await kvStore.del("entity_override", entityId); } catch {}
-  // Reload data from CSV so the entity gets its pristine values back
-  if (typeof loadData === "function") loadData(true);
+  // Re-render the visible surface so the rollback shows immediately
+  if (STATE.detailId === entityId) openDetail(entityId);
+  if (typeof renderFilterChips === "function")    renderFilterChips();
+  if (typeof renderRegionAnalysis === "function") renderRegionAnalysis();
+  if (typeof renderPivotTable === "function")     renderPivotTable();
+  if (typeof render === "function")               render();
+  if (typeof drawDots === "function")             drawDots();
+  if (typeof renderCurrentView === "function")    renderCurrentView();
+  // Mirror to server
+  try { await kvStore.del("entity_override", entityId); }
+  catch (e) { console.warn("[entity_override] revert deferred (offline):", e.message); }
 }
 
 async function syncTeamAssignmentsFromServer() {
@@ -4966,7 +5003,19 @@ async function loadEntityActivity(entityId) {
   if (!host) return;
   try {
     const r = await apiFetch("/api/edits/entity/" + encodeURIComponent(entityId) + "?limit=50");
-    const data = await r.json();
+    // Be defensive about non-JSON responses — a stale Render deploy or a
+    // proxy hiccup can return an HTML 404 page. Don't choke on it.
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch {
+      host.innerHTML = `<div class="activity-empty">Activity feed not available right now (server is redeploying). Try again in a moment.</div>`;
+      return;
+    }
+    if (!r.ok) {
+      host.innerHTML = `<div class="activity-empty">Couldn't load activity — ${escape(data.error || ("HTTP " + r.status))}.</div>`;
+      return;
+    }
     const edits = data.edits || [];
     if (!edits.length) {
       host.innerHTML = `<div class="activity-empty">No tracked changes yet — edits to priority, team, kanban stage, outreach and more will appear here as people make them.</div>`;
