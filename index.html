@@ -1122,7 +1122,10 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#08243d 100%);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;font-family:inherit}
 .login-overlay.open{display:flex}
 .login-card{background:#fff;border-radius:12px;width:100%;max-width:380px;padding:32px 30px;box-shadow:0 24px 70px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:14px;text-align:center;border-top:4px solid var(--hf-red)}
-.login-logo{height:36px;width:auto;margin:0 auto 4px;filter:invert(11%) sepia(72%) saturate(2057%) hue-rotate(195deg) brightness(91%) contrast(106%)}
+/* Logo file is white-on-transparent (designed for the navy header bar).
+   On the white login card we knock it to solid black so the brand mark
+   actually shows. brightness(0) is bulletproof — no CSS hue arithmetic. */
+.login-logo{height:36px;width:auto;margin:0 auto 4px;filter:brightness(0)}
 .login-card h1{font-size:18px;color:var(--navy);font-weight:800;letter-spacing:.4px}
 .login-sub{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:-4px 0 6px}
 .login-row{display:flex;flex-direction:column;gap:6px;text-align:left}
