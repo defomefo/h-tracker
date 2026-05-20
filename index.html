@@ -3046,7 +3046,7 @@ async function syncEntityOverridesFromServer() {
       if (typeof render === "function")               render();
       if (typeof drawDots === "function")             drawDots();
       if (typeof renderCurrentView === "function")    renderCurrentView();
-      if (STATE.detailId) openDetail(STATE.detailId);
+      if (STATE.detailId && document.getElementById("detail-panel").classList.contains("open")) openDetail(STATE.detailId);
     }
     return true;
   } catch (e) {
@@ -3177,7 +3177,7 @@ async function syncTeamAssignmentsFromServer() {
     const remote = await kvStore.fetchAll("team_assignment");
     TEAM_ASSIGNMENTS = remote;
     _writeLocalTeams(remote);
-    if (STATE.detailId) openDetail(STATE.detailId);
+    if (STATE.detailId && document.getElementById("detail-panel").classList.contains("open")) openDetail(STATE.detailId);
     return true;
   } catch (e) {
     console.warn("[teams] server unreachable, using local cache:", e.message);
@@ -4824,7 +4824,17 @@ function openDetail(id) {
   document.getElementById("detail-body").innerHTML = detailHtml(u);
   document.getElementById("detail-panel").classList.add("open");
 }
-function closeDetail() { document.getElementById("detail-panel").classList.remove("open"); }
+function closeDetail() {
+  // Clearing STATE.detailId is essential: every sync function does
+  // `if (STATE.detailId) openDetail(STATE.detailId)` to refresh the open panel
+  // after data arrives from the server. If we don't reset the id here, the
+  // next sync (30s focus tick, edit save, etc.) re-opens the panel even
+  // though the user explicitly closed it.
+  document.getElementById("detail-panel").classList.remove("open");
+  STATE.detailId = null;
+  // Also nuke any lingering globe tooltip (see hideGlobeTip below).
+  if (typeof hideGlobeTip === "function") hideGlobeTip();
+}
 
 function detailHtml(u) {
   const actionRec = recommendAction(u);
@@ -5460,7 +5470,7 @@ async function syncOutreachFromServer() {
     OUTREACH = remote;
     _writeLocalOutreach(remote);   // refresh cache for offline next-load
     OUTREACH_BACKEND = "remote";
-    if (STATE.detailId) openDetail(STATE.detailId);  // refresh visible panel
+    if (STATE.detailId && document.getElementById("detail-panel").classList.contains("open")) openDetail(STATE.detailId);  // refresh visible panel
     return true;
   } catch (e) {
     OUTREACH_BACKEND = "local";
@@ -8369,6 +8379,10 @@ function highlightContinent(cont) {
 }
 
 function drawDots() {
+  // Removing the dots underneath an active tooltip strands the tooltip
+  // visible — the mouseout event never fires on a vanished element.
+  // Force-hide it whenever we redraw the dot layer.
+  if (typeof hideGlobeTip === "function") hideGlobeTip();
   dotsGroup.selectAll("*").remove();
   const filtered = applyFilters(UNIS);
   const visible = filtered.filter(u => u.lat !== null && u.lng !== null);
