@@ -29,3 +29,7 @@ services:
         sync: false
       - key: DATABASE_URL       # Neon connection string (Pooled connection)
         sync: false
+      - key: HFARM_APP_PASSWORD # Shared password users type to enter the app
+        sync: false
+      - key: HFARM_SECRET_KEY   # Random hex; signs session cookies. See DEPLOY.md
+        sync: false

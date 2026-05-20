@@ -1118,6 +1118,24 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .team-prios{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .team-pill{font-size:9px;padding:2px 7px;border-radius:9px;font-weight:700;letter-spacing:.3px}
 
+/* LOGIN OVERLAY — full-page gate when HFARM_APP_PASSWORD is set */
+.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#08243d 100%);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;font-family:inherit}
+.login-overlay.open{display:flex}
+.login-card{background:#fff;border-radius:12px;width:100%;max-width:380px;padding:32px 30px;box-shadow:0 24px 70px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:14px;text-align:center;border-top:4px solid var(--hf-red)}
+.login-logo{height:36px;width:auto;margin:0 auto 4px;filter:invert(11%) sepia(72%) saturate(2057%) hue-rotate(195deg) brightness(91%) contrast(106%)}
+.login-card h1{font-size:18px;color:var(--navy);font-weight:800;letter-spacing:.4px}
+.login-sub{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:-4px 0 6px}
+.login-row{display:flex;flex-direction:column;gap:6px;text-align:left}
+.login-row label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+.login-row input{padding:10px 12px;border:1px solid var(--rule);border-radius:6px;font-size:14px;font-family:inherit;background:var(--paper);color:var(--ink);transition:border-color .12s,background .12s}
+.login-row input:focus{outline:none;border-color:var(--gold);background:#fff}
+.login-err{font-size:12px;color:var(--hf-red);font-weight:600;min-height:14px;text-align:left}
+.login-btn{background:var(--hf-red);color:#fff;border:none;border-radius:6px;padding:11px;font-size:13px;font-weight:700;letter-spacing:.6px;cursor:pointer;font-family:inherit;text-transform:uppercase;transition:background .12s,transform .08s}
+.login-btn:hover{background:#c43e3a}
+.login-btn:active{transform:scale(.98)}
+.login-btn[disabled]{background:var(--ink-soft);cursor:wait}
+.login-foot{font-size:11px;color:var(--ink-soft);margin-top:4px;font-style:italic}
+
 /* HOME KPI strip header + info button */
 .home-kpis-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px;gap:12px}
 .home-kpis-title{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);font-weight:800}
@@ -1161,6 +1179,24 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 </style>
 </head>
 <body>
+
+<!-- Login overlay — shown by JS when /api/auth/status reports the server
+     requires a password. Sits above everything (z-index 9999). Hidden by
+     default; revealed via .open class. -->
+<div id="login-overlay" class="login-overlay" aria-hidden="true">
+  <form class="login-card" id="login-form" onsubmit="event.preventDefault();submitLogin()">
+    <img class="login-logo" src="Logo/logo-h-farm-college-white.png" alt="H-FARM College" />
+    <h1>Global Partnerships</h1>
+    <p class="login-sub">This tracker is private. Enter the shared password to continue.</p>
+    <div class="login-row">
+      <label for="login-pw">Password</label>
+      <input type="password" id="login-pw" name="password" autocomplete="current-password" required autofocus />
+    </div>
+    <div class="login-err" id="login-err" role="alert" aria-live="polite"></div>
+    <button type="submit" class="login-btn" id="login-btn">Sign in</button>
+    <p class="login-foot">Ask your H-FARM Global Partnerships lead for access.</p>
+  </form>
+</div>
 
 <header class="brand-bar">
   <div class="brand-lockup">
@@ -1472,6 +1508,23 @@ const API_BASE = (() => {
   }
   return "";   // same-origin (local dev or self-hosted Flask)
 })();
+
+// apiFetch — single wrapper for every /api/* call. Handles two things:
+//   1. credentials:"include" so the session cookie travels cross-origin
+//   2. 401 detection → re-show the login overlay so users can re-auth in place
+// Use it instead of fetch() whenever talking to our own API.
+async function apiFetch(path, opts = {}) {
+  const r = await fetch(API_BASE + path, {
+    ...opts,
+    credentials: "include",
+  });
+  if (r.status === 401) {
+    // Session expired or never started — surface the login modal again.
+    if (typeof showLoginOverlay === "function") showLoginOverlay({reason: "Session expired — please sign in again."});
+    throw new Error("auth required");
+  }
+  return r;
+}
 
 // ============================================================================
 // CONSTANTS - same as Python normalizer
@@ -4733,7 +4786,7 @@ let _presenceTimer = null;
 
 async function _heartbeatNow() {
   try {
-    await fetch(API_BASE + "/api/presence/ping", {
+    await apiFetch("/api/presence/ping", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -4748,8 +4801,8 @@ async function _heartbeatNow() {
 async function _refreshPresence() {
   try {
     const [pres, edits] = await Promise.all([
-      fetch(API_BASE + "/api/presence",         { cache: "no-store" }).then(r => r.json()),
-      fetch(API_BASE + "/api/edits/recent?limit=5", { cache: "no-store" }).then(r => r.json()),
+      apiFetch("/api/presence",         { cache: "no-store" }).then(r => r.json()),
+      apiFetch("/api/edits/recent?limit=5", { cache: "no-store" }).then(r => r.json()),
     ]);
     PRESENCE_STATE.sessions = pres.sessions || [];
     PRESENCE_STATE.serverNow = pres.now;
@@ -4844,13 +4897,13 @@ function promptDisplayName() {
 
 const kvStore = {
   async fetchAll(ns) {
-    const r = await fetch(API_BASE + "/api/state/kv/" + encodeURIComponent(ns), { cache: "no-store" });
+    const r = await apiFetch("/api/state/kv/" + encodeURIComponent(ns), { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
   },
   async put(ns, key, value) {
-    const r = await fetch(
-      API_BASE + "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
+    const r = await apiFetch(
+      "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
       {
         method: "PUT",
         headers: { "Content-Type": "application/json", ..._identityHeaders() },
@@ -4861,16 +4914,16 @@ const kvStore = {
     return await r.json();
   },
   async del(ns, key) {
-    const r = await fetch(
-      API_BASE + "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
+    const r = await apiFetch(
+      "/api/state/kv/" + encodeURIComponent(ns) + "/" + encodeURIComponent(key),
       { method: "DELETE", headers: _identityHeaders() },
     );
     if (!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
   },
   async import_(ns, blob) {
-    const r = await fetch(
-      API_BASE + "/api/state/kv/" + encodeURIComponent(ns) + "/_import",
+    const r = await apiFetch(
+      "/api/state/kv/" + encodeURIComponent(ns) + "/_import",
       {
         method: "POST",
         headers: { "Content-Type": "application/json", ..._identityHeaders() },
@@ -4903,7 +4956,7 @@ function _writeLocalOutreach(log) {
 let OUTREACH = _readLocalOutreach();   // start with cache so UI renders instantly
 
 async function _fetchRemoteOutreach() {
-  const r = await fetch(API_BASE + "/api/state/outreach", { cache: "no-store" });
+  const r = await apiFetch("/api/state/outreach", { cache: "no-store" });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return await r.json();
 }
@@ -4917,7 +4970,7 @@ async function _migrateLocalToRemote() {
     return;
   }
   try {
-    const r = await fetch(API_BASE + "/api/state/outreach/import", {
+    const r = await apiFetch("/api/state/outreach/import", {
       method: "POST",
       headers: { "Content-Type": "application/json", ..._identityHeaders() },
       body: JSON.stringify(local),
@@ -4962,7 +5015,7 @@ async function upsertOutreach(entry) {
   _writeLocalOutreach(OUTREACH);
 
   try {
-    const r = await fetch(API_BASE + "/api/state/outreach/" + encodeURIComponent(entry.id), {
+    const r = await apiFetch("/api/state/outreach/" + encodeURIComponent(entry.id), {
       method: "PUT",
       headers: { "Content-Type": "application/json", ..._identityHeaders() },
       body: JSON.stringify(entry),
@@ -4985,7 +5038,7 @@ async function deleteOutreach(entityId, entryId) {
   if (STATE.detailId === entityId) openDetail(entityId);
 
   try {
-    const r = await fetch(API_BASE + "/api/state/outreach/" + encodeURIComponent(entryId), {
+    const r = await apiFetch("/api/state/outreach/" + encodeURIComponent(entryId), {
       method: "DELETE", headers: _identityHeaders(),
     });
     if (!r.ok && r.status !== 404) throw new Error("HTTP " + r.status);
@@ -5386,7 +5439,7 @@ async function chatSendInput() {
   } catch {}
 
   try {
-    const r = await fetch(API_BASE + "/api/chat-query", {
+    const r = await apiFetch("/api/chat-query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -5488,7 +5541,7 @@ function chatOpenEntity(id) {
 let AI_ENABLED = false;
 async function checkAiAvailability() {
   try {
-    const r = await fetch(API_BASE + "/api/health", { cache: "no-store" });
+    const r = await apiFetch("/api/health", { cache: "no-store" });
     if (!r.ok) return;
     const j = await r.json();
     AI_ENABLED = !!j.key_set;
@@ -5533,7 +5586,7 @@ async function aiDraftOutreach(entityId) {
       };
 
   try {
-    const resp = await fetch(API_BASE + "/api/draft-outreach", {
+    const resp = await apiFetch("/api/draft-outreach", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -7811,7 +7864,87 @@ function showGlobeTip(event, u) {
 }
 function hideGlobeTip() { if (tooltipEl) tooltipEl.style.display = "none"; }
 
-window.addEventListener("DOMContentLoaded", async () => {
+// ===================================================================
+// AUTH GATE (Phase 5) — shared-password login
+// ===================================================================
+// Flow: DOMContentLoaded → checkAuthAndBoot()
+//   1. GET /api/auth/status  → {auth_required, authed}
+//   2. If auth_required && !authed → showLoginOverlay(), wait for login
+//   3. Otherwise (or after login success) → bootApp()
+// apiFetch() also re-triggers showLoginOverlay() if any later call 401s.
+// ===================================================================
+let _appBooted = false;
+
+function showLoginOverlay(opts = {}) {
+  const overlay = document.getElementById("login-overlay");
+  if (!overlay) return;
+  overlay.classList.add("open");
+  overlay.setAttribute("aria-hidden", "false");
+  const err = document.getElementById("login-err");
+  if (err) err.textContent = opts.reason || "";
+  setTimeout(() => {
+    const pw = document.getElementById("login-pw");
+    if (pw) pw.focus();
+  }, 60);
+}
+function hideLoginOverlay() {
+  const overlay = document.getElementById("login-overlay");
+  if (!overlay) return;
+  overlay.classList.remove("open");
+  overlay.setAttribute("aria-hidden", "true");
+}
+
+async function submitLogin() {
+  const btn = document.getElementById("login-btn");
+  const pwEl = document.getElementById("login-pw");
+  const errEl = document.getElementById("login-err");
+  const pw = (pwEl && pwEl.value) || "";
+  if (!pw.trim()) { errEl.textContent = "Password is required."; return; }
+  btn.disabled = true; btn.textContent = "Signing in…"; errEl.textContent = "";
+  try {
+    const r = await fetch(API_BASE + "/api/auth/login", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pw }),
+    });
+    if (r.status === 401) { errEl.textContent = "Wrong password."; return; }
+    if (!r.ok) { errEl.textContent = "Login failed (HTTP " + r.status + ")."; return; }
+    hideLoginOverlay();
+    pwEl.value = "";   // don't keep the cleartext password in the DOM
+    if (!_appBooted) bootApp();
+  } catch (e) {
+    errEl.textContent = "Couldn't reach the server — " + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "Sign in";
+  }
+}
+
+async function checkAuthAndBoot() {
+  // Always try to discover whether auth is required. If the server is
+  // unreachable, fall through to bootApp() with local-only fallbacks —
+  // the user can still see the static UI and queued data syncs will
+  // retry on focus / next interaction.
+  let status;
+  try {
+    const r = await fetch(API_BASE + "/api/auth/status", { credentials: "include", cache: "no-store" });
+    status = await r.json();
+  } catch (e) {
+    console.warn("[auth] /api/auth/status unreachable — booting in offline mode:", e.message);
+    bootApp();
+    return;
+  }
+  if (status.auth_required && !status.authed) {
+    showLoginOverlay();
+    // bootApp() runs after a successful submitLogin()
+    return;
+  }
+  bootApp();
+}
+
+async function bootApp() {
+  if (_appBooted) return;
+  _appBooted = true;
   // Probe AI availability + sync shared state in parallel — neither blocks startup.
   // All four fire-and-forget; UI starts with localStorage cache and upgrades
   // to server data as each call lands.
@@ -7832,7 +7965,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   loadData(false);
-});
+}
+
+window.addEventListener("DOMContentLoaded", checkAuthAndBoot);
 
 // ESC closes the priority-definitions modal (and could be extended to other
 // overlays). Keeps keyboard UX consistent with everywhere else.

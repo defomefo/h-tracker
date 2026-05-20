@@ -39,9 +39,15 @@ git push
 3. Pick the `h-tracker` repo. Render reads `render.yaml` and shows the service it will create.
 4. Click **Apply**. Render starts the first build (~2-3 minutes).
 5. While it builds, click into the new `h-tracker-api` service → **Environment** tab.
-6. Add two secrets (these are marked `sync: false` in render.yaml so they're not in git):
+6. Add these secrets (marked `sync: false` in render.yaml so they're not in git):
    * **`DATABASE_URL`** = paste the Neon connection string from step 1
    * **`GEMINI_API_KEY`** = paste your Gemini key
+   * **`HFARM_APP_PASSWORD`** = a shared password your team will type to enter. Make it unguessable (16+ chars). Example: `correct-horse-battery-staple-7842`.
+   * **`HFARM_SECRET_KEY`** = a random hex string for signing session cookies. Generate locally with:
+     ```bash
+     python -c "import secrets; print(secrets.token_hex(32))"
+     ```
+     and paste the output. Required for sessions to survive Render restarts.
 7. Click **Save Changes**. Render will rebuild + redeploy with the secrets.
 
 ### 4. Verify

@@ -12,14 +12,16 @@ import datetime as _dt
 import json
 import os
 import re
+import secrets
 import sqlite3
 import threading
+from functools import wraps
 from pathlib import Path
 
 from google import genai
 from google.genai import types as genai_types
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, request, send_from_directory
+from flask import Flask, g, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 
 load_dotenv()
@@ -30,10 +32,40 @@ DB_PATH = Path(os.environ.get("HFARM_DB_PATH", ROOT / "h-tracker.db"))
 
 app = Flask(__name__, static_folder=str(ROOT), static_url_path="")
 
-# CORS — the production frontend lives on Vercel while the API runs on Fly,
-# so the browser will make cross-origin requests for every /api/*. We whitelist
-# the deployed Vercel origins (override via HFARM_CORS_ORIGINS env var, comma-
-# separated) and always allow localhost for dev.
+# ----------------------------------------------------------------------------
+# Sessions & shared-password auth (Phase 5)
+# ----------------------------------------------------------------------------
+# HFARM_APP_PASSWORD — if set, every /api/* request (except health + auth)
+#   requires a valid session cookie. If unset, auth is OFF (local dev default).
+# HFARM_SECRET_KEY  — random hex string used to sign the session cookie.
+#   MUST be set in production for sessions to survive restarts. If unset, we
+#   generate an ephemeral one and log a warning (sessions reset on every boot).
+# ----------------------------------------------------------------------------
+APP_PASSWORD = os.environ.get("HFARM_APP_PASSWORD", "").strip()
+_secret = os.environ.get("HFARM_SECRET_KEY", "").strip()
+if not _secret:
+    _secret = secrets.token_hex(32)
+    if APP_PASSWORD:
+        print(
+            "⚠️  HFARM_SECRET_KEY not set — sessions will not survive restarts. "
+            "Generate one with `python -c 'import secrets; print(secrets.token_hex(32))'` "
+            "and set it via flyctl/Render dashboard."
+        )
+app.secret_key = _secret
+app.config.update(
+    SESSION_COOKIE_NAME="hfarm_session",
+    SESSION_COOKIE_HTTPONLY=True,
+    # Cross-origin Vercel→Render needs SameSite=None + Secure.
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True,
+    PERMANENT_SESSION_LIFETIME=_dt.timedelta(days=30),
+)
+
+# CORS — the production frontend lives on Vercel while the API runs on
+# Render, so the browser will make cross-origin requests for every /api/*.
+# Whitelist deployed Vercel origins (override via HFARM_CORS_ORIGINS env var,
+# comma-separated) and always allow localhost for dev. supports_credentials
+# must be True so the session cookie travels with cross-origin requests.
 _cors_default = (
     "https://h-tracker-blue.vercel.app,"
     "http://127.0.0.1:8000,"
@@ -45,9 +77,55 @@ CORS(
     resources={r"/api/*": {"origins": _cors_origins}},
     allow_headers=["Content-Type", "X-Session-Id", "X-Display-Name"],
     expose_headers=["Content-Type"],
-    supports_credentials=False,
+    supports_credentials=True,
     max_age=600,
 )
+
+
+def auth_required(fn):
+    """Decorator that 401s unless the request has a valid session cookie.
+    No-op when HFARM_APP_PASSWORD is unset (local dev default)."""
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if APP_PASSWORD and not session.get("authed"):
+            return jsonify({"error": "unauthorized"}), 401
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+@app.route("/api/auth/status", methods=["GET"])
+def auth_status():
+    """Frontend probes this on boot to decide whether to show the login overlay."""
+    return jsonify(
+        {
+            "auth_required": bool(APP_PASSWORD),
+            "authed": (not APP_PASSWORD) or bool(session.get("authed")),
+        }
+    )
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    if not APP_PASSWORD:
+        return jsonify({"ok": True, "auth_required": False})
+    body = request.get_json(force=True, silent=True) or {}
+    pw = (body.get("password") or "").strip()
+    if not pw:
+        return jsonify({"error": "password is required"}), 400
+    # Constant-time compare — defends against timing side-channels even
+    # though we're not exactly protecting nuclear codes here.
+    if not secrets.compare_digest(pw, APP_PASSWORD):
+        return jsonify({"error": "invalid password"}), 401
+    session.permanent = True
+    session["authed"] = True
+    return jsonify({"ok": True})
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    session.clear()
+    return jsonify({"ok": True})
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 gemini_client = genai.Client(api_key=GEMINI_KEY) if GEMINI_KEY else None
@@ -286,6 +364,7 @@ def health():
             "provider": "gemini",
             "db_backend": "postgres" if USE_PG else "sqlite",
             "db": "neon/render" if USE_PG else str(DB_PATH.name),
+            "auth_required": bool(APP_PASSWORD),
         }
     )
 
@@ -300,6 +379,7 @@ def health():
 # updated_at timestamp for future "since=" delta polling.
 # ============================================================================
 @app.route("/api/state/outreach", methods=["GET"])
+@auth_required
 def outreach_list():
     """Return all entries grouped by entity_id — matches localStorage shape."""
     db = get_db()
@@ -317,6 +397,7 @@ def outreach_list():
 
 
 @app.route("/api/state/outreach/<entry_id>", methods=["PUT"])
+@auth_required
 def outreach_upsert(entry_id):
     """Insert or update a single entry. Body is the full entry JSON."""
     entry = request.get_json(force=True) or {}
@@ -345,6 +426,7 @@ def outreach_upsert(entry_id):
 
 
 @app.route("/api/state/outreach/<entry_id>", methods=["DELETE"])
+@auth_required
 def outreach_delete(entry_id):
     """Soft-delete (keeps row so future sync logic can detect tombstones)."""
     db = get_db()
@@ -380,6 +462,7 @@ def _check_ns(ns):
 
 
 @app.route("/api/state/kv/<ns>", methods=["GET"])
+@auth_required
 def kv_list(ns):
     """Return all { key: value } pairs in a namespace."""
     err = _check_ns(ns)
@@ -399,6 +482,7 @@ def kv_list(ns):
 
 
 @app.route("/api/state/kv/<ns>/<path:key>", methods=["PUT"])
+@auth_required
 def kv_put(ns, key):
     """Upsert a single key. Body is the value (any JSON shape)."""
     err = _check_ns(ns)
@@ -422,6 +506,7 @@ def kv_put(ns, key):
 
 
 @app.route("/api/state/kv/<ns>/<path:key>", methods=["DELETE"])
+@auth_required
 def kv_delete(ns, key):
     """Hard delete — these are mutable overrides, no audit trail needed."""
     err = _check_ns(ns)
@@ -439,6 +524,7 @@ def kv_delete(ns, key):
 
 
 @app.route("/api/state/kv/<ns>/_import", methods=["POST"])
+@auth_required
 def kv_import(ns):
     """One-shot migration from a client's localStorage.
 
@@ -477,6 +563,7 @@ def kv_import(ns):
 
 
 @app.route("/api/state/outreach/import", methods=["POST"])
+@auth_required
 def outreach_import():
     """One-shot migration from a client's localStorage.
 
@@ -525,6 +612,7 @@ def outreach_import():
 # up on each query). No auth: display_name is self-claimed.
 # ============================================================================
 @app.route("/api/presence/ping", methods=["POST"])
+@auth_required
 def presence_ping():
     body = request.get_json(force=True, silent=True) or {}
     sid = (body.get("session_id") or "").strip()
@@ -553,6 +641,7 @@ def presence_ping():
 
 
 @app.route("/api/presence", methods=["GET"])
+@auth_required
 def presence_list():
     """Active sessions in the last PRESENCE_TTL_SECONDS."""
     db = get_db()
@@ -576,6 +665,7 @@ def presence_list():
 
 
 @app.route("/api/edits/recent", methods=["GET"])
+@auth_required
 def edits_recent():
     """Most recent N edits across all shared-state buckets."""
     try:
@@ -594,6 +684,7 @@ def edits_recent():
 
 
 @app.route("/api/draft-outreach", methods=["POST"])
+@auth_required
 def draft_outreach():
     if not GEMINI_KEY:
         return (
@@ -779,6 +870,7 @@ def _slim_entities(entities):
 
 
 @app.route("/api/chat-query", methods=["POST"])
+@auth_required
 def chat_query():
     if not GEMINI_KEY:
         return (
