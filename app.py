@@ -958,17 +958,20 @@ CHAT_SYSTEM_PROMPT = """You are a senior analyst assistant for the H-FARM Colleg
 Your job: answer the user's question about the partner portfolio they've shown you, and surface the SPECIFIC entities that are relevant. You are READ-ONLY — you never propose data changes, never invent entities, never speculate beyond the data.
 
 Entity fields you can rely on (per entity):
-  id, name, type (university|agency|school|org), country, continent,
+  id, name, type (university|agency|school|org), country, continent, city,
   priority (Critical|Hot|Warm|Cold|Cold-storage|Up & Running|Not interested),
   strategic_tier (Digital Pioneer|Prestige Hub|Applied Leader|Established Partner),
   partnership_score (0-100), partnership_readiness (Ready|Warming|Early|Cold|Dormant),
-  days_dormant (int|null), focus_areas (string), notes (string),
-  top_program_id (id of best-fit H-FARM offering), top_program_score (0-100)
+  days_dormant (int|null), last_contacted (date string|null),
+  focus_areas (string), notes (string), website (string),
+  top_program_id (id of best-fit H-FARM offering), top_program_score (0-100),
+  contacts (array of {name, role, email} — may be empty)
 
 Rules:
-- The `intro` field: 1-3 short sentences in plain English. Specific, not generic. If a number is relevant, include it. No hedging, no "I would suggest", no "Based on the data".
+- The `intro` field: 1-3 short sentences in plain English. ANSWER the user's actual question — don't just describe the entity. If they ask for a contact, give the contact (name, role, email). If they ask for a country breakdown, give numbers. If they ask "should I follow up?", weigh days_dormant + priority + readiness and give a verdict. No hedging, no "I would suggest", no "Based on the data".
 - The `entity_ids` array: ids that match the user's question, ranked best-first. If the question is broad (e.g. "what should I focus on?"), return up to 8. If it's specific (e.g. "tell me about TalTech"), return just that one. If nothing matches, return an empty array — `intro` should say so plainly.
-- Never invent ids. Only use ids that appear in the provided entities list.
+- When the user asks for a contact: pull name + role + email from `contacts` straight into the intro. If contacts is empty, say so plainly ("No contacts on file for X — you'd need to research this one") rather than describing the entity profile.
+- Never invent ids, names, emails, or any field values. Only quote what's in the provided entities list.
 
 Return ONLY a JSON object with this exact shape, no markdown, no commentary:
 {"intro": "...", "entity_ids": ["...", "..."]}"""
@@ -977,10 +980,10 @@ Return ONLY a JSON object with this exact shape, no markdown, no commentary:
 # Fields we send to Gemini per entity — analytically rich but keeps the
 # payload around 30-40KB for ~300 entities (well within Flash's window).
 _CHAT_FIELDS = (
-    "id", "name", "type", "country", "continent",
+    "id", "name", "type", "country", "continent", "city",
     "priority", "strategic_tier", "partnership_score",
-    "partnership_readiness", "days_dormant",
-    "focus_areas", "top_program_id", "top_program_score", "notes",
+    "partnership_readiness", "days_dormant", "last_contacted",
+    "focus_areas", "top_program_id", "top_program_score", "notes", "website",
 )
 
 
@@ -991,7 +994,19 @@ def _slim_entities(entities):
     for u in entities:
         if not isinstance(u, dict) or not u.get("id"):
             continue
-        out.append({k: u.get(k) for k in _CHAT_FIELDS if u.get(k) not in (None, "")})
+        row = {k: u.get(k) for k in _CHAT_FIELDS if u.get(k) not in (None, "")}
+        # Contacts are an array of {name, role, email}. Strip empty slots
+        # before sending so we don't waste tokens on "contact_3 was blank".
+        contacts = u.get("contacts") or []
+        if isinstance(contacts, list):
+            slim_contacts = [
+                {k: c.get(k) for k in ("name", "role", "email") if c.get(k)}
+                for c in contacts
+                if isinstance(c, dict) and any(c.get(k) for k in ("name", "role", "email"))
+            ]
+            if slim_contacts:
+                row["contacts"] = slim_contacts
+        out.append(row)
     return out
 
 
