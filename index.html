@@ -2987,11 +2987,14 @@ async function syncEntityOverridesFromServer() {
     ENTITY_OVERRIDES = remote;
     _writeLocalEntityOverrides(remote);
     if (applyEntityOverridesToUnis()) {
-      // Re-render whatever's visible so the new values surface
-      if (typeof render === "function") render();
+      // Re-render every visible surface so cross-browser edits land everywhere
+      if (typeof renderFilterChips === "function")    renderFilterChips();
+      if (typeof renderRegionAnalysis === "function") renderRegionAnalysis();
+      if (typeof renderPivotTable === "function")     renderPivotTable();
+      if (typeof render === "function")               render();
+      if (typeof drawDots === "function")             drawDots();
+      if (typeof renderCurrentView === "function")    renderCurrentView();
       if (STATE.detailId) openDetail(STATE.detailId);
-      if (STATE.currentView === "pipeline" && typeof renderPipelineView === "function") renderPipelineView();
-      if (STATE.currentView === "database" && typeof renderDatabaseView === "function") renderDatabaseView();
     }
     return true;
   } catch (e) {
@@ -3012,10 +3015,18 @@ async function saveEntityField(entityId, field, value) {
   // Apply to the in-memory entity + recompute derived
   u[field] = value;
   recomputeEntityDerived(u);
-  // Re-render the visible surface so the change shows immediately
+  // Re-render every visible surface so the change shows immediately:
+  //   - detail panel (priority badge, scorecard, breakdown)
+  //   - filter chips + cards grid (background of any view)
+  //   - globe dots (color reflects priority)
+  //   - current view's content (kanban card colour, funnel counts, etc.)
   if (STATE.detailId === entityId) openDetail(entityId);
-  if (typeof render === "function") render();
-  if (typeof drawDots === "function") drawDots();
+  if (typeof renderFilterChips === "function")    renderFilterChips();
+  if (typeof renderRegionAnalysis === "function") renderRegionAnalysis();
+  if (typeof renderPivotTable === "function")     renderPivotTable();
+  if (typeof render === "function")               render();
+  if (typeof drawDots === "function")             drawDots();
+  if (typeof renderCurrentView === "function")    renderCurrentView();
   // Mirror to server (fire-and-forget; localStorage is the offline fallback)
   try { await kvStore.put("entity_override", entityId, next); }
   catch (e) { console.warn("[entity_override] save deferred (offline):", e.message); }
@@ -3239,17 +3250,11 @@ async function parseAndRender(csvText) {
 // =====================================================================
 // MULTI-VIEW NAVIGATION
 // =====================================================================
-function switchView(viewId) {
-  STATE.view = viewId;
-  localStorage.setItem("hfarm_view", viewId);
-  // Toggle sections
-  document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
-  const target = document.getElementById("view-" + viewId);
-  if (target) target.classList.remove("hidden");
-  // Highlight nav
-  document.querySelectorAll(".nav-item").forEach(n =>
-    n.classList.toggle("active", n.dataset.view === viewId));
-  // Render the view's content
+// Re-runs the renderer for whatever view is currently active. Used by
+// switchView and by data-mutating actions (entity edits, etc.) that need
+// the visible view to refresh without a full page reload.
+function renderCurrentView() {
+  const viewId = STATE.view;
   if (viewId === "home")      renderHomeView();
   if (viewId === "pipeline")  renderPipelineView();
   if (viewId === "funnel")    renderFunnelView();
@@ -3261,6 +3266,19 @@ function switchView(viewId) {
   if (viewId === "teams")     renderTeamsView();
   if (viewId === "about")     renderAboutView();
   if (viewId === "admin")     renderAdminView();
+}
+
+function switchView(viewId) {
+  STATE.view = viewId;
+  localStorage.setItem("hfarm_view", viewId);
+  // Toggle sections
+  document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+  const target = document.getElementById("view-" + viewId);
+  if (target) target.classList.remove("hidden");
+  // Highlight nav
+  document.querySelectorAll(".nav-item").forEach(n =>
+    n.classList.toggle("active", n.dataset.view === viewId));
+  renderCurrentView();
   // Scroll to top on view change
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
