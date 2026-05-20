@@ -1140,6 +1140,28 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .login-btn[disabled]{background:var(--ink-soft);cursor:wait}
 .login-foot{font-size:11px;color:var(--ink-soft);margin-top:4px;font-style:italic}
 
+/* PROFILE EDIT FORM (detail panel) */
+.profile-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.profile-revert{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);font-size:10px;letter-spacing:.4px;font-weight:600;padding:4px 9px;border-radius:11px;cursor:pointer;font-family:inherit;transition:all .12s}
+.profile-revert:hover{border-color:var(--hf-red);color:var(--hf-red)}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ef{display:flex;flex-direction:column;gap:4px}
+.ef-full{grid-column:1 / -1}
+.ef-label{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+.ef-input{padding:7px 9px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--paper);transition:border-color .12s,background .12s}
+.ef-input:focus{outline:none;border-color:var(--gold);background:#fff}
+.ef-textarea{resize:vertical;line-height:1.5;font-family:inherit}
+
+/* ACTIVITY TIMELINE (detail panel tab) */
+.activity-list{display:flex;flex-direction:column;gap:0;padding:4px 0}
+.activity-empty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:18px 6px;text-align:center}
+.activity-row{display:flex;gap:12px;padding:8px 4px;border-bottom:1px dashed var(--rule);align-items:flex-start}
+.activity-row:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0;box-shadow:0 0 0 2px var(--paper)}
+.activity-body{flex:1;min-width:0}
+.activity-text{font-size:12px;color:var(--ink);line-height:1.4}
+.activity-when{font-size:10px;color:var(--ink-soft);margin-top:2px}
+
 /* HOME KPI strip header + info button */
 .home-kpis-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px;gap:12px}
 .home-kpis-title{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);font-weight:800}
@@ -2869,6 +2891,148 @@ async function syncStageOverridesFromServer() {
   }
 }
 
+// --- Entity field overrides (priority, tier, type, focus_areas, notes) ---
+// Stored per-entity as a partial dict on top of the CSV-loaded UNIS row.
+// E.g. ENTITY_OVERRIDES['e0042'] = { priority: 'Hot', notes: 'New contact' }.
+// CSV stays the source of truth; overrides are applied after CSV ingest and
+// shown as edits in the activity timeline.
+const LS_ENTITY_OV_KEY = "hfarm_entity_overrides";
+const LS_ENTITY_OV_MIGRATED_KEY = "hfarm_entity_overrides_migrated_v1";
+function _readLocalEntityOverrides() {
+  try { return JSON.parse(localStorage.getItem(LS_ENTITY_OV_KEY) || "{}"); }
+  catch { return {}; }
+}
+function _writeLocalEntityOverrides(map) {
+  try { localStorage.setItem(LS_ENTITY_OV_KEY, JSON.stringify(map)); } catch {}
+}
+let ENTITY_OVERRIDES = _readLocalEntityOverrides();
+
+// Apply an override dict to an entity object in place + re-derive the
+// computed fields that depend on the changed inputs (partnership_score,
+// breakdown, readiness, pipeline_stage). Keeps the on-screen state honest
+// after a user changes priority from "Cold" to "Critical".
+function recomputeEntityDerived(u) {
+  // Re-derive partnership_score breakdown using the current entity values
+  const prioVal = PRIO_SCORE[u.priority] !== undefined ? PRIO_SCORE[u.priority] : 30;
+  const contacts = u.contacts || [];
+  const hasNamed = contacts.some(c => c.name && c.name !== "-");
+  const hasEmail = contacts.some(c => c.email);
+  let recencyVal = 50;
+  if (u.days_dormant !== null && u.days_dormant !== undefined) {
+    if (u.days_dormant < 30) recencyVal = 100;
+    else if (u.days_dormant < 60) recencyVal = 75;
+    else if (u.days_dormant < 90) recencyVal = 50;
+    else if (u.days_dormant < 180) recencyVal = 25;
+    else recencyVal = 10;
+  }
+  const topScore = u.top_program_score || 0;
+  const topId    = u.top_program_id;
+  const breakdown = {
+    priority:    { weight: 0.40, raw: prioVal,                label: u.priority || "Unclassified" },
+    namedContact:{ weight: 0.20, raw: hasNamed ? 100 : 0,     label: hasNamed ? "Yes — named contact on file" : "No named contact yet" },
+    email:       { weight: 0.10, raw: hasEmail ? 100 : 0,     label: hasEmail ? "Yes — email captured" : "No email yet" },
+    programFit:  { weight: 0.20, raw: topScore,               label: `Top match: ${(PROG_BY_ID[topId] && PROG_BY_ID[topId].name) || "Unknown"} (${topScore}/100)` },
+    recency:     { weight: 0.10, raw: recencyVal,             label: u.days_dormant === null || u.days_dormant === undefined ? "No date on file" : `${u.days_dormant} days since last contact` },
+  };
+  let pScore = 0;
+  Object.values(breakdown).forEach(b => { b.contrib = b.raw * b.weight; pScore += b.contrib; });
+  u.partnership_score = Math.round(pScore);
+  u.partnership_breakdown = breakdown;
+  if (u.partnership_score >= 85)       u.partnership_readiness = "Ready";
+  else if (u.partnership_score >= 65)  u.partnership_readiness = "Warming";
+  else if (u.partnership_score >= 45)  u.partnership_readiness = "Early";
+  else if (u.partnership_score >= 25)  u.partnership_readiness = "Cold";
+  else                                 u.partnership_readiness = "Dormant";
+  // Re-derive pipeline stage with the new priority + notes
+  u.pipeline_stage = derivePipelineStage({
+    priority: u.priority || "",
+    days_dormant: u.days_dormant,
+    notes: u.notes || "",
+    final_action: u.final_action || "",
+    last_contacted: u.last_contacted || null,
+    has_contact: !!(contacts[0] && (contacts[0].name || contacts[0].email)),
+  });
+}
+
+// Apply every saved override on top of UNIS. Called after CSV ingest and
+// whenever entity overrides arrive from the server.
+function applyEntityOverridesToUnis() {
+  if (!Array.isArray(UNIS) || !UNIS.length) return;
+  const overrides = ENTITY_OVERRIDES || {};
+  let changed = false;
+  UNIS.forEach(u => {
+    const ov = overrides[u.id];
+    if (!ov) return;
+    changed = true;
+    // Whitelist: only fields we explicitly allow editing override the CSV.
+    // Anything else in the override blob is ignored — defensive against
+    // stale data shapes.
+    const FIELDS = ["priority", "strategic_tier", "type", "focus_areas", "notes"];
+    FIELDS.forEach(f => { if (Object.prototype.hasOwnProperty.call(ov, f)) u[f] = ov[f]; });
+    recomputeEntityDerived(u);
+  });
+  return changed;
+}
+
+async function syncEntityOverridesFromServer() {
+  try {
+    if (!localStorage.getItem(LS_ENTITY_OV_MIGRATED_KEY)) {
+      const local = _readLocalEntityOverrides();
+      if (Object.keys(local).length) {
+        try { await kvStore.import_("entity_override", local); } catch {}
+      }
+      localStorage.setItem(LS_ENTITY_OV_MIGRATED_KEY, "1");
+    }
+    const remote = await kvStore.fetchAll("entity_override");
+    ENTITY_OVERRIDES = remote;
+    _writeLocalEntityOverrides(remote);
+    if (applyEntityOverridesToUnis()) {
+      // Re-render whatever's visible so the new values surface
+      if (typeof render === "function") render();
+      if (STATE.detailId) openDetail(STATE.detailId);
+      if (STATE.currentView === "pipeline" && typeof renderPipelineView === "function") renderPipelineView();
+      if (STATE.currentView === "database" && typeof renderDatabaseView === "function") renderDatabaseView();
+    }
+    return true;
+  } catch (e) {
+    console.warn("[entity_override] server unreachable, using local cache:", e.message);
+    return false;
+  }
+}
+
+// Save a single field's override + apply locally + mirror to server.
+// Called from the editable form controls in the detail panel.
+async function saveEntityField(entityId, field, value) {
+  const u = UNIS.find(x => x.id === entityId);
+  if (!u) return;
+  // Build new override blob: merge over what was already saved
+  const next = Object.assign({}, ENTITY_OVERRIDES[entityId] || {}, { [field]: value });
+  ENTITY_OVERRIDES[entityId] = next;
+  _writeLocalEntityOverrides(ENTITY_OVERRIDES);
+  // Apply to the in-memory entity + recompute derived
+  u[field] = value;
+  recomputeEntityDerived(u);
+  // Re-render the visible surface so the change shows immediately
+  if (STATE.detailId === entityId) openDetail(entityId);
+  if (typeof render === "function") render();
+  if (typeof drawDots === "function") drawDots();
+  // Mirror to server (fire-and-forget; localStorage is the offline fallback)
+  try { await kvStore.put("entity_override", entityId, next); }
+  catch (e) { console.warn("[entity_override] save deferred (offline):", e.message); }
+}
+
+// Clear all overrides for an entity, reverting to CSV values. We don't have
+// the original CSV value cached, so we trigger a full reload by re-running
+// the data ingest (loadData). Cheap enough — CSV is local-ish.
+async function revertEntityOverrides(entityId) {
+  if (!confirm("Revert this entity's edits and reload from the CSV source?")) return;
+  delete ENTITY_OVERRIDES[entityId];
+  _writeLocalEntityOverrides(ENTITY_OVERRIDES);
+  try { await kvStore.del("entity_override", entityId); } catch {}
+  // Reload data from CSV so the entity gets its pristine values back
+  if (typeof loadData === "function") loadData(true);
+}
+
 async function syncTeamAssignmentsFromServer() {
   try {
     if (!localStorage.getItem(LS_TEAM_MIGRATED_KEY)) {
@@ -3040,6 +3204,8 @@ async function parseAndRender(csvText) {
   UNIS = parsed.data
     .filter(row => row.name && row.name.trim())
     .map((row, i) => normalizeRow(row, i));
+  // Apply saved per-entity field overrides on top of the fresh CSV data
+  if (typeof applyEntityOverridesToUnis === "function") applyEntityOverridesToUnis();
   document.getElementById("loading-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
   document.getElementById("data-status").textContent = `${UNIS.length} entities · synced ${new Date().toLocaleTimeString()}`;
@@ -4597,14 +4763,55 @@ function detailHtml(u) {
     </div>
 
     <div class="detail-section">
-      <h3>Profile</h3>
+      <div class="profile-head">
+        <h3>Profile</h3>
+        ${ENTITY_OVERRIDES[u.id] ? `<button type="button" class="profile-revert" onclick="revertEntityOverrides('${u.id}')" title="Discard edits and reload from CSV">↶ Revert edits</button>` : ''}
+      </div>
       <div class="profile-tags">${tagsHtml}</div>
-      <div class="kv-grid" style="margin-top:10px">
+
+      <!-- Editable form: changes save on commit (blur/change). All other readers
+           in the app re-render automatically once the override is persisted. -->
+      <div class="edit-grid" style="margin-top:12px">
+        <label class="ef">
+          <span class="ef-label">Priority</span>
+          <select class="ef-input" onchange="saveEntityField('${u.id}','priority',this.value)">
+            <option value="" ${!u.priority ? 'selected' : ''}>— unclassified —</option>
+            ${PRIORITIES.map(p => `<option value="${escape(p)}" ${u.priority === p ? 'selected' : ''}>${escape(p)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="ef">
+          <span class="ef-label">Strategic tier</span>
+          <select class="ef-input" onchange="saveEntityField('${u.id}','strategic_tier',this.value)">
+            <option value="" ${!u.strategic_tier ? 'selected' : ''}>— none —</option>
+            ${STRAT_TIERS.map(t => `<option value="${escape(t)}" ${u.strategic_tier === t ? 'selected' : ''}>${escape(t)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="ef">
+          <span class="ef-label">Type</span>
+          <select class="ef-input" onchange="saveEntityField('${u.id}','type',this.value)">
+            ${ENTITY_TYPES.map(t => `<option value="${escape(t)}" ${u.type === t ? 'selected' : ''}>${escape(ENTITY_LABELS[t] || t)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="ef ef-full">
+          <span class="ef-label">Focus areas / curriculum</span>
+          <textarea class="ef-input ef-textarea" rows="2"
+            onchange="saveEntityField('${u.id}','focus_areas',this.value)"
+            placeholder="e.g. Computer Science, Business, Design">${escape(u.focus_areas || '')}</textarea>
+        </label>
+        <label class="ef ef-full">
+          <span class="ef-label">Notes</span>
+          <textarea class="ef-input ef-textarea" rows="3"
+            onchange="saveEntityField('${u.id}','notes',this.value)"
+            placeholder="Internal notes — visible to anyone with access">${escape(u.notes || '')}</textarea>
+        </label>
+      </div>
+
+      <!-- Read-only metadata that lives in the CSV and isn't currently editable -->
+      <div class="kv-grid" style="margin-top:14px">
         ${u.status_legacy ? `<div class="k">Status</div><div class="v">${escape(u.status_legacy)}</div>` : ''}
         <div class="k">Last contacted</div><div class="v">${u.last_contacted || '—'} ${dormStr}</div>
         ${u.website ? `<div class="k">Website</div><div class="v"><a href="${u.website.startsWith('http') ? u.website : 'https://' + u.website.split(/\s/)[0]}" target="_blank" style="color:var(--navy-light)">${escape(u.website)}</a></div>` : ''}
         ${u.phone ? `<div class="k">Phone</div><div class="v" style="font-family:Consolas,monospace;font-size:11px">${escape(u.phone)}</div>` : ''}
-        ${u.focus_areas ? `<div class="k">Focus / curric.</div><div class="v">${escape(u.focus_areas)}</div>` : ''}
         ${u.programs ? `<div class="k">Project type</div><div class="v">${escape(u.programs)}</div>` : ''}
         ${u.final_action ? `<div class="k">Next action</div><div class="v" style="color:var(--crit);font-weight:600">${escape(u.final_action)}</div>` : ''}
       </div>
@@ -4632,12 +4839,18 @@ function detailHtml(u) {
         <button class="eng-tab" data-tab="tracking" onclick="switchEngTab(event,'tracking')">
           Outreach log <span class="ct-badge">${(OUTREACH[u.id] || []).length}</span>
         </button>
+        <button class="eng-tab" data-tab="activity" onclick="switchEngTab(event,'activity');loadEntityActivity('${u.id}')">
+          Activity
+        </button>
       </div>
       <div class="eng-panel active" data-panel="contacts">
         ${contactsHtml}
       </div>
       <div class="eng-panel" data-panel="tracking">
         ${renderTrackingBody(u)}
+      </div>
+      <div class="eng-panel" data-panel="activity">
+        <div id="activity-list-${u.id}" class="activity-list"><div class="activity-empty">Loading…</div></div>
       </div>
     </div>
 
@@ -4690,6 +4903,68 @@ function detailHtml(u) {
 function toggleScoreBreakdown() {
   const el = document.getElementById("score-breakdown");
   if (el) el.style.display = (el.style.display === "none" || !el.style.display) ? "block" : "none";
+}
+
+// Map a server-side edit_log row to a human-readable timeline line.
+// Resource kinds:
+//   outreach                  → outreach entry added / removed
+//   kv:team_assignment        → team owner changed
+//   kv:stage_override         → pipeline stage moved by hand
+//   kv:map2x2_override        → 2×2 position dragged
+//   kv:entity_override        → profile field edited (priority, notes, …)
+function _activityLabel(e) {
+  const who = e.display_name || "Anonymous";
+  switch (e.resource) {
+    case "outreach":
+      return e.action === "delete"
+        ? `${who} removed an outreach entry`
+        : `${who} logged outreach`;
+    case "kv:team_assignment":
+      return e.action === "delete"
+        ? `${who} cleared the team assignment`
+        : `${who} updated the team assignment`;
+    case "kv:stage_override":
+      return e.action === "delete"
+        ? `${who} reverted the pipeline stage to auto`
+        : `${who} moved this on the pipeline kanban`;
+    case "kv:map2x2_override":
+      // key shape: "<axisKey>::<entity_id>" — show which axis was edited
+      const ax = (e.key || "").split("::")[0];
+      const axLabel = ({effortFit:"Effort × Fit", reachReadiness:"Reach × Readiness", costRoi:"Cost × ROI"})[ax] || "a 2×2 map";
+      return e.action === "delete"
+        ? `${who} cleared the position on ${axLabel}`
+        : `${who} repositioned on ${axLabel}`;
+    case "kv:entity_override":
+      return e.action === "delete"
+        ? `${who} reverted profile edits`
+        : `${who} edited the profile`;
+    default:
+      return `${who} · ${e.resource} (${e.action})`;
+  }
+}
+
+async function loadEntityActivity(entityId) {
+  const host = document.getElementById("activity-list-" + entityId);
+  if (!host) return;
+  try {
+    const r = await apiFetch("/api/edits/entity/" + encodeURIComponent(entityId) + "?limit=50");
+    const data = await r.json();
+    const edits = data.edits || [];
+    if (!edits.length) {
+      host.innerHTML = `<div class="activity-empty">No tracked changes yet — edits to priority, team, kanban stage, outreach and more will appear here as people make them.</div>`;
+      return;
+    }
+    host.innerHTML = edits.map(e => `
+      <div class="activity-row">
+        <div class="activity-dot"></div>
+        <div class="activity-body">
+          <div class="activity-text">${escape(_activityLabel(e))}</div>
+          <div class="activity-when">${escape(_timeAgo(e.occurred_at) || e.occurred_at)}</div>
+        </div>
+      </div>`).join("");
+  } catch (err) {
+    host.innerHTML = `<div class="activity-empty">Couldn't load activity — ${escape(err.message)}.</div>`;
+  }
 }
 
 // Tab switching for Contacts / Tracking inside the detail panel
@@ -7995,6 +8270,7 @@ async function bootApp(opts = {}) {
   syncTeamAssignmentsFromServer();
   syncStageOverridesFromServer();
   syncStratOverridesFromServer();
+  syncEntityOverridesFromServer();
   startPresence();
   try {
     await loadKnowledgeBase();
@@ -8044,6 +8320,7 @@ window.addEventListener("focus", () => {
   if (typeof syncTeamAssignmentsFromServer === "function") syncTeamAssignmentsFromServer();
   if (typeof syncStageOverridesFromServer === "function")  syncStageOverridesFromServer();
   if (typeof syncStratOverridesFromServer === "function")  syncStratOverridesFromServer();
+  if (typeof syncEntityOverridesFromServer === "function") syncEntityOverridesFromServer();
 });
 </script>
 </body>

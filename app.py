@@ -452,7 +452,7 @@ def outreach_delete(entry_id):
 # Allowed namespaces are whitelisted to avoid accidental sprawl. Add new
 # namespaces here when Phase 3+ introduces new shared state buckets.
 # ============================================================================
-_KV_NAMESPACES = {"team_assignment", "stage_override", "map2x2_override", "kb_draft"}
+_KV_NAMESPACES = {"team_assignment", "stage_override", "map2x2_override", "kb_draft", "entity_override"}
 
 
 def _check_ns(ns):
@@ -681,6 +681,51 @@ def edits_recent():
         (limit,),
     ).fetchall()
     return jsonify({"now": _now_iso(), "edits": [dict(r) for r in rows]})
+
+
+@app.route("/api/edits/entity/<entity_id>", methods=["GET"])
+@auth_required
+def edits_for_entity(entity_id):
+    """Timeline of every recorded change touching a single entity.
+
+    Aggregates rows where the edit's `key` directly identifies this entity
+    (team / stage / entity-field overrides) or contains it as a suffix
+    (2×2 position uses composite `axis::entity_id` keys), plus outreach
+    upserts whose ID belongs to this entity. Sorted newest first.
+    """
+    try:
+        limit = max(1, min(200, int(request.args.get("limit", 50))))
+    except ValueError:
+        limit = 50
+
+    db = get_db()
+    # `?` placeholders translate to `%s` for Postgres via _q() in the wrapper.
+    rows = db.execute(
+        """SELECT occurred_at, session_id, display_name, resource, action, key
+             FROM edit_log
+            WHERE (
+                  resource IN ('kv:team_assignment', 'kv:stage_override', 'kv:entity_override')
+                  AND key = ?
+              )
+               OR (
+                  resource = 'kv:map2x2_override'
+                  AND key LIKE '%::' || ?
+              )
+               OR (
+                  resource = 'outreach'
+                  AND key IN (SELECT id FROM outreach WHERE entity_id = ?)
+              )
+            ORDER BY id DESC
+            LIMIT ?""",
+        (entity_id, entity_id, entity_id, limit),
+    ).fetchall()
+    return jsonify(
+        {
+            "now": _now_iso(),
+            "entity_id": entity_id,
+            "edits": [dict(r) for r in rows],
+        }
+    )
 
 
 @app.route("/api/draft-outreach", methods=["POST"])
