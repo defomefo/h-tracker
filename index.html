@@ -1165,6 +1165,15 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .template-row .template-hint{font-size:10px;color:var(--ink-soft);flex-basis:100%;line-height:1.4}
 .template-row .template-hint code{font-size:10px;background:#fff;padding:1px 4px;border-radius:3px;border:1px solid var(--rule);font-family:Consolas,monospace}
 
+/* RESET-UNDO TOAST — Gmail-style "Undo within 60s" after destructive resets */
+.reset-undo-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--ink);color:#fff;padding:10px 14px 10px 18px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 8px 26px rgba(0,0,0,.32);z-index:500;opacity:0;transition:opacity .22s ease,transform .22s ease;display:flex;align-items:center;gap:14px;max-width:520px;font-family:inherit;border-left:3px solid var(--hot)}
+.reset-undo-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.reset-undo-toast .rut-msg{flex:1;letter-spacing:.2px}
+.reset-undo-toast .rut-undo{background:var(--hf-red);color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.4px;text-transform:uppercase;transition:background .12s}
+.reset-undo-toast .rut-undo:hover{background:#c43e3a}
+.reset-undo-toast .rut-dismiss{background:transparent;border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;padding:0 4px;font-family:inherit;line-height:1}
+.reset-undo-toast .rut-dismiss:hover{color:#fff}
+
 /* SYNC TOAST (Google Sheets write-back feedback) */
 .sync-toast{position:fixed;bottom:80px;right:14px;padding:10px 16px;border-radius:6px;font-size:12px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:400;opacity:0;transform:translateY(8px);transition:opacity .22s ease,transform .22s ease;max-width:340px;letter-spacing:.2px;font-family:inherit;color:#fff;pointer-events:none}
 .sync-toast.ok{background:var(--ur)}
@@ -6974,8 +6983,17 @@ async function kbDrop(ev) {
 }
 async function resetStageOverrides() {
   const count = Object.keys(STAGE_OVERRIDES).length;
-  if (count === 0) { alert("No manual overrides to reset."); return; }
-  if (!confirm(`Reset all ${count} manual stage overrides? Stages will revert to auto-derived from CSV.`)) return;
+  if (count === 0) { showSyncToast("No manual overrides to reset.", "ok"); return; }
+  // Loud confirm: this is destructive AND shared with the team. Make sure
+  // the user really intends it. (The 60s Undo toast catches the moments
+  // where they didn't.)
+  if (!confirm(
+    `Reset ${count} manual stage override${count === 1 ? "" : "s"} for EVERYONE on the team?\n\n` +
+    `Every card you or your teammates dragged in the kanban will snap back to its auto-derived stage. ` +
+    `You'll have 60 seconds to Undo from the toast that appears.`
+  )) return;
+  // Snapshot for undo
+  _lastReset = { kind: "stage", data: { ...STAGE_OVERRIDES }, undoneAt: null };
   const ids = Object.keys(STAGE_OVERRIDES);
   STAGE_OVERRIDES = {};
   _writeLocalStageOverrides(STAGE_OVERRIDES);
@@ -6984,6 +7002,71 @@ async function resetStageOverrides() {
   try {
     await Promise.all(ids.map(id => kvStore.del("stage_override", id).catch(() => null)));
   } catch {}
+  showResetUndoToast(`${count} stage override${count === 1 ? "" : "s"} reset`);
+}
+
+// Snapshot of the last "reset all overrides" action — keyed by kind so the
+// undo handler knows which override map to restore. Lives for ~60s; the
+// toast UI counts down and clears the snapshot when the user dismisses it
+// or the timer expires. One snapshot at a time — if you fire two resets,
+// the second supersedes the first (the first becomes unrecoverable).
+let _lastReset = null;
+let _resetUndoTimer = null;
+
+function showResetUndoToast(headline) {
+  if (_resetUndoTimer) clearTimeout(_resetUndoTimer);
+  let host = document.getElementById("reset-undo-toast");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "reset-undo-toast";
+    host.className = "reset-undo-toast";
+    document.body.appendChild(host);
+  }
+  host.innerHTML = `
+    <span class="rut-msg">${escape(headline)}</span>
+    <button class="rut-undo" type="button" onclick="undoLastReset()">↺ Undo</button>
+    <button class="rut-dismiss" type="button" onclick="dismissResetUndoToast()" aria-label="Dismiss">×</button>`;
+  requestAnimationFrame(() => host.classList.add("show"));
+  _resetUndoTimer = setTimeout(() => { dismissResetUndoToast(); _lastReset = null; }, 60000);
+}
+function dismissResetUndoToast() {
+  const host = document.getElementById("reset-undo-toast");
+  if (host) host.classList.remove("show");
+  if (_resetUndoTimer) { clearTimeout(_resetUndoTimer); _resetUndoTimer = null; }
+}
+
+async function undoLastReset() {
+  if (!_lastReset) { dismissResetUndoToast(); return; }
+  const snap = _lastReset;
+  _lastReset = null;
+  dismissResetUndoToast();
+  if (snap.kind === "stage") {
+    STAGE_OVERRIDES = { ...snap.data };
+    _writeLocalStageOverrides(STAGE_OVERRIDES);
+    renderPipelineView();
+    await Promise.all(Object.entries(snap.data).map(([id, stage]) =>
+      kvStore.put("stage_override", id, stage).catch(() => null)
+    ));
+    showSyncToast("✓ Stage overrides restored", "ok");
+  } else if (snap.kind === "strat-axis") {
+    if (!STRAT_STATE.overrides[snap.axisKey]) STRAT_STATE.overrides[snap.axisKey] = {};
+    STRAT_STATE.overrides[snap.axisKey] = { ...snap.data };
+    _saveStratOverrides();
+    if (typeof renderStrategicView === "function") renderStrategicView();
+    await Promise.all(Object.entries(snap.data).map(([eid, xy]) =>
+      kvStore.put("map2x2_override", snap.axisKey + "::" + eid, xy).catch(() => null)
+    ));
+    showSyncToast("✓ 2×2 positions restored", "ok");
+  } else if (snap.kind === "strat-all") {
+    STRAT_STATE.overrides = JSON.parse(JSON.stringify(snap.data));
+    _saveStratOverrides();
+    if (typeof renderStrategicView === "function") renderStrategicView();
+    const flat = _strat_flatten(snap.data);
+    await Promise.all(Object.entries(flat).map(([k, v]) =>
+      kvStore.put("map2x2_override", k, v).catch(() => null)
+    ));
+    showSyncToast("✓ All 2×2 positions restored", "ok");
+  }
 }
 // Tracks which kanban columns the user has explicitly expanded past the
 // 25-card default. Per-tab state — not persisted between sessions, since
@@ -7513,24 +7596,42 @@ async function stratSaveOverride(entityId, axisKey, x, y) {
   catch (e) { console.warn("[2x2] save deferred (offline):", e.message); }
 }
 async function stratResetOverrides(axisKey) {
-  if (!confirm(`Reset all manual overrides for ${STRAT_AXES[axisKey].label}?`)) return;
-  const ids = Object.keys(STRAT_STATE.overrides[axisKey] || {});
+  const data = STRAT_STATE.overrides[axisKey] || {};
+  const count = Object.keys(data).length;
+  if (count === 0) { showSyncToast("No overrides on this axis.", "ok"); return; }
+  if (!confirm(
+    `Reset ${count} manual position${count === 1 ? "" : "s"} on the ${STRAT_AXES[axisKey].label} map for EVERYONE on the team?\n\n` +
+    `You'll have 60 seconds to Undo from the toast that appears.`
+  )) return;
+  // Snapshot for undo
+  _lastReset = { kind: "strat-axis", axisKey, data: { ...data } };
+  const ids = Object.keys(data);
   delete STRAT_STATE.overrides[axisKey];
   _saveStratOverrides();
   renderStrategicView();
   try {
     await Promise.all(ids.map(eid => kvStore.del("map2x2_override", axisKey + "::" + eid).catch(() => null)));
   } catch {}
+  showResetUndoToast(`${count} position${count === 1 ? "" : "s"} reset on ${STRAT_AXES[axisKey].label}`);
 }
 async function stratClearAllOverrides() {
-  if (!confirm("Clear ALL manual overrides across all three maps?")) return;
-  const allKeys = Object.keys(_strat_flatten(STRAT_STATE.overrides));
+  const flat = _strat_flatten(STRAT_STATE.overrides);
+  const count = Object.keys(flat).length;
+  if (count === 0) { showSyncToast("No overrides on any map.", "ok"); return; }
+  if (!confirm(
+    `Clear ${count} manual position${count === 1 ? "" : "s"} across ALL THREE strategic maps for EVERYONE on the team?\n\n` +
+    `You'll have 60 seconds to Undo from the toast that appears.`
+  )) return;
+  // Snapshot for undo — preserve the full nested shape
+  _lastReset = { kind: "strat-all", data: JSON.parse(JSON.stringify(STRAT_STATE.overrides)) };
+  const allKeys = Object.keys(flat);
   STRAT_STATE.overrides = {};
   _saveStratOverrides();
   renderStrategicView();
   try {
     await Promise.all(allKeys.map(k => kvStore.del("map2x2_override", k).catch(() => null)));
   } catch {}
+  showResetUndoToast(`${count} position${count === 1 ? "" : "s"} cleared across all 2×2 maps`);
 }
 
 function renderStrategicView() {
