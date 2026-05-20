@@ -6818,11 +6818,14 @@ function renderPipelineView() {
   });
   html += `</div>`;
 
-  // Kanban board
+  // Kanban board. Each stage's column is truncated to 25 cards by default;
+  // user can click "+N more" to expand it (toggle per-stage state via
+  // KB_EXPANDED_STAGES Set, rendered through renderPipelineView re-runs).
   html += `<div class="kb-board-wrap"><div class="kb-board">`;
   STAGES.forEach(s => {
     const entities = byStage[s.id];
-    const visible = entities.slice(0, 25);
+    const expanded = KB_EXPANDED_STAGES.has(s.id);
+    const visible = expanded ? entities : entities.slice(0, 25);
     const remaining = entities.length - visible.length;
     html += `<div class="kb-col" style="--stage-color:${s.color}">
       <div class="kb-col-head">
@@ -6860,7 +6863,9 @@ function renderPipelineView() {
     }
     html += `</div>`;
     if (remaining > 0) {
-      html += `<div class="kb-col-more" onclick="kbExpandColumn('${s.id}')">+${remaining} more →</div>`;
+      html += `<div class="kb-col-more" onclick="kbExpandColumn('${s.id}')">+${remaining} more · click to expand</div>`;
+    } else if (expanded && entities.length > 25) {
+      html += `<div class="kb-col-more" onclick="kbExpandColumn('${s.id}')">↑ Show less</div>`;
     }
     html += `</div>`;
   });
@@ -6931,9 +6936,15 @@ async function resetStageOverrides() {
     await Promise.all(ids.map(id => kvStore.del("stage_override", id).catch(() => null)));
   } catch {}
 }
+// Tracks which kanban columns the user has explicitly expanded past the
+// 25-card default. Per-tab state — not persisted between sessions, since
+// "everything expanded" is rarely the desired default view.
+const KB_EXPANDED_STAGES = new Set();
+
 function kbExpandColumn(stageId) {
-  // For now, point users at the Database view (full list); inline expansion is a future task.
-  alert("Showing more entities in '" + STAGE_BY_ID[stageId].label + "' will arrive in the next iteration. Use the Database view for the full list, or filter by Priority on the Globe view.");
+  if (KB_EXPANDED_STAGES.has(stageId)) KB_EXPANDED_STAGES.delete(stageId);
+  else                                 KB_EXPANDED_STAGES.add(stageId);
+  renderPipelineView();
 }
 
 // FUNNEL — conversion funnel by pipeline stage (Phase 2 placeholder, minimal)
