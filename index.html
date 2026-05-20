@@ -1414,7 +1414,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 <section class="explorer">
   <div class="filter-bar" id="filter-bar">
     <span class="filter-bar-label">Filter</span>
-    <input type="text" class="fb-search" id="search" placeholder="Search name, country, focus, priority (e.g. 'critical')..." />
+    <input type="search" class="fb-search" id="search" autocomplete="off" spellcheck="false" placeholder="Search name, country, focus, priority (e.g. 'critical')..." />
     <div class="fb-dropdown" data-filter="continent"><button class="fb-btn" onclick="toggleFbDropdown(event,'continent')">Region <span class="fb-count" id="fb-count-continent">0</span><span class="fb-arrow">▾</span></button><div class="fb-panel" id="fb-panel-continent"></div></div>
     <div class="fb-dropdown" data-filter="type"><button class="fb-btn" onclick="toggleFbDropdown(event,'type')">Type <span class="fb-count" id="fb-count-type">0</span><span class="fb-arrow">▾</span></button><div class="fb-panel" id="fb-panel-type"></div></div>
     <div class="fb-dropdown" data-filter="owner"><button class="fb-btn" onclick="toggleFbDropdown(event,'owner')">Owner team <span class="fb-count" id="fb-count-owner">0</span><span class="fb-arrow">▾</span></button><div class="fb-panel" id="fb-panel-owner"></div></div>
@@ -3354,6 +3354,11 @@ async function parseAndRender(csvText) {
   const search = document.getElementById("search");
   if (!search._wired) {
     search.addEventListener("input", e => { STATE.search = e.target.value; render(); });
+    // Also clear on Escape — native type="search" handles the X button, but ESC
+    // is the keyboard shortcut most users reach for.
+    search.addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.target.value = ""; STATE.search = ""; render(); e.target.blur(); }
+    });
     search._wired = true;
   }
 
@@ -7846,7 +7851,7 @@ function renderDatabaseView() {
   });
   let html = `<div class="view-header"><h1>Database</h1><p>Every entity in one sortable table. Click a column header to sort. Click a row to open its full detail.</p></div>`;
   html += `<div class="db-toolbar">
-    <input type="text" id="db-search" placeholder="Search name, country, focus, priority (e.g. 'critical', 'digital pioneer')…" value="${escape(STATE.search)}"/>
+    <input type="search" id="db-search" autocomplete="off" spellcheck="false" placeholder="Search name, country, focus, priority (e.g. 'critical', 'digital pioneer')…" value="${escape(STATE.search)}"/>
     <button class="btn outline" onclick="exportDbCsv()">⬇ Export CSV</button>
     <div class="db-count">${sorted.length} of ${UNIS.length}</div>
   </div>`;
