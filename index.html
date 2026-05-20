@@ -2021,12 +2021,20 @@ function kbDownloadJson(schemaKey) {
 }
 
 async function kbResetToFile(schemaKey) {
-  if (!confirm(`Discard any draft for "${KB_SCHEMA[schemaKey].title}" and reload from ${KB_SCHEMA[schemaKey].file}?`)) return;
+  // Snapshot current draft BEFORE we ask, so we can undo even if it was
+  // never explicitly saved by the user.
+  const currentDraft = kbDraftLoad(schemaKey);
+  if (!confirm(
+    `Discard the current draft for "${KB_SCHEMA[schemaKey].title}" and reload from ${KB_SCHEMA[schemaKey].file}?\n\n` +
+    `This affects EVERYONE on the team. You'll have 60 seconds to Undo from the toast that appears.`
+  )) return;
+  _lastReset = { kind: "kb-reset", schemaKey, data: currentDraft ? JSON.parse(JSON.stringify(currentDraft)) : null };
   await kbDraftClear(schemaKey);
   const fresh = await fetchJson(KB_SCHEMA[schemaKey].file);
   kbApply(schemaKey, fresh);
   renderAdminView();
   if (typeof render === "function") render();
+  showResetUndoToast(`"${KB_SCHEMA[schemaKey].title}" draft reset to file`);
 }
 
 // ========================================================================
@@ -5554,8 +5562,17 @@ async function upsertOutreach(entry) {
 }
 
 async function deleteOutreach(entityId, entryId) {
-  if (!confirm("Delete this outreach entry?")) return;
   if (!OUTREACH[entityId]) return;
+  const entry = OUTREACH[entityId].find(e => e.id === entryId);
+  if (!entry) return;
+  if (!confirm(
+    `Delete this outreach entry?\n\n` +
+    `"${entry.subject || "(no subject)"}"\n` +
+    `Sent ${entry.date || "no date"} · ${entry.channel || "—"}\n\n` +
+    `You'll have 60 seconds to Undo from the toast that appears.`
+  )) return;
+  // Snapshot for undo (full entry + entityId so we can re-upsert)
+  _lastReset = { kind: "outreach-delete", entityId, entry: JSON.parse(JSON.stringify(entry)) };
   // Optimistic local removal
   OUTREACH[entityId] = OUTREACH[entityId].filter(e => e.id !== entryId);
   _writeLocalOutreach(OUTREACH);
@@ -5572,6 +5589,7 @@ async function deleteOutreach(entityId, entryId) {
     OUTREACH_PENDING_FLUSH = true;
     console.warn("[outreach] delete deferred (offline):", e.message);
   }
+  showResetUndoToast(`Outreach entry deleted: "${(entry.subject || "(no subject)").slice(0, 60)}"`);
 }
 
 // Unified program lookup across summer programs, collab formats, bachelors, masters, Talent H-UB
@@ -7066,6 +7084,36 @@ async function undoLastReset() {
       kvStore.put("map2x2_override", k, v).catch(() => null)
     ));
     showSyncToast("✓ All 2×2 positions restored", "ok");
+  } else if (snap.kind === "outreach-delete") {
+    // Re-insert the entry locally + push back to server via the normal upsert
+    const { entityId, entry } = snap;
+    (OUTREACH[entityId] = OUTREACH[entityId] || []).push(entry);
+    _writeLocalOutreach(OUTREACH);
+    if (STATE.detailId === entityId) openDetail(entityId);
+    try {
+      await apiFetch("/api/state/outreach/" + encodeURIComponent(entry.id), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ..._identityHeaders() },
+        body: JSON.stringify(entry),
+      });
+    } catch (e) {
+      console.warn("[outreach-undo] server write failed, kept locally:", e.message);
+    }
+    showSyncToast("✓ Outreach entry restored", "ok");
+  } else if (snap.kind === "kb-reset") {
+    // Restore the draft to whatever the user had before the reset. If they
+    // never had a draft (currentDraft was null), clear instead — which
+    // means re-fetching the file content as the active dataset.
+    const { schemaKey, data } = snap;
+    if (data === null || data === undefined) {
+      await kbDraftClear(schemaKey);
+    } else {
+      kbApply(schemaKey, data);
+      await kbDraftSave(schemaKey, data);
+    }
+    renderAdminView();
+    if (typeof render === "function") render();
+    showSyncToast(`✓ "${KB_SCHEMA[schemaKey].title}" draft restored`, "ok");
   }
 }
 // Tracks which kanban columns the user has explicitly expanded past the
