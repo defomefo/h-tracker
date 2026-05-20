@@ -1126,6 +1126,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
    On the white login card we knock it to solid black so the brand mark
    actually shows. brightness(0) is bulletproof — no CSS hue arithmetic. */
 .login-logo{height:36px;width:auto;margin:0 auto 4px;filter:brightness(0)}
+.login-eyebrow{font-size:10px;letter-spacing:3.5px;font-weight:800;color:var(--hf-red);text-transform:uppercase;margin:2px 0 -4px}
 .login-card h1{font-size:18px;color:var(--navy);font-weight:800;letter-spacing:.4px}
 .login-sub{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:-4px 0 6px}
 .login-row{display:flex;flex-direction:column;gap:6px;text-align:left}
@@ -1189,6 +1190,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 <div id="login-overlay" class="login-overlay" aria-hidden="true">
   <form class="login-card" id="login-form" onsubmit="event.preventDefault();submitLogin()">
     <img class="login-logo" src="Logo/logo-h-farm-college-white.png" alt="H-FARM College" />
+    <div class="login-eyebrow">H-TRACKER</div>
     <h1>Global Partnerships</h1>
     <p class="login-sub">This tracker is private. Enter the shared password to continue.</p>
     <div class="login-row">
