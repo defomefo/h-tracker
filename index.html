@@ -3750,6 +3750,39 @@ const CF_NAME_ALIASES = {
   "UAE":["United Arab Emirates","Arab Emirates"],
   "N. Macedonia":["North Macedonia","Macedonia"],
 };
+// For the country-detail zoom we want the *home* landmass — overseas
+// territories politically attached to the country (France → Saint Pierre &
+// Miquelon and Réunion; UK → Falklands; Spain → Canaries; USA → Hawaii,
+// Alaska) drag the bbox across the globe and shrink the recognisable
+// mainland into a postage-stamp. Filter them by bbox area: drop any
+// polygon smaller than 1% of the largest one. Corsica vs France mainland
+// is ~1.5% so it survives; Saint Pierre is ~0.05% so it goes.
+function _mainlandOnly(feature) {
+  if (!feature || !feature.geometry) return feature;
+  if (feature.geometry.type !== "MultiPolygon") return feature;
+  const polys = feature.geometry.coordinates;
+  if (polys.length <= 1) return feature;
+  const areas = polys.map(poly => {
+    const ring = poly[0] || [];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const pt of ring) {
+      if (pt[0] < minX) minX = pt[0];
+      if (pt[0] > maxX) maxX = pt[0];
+      if (pt[1] < minY) minY = pt[1];
+      if (pt[1] > maxY) maxY = pt[1];
+    }
+    return (maxX - minX) * (maxY - minY);
+  });
+  const maxArea = Math.max(...areas);
+  const threshold = maxArea * 0.01;
+  const kept = polys.filter((_, i) => areas[i] >= threshold);
+  if (kept.length === polys.length) return feature;
+  return {
+    ...feature,
+    geometry: { type: "MultiPolygon", coordinates: kept },
+  };
+}
+
 function cfFindFeature(name) {
   if (!CF_WORLD) {
     const paths = globeSvg.selectAll('.country').data();
@@ -3759,10 +3792,11 @@ function cfFindFeature(name) {
   const tries = [name, ...(CF_NAME_ALIASES[name] || [])];
   for (const t of tries) {
     const f = CF_WORLD.find(x => x.properties.name === t);
-    if (f) return f;
+    if (f) return _mainlandOnly(f);
   }
   const lower = name.toLowerCase();
-  return CF_WORLD.find(x => x.properties.name.toLowerCase().includes(lower)) || null;
+  const hit = CF_WORLD.find(x => x.properties.name.toLowerCase().includes(lower));
+  return hit ? _mainlandOnly(hit) : null;
 }
 
 async function dramaticEnter(country) {
