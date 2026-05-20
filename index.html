@@ -1514,15 +1514,47 @@ const API_BASE = (() => {
 
 // apiFetch — single wrapper for every /api/* call. Handles two things:
 //   1. credentials:"include" so the session cookie travels cross-origin
-//   2. 401 detection → re-show the login overlay so users can re-auth in place
-// Use it instead of fetch() whenever talking to our own API.
+//   2. 401 detection → re-show the login overlay so users can re-auth in place,
+//      BUT only after confirming the session is actually gone via /api/auth/status.
+//      Render's free instance + cross-site cookie throttling occasionally
+//      produce a transient 401 on the first request after a tab regains focus
+//      — we don't want to kick the user out for that.
+let _lastAuthVerify = 0;
+async function _verifyAuthState() {
+  // Cache the verify result for 5 seconds to avoid stampeding when many
+  // syncs fire in parallel on focus.
+  const now = Date.now();
+  if (now - _lastAuthVerify < 5000) return _lastAuthVerify > 0;
+  try {
+    const sr = await fetch(API_BASE + "/api/auth/status", {
+      credentials: "include", cache: "no-store",
+    });
+    const st = await sr.json();
+    const stillAuthed = !st.auth_required || !!st.authed;
+    if (stillAuthed) _lastAuthVerify = now;
+    return stillAuthed;
+  } catch {
+    // Server unreachable — don't logout. The next real call will surface
+    // whatever the actual issue is.
+    return true;
+  }
+}
+
 async function apiFetch(path, opts = {}) {
   const r = await fetch(API_BASE + path, {
     ...opts,
     credentials: "include",
   });
   if (r.status === 401) {
-    // Session expired or never started — surface the login modal again.
+    const stillAuthed = await _verifyAuthState();
+    if (stillAuthed) {
+      // Transient 401 — server thinks we're still logged in. Hand the response
+      // to the caller so it can decide; do NOT show the login overlay.
+      console.warn("[apiFetch] transient 401 on", path, "— session still valid, ignoring");
+      return r;
+    }
+    // Confirmed unauthed
+    _appBooted = false;   // allow bootApp to re-run after re-login
     if (typeof showLoginOverlay === "function") showLoginOverlay({reason: "Session expired — please sign in again."});
     throw new Error("auth required");
   }
@@ -4824,6 +4856,9 @@ function startPresence() {
   _heartbeatNow();
   _refreshPresence();
   _presenceTimer = setInterval(async () => {
+    // Skip heartbeat while tab is hidden — saves quota AND avoids the
+    // hidden-tab fetch racing with the cookie on tab refocus.
+    if (document.hidden) return;
     await _heartbeatNow();
     _refreshPresence();
   }, PRESENCE_HEARTBEAT_MS);
@@ -7915,7 +7950,11 @@ async function submitLogin() {
     if (!r.ok) { errEl.textContent = "Login failed (HTTP " + r.status + ")."; return; }
     hideLoginOverlay();
     pwEl.value = "";   // don't keep the cleartext password in the DOM
-    if (!_appBooted) bootApp();
+    // After a fresh login, surface the data-source picker so the user can
+    // confirm/replace the CSV link (Google Sheets export, local file, etc.).
+    // Returning to an active session skips this — we only want it on the
+    // explicit auth handshake.
+    if (!_appBooted) bootApp({ forceConfig: true });
   } catch (e) {
     errEl.textContent = "Couldn't reach the server — " + e.message;
   } finally {
@@ -7945,7 +7984,7 @@ async function checkAuthAndBoot() {
   bootApp();
 }
 
-async function bootApp() {
+async function bootApp(opts = {}) {
   if (_appBooted) return;
   _appBooted = true;
   // Probe AI availability + sync shared state in parallel — neither blocks startup.
@@ -7967,7 +8006,15 @@ async function bootApp() {
           e.message);
     return;
   }
-  loadData(false);
+  // forceConfig (passed from submitLogin) makes the data-source picker the
+  // first thing the user sees after entering the password, so they can swap
+  // the CSV link if it changed. The config form pre-fills the saved URL,
+  // so "Save & load" is one click for users who don't want to change anything.
+  if (opts.forceConfig) {
+    showConfig();
+  } else {
+    loadData(false);
+  }
 }
 
 window.addEventListener("DOMContentLoaded", checkAuthAndBoot);
@@ -7984,7 +8031,15 @@ window.addEventListener("keydown", (e) => {
 });
 
 // Re-sync when the tab regains focus — picks up changes made by other users.
+// Throttle to once per 30s so a quick tab-flicker doesn't fire a burst of
+// requests (which can race with the auth cookie on cross-origin connections
+// and momentarily 401 — see apiFetch's transient-401 handling).
+let _lastFocusSync = 0;
 window.addEventListener("focus", () => {
+  const now = Date.now();
+  if (now - _lastFocusSync < 30000) return;
+  _lastFocusSync = now;
+  if (!_appBooted) return;   // don't fire syncs before the user has logged in
   if (typeof syncOutreachFromServer === "function")        syncOutreachFromServer();
   if (typeof syncTeamAssignmentsFromServer === "function") syncTeamAssignmentsFromServer();
   if (typeof syncStageOverridesFromServer === "function")  syncStageOverridesFromServer();
