@@ -498,9 +498,14 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .owner-detail .ow-remit{font-size:11px;color:var(--ink);line-height:1.4}
 .owner-detail .ow-contact{font-size:11px;color:var(--ink-soft);margin-top:4px;font-family:'Consolas',monospace}
 .owner-detail .ow-contact a{color:var(--navy-light);text-decoration:none}
-.owner-rec{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-top:4px;border-top:1px dashed var(--rule)}
-.rec-chip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.3px;color:#fff;padding:3px 9px;border-radius:11px;cursor:pointer;transition:transform .12s;user-select:none}
+/* Stack the label above the chip row so the wide "PRIMARY" chip doesn't
+   push secondary chips to a 2nd line that visually drifts under the label. */
+.owner-rec{display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px dashed var(--rule)}
+.owner-rec-label{font-size:9px;letter-spacing:1px;color:var(--ink-soft);text-transform:uppercase;font-weight:700}
+.owner-rec-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rec-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.3px;color:#fff;padding:3px 9px;border-radius:11px;cursor:pointer;transition:transform .12s;user-select:none}
 .rec-chip:hover{transform:translateY(-1px);opacity:.9}
+.rec-chip-star{font-size:11px;line-height:1;opacity:.95}
 
 /* Owner badge on cards */
 .owner-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 7px;border-radius:9px;color:#fff;font-weight:700;letter-spacing:.3px}
@@ -4936,8 +4941,10 @@ function detailHtml(u) {
                 ${headTeam.phone ? `<div class="ow-contact"><b>Phone:</b> ${headTeam.phone}</div>` : ''}
               </div>` : '<div style="font-size:11px;color:var(--ink-soft);font-style:italic">No team selected.</div>'}
             ${recommended.length ? `<div class="owner-rec">
-              <span style="font-size:9px;letter-spacing:1px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Recommended for this profile</span>
-              ${recommended.map((t,i) => `<span class="rec-chip" style="background:${t.color}" onclick="setEntityTeam('${u.id}','${t.id}')">${i===0?'PRIMARY · ':''}${escape(t.name)}</span>`).join("")}
+              <span class="owner-rec-label">Recommended for this profile</span>
+              <div class="owner-rec-chips">
+                ${recommended.map((t,i) => `<span class="rec-chip" style="background:${t.color}" onclick="setEntityTeam('${u.id}','${t.id}')" title="${i===0?'Primary recommendation':'Supporting team'}">${i===0?'<span class="rec-chip-star">★</span>':''}${escape(t.name)}</span>`).join("")}
+              </div>
             </div>` : ''}
           </div>`;
       })()}
