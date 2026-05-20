@@ -8152,7 +8152,10 @@ function renderGlobe() {
     .datum(d3.geoGraticule10()).attr("d", path)
     .attr("fill","none").attr("stroke","#fff").attr("stroke-opacity",0.18).attr("stroke-width",0.5);
   dotsGroup.raise();
-  d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
+  // 50m TopoJSON (~1MB) instead of the 110m default — the country outlines
+  // stay smooth when a single country fills the viewport in the country-detail
+  // zoom view. World-level rendering is still fast; the file caches via jsDelivr.
+  d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json").then(world => {
     const countries = topojson.feature(world, world.objects.countries).features;
     // Compute which canonical countries we have data for
     const countriesWithData = new Set();
