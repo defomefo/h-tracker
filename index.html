@@ -1157,6 +1157,12 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .ef-input:focus{outline:none;border-color:var(--gold);background:#fff}
 .ef-textarea{resize:vertical;line-height:1.5;font-family:inherit}
 
+/* SYNC TOAST (Google Sheets write-back feedback) */
+.sync-toast{position:fixed;bottom:80px;right:14px;padding:10px 16px;border-radius:6px;font-size:12px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:400;opacity:0;transform:translateY(8px);transition:opacity .22s ease,transform .22s ease;max-width:340px;letter-spacing:.2px;font-family:inherit;color:#fff;pointer-events:none}
+.sync-toast.ok{background:var(--ur)}
+.sync-toast.warn{background:var(--hot);color:var(--ink)}
+.sync-toast.show{opacity:1;transform:translateY(0)}
+
 /* ACTIVITY TIMELINE (detail panel tab) */
 .activity-list{display:flex;flex-direction:column;gap:0;padding:4px 0}
 .activity-empty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:18px 6px;text-align:center}
@@ -3054,6 +3060,50 @@ async function saveEntityField(entityId, field, value) {
   // Mirror to server (fire-and-forget; localStorage is the offline fallback)
   try { await kvStore.put("entity_override", entityId, next); }
   catch (e) { console.warn("[entity_override] save deferred (offline):", e.message); }
+  // Best-effort Google Sheets write-back. If HFARM_SHEETS_WRITEBACK_URL
+  // isn't configured server-side, this returns {configured:false} and we
+  // stay quiet. Otherwise we toast success/failure so the user knows
+  // whether the source of truth is in sync.
+  pushFieldToSheets(entityId, field, value);
+}
+
+async function pushFieldToSheets(entityId, field, value) {
+  try {
+    const r = await apiFetch("/api/sheets/writeback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entity_id: entityId, field, value }),
+    });
+    const data = await r.json();
+    if (data.configured === false) return;   // silent — feature not enabled
+    if (data.ok && data.apps_script && data.apps_script.ok) {
+      showSyncToast("✓ Synced to Google Sheets", "ok");
+    } else {
+      const msg = (data.apps_script && data.apps_script.error) || data.error || "unknown error";
+      showSyncToast("⚠ Sheets sync failed — " + msg, "warn");
+    }
+  } catch (e) {
+    showSyncToast("⚠ Sheets sync error — " + e.message, "warn");
+  }
+}
+
+// Small bottom-right transient toast for sync feedback. Doesn't queue —
+// rapid edits replace the previous toast in place.
+let _syncToastEl = null;
+let _syncToastTimer = null;
+function showSyncToast(msg, type) {
+  if (_syncToastTimer) clearTimeout(_syncToastTimer);
+  if (!_syncToastEl) {
+    _syncToastEl = document.createElement("div");
+    _syncToastEl.className = "sync-toast";
+    document.body.appendChild(_syncToastEl);
+  }
+  _syncToastEl.className = "sync-toast " + (type === "warn" ? "warn" : "ok");
+  _syncToastEl.textContent = msg;
+  requestAnimationFrame(() => _syncToastEl.classList.add("show"));
+  _syncToastTimer = setTimeout(() => {
+    if (_syncToastEl) _syncToastEl.classList.remove("show");
+  }, type === "warn" ? 5500 : 2500);
 }
 
 // Restore an entity's overridden fields to the snapshotted CSV-pristine

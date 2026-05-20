@@ -148,6 +148,11 @@ def auth_logout():
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 gemini_client = genai.Client(api_key=GEMINI_KEY) if GEMINI_KEY else None
 
+# Optional Google Sheets write-back. Set to the Apps Script Web App URL
+# (looks like https://script.google.com/macros/s/AKfycb.../exec) and every
+# editable-field change is mirrored to the source sheet. See SHEETS_SYNC.md.
+WRITEBACK_URL = os.environ.get("HFARM_SHEETS_WRITEBACK_URL", "").strip()
+
 
 # ============================================================================
 # DATABASE — dual SQLite (local dev) / Postgres (production) support
@@ -383,6 +388,7 @@ def health():
             "db_backend": "postgres" if USE_PG else "sqlite",
             "db": "neon/render" if USE_PG else str(DB_PATH.name),
             "auth_required": bool(APP_PASSWORD),
+            "sheets_writeback": bool(WRITEBACK_URL),
         }
     )
 
@@ -878,6 +884,63 @@ def _parse_email_json(text):
             except json.JSONDecodeError:
                 pass
     return {}
+
+
+# ============================================================================
+# SHEETS WRITE-BACK — proxy edits through to a Google Sheets Apps Script
+# ----------------------------------------------------------------------------
+# The Apps Script lives on the user's Sheet (see SHEETS_SYNC.md for the
+# paste-in code + deploy steps). We just POST {entity_id, field, value}
+# to its public Web App URL. Apps Script finds the row by `id` column and
+# writes the cell. If HFARM_SHEETS_WRITEBACK_URL isn't set, the endpoint
+# returns configured:false so the frontend can stay quiet.
+# ============================================================================
+import urllib.request as _urlreq
+import urllib.error as _urlerr
+
+
+@app.route("/api/sheets/writeback", methods=["POST"])
+@auth_required
+def sheets_writeback():
+    if not WRITEBACK_URL:
+        return jsonify({
+            "ok": False,
+            "configured": False,
+            "error": "Sheets write-back not configured. Set HFARM_SHEETS_WRITEBACK_URL on the server (see SHEETS_SYNC.md).",
+        }), 200
+
+    body = request.get_json(force=True, silent=True) or {}
+    entity_id = (body.get("entity_id") or "").strip()
+    field = (body.get("field") or "").strip()
+    if not entity_id or not field:
+        return jsonify({"ok": False, "configured": True, "error": "entity_id and field are required"}), 400
+
+    try:
+        req = _urlreq.Request(
+            WRITEBACK_URL,
+            data=json.dumps(body).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with _urlreq.urlopen(req, timeout=10) as resp:
+            raw = resp.read()
+        try:
+            inner = json.loads(raw.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return jsonify({
+                "ok": False, "configured": True,
+                "error": "Apps Script returned non-JSON: " + raw[:200].decode("utf-8", errors="replace"),
+            }), 502
+        # Apps Script wraps its own ok/error — surface it as-is
+        return jsonify({
+            "ok": bool(inner.get("ok")),
+            "configured": True,
+            "apps_script": inner,
+        }), (200 if inner.get("ok") else 502)
+    except _urlerr.URLError as e:
+        return jsonify({"ok": False, "configured": True, "error": "Network error: " + str(e)}), 502
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"ok": False, "configured": True, "error": "Unexpected: " + str(e)}), 500
 
 
 # ============================================================================

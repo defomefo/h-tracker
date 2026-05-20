@@ -33,3 +33,5 @@ services:
         sync: false
       - key: HFARM_SECRET_KEY   # Random hex; signs session cookies. See DEPLOY.md
         sync: false
+      - key: HFARM_SHEETS_WRITEBACK_URL   # Optional. Apps Script Web App URL — see SHEETS_SYNC.md
+        sync: false
