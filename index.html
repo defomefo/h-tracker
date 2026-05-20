@@ -1505,13 +1505,11 @@ const API_BASE = (() => {
   //   <meta name="hfarm-api-base" content="https://my-api.example.com">
   const meta = document.querySelector('meta[name="hfarm-api-base"]');
   if (meta && meta.content) return meta.content.trim().replace(/\/$/, "");
-  const host = window.location.hostname;
-  // Static-hosting domains where Flask is NOT present — point at Render.
-  // (Service hosted on render.com; URL follows the pattern below.)
-  if (/\.vercel\.app$|\.netlify\.app$|\.pages\.dev$|\.github\.io$/.test(host)) {
-    return "https://h-tracker-api.onrender.com";
-  }
-  return "";   // same-origin (local dev or self-hosted Flask)
+  // Default: same-origin. On Vercel, vercel.json rewrites /api/* to the
+  // Render backend — so the cookie is first-party to vercel.app and no
+  // cross-site cookie blocking applies. On localhost Flask serves /api
+  // directly. No URL juggling needed in either case.
+  return "";
 })();
 
 // apiFetch — single wrapper for every /api/* call. Handles two things:
@@ -1521,19 +1519,19 @@ const API_BASE = (() => {
 //      Render's free instance + cross-site cookie throttling occasionally
 //      produce a transient 401 on the first request after a tab regains focus
 //      — we don't want to kick the user out for that.
-let _lastAuthVerify = 0;
+// Cache the last positive verify for 5 seconds to avoid stampeding when many
+// syncs fire in parallel on focus. Negative results always re-verify on the
+// next call (no false-negative cache).
+let _lastPositiveVerify = 0;
 async function _verifyAuthState() {
-  // Cache the verify result for 5 seconds to avoid stampeding when many
-  // syncs fire in parallel on focus.
-  const now = Date.now();
-  if (now - _lastAuthVerify < 5000) return _lastAuthVerify > 0;
+  if (Date.now() - _lastPositiveVerify < 5000) return true;
   try {
     const sr = await fetch(API_BASE + "/api/auth/status", {
       credentials: "include", cache: "no-store",
     });
     const st = await sr.json();
     const stillAuthed = !st.auth_required || !!st.authed;
-    if (stillAuthed) _lastAuthVerify = now;
+    if (stillAuthed) _lastPositiveVerify = Date.now();
     return stillAuthed;
   } catch {
     // Server unreachable — don't logout. The next real call will surface
