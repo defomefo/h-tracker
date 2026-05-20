@@ -1,0 +1,51 @@
+[
+  {
+    "id": "first-touch-cold",
+    "name": "First-touch · cold outreach",
+    "category": "First-touch",
+    "subject": "H-FARM College × {{entity.name}} — partnership opportunity",
+    "body": "Dear {{recipient.firstName}},\n\nI'm reaching out from H-FARM College — an innovation campus near Treviso, Italy. We've been following {{entity.name}}'s work in {{entity.focus_areas}}, and there's a strong overlap with the formats we run for international partners.\n\nWe operate short, intensive partnerships (1-2 weeks on campus, mixed-cohort) plus longer exchanges and joint degree tracks. Recent example: {{recommended.case}}.\n\nWould you have 20 minutes in the next two weeks for a quick intro call? Happy to send a one-pager beforehand if useful.\n\nBest,\n{{sender.name}}\n{{sender.role}} · H-FARM College"
+  },
+  {
+    "id": "first-touch-referral",
+    "name": "First-touch · referred by someone",
+    "category": "First-touch",
+    "subject": "Intro · H-FARM College ↔ {{entity.name}}",
+    "body": "Dear {{recipient.firstName}},\n\n[REFERRER_NAME] suggested I reach out — we were discussing partner schools where the H-FARM model could be a good fit, and {{entity.name}} came up because of your work in {{entity.focus_areas}}.\n\nH-FARM College is an innovation campus near Treviso, Italy. We run short intensive partnerships (1-2 weeks on campus) plus longer exchanges. {{recommended.case}} is one of our active partnerships.\n\nWould you have 20 minutes next week to compare notes? Tuesday 14:00 CET or Thursday 11:00 CET both work for me.\n\nBest,\n{{sender.name}}\nH-FARM College"
+  },
+  {
+    "id": "followup-no-reply",
+    "name": "Follow-up · no reply after 14 days",
+    "category": "Follow-up",
+    "subject": "Re: H-FARM College × {{entity.name}}",
+    "body": "Dear {{recipient.firstName}},\n\nJust circling back on my note from a couple of weeks ago. No pressure if the timing isn't right.\n\nIf it helps narrow the conversation: the most common starting point for partners like {{entity.name}} is our {{recommended.name}} format — {{recommended.duration}} on campus, {{recommended.group}} students. Reference: {{recommended.case}}.\n\nWould a short call this month or next make sense? Or I can send a one-pager if you'd prefer to share internally first.\n\nBest,\n{{sender.name}}\nH-FARM College"
+  },
+  {
+    "id": "discovery-call-invite",
+    "name": "Discovery call · scheduling",
+    "category": "Discovery",
+    "subject": "Intro call — H-FARM × {{entity.name}}",
+    "body": "Dear {{recipient.firstName}},\n\nThanks for the reply — looking forward to talking.\n\nFor a first 20-30 min call I'd cover:\n  · how H-FARM partnerships work in practice (formats, cohort sizes, costs)\n  · which formats might fit {{entity.name}}'s {{entity.focus_areas}} programmes best\n  · a couple of reference partnerships (e.g. {{recommended.case}})\n  · open Q&A\n\nDoes one of these work for you?\n  · Tuesday 14:00 CET\n  · Wednesday 10:00 CET\n  · Thursday 16:00 CET\n\nOr send a slot that works and I'll adjust.\n\nBest,\n{{sender.name}}"
+  },
+  {
+    "id": "proposal-sent",
+    "name": "Proposal sent · MoU draft",
+    "category": "Proposal",
+    "subject": "Proposal + MoU draft — H-FARM × {{entity.name}}",
+    "body": "Dear {{recipient.firstName}},\n\nFollowing our call, attached are two documents:\n\n  1. A short proposal for the {{recommended.name}} partnership ({{recommended.duration}}, {{recommended.group}} students, key dates).\n  2. Our standard MoU template — most academic legal departments accept 80% of the clauses as-is, so it should accelerate review on your side.\n\nLet me know who on your team will handle the legal side and I'll coordinate directly. Aim is to have signature in ~6-8 weeks if that fits your calendar.\n\nHappy to clarify anything in the proposal — just reply.\n\nBest,\n{{sender.name}}\nH-FARM College"
+  },
+  {
+    "id": "post-meeting-recap",
+    "name": "Post-meeting · recap + next steps",
+    "category": "Follow-up",
+    "subject": "Recap — {{entity.name}} call",
+    "body": "Dear {{recipient.firstName}},\n\nThanks for the call today. Quick recap of what we discussed and the next steps:\n\nWhat we discussed:\n  · [TOPIC_1]\n  · [TOPIC_2]\n\nNext steps:\n  · From my side: [ACTION_BY_HFARM] — by [DATE]\n  · From yours: [ACTION_BY_PARTNER] — by [DATE]\n  · Next sync: [DATE_OR_OPEN]\n\nIf I've missed or misremembered anything, just reply with corrections.\n\nBest,\n{{sender.name}}\nH-FARM College"
+  },
+  {
+    "id": "rewarm-dormant",
+    "name": "Re-warm · dormant 90+ days",
+    "category": "Re-engagement",
+    "subject": "{{entity.name}} — quick check-in",
+    "body": "Dear {{recipient.firstName}},\n\nIt's been a while — I hope the {{entity.country}} semester is going well.\n\nA quick note from H-FARM: [NEW_HOOK — e.g. new partnership format / case study / fellowship opening / event invite]. It seemed relevant to {{entity.name}}'s programmes in {{entity.focus_areas}} so I wanted to flag it.\n\nIf the partnership conversation is back on the table on your side, happy to pick it up where we left off. If not, no problem — I'll check in again later in the year.\n\nBest,\n{{sender.name}}\nH-FARM College"
+  }
+]

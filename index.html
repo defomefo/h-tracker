@@ -1157,6 +1157,14 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .ef-input:focus{outline:none;border-color:var(--gold);background:#fff}
 .ef-textarea{resize:vertical;line-height:1.5;font-family:inherit}
 
+/* OUTREACH TEMPLATE PICKER (in the outreach modal) */
+.template-row{display:flex;align-items:center;gap:10px;background:var(--paper);padding:10px 14px;border-radius:6px;border:1px solid var(--rule);margin-bottom:4px;flex-wrap:wrap}
+.template-row .template-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);font-weight:700;white-space:nowrap}
+.template-row .template-select{flex:1;min-width:200px;padding:7px 10px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;background:#fff;color:var(--ink)}
+.template-row .template-select:focus{outline:none;border-color:var(--gold)}
+.template-row .template-hint{font-size:10px;color:var(--ink-soft);flex-basis:100%;line-height:1.4}
+.template-row .template-hint code{font-size:10px;background:#fff;padding:1px 4px;border-radius:3px;border:1px solid var(--rule);font-family:Consolas,monospace}
+
 /* SYNC TOAST (Google Sheets write-back feedback) */
 .sync-toast{position:fixed;bottom:80px;right:14px;padding:10px 16px;border-radius:6px;font-size:12px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:400;opacity:0;transform:translateY(8px);transition:opacity .22s ease,transform .22s ease;max-width:340px;letter-spacing:.2px;font-family:inherit;color:#fff;pointer-events:none}
 .sync-toast.ok{background:var(--ur)}
@@ -1641,6 +1649,11 @@ let COLLAB_FORMATS = [];
 // Brochures — loaded from data/brochures.json at boot.
 let BROCHURES = [];
 
+// Outreach email templates — loaded from data/templates.json. Used by the
+// "Start from template" picker in the outreach modal. CRUD lives in the
+// Admin view under the Templates tab (shares the standard KB pattern).
+let OUTREACH_TEMPLATES = [];
+
 // ========================================================================
 // KB_SCHEMA — drives the Admin view (field rendering + validation)
 // ========================================================================
@@ -1767,6 +1780,19 @@ const KB_SCHEMA = {
       {key:"name",    label:"Item name", type:"text", required:true},
     ],
   },
+  templates: {
+    title: "Outreach templates",
+    file: "data/templates.json",
+    lsKey: "hfarm_kb_templates_draft",
+    keyField: "id",
+    fields: [
+      {key:"id",       label:"ID (slug)",  type:"text",     required:true},
+      {key:"name",     label:"Display name", type:"text",   required:true},
+      {key:"category", label:"Category",   type:"text",     placeholder:"First-touch / Follow-up / Proposal / …"},
+      {key:"subject",  label:"Subject (supports {{entity.name}} etc.)", type:"text", required:true},
+      {key:"body",     label:"Body (supports {{entity.name}}, {{recipient.firstName}}, {{recommended.case}} etc.)", type:"textarea", required:true},
+    ],
+  },
 };
 
 // ========================================================================
@@ -1844,7 +1870,7 @@ async function fetchJson(path) {
 async function loadKnowledgeBase() {
   // Files + server drafts in parallel. If the server is unreachable we
   // gracefully degrade to localStorage cache → bundled files.
-  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, serverDrafts] = await Promise.all([
+  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, tpls, serverDrafts] = await Promise.all([
     fetchJson(KB_SCHEMA.programs.file),
     fetchJson(KB_SCHEMA.teams.file),
     fetchJson(KB_SCHEMA.collab.file),
@@ -1856,6 +1882,7 @@ async function loadKnowledgeBase() {
     fetchJson(KB_SCHEMA.experiences.file),
     fetchJson(KB_SCHEMA.exchange_only.file),
     fetchJson(KB_SCHEMA.talentHub.file),
+    fetchJson(KB_SCHEMA.templates.file).catch(() => []),   // templates added later; tolerate missing file
     kvStore.fetchAll("kb_draft").catch(() => null),
   ]);
   // One-shot migrate localStorage → server, then refresh draft map
@@ -1887,6 +1914,7 @@ async function loadKnowledgeBase() {
   HFARM_KB.experiences  = resolve("experiences",   exp);
   HFARM_KB.exchangeOnly = resolve("exchange_only", exOnly);
   HFARM_KB.talentHub    = resolve("talentHub",     talentHub);
+  OUTREACH_TEMPLATES    = resolve("templates",     tpls) || [];
   PROG_BY_ID = Object.fromEntries(PROGRAMS.map(p => [p.id, p]));
   TEAM_BY_ID = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 }
@@ -1950,7 +1978,7 @@ function kbGetRaw(schemaKey) {
     talentHub:     HFARM_KB.talentHub,
   };
   if (schemaKey in fromKB) return fromKB[schemaKey];
-  return ({ programs: PROGRAMS, teams: TEAMS, collab: COLLAB_FORMATS, brochures: BROCHURES }[schemaKey]) || [];
+  return ({ programs: PROGRAMS, teams: TEAMS, collab: COLLAB_FORMATS, brochures: BROCHURES, templates: OUTREACH_TEMPLATES }[schemaKey]) || [];
 }
 function kbGet(schemaKey) {
   return shapeToArray(schemaKey, kbGetRaw(schemaKey));
@@ -1966,6 +1994,7 @@ function kbApply(schemaKey, raw) {
   else if (schemaKey === "experiences")  { HFARM_KB.experiences = raw; }
   else if (schemaKey === "exchange_only"){ HFARM_KB.exchangeOnly = raw; }
   else if (schemaKey === "talentHub")    { HFARM_KB.talentHub = raw; }
+  else if (schemaKey === "templates")    { OUTREACH_TEMPLATES = raw || []; }
 }
 function kbSet(schemaKey, arr) {
   const raw = shapeFromArray(schemaKey, arr);
@@ -1999,7 +2028,7 @@ const ADMIN_STATE = { tab: "programs", editingSchemaKey: null, editingKey: null,
 function renderAdminView() {
   const el = document.getElementById("view-admin");
   if (!el) return;
-  const tabs = ["programs", "teams", "collab", "brochures", "bachelors", "masters", "preparatory", "experiences", "exchange_only", "talentHub"];
+  const tabs = ["programs", "teams", "collab", "brochures", "bachelors", "masters", "preparatory", "experiences", "exchange_only", "talentHub", "templates"];
   const cur = ADMIN_STATE.tab;
   const schema = KB_SCHEMA[cur];
   const data = kbGet(cur);
@@ -5615,6 +5644,21 @@ function showOutreachForm(entityId, entryId) {
         ? `Fills <b>Subject</b> + <b>Email body</b> below with a tailored intro email, using ${escape(entity.name)}'s profile + the recommended H-FARM offering.`
         : `<b>Coming soon</b> — generates a tailored intro email from this partner's profile. Awaiting admin to configure the AI integration.`}</span>
     </div>
+    ${OUTREACH_TEMPLATES.length ? `<div class="template-row">
+      <label class="template-label">Start from template</label>
+      <select id="ol-template" class="template-select" onchange="applyOutreachTemplate('${entityId}', this.value)">
+        <option value="">— no template —</option>
+        ${(() => {
+          // Group templates by category for a tidier dropdown
+          const byCat = {};
+          OUTREACH_TEMPLATES.forEach(t => (byCat[t.category || "Other"] = byCat[t.category || "Other"] || []).push(t));
+          return Object.entries(byCat).map(([cat, list]) =>
+            `<optgroup label="${escape(cat)}">${list.map(t => `<option value="${escape(t.id)}">${escape(t.name)}</option>`).join("")}</optgroup>`
+          ).join("");
+        })()}
+      </select>
+      <span class="template-hint">Loads subject + body. Variables like <code>{{entity.name}}</code> are auto-filled. You can edit before saving.</span>
+    </div>` : ''}
     <div class="form-row">
       <label>Date <input type="date" id="ol-date" value="${e.date}"/></label>
       <label>Channels (multi-select)
@@ -5989,6 +6033,67 @@ async function checkAiAvailability() {
 // Calls the Flask backend (/api/draft-outreach) which proxies Anthropic.
 // Reads the current form state (entity, recipient, sender team) so the
 // draft already reflects whatever the user picked in the modal.
+// Replace {{path.to.value}} placeholders inside a string using a context
+// object. Missing values become empty strings so we never leave half-rendered
+// "{{x.y}}" cruft in the email. Trailing/leading spaces inside the braces
+// are tolerated. Case-sensitive (HFARM convention is lower-case keys).
+function fillTemplate(text, ctx) {
+  if (!text) return "";
+  return String(text).replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path) => {
+    const parts = path.split(".");
+    let v = ctx;
+    for (const p of parts) {
+      if (v == null) return "";
+      v = v[p];
+    }
+    return v == null ? "" : String(v);
+  });
+}
+
+// Apply the picked outreach template to subject + body. Pulls the same
+// context shape the AI drafter uses, so {{entity.X}}, {{recipient.X}},
+// {{recommended.X}}, {{sender.X}}, {{kb.X}} all work.
+function applyOutreachTemplate(entityId, templateId) {
+  if (!templateId) return;
+  const tpl = OUTREACH_TEMPLATES.find(t => t.id === templateId);
+  if (!tpl) return;
+  const entity = UNIS.find(u => u.id === entityId);
+  if (!entity) return;
+
+  // Pull current form values so we don't blow away a half-filled subject
+  const subjectEl = document.getElementById("ol-subject");
+  const bodyEl    = document.getElementById("ol-body");
+  if ((subjectEl && subjectEl.value.trim() && !confirm("Replace the current subject + body with this template?"))) {
+    // User said no — reset the picker to "no template"
+    const sel = document.getElementById("ol-template");
+    if (sel) sel.value = "";
+    return;
+  }
+
+  // Build context. recipient comes from the chosen contact dropdown or
+  // the first contact on the entity. recommended is the same suggestion
+  // used by the AI drafter.
+  const contactIdx = parseInt((document.getElementById("ol-contact") || {}).value || "-1", 10);
+  let recipient = {};
+  if (entity.contacts && entity.contacts[contactIdx]) {
+    const c = entity.contacts[contactIdx];
+    const firstName = (c.name || "").split(/\s+/)[0] || "[First Name]";
+    recipient = { name: c.name || "", firstName, role: c.role || "", email: c.email || "" };
+  } else {
+    recipient = { name: "", firstName: "[First Name]", role: "", email: "" };
+  }
+  const team = TEAMS.find(t => t.id === (assignedTeam(entityId) || (recommendTeams(entity)[0] || {}).id)) || {};
+  const recommended = recommendCollabFormat(entity) || {};
+  const sender = { name: getDisplayName() || "[Your name]", role: team.name || "Partnerships team" };
+  const kb = { org_name: "H-FARM College", location: "Treviso, Italy", website: "https://college.h-farm.com" };
+  const ctx = { entity, recipient, recommended, team, sender, kb };
+
+  const filledSubject = fillTemplate(tpl.subject, ctx);
+  const filledBody    = fillTemplate(tpl.body, ctx);
+  if (subjectEl) subjectEl.value = filledSubject;
+  if (bodyEl)    bodyEl.value    = filledBody;
+}
+
 async function aiDraftOutreach(entityId) {
   const entity = UNIS.find(u => u.id === entityId);
   if (!entity) return;
