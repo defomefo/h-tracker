@@ -283,6 +283,31 @@ def _ensure_schema():
                     key          TEXT
                 )""",
             "CREATE INDEX IF NOT EXISTS idx_edit_log_at ON edit_log(occurred_at)",
+            # Partnership contracts — MoUs, NDAs, service agreements, etc.
+            # One row per agreement. entity_id links to the partner entity
+            # (matches UNIS array id from the CSV). attachments + programs
+            # stored as JSON-encoded arrays for simplicity.
+            """CREATE TABLE IF NOT EXISTS contracts (
+                    id              TEXT PRIMARY KEY,
+                    entity_id       TEXT NOT NULL,
+                    type            TEXT,
+                    status          TEXT,
+                    signed_date     TEXT,
+                    effective_date  TEXT,
+                    expiry_date     TEXT,
+                    annual_value_eur INTEGER,
+                    term_months     INTEGER,
+                    programs        TEXT,
+                    hfarm_signer    TEXT,
+                    partner_signer  TEXT,
+                    notes           TEXT,
+                    attachments     TEXT,
+                    created_at      TEXT NOT NULL,
+                    updated_at      TEXT NOT NULL
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_contracts_entity ON contracts(entity_id)",
+            "CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts(status)",
+            "CREATE INDEX IF NOT EXISTS idx_contracts_expiry ON contracts(expiry_date)",
         ]
         conn = _connect()
         try:
@@ -950,6 +975,149 @@ def sheets_writeback():
         return jsonify({"ok": False, "configured": True, "error": "Network error: " + str(e)}), 502
     except Exception as e:  # noqa: BLE001
         return jsonify({"ok": False, "configured": True, "error": "Unexpected: " + str(e)}), 500
+
+
+# ============================================================================
+# CONTRACTS — MoUs, NDAs, service agreements
+# ----------------------------------------------------------------------------
+# CRUD over the `contracts` table. Each row is one agreement attached to an
+# entity (university/agency/etc.). Fields are mostly self-explanatory;
+# `programs` and `attachments` are JSON-encoded arrays so the schema stays
+# flat (Phase 2 may break attachments out to a separate table when file
+# uploads land).
+# ============================================================================
+_CONTRACT_FIELDS = (
+    "id", "entity_id", "type", "status",
+    "signed_date", "effective_date", "expiry_date",
+    "annual_value_eur", "term_months",
+    "programs", "hfarm_signer", "partner_signer",
+    "notes", "attachments",
+    "created_at", "updated_at",
+)
+
+
+def _contract_row_to_dict(row):
+    """Convert a sqlite3.Row / psycopg dict_row into a clean dict, parsing
+    the JSON-encoded list columns. Defensive against malformed JSON."""
+    out = {k: row[k] for k in _CONTRACT_FIELDS if k in row.keys()} if hasattr(row, "keys") else dict(row)
+    for key in ("programs", "attachments"):
+        raw = out.get(key)
+        if raw:
+            try:
+                out[key] = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                out[key] = []
+        else:
+            out[key] = []
+    return out
+
+
+@app.route("/api/contracts", methods=["GET"])
+@auth_required
+def contracts_list():
+    """Return all contracts, sorted newest-edit first."""
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM contracts ORDER BY updated_at DESC"
+    ).fetchall()
+    return jsonify({"contracts": [_contract_row_to_dict(r) for r in rows]})
+
+
+@app.route("/api/contracts/<contract_id>", methods=["GET"])
+@auth_required
+def contracts_get(contract_id):
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM contracts WHERE id = ?", (contract_id,)
+    ).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(_contract_row_to_dict(row))
+
+
+@app.route("/api/contracts/<contract_id>", methods=["PUT"])
+@auth_required
+def contracts_upsert(contract_id):
+    """Insert or update a single contract. Body is the full record."""
+    body = request.get_json(force=True, silent=True) or {}
+    if not isinstance(body, dict):
+        return jsonify({"error": "Body must be a JSON object."}), 400
+    if body.get("id") != contract_id:
+        return jsonify({"error": "URL id and body id must match."}), 400
+    entity_id = (body.get("entity_id") or "").strip()
+    if not entity_id:
+        return jsonify({"error": "entity_id is required."}), 400
+
+    # Serialise list fields. Coerce empty/null sensibly.
+    programs = body.get("programs") or []
+    attachments = body.get("attachments") or []
+    if not isinstance(programs, list):    programs = []
+    if not isinstance(attachments, list): attachments = []
+
+    now = _now_iso()
+    db = get_db()
+    # Preserve created_at on update; only set on insert
+    existing = db.execute(
+        "SELECT created_at FROM contracts WHERE id = ?", (contract_id,)
+    ).fetchone()
+    created_at = (existing["created_at"] if existing else None) or now
+
+    db.execute(
+        """INSERT INTO contracts (
+                id, entity_id, type, status,
+                signed_date, effective_date, expiry_date,
+                annual_value_eur, term_months,
+                programs, hfarm_signer, partner_signer,
+                notes, attachments,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET
+                entity_id        = excluded.entity_id,
+                type             = excluded.type,
+                status           = excluded.status,
+                signed_date      = excluded.signed_date,
+                effective_date   = excluded.effective_date,
+                expiry_date      = excluded.expiry_date,
+                annual_value_eur = excluded.annual_value_eur,
+                term_months      = excluded.term_months,
+                programs         = excluded.programs,
+                hfarm_signer     = excluded.hfarm_signer,
+                partner_signer   = excluded.partner_signer,
+                notes            = excluded.notes,
+                attachments      = excluded.attachments,
+                updated_at       = excluded.updated_at""",
+        (
+            contract_id, entity_id,
+            (body.get("type") or "").strip() or None,
+            (body.get("status") or "").strip() or None,
+            (body.get("signed_date") or "").strip() or None,
+            (body.get("effective_date") or "").strip() or None,
+            (body.get("expiry_date") or "").strip() or None,
+            int(body["annual_value_eur"]) if str(body.get("annual_value_eur") or "").strip() else None,
+            int(body["term_months"]) if str(body.get("term_months") or "").strip() else None,
+            json.dumps(programs),
+            (body.get("hfarm_signer") or "").strip() or None,
+            (body.get("partner_signer") or "").strip() or None,
+            (body.get("notes") or ""),
+            json.dumps(attachments),
+            created_at, now,
+        ),
+    )
+    db.commit()
+    _record_edit("contract", "upsert", contract_id)
+    return jsonify({"ok": True, "id": contract_id})
+
+
+@app.route("/api/contracts/<contract_id>", methods=["DELETE"])
+@auth_required
+def contracts_delete(contract_id):
+    db = get_db()
+    cur = db.execute("DELETE FROM contracts WHERE id = ?", (contract_id,))
+    db.commit()
+    if cur.rowcount == 0:
+        return jsonify({"error": "not found"}), 404
+    _record_edit("contract", "delete", contract_id)
+    return jsonify({"ok": True})
 
 
 # ============================================================================
