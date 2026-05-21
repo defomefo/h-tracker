@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Partnership brief — {{ entity.name }}</title>
+<style>
+  /* ============================================================
+     H-FARM Partnership brief — A4 single-page typeset PDF
+     Designed for WeasyPrint. Print-only stylesheet (no screen).
+     Editorial feel: warm paper background, H-FARM red eyebrow,
+     ink body text, sentence-case headings.
+     ============================================================ */
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: 'Helvetica', sans-serif;
+      font-size: 8pt;
+      color: #8A8A8A;
+      letter-spacing: .4px;
+    }
+    @bottom-left {
+      content: "H-FARM College  ·  Global Partnerships";
+      font-family: 'Helvetica', sans-serif;
+      font-size: 8pt;
+      color: #8A8A8A;
+      letter-spacing: .4px;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    font-family: 'Helvetica', 'DejaVu Sans', sans-serif;
+    color: #1A1A1A;
+    background: #FAFAF5;
+    font-size: 10pt;
+    line-height: 1.45;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ---- Header band ---- */
+  .head {
+    border-bottom: 2pt solid #1A1A1A;
+    padding-bottom: 10pt;
+    margin-bottom: 14pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .head-left .eyebrow {
+    font-size: 7.5pt;
+    letter-spacing: 2.2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #D9534F;
+    margin-bottom: 4pt;
+  }
+  .head-left h1 {
+    font-size: 22pt;
+    font-weight: 800;
+    color: #1A1A1A;
+    letter-spacing: -0.4px;
+    margin: 0;
+    line-height: 1.1;
+  }
+  .head-left .loc {
+    font-size: 10pt;
+    color: #5A5A5A;
+    margin-top: 3pt;
+    font-weight: 500;
+  }
+  .head-right {
+    text-align: right;
+    font-size: 8pt;
+    color: #5A5A5A;
+  }
+  .head-right .brand {
+    font-size: 11pt;
+    font-weight: 800;
+    color: #1A1A1A;
+    letter-spacing: .3px;
+    margin-bottom: 2pt;
+  }
+  .head-right .gen {
+    font-family: 'DejaVu Sans Mono', monospace;
+    font-size: 7.5pt;
+    color: #8A8A8A;
+  }
+
+  /* ---- Classification chip row ---- */
+  .chips {
+    display: flex;
+    gap: 6pt;
+    margin-bottom: 14pt;
+    flex-wrap: wrap;
+  }
+  .chip {
+    display: inline-block;
+    padding: 3pt 9pt;
+    border-radius: 12pt;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .chip.muted {
+    background: #fff;
+    color: #5A5A5A;
+    border: 0.6pt solid #E5E2D6;
+  }
+
+  /* ---- Score band: partnership score × engagement depth ---- */
+  .score-band {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10pt;
+    margin-bottom: 14pt;
+  }
+  .score-cell {
+    background: #fff;
+    border: 0.6pt solid #E5E2D6;
+    border-top: 2pt solid #1A1A1A;
+    border-radius: 4pt;
+    padding: 10pt 12pt;
+  }
+  .score-cell.depth { border-top-color: #D9534F; }
+  .score-cell .sc-label {
+    font-size: 7.5pt;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #5A5A5A;
+    margin-bottom: 4pt;
+  }
+  .score-cell .sc-num {
+    font-size: 28pt;
+    font-weight: 800;
+    color: #1A1A1A;
+    line-height: 1;
+  }
+  .score-cell .sc-num small {
+    font-size: 11pt;
+    color: #8A8A8A;
+    font-weight: 600;
+    margin-left: 2pt;
+  }
+  .score-cell .sc-bar {
+    height: 4pt;
+    background: #F4F1E8;
+    border-radius: 2pt;
+    margin-top: 7pt;
+    overflow: hidden;
+  }
+  .score-cell .sc-bar > div {
+    height: 100%;
+    background: #1A1A1A;
+    border-radius: 2pt;
+  }
+  .score-cell.depth .sc-bar > div { background: #D9534F; }
+  .score-cell .sc-sub {
+    font-size: 8pt;
+    color: #5A5A5A;
+    margin-top: 5pt;
+  }
+  .score-cell .sc-readiness {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #1A1A1A;
+    margin-top: 3pt;
+  }
+
+  /* ---- Section blocks ---- */
+  .section { margin-bottom: 14pt; page-break-inside: avoid; }
+  .section h3 {
+    font-size: 8pt;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: #D9534F;
+    font-weight: 800;
+    margin: 0 0 6pt 0;
+    padding-bottom: 4pt;
+    border-bottom: 0.6pt solid #E5E2D6;
+  }
+
+  /* Programs */
+  .prog-row {
+    display: grid;
+    grid-template-columns: 18pt 1fr 50pt;
+    gap: 8pt;
+    align-items: center;
+    padding: 5pt 0;
+    border-bottom: 0.4pt dashed #E5E2D6;
+  }
+  .prog-row:last-child { border-bottom: 0; }
+  .prog-rank {
+    font-size: 8pt;
+    color: #8A8A8A;
+    font-weight: 700;
+    font-family: 'DejaVu Sans Mono', monospace;
+  }
+  .prog-name {
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #1A1A1A;
+  }
+  .prog-meta {
+    font-size: 7.5pt;
+    color: #5A5A5A;
+    margin-top: 1pt;
+  }
+  .prog-score {
+    text-align: right;
+    font-size: 11pt;
+    font-weight: 800;
+    color: #1A1A1A;
+    font-variant-numeric: tabular-nums;
+  }
+  .prog-score small { font-size: 7pt; color: #8A8A8A; font-weight: 600; }
+
+  /* Contacts + outreach: tabular rows */
+  table.brief-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+  table.brief-tbl td {
+    padding: 4pt 6pt 4pt 0;
+    vertical-align: top;
+    border-bottom: 0.4pt dashed #E5E2D6;
+  }
+  table.brief-tbl tr:last-child td { border-bottom: 0; }
+  table.brief-tbl .c-name { font-weight: 700; color: #1A1A1A; width: 35%; }
+  table.brief-tbl .c-role { color: #5A5A5A; width: 35%; font-size: 8.5pt; }
+  table.brief-tbl .c-email {
+    color: #1A1A1A;
+    font-family: 'DejaVu Sans Mono', monospace;
+    font-size: 8pt;
+  }
+
+  table.brief-tbl .o-date {
+    color: #5A5A5A;
+    font-family: 'DejaVu Sans Mono', monospace;
+    font-size: 8pt;
+    width: 20%;
+    white-space: nowrap;
+  }
+  table.brief-tbl .o-channel {
+    font-size: 7.5pt;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #D9534F;
+    width: 15%;
+  }
+  table.brief-tbl .o-subject {
+    color: #1A1A1A;
+    font-size: 9pt;
+  }
+  table.brief-tbl .o-subject .o-status {
+    font-size: 7.5pt;
+    color: #8A8A8A;
+    margin-left: 4pt;
+  }
+
+  /* Action recommendation — boxed callout */
+  .action-cell {
+    background: #1A1A1A;
+    color: #fff;
+    padding: 10pt 14pt;
+    border-radius: 4pt;
+    border-left: 3pt solid #D9534F;
+  }
+  .action-cell .a-label {
+    font-size: 7pt;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #E0A93B;
+    margin-bottom: 4pt;
+  }
+  .action-cell .a-body {
+    font-size: 10pt;
+    line-height: 1.55;
+    color: #fff;
+  }
+  .action-cell .a-body strong { color: #fff; }
+  .action-cell .a-body em { font-style: normal; color: #E0A93B; font-weight: 700; }
+
+  /* Contracts summary */
+  .contracts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8pt;
+  }
+  .contract-card {
+    background: #fff;
+    border: 0.6pt solid #E5E2D6;
+    border-left: 2pt solid #2E7D5B;
+    border-radius: 3pt;
+    padding: 7pt 10pt;
+  }
+  .contract-card.negotiating { border-left-color: #D9534F; }
+  .contract-card .ct-type {
+    font-size: 8pt;
+    font-weight: 800;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: #1A1A1A;
+  }
+  .contract-card .ct-status {
+    font-size: 7pt;
+    color: #5A5A5A;
+    margin-top: 1pt;
+  }
+  .contract-card .ct-dates {
+    font-size: 7.5pt;
+    color: #5A5A5A;
+    margin-top: 4pt;
+    font-family: 'DejaVu Sans Mono', monospace;
+  }
+  .contract-card .ct-value {
+    font-size: 10pt;
+    font-weight: 800;
+    color: #1A1A1A;
+    margin-top: 3pt;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .empty {
+    font-size: 8.5pt;
+    color: #8A8A8A;
+    font-style: italic;
+  }
+
+  /* Notes (optional) */
+  .notes-block {
+    background: #F4F1E8;
+    padding: 8pt 12pt;
+    border-radius: 3pt;
+    font-size: 9pt;
+    line-height: 1.55;
+    color: #1A1A1A;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ HEADER ============================ -->
+<div class="head">
+  <div class="head-left">
+    <div class="eyebrow">Partnership brief</div>
+    <h1>{{ entity.name }}</h1>
+    <div class="loc">{{ entity.country or entity.continent or "—" }}{% if entity.continent and entity.country %} · {{ entity.continent }}{% endif %}</div>
+  </div>
+  <div class="head-right">
+    <div class="brand">H-FARM</div>
+    <div>Global Partnerships</div>
+    <div class="gen">{{ generated_at }}</div>
+    {% if generated_by %}<div class="gen">by {{ generated_by }}</div>{% endif %}
+  </div>
+</div>
+
+<!-- ============================ CHIPS ============================ -->
+<div class="chips">
+  {% if entity.priority %}
+  <span class="chip" style="background: {{ priority_color }};">{{ entity.priority }}</span>
+  {% else %}
+  <span class="chip muted">Unclassified</span>
+  {% endif %}
+  {% if entity.strategic_tier %}
+  <span class="chip" style="background: {{ tier_color }};">{{ entity.strategic_tier }}</span>
+  {% endif %}
+  {% if entity.type %}
+  <span class="chip muted">{{ entity_type_label }}</span>
+  {% endif %}
+  {% if entity.partnership_readiness %}
+  <span class="chip muted">{{ entity.partnership_readiness }}</span>
+  {% endif %}
+</div>
+
+<!-- ============================ SCORE BAND ============================ -->
+<div class="score-band">
+  <div class="score-cell">
+    <div class="sc-label">Partnership score</div>
+    <div class="sc-num">{{ entity.partnership_score }}<small>/100</small></div>
+    <div class="sc-bar"><div style="width: {{ entity.partnership_score }}%;"></div></div>
+    <div class="sc-readiness">{{ entity.partnership_readiness or "Not yet classified" }}</div>
+  </div>
+  <div class="score-cell depth">
+    <div class="sc-label">Engagement depth</div>
+    <div class="sc-num">{{ depth.total }}<small>/100</small></div>
+    <div class="sc-bar"><div style="width: {{ depth.total }}%;"></div></div>
+    <div class="sc-sub">Outreach {{ depth.outreach }}/40 · Contacts {{ depth.contacts }}/30 · Persistence {{ depth.persistence }}/30</div>
+  </div>
+</div>
+
+<!-- ============================ ACTION ============================ -->
+<div class="section">
+  <h3>Recommended action</h3>
+  <div class="action-cell">
+    <div class="a-label">Next move</div>
+    <div class="a-body">{{ action_html|safe }}</div>
+  </div>
+</div>
+
+<!-- ============================ PROGRAMS ============================ -->
+{% if programs %}
+<div class="section">
+  <h3>Top programme matches</h3>
+  {% for p in programs %}
+  <div class="prog-row">
+    <div class="prog-rank">#{{ loop.index }}</div>
+    <div>
+      <div class="prog-name">{{ p.name }}</div>
+      <div class="prog-meta">{{ p.topic }} · {{ p.age }} · {{ p.lang }}</div>
+    </div>
+    <div class="prog-score">{{ p.score }}<small>/100</small></div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ============================ CONTACTS ============================ -->
+<div class="section">
+  <h3>Key contacts</h3>
+  {% if contacts %}
+  <table class="brief-tbl">
+    {% for c in contacts %}
+    <tr>
+      <td class="c-name">{{ c.name or "—" }}</td>
+      <td class="c-role">{{ c.role or "—" }}</td>
+      <td class="c-email">{{ c.email or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No contacts on file.</div>
+  {% endif %}
+</div>
+
+<!-- ============================ OUTREACH ============================ -->
+<div class="section">
+  <h3>Recent outreach</h3>
+  {% if outreach %}
+  <table class="brief-tbl">
+    {% for o in outreach %}
+    <tr>
+      <td class="o-date">{{ o.date or "—" }}</td>
+      <td class="o-channel">{{ o.channel or "—" }}</td>
+      <td class="o-subject">
+        {{ o.subject or "(no subject)" }}
+        {% if o.status %}<span class="o-status">· {{ o.status }}</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No outreach logged yet — open the entity in the tracker to start the audit trail.</div>
+  {% endif %}
+</div>
+
+<!-- ============================ CONTRACTS ============================ -->
+{% if contracts %}
+<div class="section">
+  <h3>Active contracts ({{ contracts|length }})</h3>
+  <div class="contracts-grid">
+    {% for c in contracts %}
+    <div class="contract-card {% if c.status == 'Negotiating' or c.status == 'Draft' %}negotiating{% endif %}">
+      <div class="ct-type">{{ c.type or "Agreement" }}</div>
+      <div class="ct-status">{{ c.status or "—" }}</div>
+      <div class="ct-dates">
+        {% if c.signed_date %}signed {{ c.signed_date }}{% endif %}
+        {% if c.expiry_date %} · expires {{ c.expiry_date }}{% endif %}
+      </div>
+      {% if c.annual_value_eur %}
+      <div class="ct-value">€{{ "{:,}".format(c.annual_value_eur) }}/yr</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ============================ NOTES ============================ -->
+{% if entity.notes %}
+<div class="section">
+  <h3>Notes</h3>
+  <div class="notes-block">{{ entity.notes }}</div>
+</div>
+{% endif %}
+
+</body>
+</html>

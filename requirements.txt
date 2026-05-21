@@ -6,3 +6,10 @@ python-dotenv>=1.0
 # Postgres driver for production (Neon/Render). SQLite is the fallback for
 # local dev when DATABASE_URL isn't set — sqlite3 is in the stdlib.
 psycopg[binary]>=3.2
+# PDF brief generation. WeasyPrint renders HTML+CSS → PDF with proper
+# typography (kerning, ligatures, real text in the PDF — not raster).
+# Requires Cairo + Pango at the OS level — see Dockerfile.
+weasyprint>=63.0
+# Jinja2 ships with Flask but we pin it explicitly because we depend on
+# it directly for the brief template.
+jinja2>=3.1

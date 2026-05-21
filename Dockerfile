@@ -12,6 +12,26 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Native deps WeasyPrint needs for HTML→PDF rendering:
+#   libcairo2          — vector graphics rendering backend
+#   libpango-1.0-0     — text shaping (kerning, ligatures, RTL)
+#   libpangoft2-1.0-0  — Pango + FreeType bridge
+#   libgdk-pixbuf-2.0-0 — image decoding (PNGs, JPEGs in the brief)
+#   libffi-dev         — required by some pip wheels at build time
+#   shared-mime-info   — mime-type sniffing for embedded assets
+#   fonts-dejavu-core  — fallback font so PDFs render even when the
+#                        requested family is missing
+# All from Debian stable repos. Adds ~25MB to the image, one-time cost.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libcairo2 \
+        libpango-1.0-0 \
+        libpangoft2-1.0-0 \
+        libgdk-pixbuf-2.0-0 \
+        libffi-dev \
+        shared-mime-info \
+        fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install deps first so the layer is cached across code-only changes
 COPY requirements.txt .
 RUN pip install -r requirements.txt

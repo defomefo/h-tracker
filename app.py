@@ -21,7 +21,7 @@ from pathlib import Path
 from google import genai
 from google.genai import types as genai_types
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, request, send_from_directory, session
+from flask import Flask, Response, g, jsonify, render_template, request, send_from_directory, session
 from flask_cors import CORS
 
 load_dotenv()
@@ -1250,6 +1250,146 @@ def snapshots_take():
         "rows_received": len(rows),
         "rows_inserted": inserted,
     })
+
+
+# ============================================================================
+# PARTNERSHIP BRIEF — server-side PDF rendering via WeasyPrint
+# ----------------------------------------------------------------------------
+# Frontend posts the entity payload (entity + contacts + outreach + contracts
+# + computed engagement depth). Server renders Jinja2 template → WeasyPrint
+# HTML→PDF → binary download. CSV is in the frontend's memory (loaded from
+# Google Sheets), so the client is source-of-truth for entity data — server
+# just renders.
+#
+# Why this isn't pure-JS (jsPDF):
+#   - WeasyPrint does real text shaping (kerning, ligatures), embeds fonts,
+#     produces searchable+selectable PDF text — not raster.
+#   - One Jinja template + CSS gives FT/McKinsey typography that jsPDF can't
+#     match without thousands of lines of imperative drawing code.
+# ============================================================================
+# Lazy-import WeasyPrint at first use — keeps the cold-start cheap when
+# nobody hits /api/brief in a given session.
+_weasyprint_cls = None
+def _get_weasyprint():
+    global _weasyprint_cls
+    if _weasyprint_cls is None:
+        from weasyprint import HTML as _WP_HTML  # type: ignore
+        _weasyprint_cls = _WP_HTML
+    return _weasyprint_cls
+
+
+# Priority colour swatches mirror frontend PRIO_COLORS so the brief and
+# the screen feel like the same artefact. Strategic tier colours likewise.
+_BRIEF_PRIO_COLORS = {
+    "Critical":       "#8B1A1A",
+    "Hot":            "#D9534F",
+    "Warm":           "#E0A93B",
+    "Cold":           "#4A6B8A",
+    "Cold-storage":   "#8E9AAB",
+    "Up & Running":   "#2E7D5B",
+    "Not interested": "#6E6E6E",
+}
+_BRIEF_TIER_COLORS = {
+    "Digital Pioneer":     "#1F6FB4",
+    "Prestige Hub":        "#C97A1A",
+    "Applied Leader":      "#2E7D5B",
+    "Established Partner": "#6B4C7D",
+}
+_BRIEF_TYPE_LABELS = {
+    "university":          "University",
+    "agency":              "Agency",
+    "school":              "School",
+    "student_organization": "Student org",
+    "company":             "Company",
+    "government":          "Government",
+    "other":               "Other",
+}
+
+
+@app.route("/api/brief/<entity_id>", methods=["POST"])
+@auth_required
+def brief_pdf(entity_id):
+    """Render a 1-page partnership brief as PDF.
+
+    Expected body (frontend builds this from its in-memory state):
+        {
+          "entity": { id, name, country, continent, priority, ... },
+          "depth":  { total, outreach, contacts, persistence },
+          "programs": [ {name, topic, age, lang, score}, ... up to 3 ],
+          "contacts": [ {name, role, email}, ... ],
+          "outreach": [ {date, channel, subject, status}, ... ],
+          "contracts": [ {type, status, signed_date, expiry_date,
+                          annual_value_eur}, ... ],
+          "action_html": "<strong>Reply within 48h.</strong> ...",
+          "generated_by": "Defne Tuncer"   // optional
+        }
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    entity = body.get("entity") or {}
+    if not entity.get("name"):
+        return jsonify({"error": "entity.name required"}), 400
+
+    # Resolve display values + colour swatches
+    priority      = entity.get("priority")
+    tier          = entity.get("strategic_tier")
+    etype         = entity.get("type")
+    priority_color = _BRIEF_PRIO_COLORS.get(priority, "#6E6E6E")
+    tier_color     = _BRIEF_TIER_COLORS.get(tier,     "#1A1A1A")
+    type_label     = _BRIEF_TYPE_LABELS.get(etype, (etype or "").title())
+
+    # Default depth if frontend didn't supply (so we never crash the template)
+    depth = body.get("depth") or {"total": 0, "outreach": 0, "contacts": 0, "persistence": 0}
+
+    # Cap outreach + contacts so the brief stays 1 page even for very
+    # active entities. The brief is a 1-pager by design — full history
+    # lives in the app.
+    outreach  = (body.get("outreach")  or [])[:6]
+    contacts  = (body.get("contacts")  or [])[:6]
+    programs  = (body.get("programs")  or [])[:3]
+    contracts = (body.get("contracts") or [])[:4]
+
+    now = _dt.datetime.now(_dt.timezone.utc)
+    generated_at = now.strftime("%Y-%m-%d · %H:%M UTC")
+
+    html_str = render_template(
+        "brief.html",
+        entity=entity,
+        depth=depth,
+        programs=programs,
+        contacts=contacts,
+        outreach=outreach,
+        contracts=contracts,
+        priority_color=priority_color,
+        tier_color=tier_color,
+        entity_type_label=type_label,
+        action_html=(body.get("action_html") or "Classify this entity to enter the active pipeline."),
+        generated_at=generated_at,
+        generated_by=(body.get("generated_by") or "").strip() or None,
+    )
+
+    try:
+        WP_HTML = _get_weasyprint()
+        pdf_bytes = WP_HTML(string=html_str).write_pdf()
+    except ImportError:
+        return jsonify({
+            "error": "weasyprint not installed",
+            "detail": "Run pip install -r requirements.txt or rebuild the Docker image.",
+        }), 500
+    except Exception as e:
+        print(f"[brief] render failed for entity {entity_id}: {e}")
+        return jsonify({"error": "pdf render failed", "detail": str(e)}), 500
+
+    # Filename: slugified entity name + UTC date
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", entity.get("name") or "entity").strip("_")[:60]
+    filename = f"brief_{safe}_{now.strftime('%Y%m%d')}.pdf"
+
+    _record_edit("brief", "render", entity_id)
+
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ============================================================================

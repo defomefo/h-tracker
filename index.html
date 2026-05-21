@@ -1412,9 +1412,14 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .login-foot{font-size:11px;color:var(--ink-soft);margin-top:4px;font-style:italic}
 
 /* PROFILE EDIT FORM (detail panel) */
-.profile-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.profile-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+.profile-head-actions{display:flex;gap:6px;align-items:center}
 .profile-revert{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);font-size:10px;letter-spacing:.4px;font-weight:600;padding:4px 9px;border-radius:11px;cursor:pointer;font-family:inherit;transition:all .12s}
 .profile-revert:hover{border-color:var(--hf-red);color:var(--hf-red)}
+.profile-brief{background:var(--ink);border:1px solid var(--ink);color:#fff;font-size:10px;letter-spacing:.5px;font-weight:700;padding:5px 10px;border-radius:11px;cursor:pointer;font-family:inherit;text-transform:uppercase;display:inline-flex;align-items:center;transition:background .12s,border-color .12s}
+.profile-brief:hover{background:var(--hf-red);border-color:var(--hf-red)}
+.profile-brief[disabled]{background:var(--ink-mute);border-color:var(--ink-mute);cursor:wait}
+.profile-brief .pb-label{display:inline-block}
 .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ef{display:flex;flex-direction:column;gap:4px}
 .ef-full{grid-column:1 / -1}
@@ -3735,6 +3740,90 @@ async function revertEntityOverrides(entityId) {
   catch (e) { console.warn("[entity_override] revert deferred (offline):", e.message); }
 }
 
+// ============================================================================
+// GENERATE BRIEF — collect entity payload from in-memory state and POST to
+// /api/brief/<id>. Server returns a PDF blob; we trigger a download via
+// the standard a[download] trick. Button shows "Generating…" + spinner
+// during the round-trip (Render cold-start can take 30+ s on free tier).
+// ============================================================================
+async function generateBrief(entityId, ev) {
+  const u = UNIS.find(x => x.id === entityId);
+  if (!u) return;
+  const btn = ev && ev.currentTarget;
+  const lbl = btn && btn.querySelector(".pb-label");
+  const restoreLabel = lbl ? lbl.textContent : null;
+  if (btn) { btn.disabled = true; if (lbl) lbl.textContent = "Generating…"; }
+  try {
+    // Build payload — server is stateless about CSV data, we own it.
+    const programs = (PROGRAMS || []).map(p => ({
+      id: p.id, name: p.name, topic: p.topic, age: p.age, lang: p.lang,
+      score: (u.program_matches && u.program_matches[p.id]) || 0,
+    })).sort((a, b) => b.score - a.score).slice(0, 3);
+
+    // Contacts: sort by seniority (same logic the detail panel uses)
+    const ROLE_PRIORITY = ["provost","president","dean","rector","head","director","vice president","vp","international","admission","erasmus","global","intl"];
+    const contacts = (u.contacts || []).filter(c => c.name || c.email).sort((a, b) => {
+      const score = c => {
+        const r = (c.role || "").toLowerCase();
+        for (let i = 0; i < ROLE_PRIORITY.length; i++) if (r.includes(ROLE_PRIORITY[i])) return i;
+        return 99;
+      };
+      return score(a) - score(b);
+    });
+
+    const outreach = ((OUTREACH && OUTREACH[u.id]) || []).slice()
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+    const myContracts = (CONTRACTS || []).filter(c => c.entity_id === u.id);
+
+    const depth = engagementDepth(u);
+    const actionHtml = recommendAction(u);   // already returns HTML with <strong>/<em>
+
+    const payload = {
+      entity: u,
+      depth: { total: depth.total, outreach: depth.outreach, contacts: depth.contacts, persistence: depth.persistence },
+      programs, contacts, outreach,
+      contracts: myContracts,
+      action_html: actionHtml,
+      generated_by: (typeof getDisplayName === "function" ? getDisplayName() : "") || "",
+    };
+
+    const r = await apiFetch("/api/brief/" + encodeURIComponent(entityId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body: JSON.stringify(payload),
+    });
+
+    if (!r.ok) {
+      let msg = "Couldn't generate brief.";
+      try { const j = await r.json(); if (j.error) msg += " " + j.error; if (j.detail) msg += " (" + j.detail + ")"; } catch {}
+      alert(msg);
+      return;
+    }
+
+    const blob = await r.blob();
+    // Pull filename from Content-Disposition if present
+    let filename = "brief.pdf";
+    const cd = r.headers.get("Content-Disposition") || "";
+    const m  = cd.match(/filename="([^"]+)"/);
+    if (m) filename = m[1];
+
+    // Trigger download via temporary anchor
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    if (typeof showSyncToast === "function") showSyncToast("Brief downloaded", "ok");
+  } catch (e) {
+    console.error("[brief]", e);
+    alert("Couldn't generate brief — " + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; if (lbl && restoreLabel) lbl.textContent = restoreLabel; }
+  }
+}
+
 async function syncTeamAssignmentsFromServer() {
   try {
     if (!localStorage.getItem(LS_TEAM_MIGRATED_KEY)) {
@@ -5543,7 +5632,13 @@ function detailHtml(u) {
     <div class="detail-section">
       <div class="profile-head">
         <h3>Profile</h3>
-        ${ENTITY_OVERRIDES[u.id] ? `<button type="button" class="profile-revert" onclick="revertEntityOverrides('${u.id}')" title="Discard edits and reload from CSV">↶ Revert edits</button>` : ''}
+        <div class="profile-head-actions">
+          <button type="button" class="profile-brief" onclick="generateBrief('${u.id}', event)" title="Generate a one-page typeset PDF brief for this partner">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span class="pb-label">Generate brief</span>
+          </button>
+          ${ENTITY_OVERRIDES[u.id] ? `<button type="button" class="profile-revert" onclick="revertEntityOverrides('${u.id}')" title="Discard edits and reload from CSV">↶ Revert edits</button>` : ''}
+        </div>
       </div>
       <div class="profile-tags">${tagsHtml}</div>
 
