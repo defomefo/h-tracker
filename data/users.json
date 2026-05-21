@@ -1,12 +1,20 @@
 [
   {
-    "handle": "defne",
+    "handle": "Defne",
     "name": "Defne Tuncer",
-    "role": "Intern · Global Partnerships"
+    "role": "Intern · Global Partnerships",
+    "email": "defne.tuncer@h-farm.com"
   },
   {
-    "handle": "antonella",
+    "handle": "Antonella",
     "name": "Antonella Sannella",
-    "role": "Executive · Global Partnerships"
+    "role": "Executive · Global Partnerships",
+    "email": "antonella.sannella@h-farm.com"
+  },
+  {
+    "handle": "Silvia",
+    "name": "Silvia Dell'Acqua",
+    "role": "Head of International Partnerships",
+    "email": "silvia.dellacqua@h-farm.com"
   }
 ]
