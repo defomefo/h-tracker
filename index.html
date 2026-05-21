@@ -35,7 +35,15 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .nav-item{display:flex;align-items:center;gap:12px;padding:10px 22px;background:none;border:none;color:rgba(255,255,255,.85);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left;letter-spacing:.3px;transition:background .15s,color .15s;width:100%;border-left:3px solid transparent}
 .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
 .nav-item.active{background:rgba(217,83,79,.10);color:var(--gold);border-left-color:var(--gold)}
-.nav-item .nav-icon{font-size:16px;width:18px;flex-shrink:0;text-align:center}
+/* Sidebar nav icons: monoline 16px SVG, picks up text color via currentColor.
+   Slightly dimmed at rest so the icon supports the label rather than competing
+   with it; full opacity on hover + active for a subtle "lift" cue. */
+.nav-item .nav-icon{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;opacity:.78;transition:opacity .15s}
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon{opacity:1}
+/* Footer buttons (Refresh / Settings) use the same icon treatment but a
+   smaller stroke since the buttons themselves are smaller. */
+.nav-bottom button .nav-icon{width:14px;height:14px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;margin-right:6px;vertical-align:-2px;opacity:.85}
 .nav-bottom{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:8px}
 .nav-bottom .nav-status{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.3px;line-height:1.4;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)}
 .nav-bottom button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;padding:7px 10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.3px;font-weight:600;text-align:left}
@@ -1554,26 +1562,62 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   <aside class="nav-sidebar">
     <nav>
       <div class="nav-section-label">Explore</div>
-      <button class="nav-item active" data-view="home" onclick="switchView('home')" title="Landing dashboard — KPI strip, spotlight entities, quick jumps"><span class="nav-label">Home</span></button>
-      <button class="nav-item" data-view="globe" onclick="switchView('globe')" title="Interactive globe with country filters + action queue + cards grid"><span class="nav-label">Globe view</span></button>
-      <button class="nav-item" data-view="pipeline" onclick="switchView('pipeline')" title="8-stage kanban — drag entities between stages, daily operational view"><span class="nav-label">Pipeline</span></button>
-      <button class="nav-item" data-view="funnel" onclick="switchView('funnel')" title="90-day signing forecast (Monte Carlo) · bottleneck diagnosis · conversion benchmarks by tier"><span class="nav-label">Funnel</span></button>
-      <button class="nav-item" data-view="strategy" onclick="switchView('strategy')" title="3 strategic 2×2 maps — Effort × Fit, Reach × Readiness, Cost × ROI"><span class="nav-label">Strategic Maps</span></button>
-      <button class="nav-item" data-view="database" onclick="switchView('database')" title="Full sortable table — search by name, country, priority, tier, focus"><span class="nav-label">Database</span></button>
-      <button class="nav-item" data-view="outreach" onclick="switchView('outreach')" title="Cross-entity outreach feed — every logged email/call/meeting, newest first"><span class="nav-label">Outreach log</span></button>
+      <button class="nav-item active" data-view="home" onclick="switchView('home')" title="Landing dashboard — KPI strip, spotlight entities, quick jumps">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-item" data-view="globe" onclick="switchView('globe')" title="Interactive globe with country filters + action queue + cards grid">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        <span class="nav-label">Globe view</span>
+      </button>
+      <button class="nav-item" data-view="pipeline" onclick="switchView('pipeline')" title="8-stage kanban — drag entities between stages, daily operational view">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v10"/></svg>
+        <span class="nav-label">Pipeline</span>
+      </button>
+      <button class="nav-item" data-view="funnel" onclick="switchView('funnel')" title="90-day signing forecast (Monte Carlo) · bottleneck diagnosis · conversion benchmarks by tier">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span class="nav-label">Funnel</span>
+      </button>
+      <button class="nav-item" data-view="strategy" onclick="switchView('strategy')" title="3 strategic 2×2 maps — Effort × Fit, Reach × Readiness, Cost × ROI">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+        <span class="nav-label">Strategic Maps</span>
+      </button>
+      <button class="nav-item" data-view="database" onclick="switchView('database')" title="Full sortable table — search by name, country, priority, tier, focus">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+        <span class="nav-label">Database</span>
+      </button>
+      <button class="nav-item" data-view="outreach" onclick="switchView('outreach')" title="Cross-entity outreach feed — every logged email/call/meeting, newest first">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>
+        <span class="nav-label">Outreach log</span>
+      </button>
 
       <div class="nav-section-label" style="margin-top:14px">H-FARM</div>
-      <button class="nav-item" data-view="brochures" onclick="switchView('brochures')" title="PDFs + Google Drive links you can send to partners"><span class="nav-label">Brochures</span></button>
-      <button class="nav-item" data-view="contracts" onclick="switchView('contracts')" title="Signed MoUs + agreements in active negotiation"><span class="nav-label">Contracts</span></button>
-      <button class="nav-item" data-view="teams" onclick="switchView('teams')" title="Workload by team — who owns what, primary vs supporting"><span class="nav-label">Teams</span></button>
-      <button class="nav-item" data-view="about" onclick="switchView('about')" title="H-FARM programmes, formats, team roster — internal reference"><span class="nav-label">About H-FARM</span></button>
-      <button class="nav-item" data-view="admin" onclick="switchView('admin')" title="Edit the knowledge base — programs, teams, brochures, templates, etc."><span class="nav-label">Admin</span></button>
+      <button class="nav-item" data-view="brochures" onclick="switchView('brochures')" title="PDFs + Google Drive links you can send to partners">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span class="nav-label">Brochures</span>
+      </button>
+      <button class="nav-item" data-view="contracts" onclick="switchView('contracts')" title="Signed MoUs + agreements in active negotiation">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
+        <span class="nav-label">Contracts</span>
+      </button>
+      <button class="nav-item" data-view="teams" onclick="switchView('teams')" title="Workload by team — who owns what, primary vs supporting">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label">Teams</span>
+      </button>
+      <button class="nav-item" data-view="about" onclick="switchView('about')" title="H-FARM programmes, formats, team roster — internal reference">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span class="nav-label">About H-FARM</span>
+      </button>
+      <button class="nav-item" data-view="admin" onclick="switchView('admin')" title="Edit the knowledge base — programs, teams, brochures, templates, etc.">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="nav-label">Admin</span>
+      </button>
     </nav>
 
     <div class="nav-bottom">
       <div class="nav-status" id="data-status">—</div>
-      <button onclick="loadData(true)"><span class="nav-label">Refresh data</span></button>
-      <button onclick="showConfig()"><span class="nav-label">Settings</span></button>
+      <button onclick="loadData(true)" title="Re-fetch CSV + sync everything from the server"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span class="nav-label">Refresh data</span></button>
+      <button onclick="showConfig()" title="Connection + data source settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><span class="nav-label">Settings</span></button>
     </div>
   </aside>
 
