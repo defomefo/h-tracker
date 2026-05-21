@@ -314,6 +314,98 @@ project, do these first:
 
 ---
 
+## Strategic backlog (parked options)
+
+Captured during a strategy session after shipping Strategic Maps
+Phase C (Three.js presentation mode). Defne wanted to revisit later
+with fresh context.
+
+### Open strategic question — pick a direction
+
+The roadmap forks two ways. They're not mutually exclusive but they
+emphasize different muscles:
+
+- **Direction A — Decision intelligence platform.** Double down on
+  what no CRM does well: portfolio thinking, trajectory analytics
+  (snapshots already collect the data), counterfactual scenarios,
+  AI advisory output. The cinematic presentation mode is in this
+  spirit. Differentiation via insight, not coverage.
+
+- **Direction B — Operational ease.** Close the CRM gaps so people
+  actually use the tool daily without friction. Email integration is
+  the headline gap (without it, outreach logging decays → data goes
+  stale → A's analytics become garbage-in-garbage-out). Then
+  follow-ups, digest, pre-meeting briefs.
+
+**Honest take:** without some Direction B (specifically email
+integration), the long-term Direction A vision rots. But A is what
+makes the tool *special* vs Salesforce. Sequence: ship the
+single highest-ROI B feature (follow-ups + email auto-log) first,
+then go heavy on A.
+
+### Parked features — ranked by strategic value
+
+| Rank | Feature | Est. | Notes |
+|---:|---|---:|---|
+| 1 | **Follow-ups** (full feature) | 5-6 h | Real "next concrete step per partner" with due date + owner. Standalone view + per-entity inline create + Home briefing integration. Bootstraps several others (see #2). The only proposal from Defne's 5-item sidebar list that's a genuinely new capability. |
+| 2 | **Aspirational drag** (depends on #1) | 7-8 h | Drag a sphere on the 2D strategic map to a desired position → modal opens with AI-generated action list to actually move the entity there. Saves as "aspiration goal" (not an override). Actions can be one-click added to Follow-ups. This is the **killer Direction-A feature** — no CRM does this. See risks below. |
+| 3 | **Partner Health Trajectory** | 3-4 h | Sparkline next to every entity showing 30/60/90 day engagement_depth trend. Auto-alert when a Hot partner cools. Snapshot infra (`engagement_depth_snapshots` table) already collects the daily data — just needs a renderer + threshold detector. |
+| 4 | **AI-generated weekly digest email** | 4-5 h | Every Monday, each roster member gets a personalized email: what changed, what's stuck, what to action. Snapshots + Gemini = doable. Solves "I have to remember to open the tool" problem. |
+| 5 | **Pre-meeting briefing card** | 5-6 h | Calendar OAuth + AI brief = 30 seconds before any partner meeting, get a card with state, last 3 interactions, suggested agenda. PDF brief skeleton already exists. |
+| 6 | **Email integration** (Gmail OAuth + auto-log) | 10-12 h | Standard CRM table stakes. Without it, manual outreach logging eventually decays. Strategic prerequisite for trajectory + digest accuracy. |
+| 7 | **Inverse programme matchmaking** | 2-3 h | "Show me the 47 partners who fit Coding Academy" — score function already computes both directions, just needs a programme-centric view. Lives inside About H-FARM (no new sidebar item). |
+| 8 | **Cmd+K command palette** | 4-5 h | Type "Robert College" → enter → opens entity; type "MoU stuck" → contracts alarm. Solves navigation without bloating sidebar to 17 items. |
+| 9 | **Decision audit trail** | 3-4 h | Every priority/tier override captures a free-text reasoning note + searchable later. Pairs naturally with aspirational drag (every aspiration is a decision). |
+| 10 | **Counterfactual scenario planning** | 5-6 h | "If I sign these 3 partners in Q3, what does the forecast look like?" Extends the existing Monte Carlo in the Funnel view. |
+| 11 | **Templates promote** (admin → sidebar) | 30 min | Pure surface-area move, not a new feature. Templates already exist in admin. |
+| 12 | **Partner 360 deep-link + full-screen** | 1 h | Detail panel ↗ expand + URL deep-link (`?entity=ent-42`). Solves "Partner 360 isn't discoverable" without building a new view. The detail panel already IS Partner 360. |
+| 13 | **Three.js cinematic drag** (depends on #2) | 3-4 h after #2 | Add raycaster + drag-plane projection to Present mode so the aspirational drag also works in the cinematic view. Mostly for board-room demos, not daily ops. |
+
+### Things to NOT build (re-evaluated)
+
+- **Partner 360 as separate sidebar view** — already exists as the
+  slide-out detail panel. Discoverability problem, not feature gap.
+- **Standalone Templates view** — already in admin. Promotion to
+  sidebar is fine; building a "new" templates feature is wasted work.
+- **Data Health as a separate page** — nobody opens "compliance
+  dashboards". Surface the 2-3 worst data issues as a Home briefing
+  strip instead.
+- **Sidebar with 17 items** — current 12 is already at the upper
+  bound for cognitive load. Use Cmd+K for navigation, not more nav.
+
+### Risks to address before building Aspirational drag (#2)
+
+1. **Action quality** — generic actions ("schedule a meeting") are
+   worthless. Specific actions ("Anna Sokolova at TalTech, warm
+   intro via Defne's LinkedIn 2nd degree") are gold. Requires the
+   Gemini prompt to receive entity + contacts + KB + score components
+   as context. Ask-the-platform chat has this infra; extend it.
+
+2. **Wishful thinking trap** — users drag every partner to Quick Win,
+   modal returns impossible 8-step list, tool becomes a toy.
+   Mitigation: distance-based feasibility scoring. >2 quadrant jumps
+   trigger a "this is a 3-year transformation" friction modal.
+
+3. **Aspiration noise** — drag-and-forget creates orphaned goals.
+   Mitigation: 90-day TTL with "still chasing?" reminder; auto-close
+   when the partner actually reaches the aspired quadrant.
+
+### Suggested next-session sequence
+
+If picking up here cold, the highest-leverage sequence is:
+
+1. **Follow-ups** (5-6 h) — gives the system somewhere for tasks to land
+2. **Aspirational drag** (7-8 h) — the killer feature, but only sings if Follow-ups exists to absorb the action list
+3. **Partner Health Trajectory** (3-4 h) — leverages existing snapshot data, gives the trajectory thesis a first concrete payoff
+
+Together: ~17 hours / 3 focused sessions. End-to-end "see current
+state → aspire to a better state → ship the actions → watch the
+trajectory respond" flow. That's a feature loop no CRM in the
+market has.
+
+---
+
 _Last meaningful update: this file was generated after 23 features +
-several rounds of polish. Edit it when architecture or non-goals
-change, not for every feature added._
+several rounds of polish, then extended with a Strategic Backlog
+section after Strategic Maps Phase C shipped. Edit when architecture
+or non-goals change, not for every feature added._
