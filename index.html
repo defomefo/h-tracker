@@ -1015,6 +1015,47 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .sm-chart-svg .sm-bubble:hover{stroke:var(--ink);stroke-width:2}
 .sm-chart-svg .sm-bubble.dragging{cursor:grabbing;stroke:var(--hf-red);stroke-width:2.5}
 .sm-chart-svg .sm-bubble.override{stroke:var(--hf-red);stroke-width:1.5;stroke-dasharray:2,2}
+
+/* ============================================================
+   2D / 3D toggle pill (Bloomberg-terminal style segmented).
+   ============================================================ */
+.sm-dim-toggle{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden;background:var(--paper);height:32px}
+.sm-dim-btn{background:transparent;border:none;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);padding:0 14px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .12s}
+.sm-dim-btn:not(.active):hover{color:var(--navy);background:rgba(255,255,255,.6)}
+.sm-dim-btn.active{background:var(--ink);color:#fff;cursor:default}
+.sm-dim-btn .sm-dim-badge{display:inline-block;font-size:9px;background:var(--hf-red);color:#fff;padding:1px 5px;border-radius:7px;letter-spacing:.4px;font-weight:800}
+.sm-dim-btn.active .sm-dim-badge{background:var(--gold);color:var(--ink)}
+
+/* ============================================================
+   "What the Z axis reveals" overlay — appears only in 3D mode,
+   above the chart, with the per-axis strategic story.
+   ============================================================ */
+.sm-z-overlay{background:linear-gradient(135deg,var(--ink) 0%, #2a2a2a 100%);color:#fff;border-radius:8px;border-left:4px solid var(--hf-red);padding:14px 20px;margin-bottom:14px;display:flex;flex-direction:column;gap:4px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.sm-z-overlay-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:var(--gold);opacity:.9}
+.sm-z-overlay-head{font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.2px}
+.sm-z-overlay-body{font-size:12px;color:rgba(255,255,255,.78);line-height:1.55;max-width:780px}
+
+/* ============================================================
+   3D chart visuals — floor parallelogram, axes, grid, towers.
+   ============================================================ */
+.sm-chart-wrap-3d{background:linear-gradient(180deg,#fcfaf3 0%, var(--off-white) 100%)}
+.sm-chart-svg-3d .sm-3d-floor{fill:rgba(31,111,180,0.05);stroke:var(--rule);stroke-width:1}
+.sm-chart-svg-3d .sm-3d-grid{stroke:var(--rule);stroke-width:0.6;stroke-opacity:0.6}
+.sm-chart-svg-3d .sm-3d-grid-mid{stroke:var(--ink-mute);stroke-width:0.9;stroke-dasharray:3,3;stroke-opacity:0.55}
+.sm-chart-svg-3d .sm-3d-axis{stroke:var(--ink);stroke-width:1.6;stroke-linecap:round}
+.sm-chart-svg-3d .sm-3d-axis-x{stroke:var(--ink)}
+.sm-chart-svg-3d .sm-3d-axis-z{stroke:var(--hf-red);stroke-width:2}
+.sm-chart-svg-3d .sm-3d-axis-y{stroke:var(--ink);stroke-width:1.6;stroke-dasharray:2,3}
+.sm-chart-svg-3d .sm-3d-axis-label{font-size:11px;font-weight:700;fill:var(--ink-soft);letter-spacing:.4px;text-transform:uppercase}
+.sm-chart-svg-3d .sm-3d-axis-label-z{fill:var(--hf-red);font-weight:800}
+.sm-chart-svg-3d .sm-3d-axis-label-y{fill:var(--ink)}
+.sm-chart-svg-3d .sm-3d-floor-label{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;fill:var(--ink-mute);opacity:.75}
+.sm-chart-svg-3d .sm-3d-floor-label.hero{fill:var(--hf-red);opacity:.85}
+.sm-chart-svg-3d .sm-3d-shadow{fill:rgba(0,0,0,0.12)}
+.sm-chart-svg-3d .sm-3d-stem{stroke-width:1.4;stroke-linecap:round;transition:stroke-width .12s}
+.sm-chart-svg-3d .sm-3d-base{transition:r .12s}
+.sm-chart-svg-3d .sm-3d-bubble{cursor:pointer}
+.sm-chart-svg-3d .sm-3d-bubble:hover{stroke:var(--ink);stroke-width:2.4;r:14}
 .sm-tip{position:fixed;background:var(--ink);color:#fff;padding:8px 12px;border-radius:5px;font-size:11px;pointer-events:none;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:240px;line-height:1.45;display:none}
 .sm-tip .nm{font-weight:800;color:#fff;margin-bottom:3px}
 .sm-tip .vals{color:rgba(255,255,255,.75);font-size:10px;letter-spacing:.3px}
@@ -2573,6 +2614,14 @@ const ONBOARDING_STEPS = [
     title: "Where deals die",
     body: "Conversion diagnostic with industry benchmarks, biggest-bottleneck call-out, and a 90-day Monte Carlo signing forecast (10,000 runs). Identifies exactly which stage leaks and what to do about it.",
     view: "funnel",
+  },
+  {
+    target: '.sm-dim-toggle',
+    placement: 'bottom',
+    eyebrow: "Strategic Maps",
+    title: "Now in three dimensions",
+    body: "Three 2×2 maps (Effort×Fit, Reach×Readiness, Cost×ROI) plot every partner across strategic lenses. Toggle <strong>3D</strong> to add a Z axis — engagement depth, scored from your outreach + contacts + persistence. Two partners at the same X-Y position can be a hidden goldmine (low Z) or a sunk-cost trap (high Z). The 2D view hides this; 3D surfaces it.",
+    view: "strategy",
   },
   {
     target: '.db-table-wrap',
@@ -8266,10 +8315,30 @@ function _loadStratOverrides() {
   try { return JSON.parse(localStorage.getItem(LS_STRAT_OVERRIDES) || "{}"); }
   catch { return {}; }
 }
+const LS_STRAT_3D = "hfarm_strat_3d_v1";
 const STRAT_STATE = {
   axisKey: "effortFit",
   overrides: _loadStratOverrides(),  // { effortFit: { entityId: {x,y} }, ... }
   showAll: false,                    // top-50 by default
+  is3D: (() => { try { return localStorage.getItem(LS_STRAT_3D) === "1"; } catch { return false; } })(),
+};
+
+// Per-axis "what Z reveals" tagline — the strategic story unlocked when the
+// engagement-depth Z axis joins the existing 2D X/Y. One sentence each so the
+// 3D mode never feels decorative; the reader sees the action it implies.
+const STRAT_Z_STORY = {
+  effortFit: {
+    headline: "Z reveals sunk-cost traps.",
+    body: "Tall bars sitting deep on the Z axis — high fit, low effort, but heavy engagement history — are deals you should have closed by now. Short bars near the front are untouched easy wins.",
+  },
+  reachReadiness: {
+    headline: "Z reveals strategic neglect.",
+    body: "Tall bars in the front-back corner — ready, broad-reach partners you have barely worked — are the most painful cell. Tall bars in the back are healthy investments.",
+  },
+  costRoi: {
+    headline: "Z reveals hidden goldmines.",
+    body: "Tall bars at the front-left — low cost, high ROI, low engagement — are cheap wins you have not noticed. Tall bars at the back-left are foundational deals worth defending.",
+  },
 };
 function _saveStratOverrides() {
   // localStorage cache (synchronous, fast). Server mirror is handled
@@ -8589,19 +8658,32 @@ function renderStrategicView() {
       ${overrideCount ? `<span class="sm-override-tag">${overrideCount} manual override${overrideCount === 1 ? '' : 's'}</span>` : ''}
     </div>
     <div class="sm-toolbar-actions">
+      <div class="sm-dim-toggle" role="group" aria-label="Toggle 2D / 3D view">
+        <button class="sm-dim-btn ${!STRAT_STATE.is3D ? 'active' : ''}" onclick="${STRAT_STATE.is3D ? 'stratToggle3D()' : ''}" title="Flat 2-axis chart">2D</button>
+        <button class="sm-dim-btn ${STRAT_STATE.is3D ? 'active' : ''}"  onclick="${STRAT_STATE.is3D ? '' : 'stratToggle3D()'}"  title="Adds engagement depth on Z — bars rise from a tilted floor">3D <span class="sm-dim-badge">Z</span></button>
+      </div>
       <button class="btn outline" onclick="stratToggleShowAll()">${STRAT_STATE.showAll ? 'Show top 50' : 'Show all'}</button>
       ${overrideCount ? `<button class="btn outline" onclick="stratResetOverrides('${axisKey}')">↺ Reset overrides</button>` : ''}
       <button class="btn gold" onclick="stratExportPng()">⬇ Export PNG</button>
     </div>
   </div>`;
 
+  // "What Z reveals" overlay — only shown in 3D mode. One sentence per axis
+  // so the reader sees the action implied by the new dimension.
+  if (STRAT_STATE.is3D) {
+    const story = STRAT_Z_STORY[axisKey] || { headline: "Z = engagement depth", body: "" };
+    html += `<div class="sm-z-overlay">
+      <div class="sm-z-overlay-eyebrow">What the Z axis reveals</div>
+      <div class="sm-z-overlay-head">${escape(story.headline)}</div>
+      <div class="sm-z-overlay-body">${escape(story.body)}</div>
+    </div>`;
+  }
+
   // Grid: chart + sidebar
   html += `<div class="sm-grid">`;
 
-  // ---- Chart ----
-  html += `<div class="sm-chart-wrap"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
-
-  // Plot area coords
+  // Plot area coords (shared by both 2D and 3D paths so the wireup logic
+  // downstream can still reason about them).
   const padL = 90, padR = 30, padT = 50, padB = 70;
   const plotL = padL, plotT = padT;
   const plotW = 760 - padL - padR;   // 640
@@ -8611,56 +8693,151 @@ function renderStrategicView() {
   const midX = plotL + plotW / 2;
   const midY = plotT + plotH / 2;
 
-  // Quadrant backgrounds — position-based tints matching the sidebar card
-  // colors so users can map between the chart and the cards at a glance.
-  // The hero quadrant gets an additional H-FARM red wash on top.
-  const QUAD_TINT = { tl:"rgba(201,122,26,0.07)", tr:"rgba(31,111,180,0.07)", bl:"rgba(142,154,171,0.06)", br:"rgba(176,50,46,0.06)" };
-  const heroTint = "rgba(217,83,79,0.06)";
-  ["tl","tr","bl","br"].forEach(q => {
-    const x = q[1] === "l" ? plotL : midX;
-    const y = q[0] === "t" ? plotT : midY;
-    html += `<rect class="sm-quad-bg" x="${x}" y="${y}" width="${plotW/2}" height="${plotH/2}" fill="${QUAD_TINT[q]}"/>`;
-    if (ax.hero === q) {
-      html += `<rect class="sm-quad-bg" x="${x}" y="${y}" width="${plotW/2}" height="${plotH/2}" fill="${heroTint}"/>`;
+  if (!STRAT_STATE.is3D) {
+    // ============================================================
+    // 2D CHART — the original X×Y bubble plot.
+    // ============================================================
+    html += `<div class="sm-chart-wrap"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
+
+    // Quadrant backgrounds — position-based tints matching the sidebar card
+    // colors so users can map between the chart and the cards at a glance.
+    // The hero quadrant gets an additional H-FARM red wash on top.
+    const QUAD_TINT = { tl:"rgba(201,122,26,0.07)", tr:"rgba(31,111,180,0.07)", bl:"rgba(142,154,171,0.06)", br:"rgba(176,50,46,0.06)" };
+    const heroTint = "rgba(217,83,79,0.06)";
+    ["tl","tr","bl","br"].forEach(q => {
+      const x = q[1] === "l" ? plotL : midX;
+      const y = q[0] === "t" ? plotT : midY;
+      html += `<rect class="sm-quad-bg" x="${x}" y="${y}" width="${plotW/2}" height="${plotH/2}" fill="${QUAD_TINT[q]}"/>`;
+      if (ax.hero === q) {
+        html += `<rect class="sm-quad-bg" x="${x}" y="${y}" width="${plotW/2}" height="${plotH/2}" fill="${heroTint}"/>`;
+      }
+    });
+
+    // Quadrant labels (in corners, inside plot area)
+    const qLabelOff = 14;
+    html += `<text class="sm-quad-label ${ax.hero === 'tl' ? 'hero' : ''}" x="${plotL + qLabelOff}"  y="${plotT + qLabelOff + 4}" text-anchor="start">${escape(ax.tl)}</text>`;
+    html += `<text class="sm-quad-label ${ax.hero === 'tr' ? 'hero' : ''}" x="${plotR - qLabelOff}" y="${plotT + qLabelOff + 4}" text-anchor="end">${escape(ax.tr)}</text>`;
+    html += `<text class="sm-quad-label ${ax.hero === 'bl' ? 'hero' : ''}" x="${plotL + qLabelOff}" y="${plotB - qLabelOff}"     text-anchor="start">${escape(ax.bl)}</text>`;
+    html += `<text class="sm-quad-label ${ax.hero === 'br' ? 'hero' : ''}" x="${plotR - qLabelOff}" y="${plotB - qLabelOff}"     text-anchor="end">${escape(ax.br)}</text>`;
+
+    // Mid-lines (crosshairs)
+    html += `<line class="sm-mid-line" x1="${plotL}" y1="${midY}" x2="${plotR}" y2="${midY}"/>`;
+    html += `<line class="sm-mid-line" x1="${midX}" y1="${plotT}" x2="${midX}" y2="${plotB}"/>`;
+
+    // Axes
+    html += `<line class="sm-axis-line" x1="${plotL}" y1="${plotB}" x2="${plotR}" y2="${plotB}"/>`;
+    html += `<line class="sm-axis-line" x1="${plotL}" y1="${plotT}" x2="${plotL}" y2="${plotB}"/>`;
+
+    // Axis titles + endpoint labels
+    html += `<text class="sm-axis-label" x="${midX}" y="${plotB + 42}" text-anchor="middle">${escape(ax.xLabel)} →</text>`;
+    html += `<text class="sm-axis-end"   x="${plotL}" y="${plotB + 22}" text-anchor="start">${escape(ax.xMin)}</text>`;
+    html += `<text class="sm-axis-end"   x="${plotR}" y="${plotB + 22}" text-anchor="end">${escape(ax.xMax)}</text>`;
+    html += `<text class="sm-axis-label" transform="translate(${plotL - 50},${midY}) rotate(-90)" text-anchor="middle">↑ ${escape(ax.yLabel)}</text>`;
+    html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotT}) rotate(-90)" text-anchor="end">${escape(ax.yMax)}</text>`;
+    html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotB}) rotate(-90)" text-anchor="start">${escape(ax.yMin)}</text>`;
+
+    // Bubbles
+    cohort.forEach(u => {
+      const { x, y, override } = stratComputeXY(u, axisKey);
+      const cx = plotL + (x / 100) * plotW;
+      const cy = plotT + (1 - y / 100) * plotH;
+      const r  = Math.max(5, Math.min(14, 5 + Math.sqrt(u.partnership_score) * 0.75));
+      const color = PRIO_COLORS[u.priority] || "#999";
+      html += `<circle class="sm-bubble${override ? ' override' : ''}" data-id="${u.id}"
+                cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}"
+                fill="${color}" fill-opacity="0.7" stroke="#fff" stroke-width="1.2"/>`;
+    });
+
+    html += `</svg></div>`;
+
+  } else {
+    // ============================================================
+    // 3D CHART — axonometric. Floor is X (existing X axis) × Z
+    // (engagement depth), each entity rises as a tower whose height
+    // is the existing Y value. Drag is disabled in this mode — the
+    // axes are projected, so dragging would be ambiguous; click still
+    // opens the detail panel, hover still shows the tooltip.
+    // ============================================================
+    html += `<div class="sm-chart-wrap sm-chart-wrap-3d"><svg class="sm-chart-svg sm-chart-svg-3d" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
+
+    const project = _strat3DBuildProjector(plotL, plotT, plotW, plotH);
+
+    // Floor corners — the parallelogram representing the X-Z plane at Y=0.
+    const f00 = project(0,   0, 0);
+    const f10 = project(100, 0, 0);
+    const f11 = project(100, 0, 100);
+    const f01 = project(0,   0, 100);
+    html += `<polygon class="sm-3d-floor" points="${f00.sx.toFixed(1)},${f00.sy.toFixed(1)} ${f10.sx.toFixed(1)},${f10.sy.toFixed(1)} ${f11.sx.toFixed(1)},${f11.sy.toFixed(1)} ${f01.sx.toFixed(1)},${f01.sy.toFixed(1)}"/>`;
+
+    // Floor grid — 4 lines along X, 4 along Z, faint, every 25 units
+    for (const t of [25, 50, 75]) {
+      const ax1 = project(t,   0, 0), ax2 = project(t,   0, 100);
+      const bx1 = project(0,   0, t), bx2 = project(100, 0, t);
+      html += `<line class="sm-3d-grid" x1="${ax1.sx.toFixed(1)}" y1="${ax1.sy.toFixed(1)}" x2="${ax2.sx.toFixed(1)}" y2="${ax2.sy.toFixed(1)}"/>`;
+      html += `<line class="sm-3d-grid" x1="${bx1.sx.toFixed(1)}" y1="${bx1.sy.toFixed(1)}" x2="${bx2.sx.toFixed(1)}" y2="${bx2.sy.toFixed(1)}"/>`;
     }
-  });
+    // Crosshair on the floor (mid-line in both floor directions)
+    const cx1 = project(50, 0, 0), cx2 = project(50, 0, 100);
+    const cz1 = project(0, 0, 50), cz2 = project(100, 0, 50);
+    html += `<line class="sm-3d-grid sm-3d-grid-mid" x1="${cx1.sx.toFixed(1)}" y1="${cx1.sy.toFixed(1)}" x2="${cx2.sx.toFixed(1)}" y2="${cx2.sy.toFixed(1)}"/>`;
+    html += `<line class="sm-3d-grid sm-3d-grid-mid" x1="${cz1.sx.toFixed(1)}" y1="${cz1.sy.toFixed(1)}" x2="${cz2.sx.toFixed(1)}" y2="${cz2.sy.toFixed(1)}"/>`;
 
-  // Quadrant labels (in corners, inside plot area)
-  const qLabelOff = 14;
-  html += `<text class="sm-quad-label ${ax.hero === 'tl' ? 'hero' : ''}" x="${plotL + qLabelOff}"  y="${plotT + qLabelOff + 4}" text-anchor="start">${escape(ax.tl)}</text>`;
-  html += `<text class="sm-quad-label ${ax.hero === 'tr' ? 'hero' : ''}" x="${plotR - qLabelOff}" y="${plotT + qLabelOff + 4}" text-anchor="end">${escape(ax.tr)}</text>`;
-  html += `<text class="sm-quad-label ${ax.hero === 'bl' ? 'hero' : ''}" x="${plotL + qLabelOff}" y="${plotB - qLabelOff}"     text-anchor="start">${escape(ax.bl)}</text>`;
-  html += `<text class="sm-quad-label ${ax.hero === 'br' ? 'hero' : ''}" x="${plotR - qLabelOff}" y="${plotB - qLabelOff}"     text-anchor="end">${escape(ax.br)}</text>`;
+    // Three axis lines: X (front edge), Z (left edge of floor), Y (rising from front-left)
+    const axisX1 = f00, axisX2 = f10;
+    const axisZ1 = f00, axisZ2 = f01;
+    const axisY1 = f00, axisY2 = project(0, 100, 0);
+    html += `<line class="sm-3d-axis sm-3d-axis-x" x1="${axisX1.sx.toFixed(1)}" y1="${axisX1.sy.toFixed(1)}" x2="${axisX2.sx.toFixed(1)}" y2="${axisX2.sy.toFixed(1)}"/>`;
+    html += `<line class="sm-3d-axis sm-3d-axis-z" x1="${axisZ1.sx.toFixed(1)}" y1="${axisZ1.sy.toFixed(1)}" x2="${axisZ2.sx.toFixed(1)}" y2="${axisZ2.sy.toFixed(1)}"/>`;
+    html += `<line class="sm-3d-axis sm-3d-axis-y" x1="${axisY1.sx.toFixed(1)}" y1="${axisY1.sy.toFixed(1)}" x2="${axisY2.sx.toFixed(1)}" y2="${axisY2.sy.toFixed(1)}"/>`;
 
-  // Mid-lines (crosshairs)
-  html += `<line class="sm-mid-line" x1="${plotL}" y1="${midY}" x2="${plotR}" y2="${midY}"/>`;
-  html += `<line class="sm-mid-line" x1="${midX}" y1="${plotT}" x2="${midX}" y2="${plotB}"/>`;
+    // Axis labels
+    html += `<text class="sm-3d-axis-label" x="${axisX2.sx + 6}" y="${axisX2.sy + 16}">${escape(ax.xLabel)} →</text>`;
+    html += `<text class="sm-3d-axis-label sm-3d-axis-label-z" x="${axisZ2.sx - 4}" y="${axisZ2.sy - 6}" text-anchor="end">${escape("Engagement depth →")}</text>`;
+    html += `<text class="sm-3d-axis-label sm-3d-axis-label-y" x="${axisY2.sx - 8}" y="${axisY2.sy - 4}" text-anchor="end">↑ ${escape(ax.yLabel)}</text>`;
 
-  // Axes
-  html += `<line class="sm-axis-line" x1="${plotL}" y1="${plotB}" x2="${plotR}" y2="${plotB}"/>`;
-  html += `<line class="sm-axis-line" x1="${plotL}" y1="${plotT}" x2="${plotL}" y2="${plotB}"/>`;
+    // Quadrant labels — painted on the floor at the four corners of the X-Z plane
+    // so the strategic story still reads. We push them slightly INTO the floor
+    // from each corner.
+    const qCorners = {
+      bl: project(15,  0, 15),    // near corner = "low effort / shallow depth"
+      br: project(85,  0, 15),    // front-right
+      tl: project(15,  0, 85),    // back-left = "low effort / deep history"
+      tr: project(85,  0, 85),    // back-right
+    };
+    ["bl","br","tl","tr"].forEach(q => {
+      const p = qCorners[q];
+      const heroCls = ax.hero === q ? " hero" : "";
+      html += `<text class="sm-3d-floor-label${heroCls}" x="${p.sx.toFixed(1)}" y="${p.sy.toFixed(1)}" text-anchor="middle">${escape(ax[q])}</text>`;
+    });
 
-  // Axis titles + endpoint labels
-  html += `<text class="sm-axis-label" x="${midX}" y="${plotB + 42}" text-anchor="middle">${escape(ax.xLabel)} →</text>`;
-  html += `<text class="sm-axis-end"   x="${plotL}" y="${plotB + 22}" text-anchor="start">${escape(ax.xMin)}</text>`;
-  html += `<text class="sm-axis-end"   x="${plotR}" y="${plotB + 22}" text-anchor="end">${escape(ax.xMax)}</text>`;
-  html += `<text class="sm-axis-label" transform="translate(${plotL - 50},${midY}) rotate(-90)" text-anchor="middle">↑ ${escape(ax.yLabel)}</text>`;
-  html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotT}) rotate(-90)" text-anchor="end">${escape(ax.yMax)}</text>`;
-  html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotB}) rotate(-90)" text-anchor="start">${escape(ax.yMin)}</text>`;
+    // Towers — back-to-front render order so closer ones overlap farther ones.
+    // Sort by projected SY ascending (back first, since SY-up = back in our
+    // projection — back rows have smaller SY).
+    const towers = cohort.map(u => {
+      const { x, y } = stratComputeXY(u, axisKey);
+      const z = engagementDepth(u).total;
+      const base = project(x, 0, z);
+      const top  = project(x, y, z);
+      return { u, x, y, z, base, top };
+    }).sort((a, b) => a.base.sy - b.base.sy);  // farther (smaller sy) first
 
-  // Bubbles
-  cohort.forEach(u => {
-    const { x, y, override } = stratComputeXY(u, axisKey);
-    const cx = plotL + (x / 100) * plotW;
-    const cy = plotT + (1 - y / 100) * plotH;
-    const r  = Math.max(5, Math.min(14, 5 + Math.sqrt(u.partnership_score) * 0.75));
-    const color = PRIO_COLORS[u.priority] || "#999";
-    html += `<circle class="sm-bubble${override ? ' override' : ''}" data-id="${u.id}"
-              cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}"
-              fill="${color}" fill-opacity="0.7" stroke="#fff" stroke-width="1.2"/>`;
-  });
+    towers.forEach(t => {
+      const r = Math.max(4, Math.min(11, 4 + Math.sqrt(t.u.partnership_score) * 0.65));
+      const color = PRIO_COLORS[t.u.priority] || "#999";
+      // shadow under base
+      html += `<ellipse class="sm-3d-shadow" cx="${t.base.sx.toFixed(1)}" cy="${(t.base.sy + 2).toFixed(1)}" rx="${(r * 1.1).toFixed(1)}" ry="${(r * 0.4).toFixed(1)}"/>`;
+      // stem
+      html += `<line class="sm-3d-stem" x1="${t.base.sx.toFixed(1)}" y1="${t.base.sy.toFixed(1)}" x2="${t.top.sx.toFixed(1)}" y2="${t.top.sy.toFixed(1)}" stroke="${color}" stroke-opacity="0.45"/>`;
+      // floor anchor dot
+      html += `<circle class="sm-3d-base" cx="${t.base.sx.toFixed(1)}" cy="${t.base.sy.toFixed(1)}" r="1.6" fill="${color}" fill-opacity="0.55"/>`;
+      // top bubble — this is the interactive element
+      html += `<circle class="sm-bubble sm-3d-bubble" data-id="${t.u.id}"
+                cx="${t.top.sx.toFixed(1)}" cy="${t.top.sy.toFixed(1)}" r="${r.toFixed(1)}"
+                fill="${color}" fill-opacity="0.85" stroke="#fff" stroke-width="1.4"/>`;
+    });
 
-  html += `</svg></div>`;
+    html += `</svg></div>`;
+  }
 
   // ---- Sidebar: top 5 per quadrant ----
   html += `<div class="sm-side">`;
@@ -8715,6 +8892,64 @@ function stratToggleShowAll() {
   STRAT_STATE.showAll = !STRAT_STATE.showAll;
   renderStrategicView();
 }
+function stratToggle3D() {
+  STRAT_STATE.is3D = !STRAT_STATE.is3D;
+  try { localStorage.setItem(LS_STRAT_3D, STRAT_STATE.is3D ? "1" : "0"); } catch {}
+  renderStrategicView();
+}
+
+// ============================================================================
+// 3D PROJECTION — axonometric: floor is the X-Z plane, Y is vertical.
+//
+// Geometry (data coords all 0-100):
+//   chart X (existing X axis)  → screen direction: slight down-right
+//   chart Z (engagement depth) → screen direction: up-right (depth into page)
+//   chart Y (existing Y axis)  → screen direction: straight up
+//
+// Each entity becomes a vertical "tower":
+//   base sits on the floor at (X, 0, Z)
+//   top is at (X, Y, Z)
+//   tower height = chart's existing Y value (Fit / Readiness / ROI)
+//
+// Reading the chart: position on floor = (effort/reach/cost) × engagement;
+// height = fit/readiness/ROI; color = priority. Two entities at the same
+// X-Y in 2D now visibly separate by how deeply we have already worked them.
+// ============================================================================
+const _STRAT3D = {
+  xAngle: 6  * Math.PI / 180,    // X axis tilts down 6° from horizontal
+  zAngle: 30 * Math.PI / 180,    // Z axis rises 30° (depth foreshortening)
+  zScale: 0.78,                  // shorter Z so we don't overflow the canvas
+};
+function _strat3DRaw(fx, fy, fz) {
+  // SVG y is inverted (down is positive), so we negate Z's and Y's vertical contributions.
+  const c = _STRAT3D;
+  const rx = fx * Math.cos(c.xAngle)  + fz * Math.cos(c.zAngle) * c.zScale;
+  const ry = fx * Math.sin(c.xAngle)  - fz * Math.sin(c.zAngle) * c.zScale - fy;
+  return { rx, ry };
+}
+// Fit the projection into a given SVG plot rectangle. Returns a closure
+// project(fx,fy,fz) → {sx,sy} mapped to absolute SVG coords + the corner
+// landmarks the renderer needs for floor/axis lines.
+function _strat3DBuildProjector(plotL, plotT, plotW, plotH) {
+  // Sample the 8 corners of the unit cube to size the bounding box.
+  const corners = [];
+  for (const fx of [0, 100]) for (const fy of [0, 100]) for (const fz of [0, 100]) {
+    corners.push(_strat3DRaw(fx, fy, fz));
+  }
+  const xs = corners.map(p => p.rx);
+  const ys = corners.map(p => p.ry);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rangeX = maxX - minX, rangeY = maxY - minY;
+  // Scale uniformly to fit the larger of the two ratios; leave 5% padding.
+  const scale = Math.min(plotW / rangeX, plotH / rangeY) * 0.94;
+  const offX  = plotL + (plotW - rangeX * scale) / 2 - minX * scale;
+  const offY  = plotT + (plotH - rangeY * scale) / 2 - minY * scale;
+  return (fx, fy, fz) => {
+    const r = _strat3DRaw(fx, fy, fz);
+    return { sx: offX + r.rx * scale, sy: offY + r.ry * scale };
+  };
+}
 
 function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
   const svg = document.getElementById("sm-chart");
@@ -8744,12 +8979,14 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
     const u  = UNIS.find(x => x.id === id);
     if (!u) return;
 
-    // Hover tooltip
+    // Hover tooltip — in 3D mode we also surface the Z (engagement depth)
+    // so the dot's vertical position has a readable number behind it.
     b.addEventListener("mouseenter", (ev) => {
       const { x, y } = stratComputeXY(u, STRAT_STATE.axisKey);
       const ax = STRAT_AXES[STRAT_STATE.axisKey];
+      const z  = STRAT_STATE.is3D ? engagementDepth(u).total : null;
       tip.innerHTML = `<div class="nm">${escape(u.name)}</div>
-        <div class="vals">${escape(ax.xLabel)}: <b>${x}</b> · ${escape(ax.yLabel)}: <b>${y}</b><br>
+        <div class="vals">${escape(ax.xLabel)}: <b>${x}</b> · ${escape(ax.yLabel)}: <b>${y}</b>${z !== null ? ` · Z (depth): <b>${z}</b>` : ""}<br>
           ${escape(u.country_canonical || u.country || "—")} · score ${u.partnership_score}</div>
         ${u.priority ? `<span class="prio" style="background:${PRIO_COLORS[u.priority]}">${escape(u.priority)}</span>` : ''}`;
       tip.style.display = "block";
@@ -8759,6 +8996,13 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       tip.style.top  = (ev.clientY + 14) + "px";
     });
     b.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+
+    // 3D mode: drag is disabled (axes are projected so dragging is ambiguous).
+    // Click still opens the detail panel — keep that path live.
+    if (STRAT_STATE.is3D) {
+      b.addEventListener("click", () => openDetail(id));
+      return;
+    }
 
     // Pointer-based drag with click vs drag distinction
     let dragging = false, startX = 0, startY = 0, moved = 0;
