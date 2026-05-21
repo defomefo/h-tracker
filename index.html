@@ -1575,6 +1575,77 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   margin-top: 4px; font-variant-numeric: tabular-nums;
 }
 
+/* Axis labels — HTML divs projected from world-space axis endpoints
+   every frame. Color-coded to the line beneath them. */
+.present-axis-label {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 350ms ease;
+  text-shadow: 0 0 10px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1);
+  z-index: 2;
+}
+.present-axis-label.show         { opacity: 1; }
+.present-axis-label.axis-x       { color: #FF8B85; }   /* X = red, matches X axis line */
+.present-axis-label.axis-z       { color: #FFD988; }   /* Z = gold, matches Z axis line */
+.present-axis-label.axis-y       { color: rgba(255,255,255,.85); }
+
+/* Zoom controls — sit on the right side of the topbar next to Exit. */
+.present-zoom-controls {
+  display: inline-flex;
+  gap: 4px;
+  margin-right: 8px;
+  align-items: center;
+}
+.present-zoom-btn {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.18);
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  width: 32px; height: 32px;
+  border-radius: 5px;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, border-color .12s;
+}
+.present-zoom-btn:hover  { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.present-zoom-btn:active { transform: scale(.94); }
+
+/* Hint strip — bottom-left corner during presentation, gives mouse interaction tips */
+.present-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 3;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.45);
+  font-weight: 700;
+  pointer-events: none;
+}
+.present-hint kbd {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.18);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 9px;
+  color: rgba(255,255,255,.75);
+  margin: 0 3px;
+}
+
 /* Loading state — spinner while Three.js modules fetch from CDN */
 .present-loader {
   text-align: center;
@@ -2403,9 +2474,15 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <div class="present-title" id="present-title">—</div>
       <div class="present-title-sub" id="present-title-sub">—</div>
     </div>
-    <button class="present-exit" onclick="closePresentationMode()" aria-label="Exit presentation">
-      ✕ Exit <span class="present-exit-key">ESC</span>
-    </button>
+    <div style="display:flex;align-items:center">
+      <div class="present-zoom-controls">
+        <button class="present-zoom-btn" onclick="presentZoom(0.82)" title="Zoom in" aria-label="Zoom in">+</button>
+        <button class="present-zoom-btn" onclick="presentZoom(1.22)" title="Zoom out" aria-label="Zoom out">−</button>
+      </div>
+      <button class="present-exit" onclick="closePresentationMode()" aria-label="Exit presentation">
+        ✕ Exit <span class="present-exit-key">ESC</span>
+      </button>
+    </div>
   </div>
 
   <div class="present-canvas-mount" id="present-canvas-mount">
@@ -2414,6 +2491,9 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <div class="pht-name"></div>
       <div class="pht-meta"></div>
       <div class="pht-score"></div>
+    </div>
+    <div class="present-hint">
+      Drag to orbit · <kbd>scroll</kbd> or <kbd>+</kbd> <kbd>−</kbd> to zoom · click a sphere to open
     </div>
   </div>
 
@@ -10008,12 +10088,13 @@ async function _lazyLoadThreeModules() {
   // esm.sh auto-resolves Three.js's internal "import ... from 'three'" specifiers
   // in the addon modules, which a raw unpkg fetch would choke on.
   const base = "https://esm.sh/three@0.160.0";
-  const [THREE, ec, rp, ub, op] = await Promise.all([
+  const [THREE, ec, rp, ub, op, oc] = await Promise.all([
     import(/* @vite-ignore */ base),
     import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/EffectComposer.js`),
     import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/RenderPass.js`),
     import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/UnrealBloomPass.js`),
     import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/OutputPass.js`),
+    import(/* @vite-ignore */ `${base}/examples/jsm/controls/OrbitControls.js`),
   ]);
   _PRESENT_MODULES = {
     THREE,
@@ -10021,6 +10102,7 @@ async function _lazyLoadThreeModules() {
     RenderPass:      rp.RenderPass,
     UnrealBloomPass: ub.UnrealBloomPass,
     OutputPass:      op.OutputPass,
+    OrbitControls:   oc.OrbitControls,
   };
   return _PRESENT_MODULES;
 }
@@ -10121,10 +10203,7 @@ async function openPresentationMode() {
 }
 
 function _initPresentationScene(mods, mount, cohort, axisKey, opps, headline) {
-  const { THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass } = mods;
-  // Pull the axis config locally — caller (openPresentationMode) computes
-  // this too but didn't pass it. Used by the opening caption below.
-  // (Was the bug behind the "ax is not defined" black screen.)
+  const { THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass, OrbitControls } = mods;
   const ax = STRAT_AXES[axisKey];
 
   const w = mount.clientWidth;
@@ -10146,14 +10225,13 @@ function _initPresentationScene(mods, mount, cohort, axisKey, opps, headline) {
   // floor when camera started overhead).
   scene.fog = new THREE.Fog(0x000000, 300, 600);
 
-  const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 800);
-  // Start ALREADY in 3/4 view (slightly closer than the final intro
-  // destination) so the scene is visible from frame 0. The intro then
-  // does a small pull-back zoom rather than a full overhead-to-3/4 dive.
-  // The user reported a black screen at the previous (50, 220, 50.001)
-  // overhead start — too far + too much fog killed visibility.
-  camera.position.set(118, 78, 118);
-  const camTarget = new THREE.Vector3(50, 18, 50);
+  const camera = new THREE.PerspectiveCamera(38, w / h, 0.1, 800);
+  // Wider 3/4 view that comfortably frames the whole floor + the tallest
+  // towers (Y up to 100), and an aim point lifted to ~30 units so towers
+  // sit roughly screen-centered instead of all sliding to the right edge.
+  // OrbitControls (set up below) lets the user dolly/orbit from here.
+  camera.position.set(160, 115, 160);
+  const camTarget = new THREE.Vector3(50, 30, 50);
   camera.lookAt(camTarget);
 
   // ---- Lighting ----
@@ -10316,13 +10394,51 @@ function _initPresentationScene(mods, mount, cohort, axisKey, opps, headline) {
     l.mesh = sphereMeshes.find(s => s.userData.u.id === l.u.id);
   });
 
+  // ---- OrbitControls — user-driven orbit + wheel zoom ----
+  // Disabled during the intro tween (we're controlling camera position by
+  // hand then). Enabled + autoRotate flipped on by _runPresentationIntro
+  // when the intro completes.
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.copy(camTarget);
+  controls.enableDamping  = true;
+  controls.dampingFactor  = 0.08;
+  controls.enablePan      = false;
+  controls.enableZoom     = true;
+  controls.minDistance    = 70;
+  controls.maxDistance    = 360;
+  controls.minPolarAngle  = 0.18;                 // can almost look top-down
+  controls.maxPolarAngle  = Math.PI * 0.49;       // but never below the floor
+  controls.rotateSpeed    = 0.55;
+  controls.zoomSpeed      = 0.85;
+  controls.autoRotate     = false;
+  controls.autoRotateSpeed = 0.55;                // gentle drift
+  controls.enabled        = false;
+  controls.update();
+
+  // ---- Axis labels (HTML overlay, projected from world space) ----
+  // Same projection trick as entity labels, just anchored at the axis
+  // endpoints. Color-coded to match the 3D axis line colors so the chart
+  // reads as labeled without crowding the data plane.
+  const axisLabelDefs = [
+    { txt: (ax.xLabel || "Effort") + " →",        pos: new THREE.Vector3(112, 0, 0),    axis: "x" },
+    { txt: "Engagement depth →",                  pos: new THREE.Vector3(0, 0, 112),    axis: "z" },
+    { txt: "↑ " + (ax.yLabel || "Fit"),           pos: new THREE.Vector3(0, 108, 0),    axis: "y" },
+  ];
+  const axisLabels = axisLabelDefs.map(def => {
+    const el = document.createElement("div");
+    el.className = "present-axis-label axis-" + def.axis;
+    el.textContent = def.txt;
+    mount.appendChild(el);
+    return { ...def, el };
+  });
+
   // ---- Stash state ----
   _PRESENT_STATE = {
     opening: false,
     mods, mount, renderer, scene, camera, composer,
-    camTarget,
+    camTarget, controls,
     sphereMeshes, raycaster, mouseNdc,
-    labels,
+    labels, axisLabels,
     rafId: null,
     introT: 0, introDone: false,
     rotation: 0,
@@ -10379,9 +10495,14 @@ function _runPresentationIntro() {
     if (t >= 1) {
       state.introDone = true;
       state.introTween = null;
-      // Set rotation phase so auto-rotate continues seamlessly from this
-      // landing spot (atan2 of the 3/4 position relative to floor center).
-      state.rotation = Math.atan2(to.z - 50, to.x - 50);
+      // Hand off to OrbitControls — user can now drag/zoom freely, and
+      // autoRotate keeps the scene alive when they're idle.
+      if (state.controls) {
+        state.controls.target.copy(state.camTarget);
+        state.controls.enabled    = true;
+        state.controls.autoRotate = true;
+        state.controls.update();
+      }
     }
   };
 }
@@ -10395,17 +10516,14 @@ function _presentationLoop() {
   state.rafId = requestAnimationFrame(_presentationLoop);
   const now = performance.now();
 
-  // Intro tween or slow auto-rotate
+  // Camera driver: intro tween OR OrbitControls. The intro sets positions
+  // by hand; once it completes it flips controls.enabled=true and from
+  // there OrbitControls owns the camera (autoRotate when idle, drag to
+  // orbit, wheel to zoom).
   if (state.introTween) {
     state.introTween(now);
-  } else {
-    state.rotation += 0.0014;
-    const radius = 135;
-    const cx = 50, cz = 50;
-    camera.position.x = cx + Math.cos(state.rotation) * radius;
-    camera.position.z = cz + Math.sin(state.rotation) * radius;
-    camera.position.y = 95 + Math.sin(state.rotation * 0.7) * 6;   // subtle bob
-    camera.lookAt(camTarget);
+  } else if (state.controls) {
+    state.controls.update();
   }
 
   // Pulse the hero rings (find them by userData.pulse)
@@ -10471,11 +10589,12 @@ function _updatePresentationLabels(state) {
   const halfW = rect.width / 2;
   const halfH = rect.height / 2;
   const tmp = new state.mods.THREE.Vector3();
+
+  // Entity labels (top-N opportunities)
   state.labels.forEach(l => {
     if (!l.mesh || !l.el) return;
     tmp.copy(l.mesh.position);
     tmp.project(camera);
-    // Behind the camera or clipped: hide
     if (tmp.z > 1 || tmp.x < -1.2 || tmp.x > 1.2 || tmp.y < -1.2 || tmp.y > 1.2) {
       l.el.classList.remove("show");
       return;
@@ -10486,6 +10605,21 @@ function _updatePresentationLabels(state) {
     l.el.style.top  = py + "px";
     l.el.classList.add("show");
   });
+
+  // Axis labels (X / Y / Z names anchored at endpoint positions)
+  if (state.axisLabels) {
+    state.axisLabels.forEach(al => {
+      if (!al.el) return;
+      tmp.copy(al.pos);
+      tmp.project(camera);
+      if (tmp.z > 1) { al.el.classList.remove("show"); return; }
+      const px = (tmp.x * halfW) + halfW;
+      const py = -(tmp.y * halfH) + halfH;
+      al.el.style.left = px + "px";
+      al.el.style.top  = py + "px";
+      al.el.classList.add("show");
+    });
+  }
 }
 
 function closePresentationMode() {
@@ -10515,9 +10649,16 @@ function closePresentationMode() {
       _PRESENT_STATE.renderer.domElement.parentNode.removeChild(_PRESENT_STATE.renderer.domElement);
     }
   }
-  // Remove labels
+  // Remove labels (entity + axis)
   if (_PRESENT_STATE && _PRESENT_STATE.labels) {
     _PRESENT_STATE.labels.forEach(l => { if (l.el && l.el.parentNode) l.el.parentNode.removeChild(l.el); });
+  }
+  if (_PRESENT_STATE && _PRESENT_STATE.axisLabels) {
+    _PRESENT_STATE.axisLabels.forEach(al => { if (al.el && al.el.parentNode) al.el.parentNode.removeChild(al.el); });
+  }
+  // Dispose OrbitControls — releases event listeners on the canvas
+  if (_PRESENT_STATE && _PRESENT_STATE.controls) {
+    try { _PRESENT_STATE.controls.dispose(); } catch {}
   }
   _PRESENT_STATE = null;
 
@@ -10530,7 +10671,11 @@ function _onPresentationKey(e) {
   if (e.key === "Escape") {
     e.stopPropagation();
     closePresentationMode();
+    return;
   }
+  // Keyboard zoom — matches the hint strip on the canvas
+  if (e.key === "+" || e.key === "=") { presentZoom(0.85); e.preventDefault(); }
+  if (e.key === "-" || e.key === "_") { presentZoom(1.18); e.preventDefault(); }
 }
 function _onPresentationResize() {
   const state = _PRESENT_STATE;
@@ -10542,6 +10687,24 @@ function _onPresentationResize() {
   state.composer.setSize(w, h);
   state.camera.aspect = w / h;
   state.camera.updateProjectionMatrix();
+}
+
+// Programmatic zoom — dolly the camera along its target→camera vector.
+// factor < 1 = zoom in (camera moves closer), factor > 1 = zoom out.
+// Clamped by OrbitControls.minDistance / maxDistance so the user can't
+// crash through the floor or fly out of the universe.
+function presentZoom(factor) {
+  const state = _PRESENT_STATE;
+  if (!state || !state.controls || !state.camera) return;
+  const { THREE } = state.mods;
+  const ctl = state.controls;
+  const cam = state.camera;
+  // Vector from target to camera
+  const offset = new THREE.Vector3().subVectors(cam.position, ctl.target);
+  const newDist = Math.max(ctl.minDistance, Math.min(ctl.maxDistance, offset.length() * factor));
+  offset.setLength(newDist);
+  cam.position.copy(ctl.target).add(offset);
+  ctl.update();
 }
 
 // ---- Transition animation ----
