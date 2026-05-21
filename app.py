@@ -812,6 +812,7 @@ def _build_prompt(d):
     recommended = d.get("recommended") or {}
     team = d.get("team") or {}
     recipient = d.get("recipient") or {}
+    sender = d.get("sender") or {}
 
     lines = ["## Partner"]
     lines.append(f"- Name: {entity.get('name', 'Unknown')}")
@@ -850,6 +851,14 @@ def _build_prompt(d):
         lines.append(f"- Team: {team['name']}")
     if team.get("remit"):
         lines.append(f"- Remit: {team['remit']}")
+    # Per-user signer info from the roster — if set, the AI knows whose
+    # name + email to use in the signature instead of a generic placeholder.
+    if sender.get("name"):
+        lines.append(f"- Signer name: {sender['name']}")
+    if sender.get("role"):
+        lines.append(f"- Signer role: {sender['role']}")
+    if sender.get("email"):
+        lines.append(f"- Signer email: {sender['email']}")
 
     lines += ["", "## Recipient"]
     if recipient.get("name"):

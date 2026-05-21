@@ -1190,6 +1190,16 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .activity-text{font-size:12px;color:var(--ink);line-height:1.4}
 .activity-when{font-size:10px;color:var(--ink-soft);margin-top:2px}
 
+/* OUTREACH MODAL — "Sending as" footer line + secondary save button */
+.sender-line{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--paper);border-radius:5px;font-size:11px;color:var(--ink);margin-top:6px;flex-wrap:wrap}
+.sender-line .sender-tag{font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:700;color:var(--ink-soft)}
+.sender-line .sender-email{color:var(--ink-soft);font-family:Consolas,monospace;font-size:11px}
+.sender-line.sender-warn{background:#FFF6E5;border:1px solid #F5D89C;color:var(--ink)}
+.sender-line .sender-link{background:transparent;border:none;color:var(--hf-red);font-weight:700;cursor:pointer;font-family:inherit;font-size:11px;padding:0 4px;text-decoration:underline}
+.sender-line .sender-link:hover{color:var(--navy)}
+.outreach-form .form-foot .save.secondary{background:var(--navy);color:#fff;border:none}
+.outreach-form .form-foot .save.secondary:hover{background:var(--navy-light,#1a3a5a)}
+
 /* IDENTITY PICKER — "Who are you?" modal on first login */
 .identity-overlay{position:fixed;inset:0;background:rgba(10,37,64,.55);z-index:9500;display:none;align-items:center;justify-content:center;padding:30px 20px;overflow-y:auto;font-family:inherit}
 .identity-overlay.open{display:flex}
@@ -5952,8 +5962,23 @@ function showOutreachForm(entityId, entryId) {
         <textarea id="ol-body" placeholder="Dear [Name],\n\nWe are reaching out from H-FARM College, based at our innovation campus near Treviso, Italy...">${escape(e.body)}</textarea>
       </label>
     </div>
+    ${(() => {
+      const senderName = getDisplayName();
+      const senderEmail = getUserEmail();
+      if (!senderName && !senderEmail) {
+        return `<div class="sender-line sender-warn">
+          You haven't claimed an identity yet — edits will log as Anonymous.
+          <button type="button" class="sender-link" onclick="showIdentityPicker()">Pick from roster →</button>
+        </div>`;
+      }
+      return `<div class="sender-line">
+        <span class="sender-tag">Sending as</span>
+        <b>${escape(senderName || "Anonymous")}</b>${senderEmail ? ` <span class="sender-email">⟨${escape(senderEmail)}⟩</span>` : ""}
+      </div>`;
+    })()}
     <div class="form-foot">
       <button class="cancel" type="button" onclick="closeOutreachForm()">Cancel</button>
+      <button class="save secondary" type="button" onclick="submitOutreachFormAndMailto()" title="Save the log entry AND open your mail client with the subject + body + recipient pre-filled">📧 Save + open in mail client</button>
       <button class="save"   type="button" onclick="submitOutreachForm()">${existing ? 'Save changes' : 'Log outreach'}</button>
     </div>
   `;
@@ -6322,7 +6347,11 @@ function applyOutreachTemplate(entityId, templateId) {
   }
   const team = TEAMS.find(t => t.id === (assignedTeam(entityId) || (recommendTeams(entity)[0] || {}).id)) || {};
   const recommended = recommendCollabFormat(entity) || {};
-  const sender = { name: getDisplayName() || "[Your name]", role: team.name || "Partnerships team" };
+  const sender = {
+    name:  getDisplayName() || "[Your name]",
+    role:  getUserRole() || team.name || "Partnerships team",
+    email: getUserEmail() || "[your.email@h-farm.com]",
+  };
   const kb = { org_name: "H-FARM College", location: "Treviso, Italy", website: "https://college.h-farm.com" };
   const ctx = { entity, recipient, recommended, team, sender, kb };
 
@@ -6393,6 +6422,11 @@ async function aiDraftOutreach(entityId) {
           role: recipient.role || "",
           email: recipient.email || "",
         },
+        sender: {
+          name:  getDisplayName() || "",
+          role:  getUserRole()    || "",
+          email: getUserEmail()   || "",
+        },
       }),
     });
     const data = await resp.json();
@@ -6414,18 +6448,20 @@ async function aiDraftOutreach(entityId) {
   }
 }
 
-function submitOutreachForm() {
+function _collectOutreachEntry() {
   const id        = document.getElementById("ol-id").value;
   const entityId  = document.getElementById("ol-entity").value;
   const programs  = [...document.querySelectorAll("#ol-programs input[type=checkbox]:checked")].map(i => i.dataset.prog);
   const channels = [...document.querySelectorAll("#ol-channels-group input[type=checkbox]:checked")].map(i => i.dataset.channel);
-  const entry = {
+  return {
     id, entityId,
     date:           document.getElementById("ol-date").value,
     channels:       channels,
     channel:        channels[0] || "email",   // legacy single-channel field kept for backward compat
     status:         document.getElementById("ol-status").value,
     senderTeamId:   document.getElementById("ol-team").value,
+    senderName:     getDisplayName() || "",
+    senderEmail:    getUserEmail()   || "",
     subject:        document.getElementById("ol-subject").value.trim(),
     recipientName:  document.getElementById("ol-recipient-name").value.trim(),
     recipientEmail: document.getElementById("ol-recipient-email").value.trim(),
@@ -6433,9 +6469,38 @@ function submitOutreachForm() {
     programs:       programs,
     updatedAt:      new Date().toISOString(),
   };
+}
+
+function submitOutreachForm() {
+  const entry = _collectOutreachEntry();
   upsertOutreach(entry);
   closeOutreachForm();
-  if (STATE.detailId === entityId) openDetail(entityId);
+  if (STATE.detailId === entry.entityId) openDetail(entry.entityId);
+}
+
+// Save the log entry AND launch the user's default mail client with the
+// recipient + subject + body URL-encoded so they can review and send. Two
+// hops in one click — audit trail preserved AND the email actually goes out.
+function submitOutreachFormAndMailto() {
+  const entry = _collectOutreachEntry();
+  if (!entry.recipientEmail) {
+    if (!confirm("No recipient email set. Open mail client anyway (you can fill the address there)?")) return;
+  }
+  upsertOutreach(entry);
+  closeOutreachForm();
+  if (STATE.detailId === entry.entityId) openDetail(entry.entityId);
+  // Build mailto URL — encode subject + body, append CC if user has a signed email
+  const params = [];
+  if (entry.subject) params.push("subject=" + encodeURIComponent(entry.subject));
+  if (entry.body)    params.push("body=" + encodeURIComponent(entry.body));
+  const url = "mailto:" + encodeURIComponent(entry.recipientEmail || "") + (params.length ? "?" + params.join("&") : "");
+  // Use a transient anchor — window.location.href = mailto:... gets blocked in some browsers
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 50);
 }
 
 // ---- PDF export ------------------------------------------------------
