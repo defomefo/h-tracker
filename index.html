@@ -1056,6 +1056,76 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .sm-chart-svg-3d .sm-3d-base{transition:r .12s}
 .sm-chart-svg-3d .sm-3d-bubble{cursor:pointer}
 .sm-chart-svg-3d .sm-3d-bubble:hover{stroke:var(--ink);stroke-width:2.4;r:14}
+
+/* ============================================================
+   Transition animation when toggling 2D ↔ 3D.
+   - Bubble + stem positions are tweened via rAF in JS (see
+     _animateStratTransition) so the motion is correct under the
+     non-linear axonometric projection.
+   - The structural ornaments (floor, grid, axes, shadows, base
+     dots, axis labels, floor labels, Z overlay) fade in via CSS,
+     gated by the .sm-animate-in class on the chart wrap so the
+     animation only fires when the user actually toggles — axis
+     tab switches don't re-fire it.
+   ============================================================ */
+@keyframes smFadeIn        { from { opacity: 0; } to { opacity: 1; } }
+@keyframes smFadeInDown    { from { opacity: 0; transform: translateY(-8px); }
+                              to  { opacity: 1; transform: translateY(0); } }
+@keyframes smFadeInScale   { from { opacity: 0; transform: scale(0.85); }
+                              to  { opacity: 1; transform: scale(1); } }
+
+.sm-chart-wrap.sm-animate-in .sm-3d-floor,
+.sm-chart-wrap.sm-animate-in .sm-3d-grid,
+.sm-chart-wrap.sm-animate-in .sm-3d-grid-mid,
+.sm-chart-wrap.sm-animate-in .sm-3d-axis,
+.sm-chart-wrap.sm-animate-in .sm-3d-axis-label,
+.sm-chart-wrap.sm-animate-in .sm-3d-floor-label,
+.sm-chart-wrap.sm-animate-in .sm-3d-shadow,
+.sm-chart-wrap.sm-animate-in .sm-3d-base,
+.sm-chart-wrap.sm-animate-in .sm-3d-stem {
+  animation: smFadeIn 700ms cubic-bezier(.4,.0,.2,1) both;
+}
+/* Stagger: floor first, then axes/grid, then stems/shadows, then bubbles. */
+.sm-chart-wrap.sm-animate-in .sm-3d-floor       { animation-delay:   0ms; }
+.sm-chart-wrap.sm-animate-in .sm-3d-grid,
+.sm-chart-wrap.sm-animate-in .sm-3d-grid-mid    { animation-delay:  80ms; }
+.sm-chart-wrap.sm-animate-in .sm-3d-axis,
+.sm-chart-wrap.sm-animate-in .sm-3d-axis-label,
+.sm-chart-wrap.sm-animate-in .sm-3d-floor-label { animation-delay: 160ms; }
+.sm-chart-wrap.sm-animate-in .sm-3d-shadow,
+.sm-chart-wrap.sm-animate-in .sm-3d-base        { animation-delay: 220ms; }
+.sm-chart-wrap.sm-animate-in .sm-3d-stem        { animation-delay: 260ms; }
+
+/* 2D quadrant tints + screen-space labels also gently fade when entering
+   2D mode (toggle 3D→2D), so the snap back doesn't feel jarring. */
+.sm-chart-wrap.sm-animate-in:not(.sm-chart-wrap-3d) .sm-quad-bg,
+.sm-chart-wrap.sm-animate-in:not(.sm-chart-wrap-3d) .sm-quad-label,
+.sm-chart-wrap.sm-animate-in:not(.sm-chart-wrap-3d) .sm-axis-line,
+.sm-chart-wrap.sm-animate-in:not(.sm-chart-wrap-3d) .sm-axis-label,
+.sm-chart-wrap.sm-animate-in:not(.sm-chart-wrap-3d) .sm-axis-end,
+.sm-chart-wrap.sm-animate-in:not(.sm-chart-wrap-3d) .sm-mid-line {
+  animation: smFadeIn 500ms cubic-bezier(.4,.0,.2,1) both;
+  animation-delay: 150ms;
+}
+
+/* Bubble pulse on entrance — subtle scale-in. JS rAF handles the position
+   tween; this just adds a softness to the arrival. */
+.sm-chart-wrap.sm-animate-in .sm-bubble {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: smFadeInScale 500ms cubic-bezier(.34, 1.3, .64, 1) both;
+  animation-delay: 200ms;
+}
+
+/* Z overlay — already has its own selector. Always slide-in when it
+   appears (it only renders in 3D mode, so this fires on every 3D
+   render, which is fine — it's also harmless on axis-tab switches). */
+.sm-z-overlay {
+  animation: smFadeInDown 550ms cubic-bezier(.4,.0,.2,1) both;
+}
+
+/* Toggle pill press feedback — small scale dip when clicked. */
+.sm-dim-btn:active:not(.active) { transform: scale(.96); }
 .sm-tip{position:fixed;background:var(--ink);color:#fff;padding:8px 12px;border-radius:5px;font-size:11px;pointer-events:none;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:240px;line-height:1.45;display:none}
 .sm-tip .nm{font-weight:800;color:#fff;margin-bottom:3px}
 .sm-tip .vals{color:rgba(255,255,255,.75);font-size:10px;letter-spacing:.3px}
@@ -8697,7 +8767,7 @@ function renderStrategicView() {
     // ============================================================
     // 2D CHART — the original X×Y bubble plot.
     // ============================================================
-    html += `<div class="sm-chart-wrap"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
+    html += `<div class="sm-chart-wrap ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
 
     // Quadrant backgrounds — position-based tints matching the sidebar card
     // colors so users can map between the chart and the cards at a glance.
@@ -8758,7 +8828,7 @@ function renderStrategicView() {
     // axes are projected, so dragging would be ambiguous; click still
     // opens the detail panel, hover still shows the tooltip.
     // ============================================================
-    html += `<div class="sm-chart-wrap sm-chart-wrap-3d"><svg class="sm-chart-svg sm-chart-svg-3d" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
+    html += `<div class="sm-chart-wrap sm-chart-wrap-3d ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg sm-chart-svg-3d" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
 
     const project = _strat3DBuildProjector(plotL, plotT, plotW, plotH);
 
@@ -8882,6 +8952,14 @@ function renderStrategicView() {
 
   // Wire drag, hover, click on bubbles
   stratWireBubbleInteractions(plotL, plotT, plotW, plotH);
+
+  // If we just came from a 2D/3D toggle, animate bubbles between their old
+  // and new positions and let CSS fade in the 3D ornaments. One-shot flag —
+  // axis tab switches and showAll toggles re-render without the animation.
+  if (STRAT_STATE._animateNext) {
+    STRAT_STATE._animateNext = false;
+    _animateStratTransition();
+  }
 }
 
 function stratSwitchAxis(key) {
@@ -8893,9 +8971,77 @@ function stratToggleShowAll() {
   renderStrategicView();
 }
 function stratToggle3D() {
+  // Capture every bubble's current screen position BEFORE the re-render
+  // wipes the SVG. Used by _animateStratTransition to interpolate the
+  // bubbles from where they were (2D flat or 3D tower-top) to wherever
+  // the new mode lands them. Stems get a "grow from base" treatment via
+  // the same loop. Without this capture the toggle just snaps.
+  STRAT_STATE._oldBubblePos = new Map();
+  document.querySelectorAll("#sm-chart .sm-bubble").forEach(b => {
+    STRAT_STATE._oldBubblePos.set(b.dataset.id, {
+      cx: parseFloat(b.getAttribute("cx")),
+      cy: parseFloat(b.getAttribute("cy")),
+    });
+  });
+  STRAT_STATE._animateNext = true;
   STRAT_STATE.is3D = !STRAT_STATE.is3D;
   try { localStorage.setItem(LS_STRAT_3D, STRAT_STATE.is3D ? "1" : "0"); } catch {}
   renderStrategicView();
+}
+
+// ---- Transition animation ----
+// rAF-driven interpolation: bubbles slide from their old screen positions
+// to the new ones, stems grow from their base anchor up to the bubble.
+// CSS handles the floor / grid / axis / shadow opacity fade-in via
+// the .sm-animate-in class on the chart wrap.
+function _animateStratTransition() {
+  const oldPos = STRAT_STATE._oldBubblePos;
+  STRAT_STATE._oldBubblePos = null;
+  if (!oldPos || !oldPos.size) return;
+
+  const bubbles = [...document.querySelectorAll("#sm-chart .sm-bubble")];
+  if (!bubbles.length) return;
+
+  // Snap each bubble back to its old position, remember the target.
+  const bubbleTargets = bubbles.map(b => {
+    const op = oldPos.get(b.dataset.id);
+    const toCx = parseFloat(b.getAttribute("cx"));
+    const toCy = parseFloat(b.getAttribute("cy"));
+    if (!op) return null;
+    b.setAttribute("cx", op.cx);
+    b.setAttribute("cy", op.cy);
+    return { el: b, fromCx: op.cx, fromCy: op.cy, toCx, toCy };
+  }).filter(Boolean);
+
+  // Stems start collapsed (x2=x1, y2=y1) and grow up to bubble.
+  const stems = [...document.querySelectorAll("#sm-chart .sm-3d-stem")];
+  const stemTargets = stems.map(s => {
+    const x1 = parseFloat(s.getAttribute("x1"));
+    const y1 = parseFloat(s.getAttribute("y1"));
+    const x2 = parseFloat(s.getAttribute("x2"));
+    const y2 = parseFloat(s.getAttribute("y2"));
+    s.setAttribute("x2", x1);
+    s.setAttribute("y2", y1);
+    return { el: s, x1, y1, toX2: x2, toY2: y2 };
+  });
+
+  const dur  = 700;
+  const ease = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;  // easeInOutCubic
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const e = ease(t);
+    for (const b of bubbleTargets) {
+      b.el.setAttribute("cx", b.fromCx + (b.toCx - b.fromCx) * e);
+      b.el.setAttribute("cy", b.fromCy + (b.toCy - b.fromCy) * e);
+    }
+    for (const s of stemTargets) {
+      s.el.setAttribute("x2", s.x1 + (s.toX2 - s.x1) * e);
+      s.el.setAttribute("y2", s.y1 + (s.toY2 - s.y1) * e);
+    }
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 // ============================================================================
