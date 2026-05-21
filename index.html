@@ -466,6 +466,20 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 
 /* Score breakdown (expanded under score card) */
 .score-breakdown{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 16px;margin:-10px 0 22px;box-shadow:0 1px 4px rgba(10,37,64,.06)}
+/* Engagement depth row — the Z axis exposed under the score-card so users
+   understand what the 3D strategic maps will visualize. */
+.depth-row{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:10px 14px 12px;margin:0 0 22px;display:flex;flex-direction:column;gap:6px}
+.depth-row .depth-head{display:flex;justify-content:space-between;align-items:baseline}
+.depth-row .depth-label{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:800}
+.depth-row .depth-score{font-size:13px;color:var(--navy);font-variant-numeric:tabular-nums}
+.depth-row .depth-score b{font-size:18px;font-weight:800}
+.depth-row .depth-score small{font-size:11px;color:var(--ink-soft);font-weight:600;margin-left:1px}
+.depth-row .depth-bar{height:4px;background:var(--paper);border-radius:2px;overflow:hidden}
+.depth-row .depth-bar > div{height:100%;background:linear-gradient(90deg,var(--hf-red),var(--gold) 80%);border-radius:2px;transition:width .3s ease}
+.depth-row .depth-breakdown{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.depth-row .depth-breakdown span{flex:1}
+.depth-row .depth-breakdown b{color:var(--navy);font-weight:700;font-size:11px}
+.depth-row .depth-breakdown small{color:var(--ink-mute);font-weight:600;margin-left:1px}
 .score-breakdown h4{font-size:11px;letter-spacing:1.2px;color:var(--navy);text-transform:uppercase;font-weight:800;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
 .bd-row{display:grid;grid-template-columns:130px 1fr 78px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--rule);font-size:11px}
 .bd-row:last-of-type{border-bottom:none}
@@ -3787,6 +3801,9 @@ async function parseAndRender(csvText) {
   renderGlobe();
   attachZoomControls();
   render();
+  // Opportunistic daily snapshot — fire-and-forget after initial paint so it
+  // never blocks the first interaction. Idempotent on the backend.
+  setTimeout(() => { triggerDailySnapshotIfNeeded(); }, 1500);
 
   const search = document.getElementById("search");
   if (!search._wired) {
@@ -5386,6 +5403,23 @@ function detailHtml(u) {
       ${bdHtml}
       <div class="bd-total">= <b>${u.partnership_score}/100</b> · ${u.partnership_readiness}</div>
     </div>
+
+    ${(() => {
+      const d = engagementDepth(u);
+      const widthPct = Math.max(2, d.total);
+      return `<div class="depth-row" title="How much we've already invested in this relationship — the Z axis for the 3D strategic maps. High = deep history; low = unworked.">
+        <div class="depth-head">
+          <span class="depth-label">Engagement depth</span>
+          <span class="depth-score"><b>${d.total}</b><small>/100</small></span>
+        </div>
+        <div class="depth-bar"><div style="width:${widthPct}%"></div></div>
+        <div class="depth-breakdown">
+          <span>outreach <b>${d.outreach}</b><small>/40</small></span>
+          <span>contacts <b>${d.contacts}</b><small>/30</small></span>
+          <span>persistence <b>${d.persistence}</b><small>/30</small></span>
+        </div>
+      </div>`;
+    })()}
 
     <div class="detail-section">
       <div class="profile-head">
@@ -8351,6 +8385,119 @@ function stratComputeXY(u, axisKey) {
   const o = (STRAT_STATE.overrides[axisKey] || {})[u.id];
   if (o) return { x: o.x, y: o.y, override: true };
   return { x: ax.computeX(u), y: ax.computeY(u), override: false };
+}
+
+// ============================================================================
+// ENGAGEMENT DEPTH — the Z axis for 3D strategic maps.
+//
+// Scored 0-100 from three client-side signals so depth can be computed for
+// every entity instantly without any extra API call. Three components, each
+// independently meaningful so a "29/100 (15+8+6)" readout is transparent:
+//
+//   Outreach volume    (max 40) — count of logged emails/calls/meetings.
+//                                  Log scale: 1 entry = ~9, 5 = ~24, 10 = ~32,
+//                                  20+ = 40. Stops rewarding spam.
+//   Contact roster     (max 30) — named contacts on file. Log scale plus a
+//                                  senior bonus (+5) for each dean/director/
+//                                  provost/president/head/rector/chief/VP.
+//   Engagement persistence (max 30) — distinct dates we touched them. Single
+//                                  blast = ~9, sustained dialogue over 10+
+//                                  days = 30. Catches "we hit them hard once
+//                                  then ghosted" vs. real relationship.
+//
+// Strategic story: Z = "how much have we already invested?" Two entities at
+// the same X-Y position can be tomorrow's slam dunk (Z low) or today's sunk-
+// cost trap (Z high). 2D hides this; 3D will surface it.
+// ============================================================================
+const _SENIOR_ROLE_RE = /\b(dean|director|provost|president|head|rector|chief|vp|vice president)\b/i;
+
+function engagementDepth(u) {
+  if (!u) return { total: 0, outreach: 0, contacts: 0, persistence: 0, breakdown: "" };
+
+  const outreachEntries = (OUTREACH && OUTREACH[u.id]) || [];
+
+  // (1) Outreach volume — log-scaled so the 1st-20th entries matter, 21+ flat.
+  const oCount = outreachEntries.length;
+  const oScore = Math.min(40, Math.round((Math.log(oCount + 1) / Math.log(21)) * 40));
+
+  // (2) Contact roster — count + senior-role bonus, capped at 30.
+  const contacts = u.contacts || [];
+  const cCount   = contacts.length;
+  const cBase    = Math.min(25, Math.round((Math.log(cCount + 1) / Math.log(9)) * 25));
+  const seniorN  = contacts.filter(c => c && c.role && _SENIOR_ROLE_RE.test(c.role)).length;
+  const cBonus   = Math.min(5, seniorN * 2);  // each senior +2, capped at +5
+  const cScore   = Math.min(30, cBase + cBonus);
+
+  // (3) Engagement persistence — distinct outreach dates.
+  const distinctDates = new Set(outreachEntries.map(o => (o.date || "").slice(0, 10)).filter(Boolean));
+  const dCount = distinctDates.size;
+  const pScore = Math.min(30, Math.round((Math.log(dCount + 1) / Math.log(11)) * 30));
+
+  const total = Math.min(100, oScore + cScore + pScore);
+  return {
+    total,
+    outreach: oScore,
+    contacts: cScore,
+    persistence: pScore,
+    counts: { outreach: oCount, contacts: cCount, distinctDates: dCount, seniors: seniorN },
+    breakdown: `outreach ${oScore}/40 · contacts ${cScore}/30 · persistence ${pScore}/30`,
+  };
+}
+
+// ============================================================================
+// DAILY POSITION SNAPSHOT TRIGGER — opportunistic client-side cron.
+//
+// First user to load the app each day pays ~1s extra to compute and POST every
+// entity's (x, y, z) on every 2×2 map. Backend is idempotent via PK, so any
+// concurrent triggers collapse. No infra cost, no server cron required.
+//
+// 4-6 months of these rows back the trajectory animation in Phase B.
+// ============================================================================
+let _snapshotChecked = false;
+async function triggerDailySnapshotIfNeeded() {
+  if (_snapshotChecked) return;
+  _snapshotChecked = true;
+  if (!UNIS || !UNIS.length) return;
+  try {
+    const r = await apiFetch("/api/snapshots/latest-date", { cache: "no-store" });
+    if (!r.ok) { console.warn("[snapshots] latest-date probe failed"); return; }
+    const data = await r.json();
+    if (data.latest_date === data.today) {
+      // Already snapshotted today; nothing to do.
+      return;
+    }
+    // Build rows: every entity × every 2x2 axis, with Z = engagement depth.
+    const axisKeys = Object.keys(STRAT_AXES);
+    const rows = [];
+    UNIS.forEach(u => {
+      const depth = engagementDepth(u).total;
+      axisKeys.forEach(ak => {
+        const xy = stratComputeXY(u, ak);
+        rows.push({
+          entity_id: u.id,
+          axis_key:  ak,
+          x:         xy.x,
+          y:         xy.y,
+          z:         depth,
+          priority:  u.priority || null,
+        });
+      });
+    });
+    if (!rows.length) return;
+    const post = await apiFetch("/api/snapshots/take", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body:    JSON.stringify({ rows }),
+    });
+    if (post.ok) {
+      const j = await post.json();
+      console.log(`[snapshots] captured ${j.rows_inserted}/${j.rows_received} positions for ${j.snapshot_date}`);
+    } else {
+      console.warn("[snapshots] take failed:", post.status);
+    }
+  } catch (e) {
+    console.warn("[snapshots] trigger error (offline?):", e.message);
+  }
 }
 
 async function stratSaveOverride(entityId, axisKey, x, y) {

@@ -308,6 +308,23 @@ def _ensure_schema():
             "CREATE INDEX IF NOT EXISTS idx_contracts_entity ON contracts(entity_id)",
             "CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts(status)",
             "CREATE INDEX IF NOT EXISTS idx_contracts_expiry ON contracts(expiry_date)",
+            # Daily snapshots of each entity's position on every 2×2 map.
+            # Fed by an opportunistic client trigger: first user of the day
+            # POSTs the full list, idempotent via the composite PK so retries
+            # within the same day are no-ops. 4-6 months of these rows back
+            # the trajectory animation (Phase B).
+            """CREATE TABLE IF NOT EXISTS entity_position_snapshots (
+                    snapshot_date TEXT    NOT NULL,
+                    entity_id     TEXT    NOT NULL,
+                    axis_key      TEXT    NOT NULL,
+                    x             REAL,
+                    y             REAL,
+                    z             REAL,
+                    priority      TEXT,
+                    PRIMARY KEY (snapshot_date, entity_id, axis_key)
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_snaps_date ON entity_position_snapshots(snapshot_date)",
+            "CREATE INDEX IF NOT EXISTS idx_snaps_entity ON entity_position_snapshots(entity_id)",
         ]
         conn = _connect()
         try:
@@ -1148,6 +1165,91 @@ def contracts_delete(contract_id):
         return jsonify({"error": "not found"}), 404
     _record_edit("contract", "delete", contract_id)
     return jsonify({"ok": True})
+
+
+# ============================================================================
+# ENTITY POSITION SNAPSHOTS — daily snapshots of every entity's coordinates
+# on every 2×2 strategic map (x, y, z). Two endpoints:
+#
+#   GET  /api/snapshots/latest-date  → which day was most recently captured?
+#   POST /api/snapshots/take         → bulk-insert today's positions; client
+#                                       computes the coords (it owns the
+#                                       formula) and POSTs the rows
+#
+# The opportunistic-trigger pattern: first user to load the app each day
+# checks latest-date; if it's not today, fires take. Idempotent via the
+# composite PK so concurrent triggers within the same day collapse to one
+# logical write.
+# ============================================================================
+@app.route("/api/snapshots/latest-date", methods=["GET"])
+@auth_required
+def snapshots_latest_date():
+    db = get_db()
+    row = db.execute(
+        "SELECT snapshot_date FROM entity_position_snapshots ORDER BY snapshot_date DESC LIMIT 1"
+    ).fetchone()
+    return jsonify({
+        "latest_date": (dict(row).get("snapshot_date") if row else None),
+        "today": _dt.datetime.utcnow().strftime("%Y-%m-%d"),
+    })
+
+
+@app.route("/api/snapshots/take", methods=["POST"])
+@auth_required
+def snapshots_take():
+    """Bulk-insert today's position rows.
+
+    Body shape:
+        { "rows": [
+            {"entity_id": "...", "axis_key": "effortFit", "x": 72.0,
+             "y": 41.0, "z": 18.0, "priority": "Hot"},
+            ...
+        ]}
+
+    Uses INSERT OR IGNORE so a same-day retry is silently absorbed by the PK.
+    On Postgres we emulate via ON CONFLICT DO NOTHING (the _q() wrapper
+    rewrites placeholders but not the syntax — keep both branches).
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    rows = body.get("rows") or []
+    if not isinstance(rows, list):
+        return jsonify({"error": "rows must be a list"}), 400
+    today = _dt.datetime.utcnow().strftime("%Y-%m-%d")
+    db = get_db()
+    inserted = 0
+    # SQLite ≥3.24 and Postgres both accept the same ON CONFLICT DO NOTHING
+    # syntax — no per-backend branch needed. The _q() wrapper handles ?→%s
+    # placeholder translation for Postgres.
+    insert_sql = (
+        "INSERT INTO entity_position_snapshots "
+        "(snapshot_date, entity_id, axis_key, x, y, z, priority) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT (snapshot_date, entity_id, axis_key) DO NOTHING"
+    )
+    for r in rows:
+        try:
+            cur = db.execute(insert_sql, (
+                today,
+                str(r.get("entity_id") or "").strip(),
+                str(r.get("axis_key") or "").strip(),
+                float(r["x"]) if r.get("x") is not None else None,
+                float(r["y"]) if r.get("y") is not None else None,
+                float(r["z"]) if r.get("z") is not None else None,
+                (r.get("priority") or None),
+            ))
+            if cur.rowcount:
+                inserted += 1
+        except Exception as e:
+            # Skip malformed rows; don't fail the whole batch
+            print(f"[snapshots] skip row {r}: {e}")
+            continue
+    db.commit()
+    return jsonify({
+        "ok": True,
+        "snapshot_date": today,
+        "rows_received": len(rows),
+        "rows_inserted": inserted,
+    })
 
 
 # ============================================================================
