@@ -1107,8 +1107,14 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .contracts-table .ct-meta-cell{font-size:11px;color:var(--ink-soft)}
 .contracts-table .ct-row-stuck{background:rgba(217,83,79,.06)}
 .contracts-table .ct-row-stuck:hover{background:rgba(217,83,79,.10)}
-.contracts-table .ct-row-expiring{background:rgba(224,169,59,.08)}
-.contracts-table .ct-row-expiring:hover{background:rgba(224,169,59,.14)}
+.contracts-table .ct-row-expiring{background:rgba(217,83,79,.07)}
+.contracts-table .ct-row-expiring:hover{background:rgba(217,83,79,.13)}
+.contracts-table .ct-row-expiring-60{background:rgba(224,169,59,.07)}
+.contracts-table .ct-row-expiring-60:hover{background:rgba(224,169,59,.13)}
+.contracts-table .ct-row-expiring-90{background:rgba(74,107,138,.06)}
+.contracts-table .ct-row-expiring-90:hover{background:rgba(74,107,138,.12)}
+.contracts-table .ct-row-expired{background:rgba(139,26,26,.10);font-weight:600}
+.contracts-table .ct-row-expired:hover{background:rgba(139,26,26,.18)}
 .contract-status{display:inline-block;font-size:9px;letter-spacing:.8px;font-weight:800;color:#fff;padding:3px 9px;border-radius:10px;text-transform:uppercase;white-space:nowrap}
 .contract-status.draft{background:var(--ink-mute)}
 .contract-status.negotiating{background:var(--hot)}
@@ -1143,6 +1149,26 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .contract-form .cf-attach-del:hover{border-color:var(--crit);color:var(--crit)}
 .contract-form .cf-attach-add{font-size:11px;background:transparent;border:1px dashed var(--rule);color:var(--ink-soft);padding:6px 12px;border-radius:5px;cursor:pointer;font-family:inherit;align-self:flex-start;font-weight:600}
 .contract-form .cf-attach-add:hover{border-color:var(--navy);color:var(--navy);border-style:solid}
+/* Entity detail panel — Contracts tab */
+.ent-contracts{display:flex;flex-direction:column;gap:6px}
+.ent-contracts-empty{padding:12px 0;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.ent-contracts-empty p{font-size:12px;color:var(--ink-soft);font-style:italic;margin:0}
+.ent-contract-add{background:transparent;border:1px dashed var(--rule);color:var(--ink-soft);padding:7px 14px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;transition:all .12s}
+.ent-contract-add:hover{border-color:var(--hf-red);color:var(--hf-red);border-style:solid}
+.ent-contracts-foot{margin-top:8px}
+.ent-contract-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:#fff;border:1px solid var(--rule);border-left:3px solid var(--ink-mute);border-radius:5px;padding:10px 12px;cursor:pointer;transition:background .12s,box-shadow .12s}
+.ent-contract-row:hover{background:var(--paper);box-shadow:0 2px 6px rgba(10,37,64,.08)}
+.ent-contract-row .ent-c-head{display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap}
+.ent-contract-row .ent-c-meta{font-size:11px;color:var(--ink-soft);line-height:1.4}
+.ent-contract-row .ent-c-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ent-c-exp{font-size:10px;font-weight:700;letter-spacing:.3px;color:var(--ink-soft);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ent-c-exp.ent-c-expired{color:var(--crit)}
+.ent-c-exp.ent-c-soon{color:var(--crit)}
+.ent-c-exp.ent-c-warn{color:var(--warm)}
+.ent-c-exp.ent-c-muted{color:var(--ink-mute);font-style:italic}
+.ent-c-edit{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);padding:4px 9px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;transition:all .12s}
+.ent-c-edit:hover{border-color:var(--navy);color:var(--navy)}
+
 /* Contract detail modal — read-mostly view */
 .cd-section{margin-bottom:18px}
 .cd-section h4{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--hf-red);font-weight:800;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--rule)}
@@ -1164,6 +1190,20 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .cd-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:14px;border-top:1px solid var(--rule);margin-top:6px}
 .cd-foot .cd-meta{font-size:10px;color:var(--ink-mute);font-style:italic;font-family:'Consolas',monospace}
 .cd-foot .cd-actions{display:flex;gap:8px}
+/* Linked outreach in contract detail */
+.cd-outreach-list{display:flex;flex-direction:column;gap:6px}
+.cd-outreach-row{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--ink-mute);border-radius:5px;padding:8px 12px}
+.cd-or-head{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+.cd-or-date{font-size:11px;color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.cd-or-status{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.cd-or-subject{font-size:12px;color:var(--ink);font-weight:600;line-height:1.4;margin-top:2px}
+.cd-or-meta{font-size:10px;color:var(--ink-soft);margin-top:2px;font-style:italic}
+.cd-outreach-more{font-size:11px;color:var(--ink-soft);font-style:italic;padding:4px 2px}
+/* Contract activity timeline */
+.cd-activity-list{display:flex;flex-direction:column;gap:4px}
+.cd-activity-row{display:grid;grid-template-columns:130px 1fr;gap:10px;align-items:center;padding:6px 10px;background:var(--paper);border-radius:4px;font-size:11px}
+.cd-act-when{color:var(--ink-soft);font-family:'Consolas',monospace;font-size:10px;font-variant-numeric:tabular-nums}
+.cd-act-who{color:var(--ink);line-height:1.4}
 
 /* Channel tag — used in outreach log + feed (replaces emoji channel icons) */
 .channel-tag{display:inline-block;font-size:9px;letter-spacing:1px;font-weight:800;color:var(--navy);background:var(--gold-light);padding:2px 8px;border-radius:9px;text-transform:uppercase}
@@ -3363,10 +3403,13 @@ async function deleteContract(contractId) {
   showResetUndoToast(`Contract deleted · "${c.type || "untyped"} — ${(partnerName || "unknown").slice(0, 40)}"`);
 }
 
-// Helper: derive contract alarm + status info
+// Helper: derive contract alarm + status info.
+// Buckets are disjoint: a contract is in exactly one of expiring30 / expiring60
+// / expiring90 (closest band wins). `expiringSoon` is kept as the union of all
+// three for callers that don't care about granularity (home briefing, KPI tile).
 function _contractAlarms() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const stuck = [], expiringSoon = [];
+  const stuck = [], expiring30 = [], expiring60 = [], expiring90 = [], expired = [];
   (CONTRACTS || []).forEach(c => {
     if (!c) return;
     // 60+ days in negotiation
@@ -3377,16 +3420,26 @@ function _contractAlarms() {
         if (days >= 60) stuck.push({ ...c, _daysStuck: days });
       }
     }
-    // expiring within 30 days
+    // expiry buckets
     if (c.expiry_date && (c.status === "Signed" || c.status === "Active")) {
       const exp = new Date(c.expiry_date);
       if (!isNaN(exp)) {
         const days = Math.ceil((exp - today) / 86400000);
-        if (days >= 0 && days <= 30) expiringSoon.push({ ...c, _daysUntilExpiry: days });
+        const tagged = { ...c, _daysUntilExpiry: days };
+        if      (days <  0)              expired.push(tagged);
+        else if (days <= 30)             expiring30.push(tagged);
+        else if (days <= 60)             expiring60.push(tagged);
+        else if (days <= 90)             expiring90.push(tagged);
       }
     }
   });
-  return { stuck, expiringSoon };
+  // Sort each bucket ascending by days remaining (closest to expiry first)
+  const byDays = (a, b) => (a._daysUntilExpiry || 0) - (b._daysUntilExpiry || 0);
+  expiring30.sort(byDays); expiring60.sort(byDays); expiring90.sort(byDays);
+  expired.sort((a, b) => (a._daysUntilExpiry || 0) - (b._daysUntilExpiry || 0));
+  // Union view for callers that want "all within 30 days" (legacy field name)
+  const expiringSoon = expiring30;
+  return { stuck, expiring30, expiring60, expiring90, expired, expiringSoon };
 }
 
 function _contractsTotalAnnualValue() {
@@ -5367,6 +5420,9 @@ function detailHtml(u) {
         <button class="eng-tab" data-tab="tracking" onclick="switchEngTab(event,'tracking')">
           Outreach log <span class="ct-badge">${(OUTREACH[u.id] || []).length}</span>
         </button>
+        <button class="eng-tab" data-tab="contracts" onclick="switchEngTab(event,'contracts')">
+          Contracts <span class="ct-badge">${(CONTRACTS || []).filter(c => c.entity_id === u.id).length}</span>
+        </button>
         <button class="eng-tab" data-tab="activity" onclick="switchEngTab(event,'activity');loadEntityActivity('${u.id}')">
           Activity
         </button>
@@ -5376,6 +5432,9 @@ function detailHtml(u) {
       </div>
       <div class="eng-panel" data-panel="tracking">
         ${renderTrackingBody(u)}
+      </div>
+      <div class="eng-panel" data-panel="contracts">
+        ${renderEntityContractsBody(u)}
       </div>
       <div class="eng-panel" data-panel="activity">
         <div id="activity-list-${u.id}" class="activity-list"><div class="activity-empty">Loading…</div></div>
@@ -5468,6 +5527,15 @@ function _activityLabel(e) {
       return e.action === "delete"
         ? `${who} reverted profile edits`
         : `${who} edited the profile`;
+    case "contract": {
+      // key is the contract id — try to surface the contract type when we
+      // still have it cached locally; fall back to a generic label otherwise.
+      const c = (CONTRACTS || []).find(x => x.id === e.key);
+      const what = c ? `${c.type || "contract"}` : "a contract";
+      return e.action === "delete"
+        ? `${who} deleted ${what}`
+        : `${who} updated ${what}`;
+    }
     default:
       return `${who} · ${e.resource} (${e.action})`;
   }
@@ -7218,13 +7286,20 @@ function renderHomeView() {
   const everEngaged = UNIS.filter(u => u.pipeline_stage !== "identified").length;
   const signedActive = UNIS.filter(u => u.pipeline_stage === "signed" || u.pipeline_stage === "active").length;
   const insights = [];
-  // Contract alarms win the front spot when present — they're time-sensitive
-  const cAlarms = (typeof _contractAlarms === "function") ? _contractAlarms() : { stuck: [], expiringSoon: [] };
-  if (cAlarms.expiringSoon.length > 0) {
-    insights.push(`<strong>${cAlarms.expiringSoon.length}</strong> ${cAlarms.expiringSoon.length === 1 ? "contract expires" : "contracts expire"} within 30 days — <a onclick="switchView('contracts')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">review</a>`);
+  // Contract alarms win the front spot when present — they're time-sensitive.
+  // Expired > 30d expiring > stuck > 60d expiring > 90d expiring (urgency order).
+  const cAlarms = (typeof _contractAlarms === "function") ? _contractAlarms() : { stuck: [], expiring30: [], expiring60: [], expiring90: [], expired: [] };
+  if (cAlarms.expired && cAlarms.expired.length > 0) {
+    insights.push(`<strong style="color:var(--crit)">${cAlarms.expired.length}</strong> ${cAlarms.expired.length === 1 ? "contract has" : "contracts have"} expired — <a onclick="switchView('contracts')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">renew now</a>`);
+  }
+  if (cAlarms.expiring30 && cAlarms.expiring30.length > 0) {
+    insights.push(`<strong>${cAlarms.expiring30.length}</strong> ${cAlarms.expiring30.length === 1 ? "contract expires" : "contracts expire"} within 30 days — <a onclick="switchView('contracts')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">review</a>`);
   }
   if (cAlarms.stuck.length > 0) {
     insights.push(`<strong>${cAlarms.stuck.length}</strong> ${cAlarms.stuck.length === 1 ? "contract is" : "contracts are"} stuck in negotiation 60+ days`);
+  }
+  if (cAlarms.expiring60 && cAlarms.expiring60.length > 0 && insights.length < 2) {
+    insights.push(`<strong>${cAlarms.expiring60.length}</strong> ${cAlarms.expiring60.length === 1 ? "contract expires" : "contracts expire"} in 30–60 days`);
   }
   if (dormantHi.length > 0) {
     insights.push(`<strong>${dormantHi.length}</strong> ${dormantHi.length === 1 ? "high-priority partner hasn't" : "high-priority partners haven't"} been contacted in 30+ days`);
@@ -8779,14 +8854,20 @@ function renderContractsView() {
 
   const all = CONTRACTS || [];
   const alarms = _contractAlarms();
-  const stuckIds = new Set(alarms.stuck.map(c => c.id));
-  const expiringIds = new Set(alarms.expiringSoon.map(c => c.id));
+  const stuckIds      = new Set(alarms.stuck.map(c => c.id));
+  const expiring30Ids = new Set(alarms.expiring30.map(c => c.id));
+  const expiring60Ids = new Set(alarms.expiring60.map(c => c.id));
+  const expiring90Ids = new Set(alarms.expiring90.map(c => c.id));
+  const expiredIds    = new Set(alarms.expired.map(c => c.id));
 
   // Stats
   const negotiating = all.filter(c => c.status === "Negotiating" || c.status === "Draft").length;
   const signed      = all.filter(c => c.status === "Signed" || c.status === "Active").length;
-  const expiringSoon = alarms.expiringSoon.length;
-  const totalValue   = _contractsTotalAnnualValue();
+  const exp30       = alarms.expiring30.length;
+  const exp60       = alarms.expiring60.length;
+  const exp90       = alarms.expiring90.length;
+  const expiredCnt  = alarms.expired.length;
+  const totalValue  = _contractsTotalAnnualValue();
 
   // Filtered list
   let list = all.slice();
@@ -8839,10 +8920,10 @@ function renderContractsView() {
       <div class="ck-lbl">Signed / Active</div>
       <div class="ck-sub">Live partnerships</div>
     </div>
-    <div class="ck-tile expiring">
-      <div class="ck-num">${expiringSoon}</div>
-      <div class="ck-lbl">Expiring &lt; 30 days</div>
-      <div class="ck-sub">Need renewal touchpoint</div>
+    <div class="ck-tile expiring" title="${exp30 + exp60 + exp90} total expiring within 90 days">
+      <div class="ck-num">${exp30}<small style="font-size:13px;color:var(--ink-soft);font-weight:600;margin-left:6px">/ ${exp60} / ${exp90}</small></div>
+      <div class="ck-lbl">Expiring 30 / 60 / 90</div>
+      <div class="ck-sub">Renewal touchpoints by urgency</div>
     </div>
     <div class="ck-tile value">
       <div class="ck-num">${_fmtMoney(totalValue)}</div>
@@ -8851,14 +8932,23 @@ function renderContractsView() {
     </div>
   </div>`;
 
-  // Alert banner
-  if (alarms.stuck.length || alarms.expiringSoon.length) {
+  // Alert banner — show stuck + expired (overdue) + expiring 30/60/90
+  if (alarms.stuck.length || expiredCnt || exp30 || exp60 || exp90) {
     const parts = [];
+    if (expiredCnt) {
+      parts.push(`<span style="color:var(--crit);font-weight:800">⚠ <b>${expiredCnt}</b> ${expiredCnt === 1 ? "contract has" : "contracts have"} already expired</span> — <a onclick="contractsSortBy('expiry')">sort by expiry</a>`);
+    }
+    if (exp30) {
+      parts.push(`<b>${exp30}</b> ${exp30 === 1 ? "contract expires" : "contracts expire"} within <b>30 days</b>`);
+    }
+    if (exp60) {
+      parts.push(`<b>${exp60}</b> within <b>60 days</b>`);
+    }
+    if (exp90) {
+      parts.push(`<b>${exp90}</b> within <b>90 days</b>`);
+    }
     if (alarms.stuck.length) {
       parts.push(`<b>${alarms.stuck.length}</b> ${alarms.stuck.length === 1 ? "contract is" : "contracts are"} stuck in negotiation 60+ days — <a onclick="contractsApplyFilter('status','Negotiating')">review negotiating</a>`);
-    }
-    if (alarms.expiringSoon.length) {
-      parts.push(`<b>${alarms.expiringSoon.length}</b> ${alarms.expiringSoon.length === 1 ? "contract expires" : "contracts expire"} within 30 days — <a onclick="contractsSortBy('expiry')">sort by expiry</a>`);
     }
     html += `<div class="contracts-alert">
       <div class="ca-head">Action needed</div>
@@ -8931,9 +9021,16 @@ function renderContractsView() {
           const updatedLbl = updated === null ? "—" : updated === 0 ? "today" : updated === 1 ? "1d ago" : updated < 30 ? `${updated}d ago` : updated < 365 ? `${Math.round(updated/30)}mo ago` : `${Math.round(updated/365)}y ago`;
           const expDays = _contractDaysUntilExpiry(c);
           let expLbl = _fmtDate(c.expiry_date);
-          if (expDays !== null && expDays >= 0 && expDays <= 30) expLbl += ` <small style="color:var(--warm);font-weight:700">(${expDays}d)</small>`;
-          else if (expDays !== null && expDays < 0)               expLbl += ` <small style="color:var(--crit);font-weight:700">(expired)</small>`;
-          const rowClass = stuckIds.has(c.id) ? "ct-row-stuck" : expiringIds.has(c.id) ? "ct-row-expiring" : "";
+          if      (expDays !== null && expDays <  0)                       expLbl += ` <small style="color:var(--crit);font-weight:700">(expired ${-expDays}d)</small>`;
+          else if (expDays !== null && expDays <= 30)                      expLbl += ` <small style="color:var(--crit);font-weight:700">(${expDays}d)</small>`;
+          else if (expDays !== null && expDays <= 60)                      expLbl += ` <small style="color:var(--warm);font-weight:700">(${expDays}d)</small>`;
+          else if (expDays !== null && expDays <= 90)                      expLbl += ` <small style="color:var(--cold);font-weight:700">(${expDays}d)</small>`;
+          const rowClass = expiredIds.has(c.id)    ? "ct-row-expired"
+                         : stuckIds.has(c.id)      ? "ct-row-stuck"
+                         : expiring30Ids.has(c.id) ? "ct-row-expiring"
+                         : expiring60Ids.has(c.id) ? "ct-row-expiring-60"
+                         : expiring90Ids.has(c.id) ? "ct-row-expiring-90"
+                         : "";
           const statusClass = (c.status || "draft").toLowerCase();
           return `<tr class="${rowClass}" onclick="openContractDetail('${escapeAttr(c.id)}')">
             <td>
@@ -8958,6 +9055,72 @@ function renderContractsView() {
 
   html += `</div>`; // /.contracts-shell
   el.innerHTML = html;
+}
+
+// Renders the "Contracts" tab body inside the entity detail panel —
+// a compact list of every contract for this entity + a "+ New" CTA that
+// pre-fills the contract modal with this entity selected.
+function renderEntityContractsBody(u) {
+  const mine = (CONTRACTS || []).filter(c => c.entity_id === u.id);
+  // Sort: live status first (Signed/Active), then negotiating, then everything else; recency tiebreak
+  const order = { "Active": 0, "Signed": 1, "Negotiating": 2, "Draft": 3, "Expired": 4, "Terminated": 5 };
+  mine.sort((a, b) => {
+    const oa = order[a.status] !== undefined ? order[a.status] : 9;
+    const ob = order[b.status] !== undefined ? order[b.status] : 9;
+    if (oa !== ob) return oa - ob;
+    return (b.updated_at || "").localeCompare(a.updated_at || "");
+  });
+
+  const newBtn = `<button type="button" class="ent-contract-add" onclick="openContractModalForEntity('${escapeAttr(u.id)}')">+ New contract</button>`;
+
+  if (mine.length === 0) {
+    return `
+      <div class="ent-contracts-empty">
+        <p>No contracts logged for this partner yet.</p>
+        ${newBtn}
+      </div>`;
+  }
+
+  const rows = mine.map(c => {
+    const expDays = _contractDaysUntilExpiry(c);
+    let expBadge = "";
+    if      (expDays !== null && expDays <  0)  expBadge = `<span class="ent-c-exp ent-c-expired">expired ${-expDays}d ago</span>`;
+    else if (expDays !== null && expDays <= 30) expBadge = `<span class="ent-c-exp ent-c-soon">in ${expDays}d</span>`;
+    else if (expDays !== null && expDays <= 90) expBadge = `<span class="ent-c-exp ent-c-warn">in ${expDays}d</span>`;
+    else if (c.expiry_date)                     expBadge = `<span class="ent-c-exp">${_fmtDate(c.expiry_date)}</span>`;
+    else                                        expBadge = `<span class="ent-c-exp ent-c-muted">no expiry</span>`;
+
+    return `<div class="ent-contract-row" onclick="openContractDetail('${escapeAttr(c.id)}')">
+      <div class="ent-c-main">
+        <div class="ent-c-head">
+          <span class="contract-type">${escape(c.type || "—")}</span>
+          <span class="contract-status ${(c.status || 'draft').toLowerCase()}">${escape(c.status || "Draft")}</span>
+        </div>
+        <div class="ent-c-meta">
+          ${c.signed_date ? `signed ${escape(_fmtDate(c.signed_date))}` : "not yet signed"}
+          ${c.annual_value_eur ? ` · ${escape(_fmtMoney(c.annual_value_eur))}/yr` : ""}
+          ${(c.programs && c.programs.length) ? ` · ${c.programs.length} program${c.programs.length === 1 ? '' : 's'}` : ""}
+        </div>
+      </div>
+      <div class="ent-c-right">
+        ${expBadge}
+        <button type="button" class="ent-c-edit" onclick="event.stopPropagation();openContractModal('${escapeAttr(c.id)}')" title="Edit contract">Edit</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<div class="ent-contracts">${rows}<div class="ent-contracts-foot">${newBtn}</div></div>`;
+}
+
+// Pre-fill the contract modal with a specific entity selected — used by the
+// entity detail panel "+ New contract" CTA. Internally just calls
+// openContractModal(null) and then snaps the entity dropdown.
+function openContractModalForEntity(entityId) {
+  openContractModal(null);
+  // The modal body is fully rendered synchronously by openContractModal, so we
+  // can flip the dropdown immediately. Guard against the rare null case.
+  const sel = document.querySelector('#contract-modal-body [data-cf="entity_id"]');
+  if (sel) sel.value = entityId;
 }
 
 // Filter / sort wiring
@@ -9268,6 +9431,16 @@ function openContractDetail(contractId) {
         </div>`).join("")}</div>` : '<div class="cd-v muted" style="font-size:12px">No attachments. Add Drive / SharePoint links via Edit.</div>'}
     </div>
 
+    <div class="cd-section">
+      <h4>Linked outreach for this partner</h4>
+      ${_renderContractLinkedOutreach(c)}
+    </div>
+
+    <div class="cd-section">
+      <h4>Activity timeline</h4>
+      <div id="contract-activity-${escapeAttr(c.id)}" class="cd-activity"><div class="cd-v muted" style="font-size:12px">Loading…</div></div>
+    </div>
+
     <div class="cd-foot">
       <div class="cd-meta">id: ${escape(c.id)}</div>
       <div class="cd-actions">
@@ -9280,6 +9453,62 @@ function openContractDetail(contractId) {
   document.getElementById("contract-detail-title").textContent = (c.type || "Contract") + " — " + partner;
   document.getElementById("contract-detail-body").innerHTML = html;
   document.getElementById("contract-detail-modal").classList.add("open");
+  // Lazy-load activity timeline once the modal is on screen
+  loadContractActivity(c.id);
+}
+
+// Renders up to 5 outreach entries for the partner this contract belongs to.
+// "All outreach" link jumps to the entity detail panel's tracking tab.
+function _renderContractLinkedOutreach(c) {
+  const ent = UNIS.find(u => u.id === c.entity_id);
+  if (!ent) return '<div class="cd-v muted" style="font-size:12px">Partner not in roster — no linked outreach.</div>';
+  const entries = (OUTREACH[ent.id] || []).slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  if (!entries.length) {
+    return `<div class="cd-v muted" style="font-size:12px">No outreach logged for ${escape(ent.name)} yet. <a onclick="closeContractDetail();openDetail('${escapeAttr(ent.id)}')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">Open partner to log →</a></div>`;
+  }
+  const top = entries.slice(0, 5);
+  const more = entries.length - top.length;
+  return `<div class="cd-outreach-list">
+    ${top.map(o => `<div class="cd-outreach-row">
+      <div class="cd-or-main">
+        <div class="cd-or-head">
+          <span class="channel-tag">${escape(o.channel || "—")}</span>
+          <span class="cd-or-date">${escape(o.date || "—")}</span>
+          ${o.status ? `<span class="cd-or-status">${escape(o.status)}</span>` : ""}
+        </div>
+        ${o.subject ? `<div class="cd-or-subject">${escape(o.subject)}</div>` : ""}
+        ${o.author ? `<div class="cd-or-meta">by ${escape(o.author)}</div>` : ""}
+      </div>
+    </div>`).join("")}
+    ${more > 0 ? `<div class="cd-outreach-more"><a onclick="closeContractDetail();openDetail('${escapeAttr(ent.id)}')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">+${more} more — open partner detail</a></div>` : ""}
+  </div>`;
+}
+
+// Fetch + render contract activity timeline (edit_log rows where resource='contract')
+async function loadContractActivity(contractId) {
+  const host = document.getElementById("contract-activity-" + contractId);
+  if (!host) return;
+  try {
+    const r = await apiFetch("/api/edits/contract/" + encodeURIComponent(contractId) + "?limit=30");
+    if (!r.ok) { host.innerHTML = `<div class="cd-v muted" style="font-size:12px">Couldn't load activity.</div>`; return; }
+    const data = await r.json();
+    const edits = data.edits || [];
+    if (!edits.length) {
+      host.innerHTML = `<div class="cd-v muted" style="font-size:12px">No activity recorded yet. Every edit will land here.</div>`;
+      return;
+    }
+    host.innerHTML = `<div class="cd-activity-list">${edits.map(e => {
+      const when = e.occurred_at ? new Date(e.occurred_at) : null;
+      const whenStr = when && !isNaN(when) ? when.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+      const verb = e.action === "delete" ? "deleted" : "updated";
+      return `<div class="cd-activity-row">
+        <div class="cd-act-when">${escape(whenStr)}</div>
+        <div class="cd-act-who"><b>${escape(e.display_name || "Anonymous")}</b> ${verb} the contract</div>
+      </div>`;
+    }).join("")}</div>`;
+  } catch (err) {
+    host.innerHTML = `<div class="cd-v muted" style="font-size:12px">Activity feed unavailable (offline).</div>`;
+  }
 }
 function closeContractDetail() {
   document.getElementById("contract-detail-modal").classList.remove("open");

@@ -764,14 +764,44 @@ def edits_for_entity(entity_id):
                   resource = 'outreach'
                   AND key IN (SELECT id FROM outreach WHERE entity_id = ?)
               )
+               OR (
+                  resource = 'contract'
+                  AND key IN (SELECT id FROM contracts WHERE entity_id = ?)
+              )
             ORDER BY id DESC
             LIMIT ?""",
-        (entity_id, entity_id, entity_id, limit),
+        (entity_id, entity_id, entity_id, entity_id, limit),
     ).fetchall()
     return jsonify(
         {
             "now": _now_iso(),
             "entity_id": entity_id,
+            "edits": [dict(r) for r in rows],
+        }
+    )
+
+
+@app.route("/api/edits/contract/<contract_id>", methods=["GET"])
+@auth_required
+def edits_for_contract(contract_id):
+    """Activity timeline for a single contract — every upsert/delete touching it."""
+    try:
+        limit = max(1, min(200, int(request.args.get("limit", 50))))
+    except ValueError:
+        limit = 50
+    db = get_db()
+    rows = db.execute(
+        """SELECT occurred_at, session_id, display_name, resource, action, key
+             FROM edit_log
+            WHERE resource = 'contract' AND key = ?
+            ORDER BY id DESC
+            LIMIT ?""",
+        (contract_id, limit),
+    ).fetchall()
+    return jsonify(
+        {
+            "now": _now_iso(),
+            "contract_id": contract_id,
             "edits": [dict(r) for r in rows],
         }
     )
