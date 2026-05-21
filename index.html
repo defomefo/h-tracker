@@ -1190,10 +1190,32 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .activity-text{font-size:12px;color:var(--ink);line-height:1.4}
 .activity-when{font-size:10px;color:var(--ink-soft);margin-top:2px}
 
+/* IDENTITY PICKER — "Who are you?" modal on first login */
+.identity-overlay{position:fixed;inset:0;background:rgba(10,37,64,.55);z-index:9500;display:none;align-items:center;justify-content:center;padding:30px 20px;overflow-y:auto;font-family:inherit}
+.identity-overlay.open{display:flex}
+.identity-card{background:#fff;border-radius:10px;width:100%;max-width:460px;padding:28px 26px 22px;box-shadow:0 24px 60px rgba(0,0,0,.4);border-top:4px solid var(--gold);animation:idfade .15s ease-out}
+@keyframes idfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.identity-eyebrow{font-size:9px;letter-spacing:2px;font-weight:800;color:var(--hf-red);text-transform:uppercase;margin-bottom:8px}
+.identity-card h2{font-size:18px;color:var(--navy);font-weight:800;margin-bottom:6px;letter-spacing:.2px}
+.identity-sub{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-bottom:16px}
+.identity-select{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:6px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--paper);transition:border-color .12s,background .12s;margin-bottom:14px}
+.identity-select:focus{outline:none;border-color:var(--gold);background:#fff}
+.identity-actions{display:flex;gap:8px;justify-content:flex-end}
+.identity-btn{padding:9px 16px;border-radius:5px;font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;font-family:inherit;border:1px solid transparent;transition:all .12s}
+.identity-btn-primary{background:var(--hf-red);color:#fff}
+.identity-btn-primary:hover{background:#c43e3a}
+.identity-btn-ghost{background:transparent;color:var(--ink-soft);border-color:var(--rule)}
+.identity-btn-ghost:hover{color:var(--navy);border-color:var(--navy)}
+.identity-foot{font-size:11px;color:var(--ink-soft);margin-top:10px;font-style:italic;text-align:center}
+.identity-empty{font-size:13px;color:var(--ink);line-height:1.5;padding:12px 0;background:var(--paper);border-radius:6px;padding:14px;margin-bottom:14px;text-align:center}
+
 /* HOME — morning briefing (above the KPI strip) */
 .home-briefing{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;background:linear-gradient(135deg,var(--navy) 0%,#08243d 100%);color:#fff;border-radius:10px;margin-bottom:18px;flex-wrap:wrap;border-left:4px solid var(--gold)}
 .briefing-greet{font-size:18px;font-weight:700;letter-spacing:.2px}
 .briefing-greet b{color:var(--gold)}
+.briefing-role{display:inline-block;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);padding:2px 8px;border-radius:9px;margin-left:8px;font-weight:600;vertical-align:middle}
+.briefing-claim{background:rgba(255,255,255,.15);color:#fff;border:1px dashed rgba(255,255,255,.4);font-size:13px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.2px;transition:all .12s}
+.briefing-claim:hover{background:rgba(255,255,255,.25);border-style:solid}
 .briefing-stats{display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(255,255,255,.85);flex-wrap:wrap}
 .briefing-insight{display:inline-flex;align-items:center;line-height:1.4}
 .briefing-insight strong{color:#fff;font-weight:800;margin-right:4px}
@@ -1704,6 +1726,11 @@ let BROCHURES = [];
 // Admin view under the Templates tab (shares the standard KB pattern).
 let OUTREACH_TEMPLATES = [];
 
+// Team roster — loaded from data/users.json. Tier-1 identity: users pick
+// from this list after login so edits get attributed by name + role
+// instead of free-text "Anonymous". Roster is editable in Admin view.
+let OPERATORS = [];
+
 // ========================================================================
 // KB_SCHEMA — drives the Admin view (field rendering + validation)
 // ========================================================================
@@ -1843,6 +1870,17 @@ const KB_SCHEMA = {
       {key:"body",     label:"Body (supports {{entity.name}}, {{recipient.firstName}}, {{recommended.case}} etc.)", type:"textarea", required:true},
     ],
   },
+  users: {
+    title: "Operators (team roster)",
+    file: "data/users.json",
+    lsKey: "hfarm_kb_users_draft",
+    keyField: "handle",
+    fields: [
+      {key:"handle", label:"Handle (slug, e.g. defne)", type:"text", required:true},
+      {key:"name",   label:"Display name (e.g. Defne Tuncer)", type:"text", required:true},
+      {key:"role",   label:"Role (e.g. Intern · Global Partnerships)", type:"text"},
+    ],
+  },
 };
 
 // ========================================================================
@@ -1920,7 +1958,7 @@ async function fetchJson(path) {
 async function loadKnowledgeBase() {
   // Files + server drafts in parallel. If the server is unreachable we
   // gracefully degrade to localStorage cache → bundled files.
-  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, tpls, serverDrafts] = await Promise.all([
+  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, tpls, users, serverDrafts] = await Promise.all([
     fetchJson(KB_SCHEMA.programs.file),
     fetchJson(KB_SCHEMA.teams.file),
     fetchJson(KB_SCHEMA.collab.file),
@@ -1933,6 +1971,7 @@ async function loadKnowledgeBase() {
     fetchJson(KB_SCHEMA.exchange_only.file),
     fetchJson(KB_SCHEMA.talentHub.file),
     fetchJson(KB_SCHEMA.templates.file).catch(() => []),   // templates added later; tolerate missing file
+    fetchJson(KB_SCHEMA.users.file).catch(() => []),       // users added later; tolerate missing file
     kvStore.fetchAll("kb_draft").catch(() => null),
   ]);
   // One-shot migrate localStorage → server, then refresh draft map
@@ -1965,6 +2004,7 @@ async function loadKnowledgeBase() {
   HFARM_KB.exchangeOnly = resolve("exchange_only", exOnly);
   HFARM_KB.talentHub    = resolve("talentHub",     talentHub);
   OUTREACH_TEMPLATES    = resolve("templates",     tpls) || [];
+  OPERATORS             = resolve("users",         users) || [];
   PROG_BY_ID = Object.fromEntries(PROGRAMS.map(p => [p.id, p]));
   TEAM_BY_ID = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 }
@@ -2028,7 +2068,7 @@ function kbGetRaw(schemaKey) {
     talentHub:     HFARM_KB.talentHub,
   };
   if (schemaKey in fromKB) return fromKB[schemaKey];
-  return ({ programs: PROGRAMS, teams: TEAMS, collab: COLLAB_FORMATS, brochures: BROCHURES, templates: OUTREACH_TEMPLATES }[schemaKey]) || [];
+  return ({ programs: PROGRAMS, teams: TEAMS, collab: COLLAB_FORMATS, brochures: BROCHURES, templates: OUTREACH_TEMPLATES, users: OPERATORS }[schemaKey]) || [];
 }
 function kbGet(schemaKey) {
   return shapeToArray(schemaKey, kbGetRaw(schemaKey));
@@ -2045,6 +2085,7 @@ function kbApply(schemaKey, raw) {
   else if (schemaKey === "exchange_only"){ HFARM_KB.exchangeOnly = raw; }
   else if (schemaKey === "talentHub")    { HFARM_KB.talentHub = raw; }
   else if (schemaKey === "templates")    { OUTREACH_TEMPLATES = raw || []; }
+  else if (schemaKey === "users")        { OPERATORS = raw || []; }
 }
 function kbSet(schemaKey, arr) {
   const raw = shapeFromArray(schemaKey, arr);
@@ -2086,7 +2127,7 @@ const ADMIN_STATE = { tab: "programs", editingSchemaKey: null, editingKey: null,
 function renderAdminView() {
   const el = document.getElementById("view-admin");
   if (!el) return;
-  const tabs = ["programs", "teams", "collab", "brochures", "bachelors", "masters", "preparatory", "experiences", "exchange_only", "talentHub", "templates"];
+  const tabs = ["programs", "teams", "collab", "brochures", "bachelors", "masters", "preparatory", "experiences", "exchange_only", "talentHub", "templates", "users"];
   const cur = ADMIN_STATE.tab;
   const schema = KB_SCHEMA[cur];
   const data = kbGet(cur);
@@ -5326,6 +5367,8 @@ function setEntityTeam(entityId, teamId) {
 // mutation request as headers so the server's audit log can attribute
 // edits without any auth wiring yet.
 const LS_DISPLAY_NAME_KEY = "hfarm_display_name";
+const LS_USER_HANDLE_KEY  = "hfarm_user_handle";
+const LS_USER_ROLE_KEY    = "hfarm_user_role";
 function _newSessionId() {
   return "s_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
@@ -5337,10 +5380,28 @@ const SESSION_ID = (sessionStorage.getItem("hfarm_sid") || (() => {
 function getDisplayName() {
   return localStorage.getItem(LS_DISPLAY_NAME_KEY) || "";
 }
+function getUserHandle() {
+  return localStorage.getItem(LS_USER_HANDLE_KEY) || "";
+}
+function getUserRole() {
+  return localStorage.getItem(LS_USER_ROLE_KEY) || "";
+}
 function setDisplayName(name) {
   if (name) localStorage.setItem(LS_DISPLAY_NAME_KEY, name);
   else      localStorage.removeItem(LS_DISPLAY_NAME_KEY);
   _heartbeatNow();   // push the new name to presence right away
+}
+// Pick from the operators roster. Persists handle + name + role to
+// localStorage and re-renders presence + home so the new identity shows up.
+function setUserIdentity(handle) {
+  const op = (OPERATORS || []).find(u => u.handle === handle);
+  if (!op) return;
+  localStorage.setItem(LS_USER_HANDLE_KEY, op.handle);
+  localStorage.setItem(LS_DISPLAY_NAME_KEY, op.name);
+  if (op.role) localStorage.setItem(LS_USER_ROLE_KEY, op.role);
+  else         localStorage.removeItem(LS_USER_ROLE_KEY);
+  _heartbeatNow();
+  if (STATE.view === "home" && typeof renderHomeView === "function") renderHomeView();
 }
 function _identityHeaders() {
   return {
@@ -5462,10 +5523,58 @@ function renderPresenceChip() {
   chip.style.display = "flex";
 }
 
+// "Who are you?" picker — shown automatically after first login when no
+// identity has been claimed, and also re-openable from the presence chip
+// or briefing banner to switch identity.
 function promptDisplayName() {
-  const current = getDisplayName() || "";
-  const next = prompt("Display name for the presence chip (visible to other users):", current);
-  if (next !== null) setDisplayName(next.trim());
+  showIdentityPicker();
+}
+
+function showIdentityPicker() {
+  let overlay = document.getElementById("identity-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "identity-overlay";
+    overlay.className = "identity-overlay";
+    overlay.onclick = (e) => { if (e.target === overlay) hideIdentityPicker(); };
+    document.body.appendChild(overlay);
+  }
+  const current = getUserHandle();
+  const opts = (OPERATORS || []).map(op =>
+    `<option value="${escape(op.handle)}" ${op.handle === current ? "selected" : ""}>${escape(op.name)}${op.role ? " — " + escape(op.role) : ""}</option>`
+  ).join("");
+  overlay.innerHTML = `
+    <div class="identity-card" role="dialog" aria-label="Pick your identity">
+      <div class="identity-eyebrow">H-TRACKER · IDENTITY</div>
+      <h2>Who's signing in?</h2>
+      <p class="identity-sub">Pick your identity so the team sees your edits attributed to you instead of "Anonymous". You can change this anytime via the presence chip.</p>
+      ${OPERATORS && OPERATORS.length
+        ? `<select id="identity-select" class="identity-select" autofocus>
+             <option value="">— pick someone —</option>
+             ${opts}
+           </select>
+           <div class="identity-actions">
+             <button type="button" class="identity-btn identity-btn-primary" onclick="commitIdentityPicker()">Continue</button>
+             <button type="button" class="identity-btn identity-btn-ghost" onclick="hideIdentityPicker()">Skip for now</button>
+           </div>
+           <p class="identity-foot">Not in the list? Ask the admin to add you in <b>Admin → Operators (team roster)</b>, then refresh.</p>`
+        : `<p class="identity-empty">No operators in the roster yet. Ask an admin to add team members in <b>Admin → Operators (team roster)</b>, then refresh.</p>
+           <div class="identity-actions">
+             <button type="button" class="identity-btn identity-btn-ghost" onclick="hideIdentityPicker()">Close</button>
+           </div>`}
+    </div>`;
+  overlay.classList.add("open");
+}
+function commitIdentityPicker() {
+  const sel = document.getElementById("identity-select");
+  const handle = sel && sel.value;
+  if (!handle) { sel && sel.focus(); return; }
+  setUserIdentity(handle);
+  hideIdentityPicker();
+}
+function hideIdentityPicker() {
+  const overlay = document.getElementById("identity-overlay");
+  if (overlay) overlay.classList.remove("open");
 }
 
 const kvStore = {
@@ -6791,7 +6900,12 @@ function renderHomeView() {
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour < 5 ? "Working late," : hour < 12 ? "Good morning," : hour < 18 ? "Good afternoon," : "Good evening,";
-  const displayName = getDisplayName() || "there";
+  const displayName = getDisplayName() || "";
+  const userRole    = getUserRole();
+  // Greet by name if we know it; otherwise a CTA to pick from the roster
+  const greetSubject = displayName
+    ? `<b>${escape(displayName)}</b>${userRole ? ` <span class="briefing-role">${escape(userRole)}</span>` : ""}`
+    : `<button type="button" class="briefing-claim" onclick="showIdentityPicker()">↪ Sign in as someone from the roster</button>`;
   // Insights: dormant high-priority, stage advances this week, etc.
   const dormantHi = UNIS.filter(u => (u.priority === "Critical" || u.priority === "Hot") && (u.days_dormant === null || u.days_dormant > 30));
   const everEngaged = UNIS.filter(u => u.pipeline_stage !== "identified").length;
@@ -6849,7 +6963,7 @@ function renderHomeView() {
   el.innerHTML = `
     <div class="home-shell">
       <div class="home-briefing">
-        <div class="briefing-greet">${greeting} <b>${escape(displayName)}</b>.</div>
+        <div class="briefing-greet">${greeting} ${greetSubject}${displayName ? "." : ""}</div>
         <div class="briefing-stats">${insightsHtml}</div>
       </div>
 
@@ -8889,6 +9003,12 @@ async function bootApp(opts = {}) {
     showConfig();
   } else {
     loadData(false);
+  }
+  // First-time identity claim: if the user hasn't picked from the roster
+  // yet AND the roster has entries, surface the picker once. They can
+  // skip if they want (then edits attribute as "Anonymous").
+  if (!getUserHandle() && OPERATORS && OPERATORS.length) {
+    setTimeout(() => { if (!getUserHandle()) showIdentityPicker(); }, 600);
   }
 }
 
