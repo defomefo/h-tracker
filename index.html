@@ -1049,8 +1049,18 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .sm-chart-svg-3d .sm-3d-axis-label{font-size:11px;font-weight:700;fill:var(--ink-soft);letter-spacing:.4px;text-transform:uppercase}
 .sm-chart-svg-3d .sm-3d-axis-label-z{fill:var(--hf-red);font-weight:800}
 .sm-chart-svg-3d .sm-3d-axis-label-y{fill:var(--ink)}
-.sm-chart-svg-3d .sm-3d-floor-label{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;fill:var(--ink-mute);opacity:.75}
-.sm-chart-svg-3d .sm-3d-floor-label.hero{fill:var(--hf-red);opacity:.85}
+.sm-chart-svg-3d .sm-3d-floor-label{
+  font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  fill:var(--ink);opacity:.85;
+  /* Paper-tone stroke under the fill so labels stay readable when towers
+     overlap them. paint-order:stroke renders stroke first, fill on top —
+     creates a halo effect without the cost of an SVG filter. */
+  paint-order:stroke;
+  stroke:#FAFAF5;
+  stroke-width:3px;
+  stroke-linejoin:round;
+}
+.sm-chart-svg-3d .sm-3d-floor-label.hero{fill:var(--hf-red);opacity:.95;stroke:#FAFAF5;stroke-width:3.5px}
 .sm-chart-svg-3d .sm-3d-shadow{fill:rgba(0,0,0,0.12)}
 .sm-chart-svg-3d .sm-3d-stem{stroke-width:1.4;stroke-linecap:round;transition:stroke-width .12s}
 .sm-chart-svg-3d .sm-3d-base{transition:r .12s}
@@ -9514,19 +9524,24 @@ function renderStrategicView() {
     html += `<text class="sm-3d-axis-label sm-3d-axis-label-z" x="${axisZ2.sx - 4}" y="${axisZ2.sy - 6}" text-anchor="end">${escape("Engagement depth →")}</text>`;
     html += `<text class="sm-3d-axis-label sm-3d-axis-label-y" x="${axisY2.sx - 8}" y="${axisY2.sy - 4}" text-anchor="end">↑ ${escape(ax.yLabel)}</text>`;
 
-    // Quadrant labels — painted on the floor at the four corners of the X-Z plane
-    // so the strategic story still reads. We push them slightly INTO the floor
-    // from each corner.
+    // Quadrant labels — anchored just OUTSIDE each floor corner so they don't
+    // collide with the tower bases sitting on the floor. The 15-units-inward
+    // placement previously meant "DON'T BOTHER" got buried under the dot
+    // cluster in the bottom-right cell.
+    //
+    // Anchor positions: at each true corner. Anchor-side: extend outward
+    // (end for left corners, start for right) + dy nudge (above for back
+    // corners, below for front).
     const qCorners = {
-      bl: project(15,  0, 15),    // near corner = "low effort / shallow depth"
-      br: project(85,  0, 15),    // front-right
-      tl: project(15,  0, 85),    // back-left = "low effort / deep history"
-      tr: project(85,  0, 85),    // back-right
+      bl: { p: project(0,   0, 0),   anchor: "end",   dx: -8, dy: 14 },   // front-left
+      br: { p: project(100, 0, 0),   anchor: "start", dx:  8, dy: 14 },   // front-right
+      tl: { p: project(0,   0, 100), anchor: "end",   dx: -8, dy: -4 },   // back-left
+      tr: { p: project(100, 0, 100), anchor: "start", dx:  8, dy: -4 },   // back-right
     };
     ["bl","br","tl","tr"].forEach(q => {
-      const p = qCorners[q];
+      const c = qCorners[q];
       const heroCls = ax.hero === q ? " hero" : "";
-      html += `<text class="sm-3d-floor-label${heroCls}" x="${p.sx.toFixed(1)}" y="${p.sy.toFixed(1)}" text-anchor="middle">${escape(ax[q])}</text>`;
+      html += `<text class="sm-3d-floor-label${heroCls}" x="${(c.p.sx + c.dx).toFixed(1)}" y="${(c.p.sy + c.dy).toFixed(1)}" text-anchor="${c.anchor}">${escape(ax[q])}</text>`;
     });
 
     // Towers — back-to-front render order so closer ones overlap farther ones.
@@ -10083,7 +10098,22 @@ async function openPresentationMode() {
     <div class="pht-name"></div><div class="pht-meta"></div><div class="pht-score"></div>
   </div>`);
 
-  _initPresentationScene(mods, mount, cohort, axisKey, opps, headline);
+  try {
+    _initPresentationScene(mods, mount, cohort, axisKey, opps, headline);
+  } catch (e) {
+    // If anything in scene setup throws, the user would otherwise see a
+    // silent black screen. Surface the error in the mount so we know what
+    // to debug instead of guessing.
+    console.error("[present] init failed:", e);
+    mount.innerHTML = `<div class="present-loader" style="max-width:560px">
+      <div class="present-loader-text" style="color:var(--hf-red)">Couldn't initialize 3D scene</div>
+      <div class="present-loader-sub" style="margin-top:10px;font-family:monospace;font-size:11px;color:rgba(255,255,255,.7);text-align:left;white-space:pre-wrap;line-height:1.5">${escape(String(e && e.message ? e.message : e))}</div>
+      <div class="present-loader-sub" style="margin-top:16px">Press ESC to close, then open DevTools (Cmd+Opt+I) to see the full stack.</div>
+    </div>`;
+    _PRESENT_STATE = null;
+    document.addEventListener("keydown", _onPresentationKey);
+    return;
+  }
 
   // Keyboard shortcuts
   document.addEventListener("keydown", _onPresentationKey);
@@ -10107,11 +10137,18 @@ function _initPresentationScene(mods, mount, cohort, axisKey, opps, headline) {
 
   // ---- Scene + camera ----
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x000000, 180, 360);
+  // Fog: distant enough that the scene is fully visible from the start
+  // 3/4 camera position. Before: 180→360 (too aggressive, blacked out the
+  // floor when camera started overhead).
+  scene.fog = new THREE.Fog(0x000000, 300, 600);
 
   const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 800);
-  // Start overhead — pointing straight down at floor center
-  camera.position.set(50, 220, 50.001);
+  // Start ALREADY in 3/4 view (slightly closer than the final intro
+  // destination) so the scene is visible from frame 0. The intro then
+  // does a small pull-back zoom rather than a full overhead-to-3/4 dive.
+  // The user reported a black screen at the previous (50, 220, 50.001)
+  // overhead start — too far + too much fog killed visibility.
+  camera.position.set(118, 78, 118);
   const camTarget = new THREE.Vector3(50, 18, 50);
   camera.lookAt(camTarget);
 
@@ -10315,16 +10352,18 @@ function _setPresentCaption(html) {
 }
 
 function _runPresentationIntro() {
-  // Tween camera from overhead → 3/4 perspective. Pure JS, no GSAP needed —
-  // we only need lerp + easing, not a full animation library.
+  // Short pull-back zoom from the already-in-frame 3/4 start to a final
+  // settled 3/4 view. Earlier version started overhead at y=220 with heavy
+  // fog and tweened 3.2s — looked broken (black) for the first second.
+  // Now: scene is visible immediately, the intro is just a gentle dolly.
   const state = _PRESENT_STATE;
   if (!state) return;
   const { THREE } = state.mods;
   const { camera, camTarget } = state;
   const start = performance.now();
-  const dur = 3200;
+  const dur = 1600;
   const from = camera.position.clone();
-  const to   = new THREE.Vector3(135, 95, 135);   // 3/4 perspective target
+  const to   = new THREE.Vector3(135, 95, 135);
   const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
   state.introTween = (now) => {
     const t = Math.min(1, (now - start) / dur);
@@ -10336,8 +10375,8 @@ function _runPresentationIntro() {
     if (t >= 1) {
       state.introDone = true;
       state.introTween = null;
-      // Initialize rotation phase so auto-rotate starts at our settled position
-      // instead of snapping (atan2 of our 3/4 spot).
+      // Set rotation phase so auto-rotate continues seamlessly from this
+      // landing spot (atan2 of the 3/4 position relative to floor center).
       state.rotation = Math.atan2(to.z - 50, to.x - 50);
     }
   };
