@@ -1356,6 +1356,242 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================
+   Present button — the cinematic Three.js entry point. Sits
+   next to Play story; visually distinct (gold border, dark fill)
+   so users read "this is the premium experience".
+   ============================================================ */
+.sm-present-btn {
+  background: linear-gradient(135deg, var(--ink) 0%, #2a2a2a 100%);
+  color: #fff;
+  border: 1px solid var(--gold);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 0 14px;
+  height: 32px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s;
+  position: relative;
+}
+.sm-present-btn:hover  { background: var(--gold); color: var(--ink); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(217,83,79,.3); }
+.sm-present-btn:active { transform: translateY(0); }
+.sm-present-btn[disabled] { opacity: .6; cursor: wait; }
+.sm-present-btn .sm-present-glyph { font-size: 12px; }
+
+/* ============================================================
+   PRESENTATION OVERLAY — fullscreen Three.js stage.
+   Backdrop pure black so the spheres glow against nothing.
+   ============================================================ */
+.present-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: radial-gradient(ellipse at center, #0a0a0a 0%, #000 80%);
+  display: none;
+  flex-direction: column;
+  font-family: inherit;
+  opacity: 0;
+  transition: opacity 350ms ease;
+}
+.present-overlay.open { display: flex; opacity: 1; }
+.present-overlay.loading {
+  align-items: center;
+  justify-content: center;
+}
+
+.present-canvas-mount {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+}
+.present-canvas-mount:active { cursor: grabbing; }
+.present-canvas-mount canvas { display: block; }
+
+/* Top bar — title, scene caption, exit */
+.present-topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 100%);
+}
+.present-topbar > * { pointer-events: auto; }
+.present-eyebrow {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.present-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+  max-width: 600px;
+}
+.present-title-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  font-weight: 500;
+  margin-top: 4px;
+  letter-spacing: .3px;
+}
+.present-exit {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.18);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s, border-color .15s;
+}
+.present-exit:hover { background: var(--hf-red); border-color: var(--hf-red); }
+.present-exit-key {
+  font-size: 9px;
+  background: rgba(255,255,255,.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: .8px;
+}
+
+/* Bottom caption — scene narrative + recommendation headline */
+.present-bottombar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 24px 28px 28px;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(0,0,0,.7) 0%, rgba(0,0,0,0) 100%);
+  text-align: center;
+}
+.present-caption {
+  font-size: 14px;
+  color: rgba(255,255,255,.85);
+  line-height: 1.55;
+  font-weight: 500;
+  max-width: 780px;
+  margin: 0 auto;
+  letter-spacing: .2px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 500ms ease, transform 500ms ease;
+}
+.present-caption.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.present-caption b { color: #fff; font-weight: 800; }
+.present-caption em { color: var(--gold); font-style: normal; font-weight: 700; }
+
+/* Floating entity labels — projected from 3D positions every frame */
+.present-label {
+  position: absolute;
+  background: rgba(0,0,0,.65);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 3px;
+  border-left: 2px solid var(--gold);
+  letter-spacing: .3px;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(8px, -50%);
+  transition: opacity 300ms ease;
+  opacity: 0;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.present-label.show { opacity: 1; }
+.present-label.quick { border-left-color: var(--hf-red); }
+.present-label.bet   { border-left-color: var(--ur); }
+.present-label small {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255,255,255,.6);
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Hover tooltip in 3D */
+.present-hover-tip {
+  position: absolute;
+  background: rgba(0,0,0,.88);
+  color: #fff;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,.15);
+  pointer-events: none;
+  z-index: 4;
+  display: none;
+  max-width: 240px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.present-hover-tip.show { display: block; }
+.present-hover-tip .pht-name { font-weight: 800; font-size: 13px; color: #fff; margin-bottom: 3px; }
+.present-hover-tip .pht-meta { font-size: 10px; color: rgba(255,255,255,.6); letter-spacing: .2px; }
+.present-hover-tip .pht-score {
+  font-size: 11px; color: var(--gold); font-weight: 700;
+  margin-top: 4px; font-variant-numeric: tabular-nums;
+}
+
+/* Loading state — spinner while Three.js modules fetch from CDN */
+.present-loader {
+  text-align: center;
+  color: rgba(255,255,255,.85);
+}
+.present-loader-spinner {
+  width: 48px; height: 48px;
+  border: 3px solid rgba(255,255,255,.15);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: presentSpin 1s linear infinite;
+}
+@keyframes presentSpin { to { transform: rotate(360deg); } }
+.present-loader-text {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--gold);
+}
+.present-loader-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+  margin-top: 6px;
+  letter-spacing: .3px;
+}
 .sm-tip{position:fixed;background:var(--ink);color:#fff;padding:8px 12px;border-radius:5px;font-size:11px;pointer-events:none;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:240px;line-height:1.45;display:none}
 .sm-tip .nm{font-weight:800;color:#fff;margin-bottom:3px}
 .sm-tip .vals{color:rgba(255,255,255,.75);font-size:10px;letter-spacing:.3px}
@@ -2144,6 +2380,35 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <button class="compare-close" onclick="closeContractDetail()">&times;</button>
     </div>
     <div class="compare-body" id="contract-detail-body"></div>
+  </div>
+</div>
+
+<!-- Strategic Maps · cinematic presentation mode (Three.js, lazy-loaded).
+     Operational view stays SVG-based + fast; this overlay is the executive
+     vitrin: real 3D spheres, camera intro, hover bloom, autorotate. -->
+<div id="present-overlay" class="present-overlay" aria-hidden="true">
+  <div class="present-topbar">
+    <div>
+      <div class="present-eyebrow" id="present-eyebrow">Strategic Map</div>
+      <div class="present-title" id="present-title">—</div>
+      <div class="present-title-sub" id="present-title-sub">—</div>
+    </div>
+    <button class="present-exit" onclick="closePresentationMode()" aria-label="Exit presentation">
+      ✕ Exit <span class="present-exit-key">ESC</span>
+    </button>
+  </div>
+
+  <div class="present-canvas-mount" id="present-canvas-mount">
+    <!-- Three.js canvas mounted here at runtime. Labels + hover tooltip also live here. -->
+    <div class="present-hover-tip" id="present-hover-tip">
+      <div class="pht-name"></div>
+      <div class="pht-meta"></div>
+      <div class="pht-score"></div>
+    </div>
+  </div>
+
+  <div class="present-bottombar">
+    <div class="present-caption" id="present-caption"></div>
   </div>
 </div>
 
@@ -9103,6 +9368,9 @@ function renderStrategicView() {
       <button class="sm-story-btn" onclick="stratPlayStory()" title="Play a 5-scene narrated walkthrough of this map">
         <span class="sm-play-glyph">▶</span> Play story
       </button>
+      <button class="sm-present-btn" onclick="openPresentationMode()" title="Fullscreen cinematic 3D presentation mode (Three.js)">
+        <span class="sm-present-glyph">◉</span> Present
+      </button>
       <div class="sm-dim-toggle" role="group" aria-label="Toggle 2D / 3D view">
         <button class="sm-dim-btn ${!STRAT_STATE.is3D ? 'active' : ''}" onclick="${STRAT_STATE.is3D ? 'stratToggle3D()' : ''}" title="Flat 2-axis chart">2D</button>
         <button class="sm-dim-btn ${STRAT_STATE.is3D ? 'active' : ''}"  onclick="${STRAT_STATE.is3D ? '' : 'stratToggle3D()'}"  title="Adds engagement depth on Z — bars rise from a tilted floor">3D <span class="sm-dim-badge">Z</span></button>
@@ -9691,6 +9959,546 @@ function _stratPaintHeroRingsAndLabels() {
     lbl.textContent = t.name.length > 28 ? t.name.slice(0, 26) + "…" : t.name;
     bub.parentNode.appendChild(lbl);
   });
+}
+
+// ============================================================================
+// CINEMATIC PRESENTATION MODE — Three.js fullscreen overlay.
+//
+// Lazy-loaded: nothing about Three.js downloads until the user clicks the
+// ◉ Present button. First open pays ~700KB (CDN-cached after that).
+// Operational SVG view in the background stays 0KB extra.
+//
+// Scene geometry (coordinates 0–100 on every axis, mirroring chart data):
+//   - Floor:  100×100 plane at y=0, translucent navy with a faint grid
+//   - X axis: red line at the front edge of floor (z=0)
+//   - Z axis: gold line at the left edge of floor (x=0) — engagement depth
+//   - Y axis: white dashed line rising at origin
+//   - Per entity: a thin cylinder rod from y=0 to y=Y, with a sphere on top
+//                 colored by priority. Top opportunities get an emissive
+//                 boost so UnrealBloomPass picks them up as glow.
+//
+// Camera: starts overhead (top-down on the floor) and tweens into a 3/4
+// perspective view over 3.2s with easeOutQuart. After the intro, continuous
+// slow orbit around the floor center.
+//
+// Interaction: raycaster on mousemove picks the nearest sphere; hover boosts
+// its emissive intensity + shows an HTML tooltip. Top-5 Quick Wins and Top-3
+// Strategic Bets get persistent HTML labels projected from world space.
+// ============================================================================
+let _PRESENT_MODULES = null;  // { THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass } — cached
+let _PRESENT_STATE   = null;  // current scene/renderer/camera + animation flags
+
+async function _lazyLoadThreeModules() {
+  if (_PRESENT_MODULES) return _PRESENT_MODULES;
+  // esm.sh auto-resolves Three.js's internal "import ... from 'three'" specifiers
+  // in the addon modules, which a raw unpkg fetch would choke on.
+  const base = "https://esm.sh/three@0.160.0";
+  const [THREE, ec, rp, ub, op] = await Promise.all([
+    import(/* @vite-ignore */ base),
+    import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/EffectComposer.js`),
+    import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/RenderPass.js`),
+    import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/UnrealBloomPass.js`),
+    import(/* @vite-ignore */ `${base}/examples/jsm/postprocessing/OutputPass.js`),
+  ]);
+  _PRESENT_MODULES = {
+    THREE,
+    EffectComposer:  ec.EffectComposer,
+    RenderPass:      rp.RenderPass,
+    UnrealBloomPass: ub.UnrealBloomPass,
+    OutputPass:      op.OutputPass,
+  };
+  return _PRESENT_MODULES;
+}
+
+// Map our priority strings → THREE.Color hex values
+const _PRESENT_PRIO_HEX = {
+  "Critical":      0x8B1A1A,
+  "Hot":           0xD9534F,
+  "Warm":          0xE0A93B,
+  "Cold":          0x4A6B8A,
+  "Cold-storage":  0x8E9AAB,
+  "Up & Running":  0x2E7D5B,
+  "Not interested":0x6E6E6E,
+  "":              0xAAAAAA,
+};
+
+async function openPresentationMode() {
+  // Prevent double-open if user double-clicks the button
+  if (_PRESENT_STATE && _PRESENT_STATE.opening) return;
+
+  const overlay = document.getElementById("present-overlay");
+  if (!overlay) return;
+
+  // Pull current axis + cohort BEFORE we open — same data the SVG renderer uses
+  if (typeof UNIS === "undefined" || !UNIS.length) {
+    showSyncToast("No partner data loaded yet.", "warn");
+    return;
+  }
+  const axisKey  = STRAT_STATE.axisKey;
+  const ax       = STRAT_AXES[axisKey];
+  const filtered = (typeof applyFilters === "function" ? applyFilters(UNIS) : UNIS);
+  const sorted   = filtered.slice().sort((a, b) => b.partnership_score - a.partnership_score);
+  const cohort   = STRAT_STATE.showAll ? sorted : sorted.slice(0, 50);
+  const opps     = _stratTopOpportunities(cohort, axisKey);
+  const headline = _stratRecommendationHeadline(opps, axisKey);
+
+  // Title + caption — set immediately, even while modules are loading
+  document.getElementById("present-eyebrow").textContent = `Strategic Map · ${ax.label}`;
+  document.getElementById("present-title").textContent   = `${ax.xLabel} × ${ax.yLabel} × Engagement depth`;
+  document.getElementById("present-title-sub").textContent = `${cohort.length} entities${STRAT_STATE.showAll ? "" : " · top 50 by partnership score"}`;
+  document.getElementById("present-caption").innerHTML = "";
+
+  // Show overlay with loading state (visible immediately so the user has feedback)
+  overlay.classList.add("open", "loading");
+  const mount = document.getElementById("present-canvas-mount");
+  mount.innerHTML = `<div class="present-loader">
+    <div class="present-loader-spinner"></div>
+    <div class="present-loader-text">Loading presentation engine</div>
+    <div class="present-loader-sub">Three.js · first load ~700KB from CDN, cached after</div>
+  </div>`;
+  // Re-add the hover tooltip stub (innerHTML wiped it)
+  mount.insertAdjacentHTML("beforeend", `<div class="present-hover-tip" id="present-hover-tip">
+    <div class="pht-name"></div><div class="pht-meta"></div><div class="pht-score"></div>
+  </div>`);
+
+  _PRESENT_STATE = { opening: true };
+
+  let mods;
+  try {
+    mods = await _lazyLoadThreeModules();
+  } catch (e) {
+    console.error("[present] module load failed:", e);
+    mount.innerHTML = `<div class="present-loader">
+      <div class="present-loader-text" style="color:var(--hf-red)">Couldn't load Three.js</div>
+      <div class="present-loader-sub">${escape(String(e.message || e))}</div>
+    </div>`;
+    _PRESENT_STATE = null;
+    return;
+  }
+
+  // Clear the loader and init the scene
+  overlay.classList.remove("loading");
+  mount.innerHTML = "";
+  mount.insertAdjacentHTML("beforeend", `<div class="present-hover-tip" id="present-hover-tip">
+    <div class="pht-name"></div><div class="pht-meta"></div><div class="pht-score"></div>
+  </div>`);
+
+  _initPresentationScene(mods, mount, cohort, axisKey, opps, headline);
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", _onPresentationKey);
+  window.addEventListener("resize", _onPresentationResize);
+}
+
+function _initPresentationScene(mods, mount, cohort, axisKey, opps, headline) {
+  const { THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass } = mods;
+
+  const w = mount.clientWidth;
+  const h = mount.clientHeight;
+
+  // ---- Renderer ----
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(w, h);
+  renderer.setClearColor(0x050505, 1);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  mount.appendChild(renderer.domElement);
+
+  // ---- Scene + camera ----
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x000000, 180, 360);
+
+  const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 800);
+  // Start overhead — pointing straight down at floor center
+  camera.position.set(50, 220, 50.001);
+  const camTarget = new THREE.Vector3(50, 18, 50);
+  camera.lookAt(camTarget);
+
+  // ---- Lighting ----
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.1);
+  key.position.set(60, 120, 40);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0xff8b85, 0.35);   // soft red rim from H-FARM angle
+  rim.position.set(-60, 30, -40);
+  scene.add(rim);
+
+  // ---- Floor + grid + axes ----
+  const floorGroup = new THREE.Group();
+  scene.add(floorGroup);
+
+  // Translucent floor plane
+  const floorGeo = new THREE.PlaneGeometry(100, 100);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x1F2B3F, transparent: true, opacity: 0.55,
+    roughness: 0.85, metalness: 0.1,
+  });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(50, 0, 50);
+  floorGroup.add(floor);
+
+  // Grid lines on the floor — every 25 units, faint white
+  const grid = new THREE.GridHelper(100, 4, 0x445566, 0x223344);
+  grid.position.set(50, 0.05, 50);
+  grid.material.transparent = true;
+  grid.material.opacity = 0.5;
+  floorGroup.add(grid);
+
+  // Axes — three thin lines from origin (corner of floor)
+  const mkAxis = (a, b, color, opacity = 0.9) => {
+    const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity, linewidth: 2 });
+    return new THREE.Line(geo, mat);
+  };
+  // X axis (floor, front edge): red
+  floorGroup.add(mkAxis(new THREE.Vector3(0, 0.1, 0), new THREE.Vector3(100, 0.1, 0), 0xD9534F, 0.85));
+  // Z axis (floor, left edge): gold — engagement depth
+  floorGroup.add(mkAxis(new THREE.Vector3(0, 0.1, 0), new THREE.Vector3(0, 0.1, 100), 0xE0A93B, 0.85));
+  // Y axis (vertical from corner): white dashed-ish via 4 small segments
+  const yAxisGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 100, 0),
+  ]);
+  const yMat = new THREE.LineDashedMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.55, dashSize: 3, gapSize: 2,
+  });
+  const yAxis = new THREE.Line(yAxisGeo, yMat);
+  yAxis.computeLineDistances();
+  floorGroup.add(yAxis);
+
+  // ---- Towers (rod + sphere per entity) ----
+  // sphereMeshes is the raycaster target list; also holds back-refs for hover
+  const sphereMeshes = [];
+  const heroIds = new Set([
+    ...opps.quickWins.map(o => o.u.id),
+    ...opps.strategicBets.map(o => o.u.id),
+  ]);
+
+  cohort.forEach(u => {
+    const { x, y } = stratComputeXY(u, axisKey);
+    const z = engagementDepth(u).total;
+    const hexColor = _PRESENT_PRIO_HEX[u.priority || ""] || 0xAAAAAA;
+    const isHero = heroIds.has(u.id);
+
+    // Sphere size: scale partnership_score 0–100 to radius 1.2 – 3.2
+    const r = 1.2 + (Math.sqrt(u.partnership_score || 0) / 10) * 2.0;
+
+    // Rod (cylinder) from y=0 to y=Y (capped at min 1 so even 0 fit shows a stub)
+    const rodHeight = Math.max(1.5, y);
+    const rodGeo = new THREE.CylinderGeometry(0.18, 0.18, rodHeight, 8, 1);
+    const rodMat = new THREE.MeshStandardMaterial({
+      color: hexColor, transparent: true, opacity: 0.55,
+      roughness: 0.4, metalness: 0.2,
+    });
+    const rod = new THREE.Mesh(rodGeo, rodMat);
+    rod.position.set(x, rodHeight / 2, z);
+    scene.add(rod);
+
+    // Sphere on top
+    const sphGeo = new THREE.SphereGeometry(r, 24, 18);
+    const sphMat = new THREE.MeshStandardMaterial({
+      color:    hexColor,
+      emissive: hexColor,
+      emissiveIntensity: isHero ? 1.4 : 0.15,
+      roughness: 0.35, metalness: 0.25,
+    });
+    const sphere = new THREE.Mesh(sphGeo, sphMat);
+    sphere.position.set(x, rodHeight + r * 0.2, z);
+    sphere.userData = { u, isHero, baseEmissive: sphMat.emissiveIntensity };
+    scene.add(sphere);
+    sphereMeshes.push(sphere);
+
+    // Floor "shadow" — small dark disc at base
+    const shadowGeo = new THREE.CircleGeometry(r * 1.1, 16);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000, transparent: true, opacity: 0.35,
+    });
+    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(x, 0.12, z);
+    scene.add(shadow);
+
+    // Hero ring around top opportunities (TorusGeometry)
+    if (isHero) {
+      const ringGeo = new THREE.TorusGeometry(r * 1.7, 0.12, 8, 48);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xD9534F, transparent: true, opacity: 0.75,
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.copy(sphere.position);
+      ring.userData = { pulse: true, baseR: r * 1.7 };
+      scene.add(ring);
+    }
+  });
+
+  // ---- Post-processing: bloom for the hero glow ----
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.85, 0.35, 0.42);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+
+  // ---- Raycaster for hover ----
+  const raycaster = new THREE.Raycaster();
+  const mouseNdc  = new THREE.Vector2(-10, -10);
+  mount.addEventListener("mousemove", (ev) => {
+    const rect = mount.getBoundingClientRect();
+    mouseNdc.x =  ((ev.clientX - rect.left) / rect.width)  * 2 - 1;
+    mouseNdc.y = -((ev.clientY - rect.top)  / rect.height) * 2 + 1;
+    _PRESENT_STATE.mouseClient = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+  });
+  mount.addEventListener("mouseleave", () => {
+    mouseNdc.x = -10; mouseNdc.y = -10;
+    if (_PRESENT_STATE && _PRESENT_STATE.hovered) _clearHover(_PRESENT_STATE);
+  });
+  mount.addEventListener("click", () => {
+    if (_PRESENT_STATE && _PRESENT_STATE.hovered) {
+      const id = _PRESENT_STATE.hovered.userData.u.id;
+      closePresentationMode();
+      setTimeout(() => openDetail(id), 200);
+    }
+  });
+
+  // ---- Labels (HTML overlay) for hero entities ----
+  const labels = [];
+  opps.quickWins.forEach(o => labels.push({ u: o.u, kind: "quick" }));
+  opps.strategicBets.forEach(o => labels.push({ u: o.u, kind: "bet" }));
+  labels.forEach(l => {
+    const el = document.createElement("div");
+    el.className = "present-label " + l.kind;
+    el.innerHTML = `${escape(l.u.name)}<small>${escape(l.kind === "quick" ? "Quick win" : "Strategic bet")}</small>`;
+    mount.appendChild(el);
+    l.el = el;
+    // Find the sphere mesh for this entity
+    l.mesh = sphereMeshes.find(s => s.userData.u.id === l.u.id);
+  });
+
+  // ---- Stash state ----
+  _PRESENT_STATE = {
+    opening: false,
+    mods, mount, renderer, scene, camera, composer,
+    camTarget,
+    sphereMeshes, raycaster, mouseNdc,
+    labels,
+    rafId: null,
+    introT: 0, introDone: false,
+    rotation: 0,
+    hovered: null,
+    headline,
+  };
+
+  // Sequence the caption / first orbit
+  _setPresentCaption(`<em>Watch:</em> ${ax.xLabel} on the floor, depth into the page. Tall bars = high ${ax.yLabel}.`);
+
+  // Start render loop + intro
+  _runPresentationIntro();
+  _presentationLoop();
+
+  // After 4 seconds, swap caption to the recommendation
+  STRAT_STATE._presentTimers = STRAT_STATE._presentTimers || [];
+  const t = setTimeout(() => {
+    _setPresentCaption(headline);
+  }, 4200);
+  STRAT_STATE._presentTimers.push(t);
+}
+
+function _setPresentCaption(html) {
+  const el = document.getElementById("present-caption");
+  if (!el) return;
+  el.classList.remove("show");
+  setTimeout(() => {
+    el.innerHTML = html;
+    el.classList.add("show");
+  }, 280);
+}
+
+function _runPresentationIntro() {
+  // Tween camera from overhead → 3/4 perspective. Pure JS, no GSAP needed —
+  // we only need lerp + easing, not a full animation library.
+  const state = _PRESENT_STATE;
+  if (!state) return;
+  const { THREE } = state.mods;
+  const { camera, camTarget } = state;
+  const start = performance.now();
+  const dur = 3200;
+  const from = camera.position.clone();
+  const to   = new THREE.Vector3(135, 95, 135);   // 3/4 perspective target
+  const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
+  state.introTween = (now) => {
+    const t = Math.min(1, (now - start) / dur);
+    const e = easeOutQuart(t);
+    camera.position.x = from.x + (to.x - from.x) * e;
+    camera.position.y = from.y + (to.y - from.y) * e;
+    camera.position.z = from.z + (to.z - from.z) * e;
+    camera.lookAt(camTarget);
+    if (t >= 1) {
+      state.introDone = true;
+      state.introTween = null;
+      // Initialize rotation phase so auto-rotate starts at our settled position
+      // instead of snapping (atan2 of our 3/4 spot).
+      state.rotation = Math.atan2(to.z - 50, to.x - 50);
+    }
+  };
+}
+
+function _presentationLoop() {
+  const state = _PRESENT_STATE;
+  if (!state || !state.renderer) return;
+  const { THREE } = state.mods;
+  const { camera, camTarget, composer, sphereMeshes, raycaster, mouseNdc, scene } = state;
+
+  state.rafId = requestAnimationFrame(_presentationLoop);
+  const now = performance.now();
+
+  // Intro tween or slow auto-rotate
+  if (state.introTween) {
+    state.introTween(now);
+  } else {
+    state.rotation += 0.0014;
+    const radius = 135;
+    const cx = 50, cz = 50;
+    camera.position.x = cx + Math.cos(state.rotation) * radius;
+    camera.position.z = cz + Math.sin(state.rotation) * radius;
+    camera.position.y = 95 + Math.sin(state.rotation * 0.7) * 6;   // subtle bob
+    camera.lookAt(camTarget);
+  }
+
+  // Pulse the hero rings (find them by userData.pulse)
+  scene.traverse(obj => {
+    if (obj.userData && obj.userData.pulse) {
+      const k = 1 + Math.sin(now * 0.003) * 0.10;
+      obj.scale.set(k, k, 1);
+      if (obj.material) obj.material.opacity = 0.55 + Math.sin(now * 0.003) * 0.30;
+    }
+  });
+
+  // Raycaster hover
+  raycaster.setFromCamera(mouseNdc, camera);
+  const hits = raycaster.intersectObjects(sphereMeshes, false);
+  const newHover = hits.length ? hits[0].object : null;
+  if (newHover !== state.hovered) {
+    if (state.hovered) _clearHover(state);
+    if (newHover)     _setHover(state, newHover);
+    state.hovered = newHover;
+  }
+
+  // Update HTML labels (project sphere positions to screen pixels)
+  _updatePresentationLabels(state);
+
+  // Update hover tooltip position
+  if (state.hovered && state.mouseClient) {
+    const tip = document.getElementById("present-hover-tip");
+    if (tip) {
+      tip.style.left = (state.mouseClient.x + 14) + "px";
+      tip.style.top  = (state.mouseClient.y + 14) + "px";
+    }
+  }
+
+  composer.render();
+}
+
+function _setHover(state, sphere) {
+  if (!sphere || !sphere.material) return;
+  sphere.material.emissiveIntensity = Math.max(1.8, sphere.userData.baseEmissive * 6);
+  sphere.scale.set(1.25, 1.25, 1.25);
+  const u = sphere.userData.u;
+  const tip = document.getElementById("present-hover-tip");
+  if (tip) {
+    tip.querySelector(".pht-name").textContent = u.name;
+    tip.querySelector(".pht-meta").textContent = `${u.country || u.continent || "—"} · ${u.priority || "Unclassified"}`;
+    tip.querySelector(".pht-score").textContent = `Score ${u.partnership_score} · click to open detail`;
+    tip.classList.add("show");
+  }
+}
+function _clearHover(state) {
+  const s = state.hovered;
+  if (s && s.material) {
+    s.material.emissiveIntensity = s.userData.baseEmissive;
+    s.scale.set(1, 1, 1);
+  }
+  const tip = document.getElementById("present-hover-tip");
+  if (tip) tip.classList.remove("show");
+}
+
+function _updatePresentationLabels(state) {
+  const { camera, mount } = state;
+  const rect = mount.getBoundingClientRect();
+  const halfW = rect.width / 2;
+  const halfH = rect.height / 2;
+  const tmp = new state.mods.THREE.Vector3();
+  state.labels.forEach(l => {
+    if (!l.mesh || !l.el) return;
+    tmp.copy(l.mesh.position);
+    tmp.project(camera);
+    // Behind the camera or clipped: hide
+    if (tmp.z > 1 || tmp.x < -1.2 || tmp.x > 1.2 || tmp.y < -1.2 || tmp.y > 1.2) {
+      l.el.classList.remove("show");
+      return;
+    }
+    const px = (tmp.x * halfW) + halfW;
+    const py = -(tmp.y * halfH) + halfH;
+    l.el.style.left = px + "px";
+    l.el.style.top  = py + "px";
+    l.el.classList.add("show");
+  });
+}
+
+function closePresentationMode() {
+  const overlay = document.getElementById("present-overlay");
+  if (!overlay) return;
+  // Cancel render loop + any pending caption timers
+  if (_PRESENT_STATE) {
+    if (_PRESENT_STATE.rafId) cancelAnimationFrame(_PRESENT_STATE.rafId);
+  }
+  if (STRAT_STATE._presentTimers) {
+    STRAT_STATE._presentTimers.forEach(clearTimeout);
+    STRAT_STATE._presentTimers = [];
+  }
+  // Dispose Three.js resources to release GPU memory
+  if (_PRESENT_STATE && _PRESENT_STATE.scene) {
+    _PRESENT_STATE.scene.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      }
+    });
+  }
+  if (_PRESENT_STATE && _PRESENT_STATE.renderer) {
+    _PRESENT_STATE.renderer.dispose();
+    if (_PRESENT_STATE.renderer.domElement && _PRESENT_STATE.renderer.domElement.parentNode) {
+      _PRESENT_STATE.renderer.domElement.parentNode.removeChild(_PRESENT_STATE.renderer.domElement);
+    }
+  }
+  // Remove labels
+  if (_PRESENT_STATE && _PRESENT_STATE.labels) {
+    _PRESENT_STATE.labels.forEach(l => { if (l.el && l.el.parentNode) l.el.parentNode.removeChild(l.el); });
+  }
+  _PRESENT_STATE = null;
+
+  overlay.classList.remove("open", "loading");
+  document.removeEventListener("keydown", _onPresentationKey);
+  window.removeEventListener("resize", _onPresentationResize);
+}
+
+function _onPresentationKey(e) {
+  if (e.key === "Escape") {
+    e.stopPropagation();
+    closePresentationMode();
+  }
+}
+function _onPresentationResize() {
+  const state = _PRESENT_STATE;
+  if (!state || !state.renderer) return;
+  const mount = state.mount;
+  const w = mount.clientWidth;
+  const h = mount.clientHeight;
+  state.renderer.setSize(w, h);
+  state.composer.setSize(w, h);
+  state.camera.aspect = w / h;
+  state.camera.updateProjectionMatrix();
 }
 
 // ---- Transition animation ----
