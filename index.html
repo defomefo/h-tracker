@@ -10122,6 +10122,10 @@ async function openPresentationMode() {
 
 function _initPresentationScene(mods, mount, cohort, axisKey, opps, headline) {
   const { THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass } = mods;
+  // Pull the axis config locally — caller (openPresentationMode) computes
+  // this too but didn't pass it. Used by the opening caption below.
+  // (Was the bug behind the "ax is not defined" black screen.)
+  const ax = STRAT_AXES[axisKey];
 
   const w = mount.clientWidth;
   const h = mount.clientHeight;
