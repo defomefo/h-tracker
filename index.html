@@ -1876,9 +1876,10 @@ const KB_SCHEMA = {
     lsKey: "hfarm_kb_users_draft",
     keyField: "handle",
     fields: [
-      {key:"handle", label:"Handle (slug, e.g. defne)", type:"text", required:true},
+      {key:"handle", label:"Handle (unique id, e.g. Defne or defne)", type:"text", required:true},
       {key:"name",   label:"Display name (e.g. Defne Tuncer)", type:"text", required:true},
       {key:"role",   label:"Role (e.g. Intern · Global Partnerships)", type:"text"},
+      {key:"email",  label:"H-FARM email (e.g. defne.tuncer@h-farm.com)", type:"text", placeholder:"name.surname@h-farm.com"},
     ],
   },
 };
@@ -5369,6 +5370,7 @@ function setEntityTeam(entityId, teamId) {
 const LS_DISPLAY_NAME_KEY = "hfarm_display_name";
 const LS_USER_HANDLE_KEY  = "hfarm_user_handle";
 const LS_USER_ROLE_KEY    = "hfarm_user_role";
+const LS_USER_EMAIL_KEY   = "hfarm_user_email";
 function _newSessionId() {
   return "s_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
@@ -5386,6 +5388,9 @@ function getUserHandle() {
 function getUserRole() {
   return localStorage.getItem(LS_USER_ROLE_KEY) || "";
 }
+function getUserEmail() {
+  return localStorage.getItem(LS_USER_EMAIL_KEY) || "";
+}
 function setDisplayName(name) {
   if (name) localStorage.setItem(LS_DISPLAY_NAME_KEY, name);
   else      localStorage.removeItem(LS_DISPLAY_NAME_KEY);
@@ -5398,8 +5403,10 @@ function setUserIdentity(handle) {
   if (!op) return;
   localStorage.setItem(LS_USER_HANDLE_KEY, op.handle);
   localStorage.setItem(LS_DISPLAY_NAME_KEY, op.name);
-  if (op.role) localStorage.setItem(LS_USER_ROLE_KEY, op.role);
-  else         localStorage.removeItem(LS_USER_ROLE_KEY);
+  if (op.role)  localStorage.setItem(LS_USER_ROLE_KEY, op.role);
+  else          localStorage.removeItem(LS_USER_ROLE_KEY);
+  if (op.email) localStorage.setItem(LS_USER_EMAIL_KEY, op.email);
+  else          localStorage.removeItem(LS_USER_EMAIL_KEY);
   _heartbeatNow();
   if (STATE.view === "home" && typeof renderHomeView === "function") renderHomeView();
 }
@@ -5540,9 +5547,14 @@ function showIdentityPicker() {
     document.body.appendChild(overlay);
   }
   const current = getUserHandle();
-  const opts = (OPERATORS || []).map(op =>
-    `<option value="${escape(op.handle)}" ${op.handle === current ? "selected" : ""}>${escape(op.name)}${op.role ? " — " + escape(op.role) : ""}</option>`
-  ).join("");
+  const opts = (OPERATORS || []).map(op => {
+    const label = [
+      op.name,
+      op.role && " — " + op.role,
+      op.email && "  ⟨" + op.email + "⟩",
+    ].filter(Boolean).join("");
+    return `<option value="${escape(op.handle)}" ${op.handle === current ? "selected" : ""}>${escape(label)}</option>`;
+  }).join("");
   overlay.innerHTML = `
     <div class="identity-card" role="dialog" aria-label="Pick your identity">
       <div class="identity-eyebrow">H-TRACKER · IDENTITY</div>
