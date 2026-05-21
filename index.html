@@ -1126,6 +1126,236 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 
 /* Toggle pill press feedback — small scale dip when clicked. */
 .sm-dim-btn:active:not(.active) { transform: scale(.96); }
+
+/* ============================================================
+   Hover glow on bubbles (uses the SVG #sm-bub-glow filter
+   defined in _stratSvgDefs). Subtle bloom that lifts the
+   target without distracting from the rest of the field.
+   ============================================================ */
+.sm-chart-svg .sm-bubble { transition: filter .15s ease, stroke-width .15s ease; }
+.sm-chart-svg .sm-bubble:hover { filter: url(#sm-bub-glow); stroke-width: 2; }
+
+/* Hero ring around "top opportunity" bubbles — drawn as a separate
+   ring element so the bubble itself stays clean. Pulses subtly. */
+.sm-hero-ring {
+  fill: none;
+  stroke: #D9534F;
+  stroke-width: 1.4;
+  stroke-opacity: 0.7;
+  animation: smHeroPulse 2.4s ease-in-out infinite;
+}
+@keyframes smHeroPulse {
+  0%, 100% { stroke-opacity: 0.45; stroke-width: 1.4; }
+  50%      { stroke-opacity: 0.95; stroke-width: 2.2; }
+}
+
+/* Persistent labels next to top-N entities (3D mode + after story plays). */
+.sm-top-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: #FAFAF5;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.sm-top-label.quick    { fill: var(--hf-red-deep); }
+.sm-top-label.bet      { fill: #1F5340; }
+.sm-top-label-tag {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  paint-order: stroke;
+  stroke: #FAFAF5;
+  stroke-width: 3px;
+}
+
+/* ============================================================
+   Play story button — sits next to the 2D/3D toggle.
+   ============================================================ */
+.sm-story-btn {
+  background: var(--hf-red);
+  color: #fff;
+  border: 1px solid var(--hf-red);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 0 14px;
+  height: 32px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .12s, transform .08s;
+}
+.sm-story-btn:hover  { background: var(--hf-red-deep); border-color: var(--hf-red-deep); }
+.sm-story-btn:active { transform: scale(.96); }
+.sm-story-btn[disabled] { background: var(--ink-mute); border-color: var(--ink-mute); cursor: wait; }
+.sm-story-btn .sm-play-glyph { display: inline-block; font-size: 9px; transform: translateY(-1px); }
+
+/* Skip button — overlaid on the chart only during playback. */
+.sm-skip-overlay {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+.sm-chart-wrap.sm-storytelling .sm-skip-overlay { display: inline-flex; }
+.sm-skip-stage {
+  background: rgba(26, 26, 26, .82);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,.15);
+  font-variant-numeric: tabular-nums;
+}
+.sm-skip-btn {
+  background: rgba(255, 255, 255, .94);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.sm-skip-btn:hover { background: var(--ink); color: #fff; }
+
+/* The chart wrap needs position:relative to anchor the skip overlay. */
+.sm-chart-wrap { position: relative; }
+
+/* ============================================================
+   Recommendation card — bottom of chart, always present in 2D
+   and 3D, becomes the dramatic finale of the story playback.
+   ============================================================ */
+.sm-recommendation {
+  background: linear-gradient(180deg, #fff 0%, #FAFAF5 100%);
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--hf-red);
+  border-radius: 8px;
+  padding: 16px 20px 18px;
+  margin-top: 14px;
+  box-shadow: 0 2px 8px rgba(10, 37, 64, .06);
+}
+.sm-recommendation-head {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--hf-red);
+  margin-bottom: 4px;
+}
+.sm-recommendation-headline {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.2px;
+  margin-bottom: 12px;
+  line-height: 1.45;
+  max-width: 760px;
+}
+.sm-rec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.7fr;
+  gap: 14px;
+}
+.sm-rec-col h4 {
+  font-size: 9px;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+.sm-rec-col h4 .sm-rec-count {
+  background: var(--paper);
+  color: var(--navy);
+  padding: 0 7px;
+  border-radius: 8px;
+  font-size: 9px;
+  margin-left: 6px;
+}
+.sm-rec-col.quick h4   { color: var(--hf-red-deep); }
+.sm-rec-col.bet h4     { color: #1F5340; }
+.sm-rec-col.ignore h4  { color: var(--ink-mute); }
+.sm-rec-row {
+  display: grid;
+  grid-template-columns: 1fr 32px;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .1s;
+  align-items: center;
+}
+.sm-rec-row:last-child { border-bottom: 0; }
+.sm-rec-row:hover { background: var(--paper); }
+.sm-rec-row .sm-rec-name {
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sm-rec-row .sm-rec-meta {
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.sm-rec-row .sm-rec-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--navy);
+  font-size: 13px;
+}
+.sm-rec-empty {
+  font-size: 11px;
+  color: var(--ink-mute);
+  font-style: italic;
+  padding: 6px 0;
+}
+.sm-rec-ignore-num {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ink-mute);
+  line-height: 1;
+  margin: 4px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+.sm-rec-ignore-sub {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+/* Storytelling fade-in for the recommendation card (when story plays). */
+.sm-recommendation.sm-rec-revealing {
+  animation: smRecAppear 700ms cubic-bezier(.4, 0, .2, 1) both;
+}
+@keyframes smRecAppear {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 .sm-tip{position:fixed;background:var(--ink);color:#fff;padding:8px 12px;border-radius:5px;font-size:11px;pointer-events:none;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:240px;line-height:1.45;display:none}
 .sm-tip .nm{font-weight:800;color:#fff;margin-bottom:3px}
 .sm-tip .vals{color:rgba(255,255,255,.75);font-size:10px;letter-spacing:.3px}
@@ -8622,6 +8852,53 @@ function stratComputeXY(u, axisKey) {
 }
 
 // ============================================================================
+// BUBBLE GRADIENTS — gives the strategic-map dots a "sphere with highlight"
+// look. Each priority gets its own radial gradient (highlight top-left, base
+// color edge) so the chart reads as 3D even before the 3D toggle is on.
+// Used by both 2D and 3D bubble renders.
+// ============================================================================
+const PRIO_GRADIENT = {
+  "Critical":       { light: "#C45050", base: "#5C1010" },
+  "Hot":            { light: "#FF8B85", base: "#A33E3A" },
+  "Warm":           { light: "#FFD988", base: "#A87A20" },
+  "Cold":           { light: "#7E9AB7", base: "#2E4258" },
+  "Cold-storage":   { light: "#BAC4D2", base: "#5D6878" },
+  "Up & Running":   { light: "#5BB387", base: "#1F5340" },
+  "Not interested": { light: "#9C9C9C", base: "#4F4F4F" },
+  "default":        { light: "#BFBFBF", base: "#6E6E6E" },
+};
+function _bubbleGradId(priority) {
+  const safe = (priority || "default").replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase();
+  return "sm-bub-grad-" + safe;
+}
+function _stratSvgDefs() {
+  // <defs> emitted once at the top of every strategic-map SVG. Holds:
+  //   - one radial gradient per priority (sphere look)
+  //   - a soft glow filter for hover (lifted via CSS filter:url())
+  //   - a brighter highlight filter for the "top opportunity" rings
+  let s = "<defs>";
+  Object.entries(PRIO_GRADIENT).forEach(([prio, c]) => {
+    s += `<radialGradient id="${_bubbleGradId(prio)}" cx="32%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="${c.light}" stop-opacity="1"/>
+      <stop offset="55%" stop-color="${c.light}" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="${c.base}" stop-opacity="1"/>
+    </radialGradient>`;
+  });
+  s += `<filter id="sm-bub-glow" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="3" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>`;
+  s += `<filter id="sm-bub-hero" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="4.5" in="SourceAlpha" result="b"/>
+    <feFlood flood-color="#D9534F" result="f"/>
+    <feComposite in="f" in2="b" operator="in" result="cf"/>
+    <feMerge><feMergeNode in="cf"/><feMergeNode in="cf"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>`;
+  s += "</defs>";
+  return s;
+}
+
+// ============================================================================
 // ENGAGEMENT DEPTH — the Z axis for 3D strategic maps.
 //
 // Scored 0-100 from three client-side signals so depth can be computed for
@@ -8823,6 +9100,9 @@ function renderStrategicView() {
       ${overrideCount ? `<span class="sm-override-tag">${overrideCount} manual override${overrideCount === 1 ? '' : 's'}</span>` : ''}
     </div>
     <div class="sm-toolbar-actions">
+      <button class="sm-story-btn" onclick="stratPlayStory()" title="Play a 5-scene narrated walkthrough of this map">
+        <span class="sm-play-glyph">▶</span> Play story
+      </button>
       <div class="sm-dim-toggle" role="group" aria-label="Toggle 2D / 3D view">
         <button class="sm-dim-btn ${!STRAT_STATE.is3D ? 'active' : ''}" onclick="${STRAT_STATE.is3D ? 'stratToggle3D()' : ''}" title="Flat 2-axis chart">2D</button>
         <button class="sm-dim-btn ${STRAT_STATE.is3D ? 'active' : ''}"  onclick="${STRAT_STATE.is3D ? '' : 'stratToggle3D()'}"  title="Adds engagement depth on Z — bars rise from a tilted floor">3D <span class="sm-dim-badge">Z</span></button>
@@ -8862,7 +9142,7 @@ function renderStrategicView() {
     // ============================================================
     // 2D CHART — the original X×Y bubble plot.
     // ============================================================
-    html += `<div class="sm-chart-wrap ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
+    html += `<div class="sm-chart-wrap ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">${_stratSvgDefs()}`;
 
     // Quadrant backgrounds — position-based tints matching the sidebar card
     // colors so users can map between the chart and the cards at a glance.
@@ -8901,19 +9181,25 @@ function renderStrategicView() {
     html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotT}) rotate(-90)" text-anchor="end">${escape(ax.yMax)}</text>`;
     html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotB}) rotate(-90)" text-anchor="start">${escape(ax.yMin)}</text>`;
 
-    // Bubbles
+    // Bubbles — radial gradient gives a "sphere" feel even in 2D. The
+    // data-priority attr lets the story orchestrator reveal them by category.
     cohort.forEach(u => {
       const { x, y, override } = stratComputeXY(u, axisKey);
       const cx = plotL + (x / 100) * plotW;
       const cy = plotT + (1 - y / 100) * plotH;
       const r  = Math.max(5, Math.min(14, 5 + Math.sqrt(u.partnership_score) * 0.75));
-      const color = PRIO_COLORS[u.priority] || "#999";
-      html += `<circle class="sm-bubble${override ? ' override' : ''}" data-id="${u.id}"
+      const stroke = PRIO_COLORS[u.priority] || "#999";
+      const fillUrl = `url(#${_bubbleGradId(u.priority || "default")})`;
+      html += `<circle class="sm-bubble${override ? ' override' : ''}" data-id="${u.id}" data-priority="${escape(u.priority || '')}"
                 cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}"
-                fill="${color}" fill-opacity="0.7" stroke="#fff" stroke-width="1.2"/>`;
+                fill="${fillUrl}" stroke="${stroke}" stroke-width="0.9" stroke-opacity="0.55"/>`;
     });
 
-    html += `</svg></div>`;
+    html += `</svg>
+      <div class="sm-skip-overlay">
+        <span class="sm-skip-stage" id="sm-skip-stage">Scene 1 of 5</span>
+        <button class="sm-skip-btn" onclick="stratSkipStory()">Skip ▸</button>
+      </div></div>`;
 
   } else {
     // ============================================================
@@ -8923,7 +9209,7 @@ function renderStrategicView() {
     // axes are projected, so dragging would be ambiguous; click still
     // opens the detail panel, hover still shows the tooltip.
     // ============================================================
-    html += `<div class="sm-chart-wrap sm-chart-wrap-3d ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg sm-chart-svg-3d" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">`;
+    html += `<div class="sm-chart-wrap sm-chart-wrap-3d ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg sm-chart-svg-3d" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">${_stratSvgDefs()}`;
 
     const project = _strat3DBuildProjector(plotL, plotT, plotW, plotH);
 
@@ -8988,7 +9274,12 @@ function renderStrategicView() {
 
     towers.forEach(t => {
       const r = Math.max(4, Math.min(11, 4 + Math.sqrt(t.u.partnership_score) * 0.65));
-      const color = PRIO_COLORS[t.u.priority] || "#999";
+      const color   = PRIO_COLORS[t.u.priority] || "#999";
+      const fillUrl = `url(#${_bubbleGradId(t.u.priority || "default")})`;
+      const prioAttr = escape(t.u.priority || "");
+      // Wrap each tower in a <g> so the story orchestrator can reveal it
+      // (shadow + stem + base + bubble) as one unit, keyed by priority.
+      html += `<g class="sm-3d-tower" data-id="${t.u.id}" data-priority="${prioAttr}">`;
       // shadow under base
       html += `<ellipse class="sm-3d-shadow" cx="${t.base.sx.toFixed(1)}" cy="${(t.base.sy + 2).toFixed(1)}" rx="${(r * 1.1).toFixed(1)}" ry="${(r * 0.4).toFixed(1)}"/>`;
       // stem
@@ -8996,12 +9287,17 @@ function renderStrategicView() {
       // floor anchor dot
       html += `<circle class="sm-3d-base" cx="${t.base.sx.toFixed(1)}" cy="${t.base.sy.toFixed(1)}" r="1.6" fill="${color}" fill-opacity="0.55"/>`;
       // top bubble — this is the interactive element
-      html += `<circle class="sm-bubble sm-3d-bubble" data-id="${t.u.id}"
+      html += `<circle class="sm-bubble sm-3d-bubble" data-id="${t.u.id}" data-priority="${prioAttr}"
                 cx="${t.top.sx.toFixed(1)}" cy="${t.top.sy.toFixed(1)}" r="${r.toFixed(1)}"
-                fill="${color}" fill-opacity="0.85" stroke="#fff" stroke-width="1.4"/>`;
+                fill="${fillUrl}" stroke="${color}" stroke-width="1.4" stroke-opacity="0.85"/>`;
+      html += `</g>`;
     });
 
-    html += `</svg></div>`;
+    html += `</svg>
+      <div class="sm-skip-overlay">
+        <span class="sm-skip-stage" id="sm-skip-stage">Scene 1 of 5</span>
+        <button class="sm-skip-btn" onclick="stratSkipStory()">Skip ▸</button>
+      </div></div>`;
   }
 
   // ---- Sidebar: top 5 per quadrant ----
@@ -9041,6 +9337,12 @@ function renderStrategicView() {
   html += `</div>`;  // /sm-side
 
   html += `</div>`;  // /sm-grid
+
+  // Recommendation card — auto-generated decision layer. Always rendered;
+  // becomes the dramatic finale of the story when Play story is clicked
+  // (the orchestrator adds the .sm-rec-revealing class then).
+  html += _stratRenderRecommendation(cohort, axisKey);
+
   html += `</div>`;  // /sm-shell
 
   el.innerHTML = html;
@@ -9065,6 +9367,102 @@ function stratToggleShowAll() {
   STRAT_STATE.showAll = !STRAT_STATE.showAll;
   renderStrategicView();
 }
+// ============================================================================
+// TOP OPPORTUNITIES — used by both the recommendation card and the
+// "hero ring" labels around the headline bubbles. Computed per axis so the
+// answer changes when you switch tabs: a Quick Win on Effort×Fit isn't
+// necessarily a Star Deal on Cost×ROI.
+// ============================================================================
+function _stratTopOpportunities(cohort, axisKey) {
+  const ax = STRAT_AXES[axisKey];
+  // Hero quadrant = the "do this first" cell. Strategic Bets = the other
+  // top-half quadrant (high Y, opposite X). Ignore = bottom-right (high X,
+  // low Y) by convention across all 3 maps.
+  const hero = ax.hero;
+  const otherTop = hero[0] === "t" ? "t" + (hero[1] === "l" ? "r" : "l") : hero;
+  const ignoreCell = "br";
+  const buckets = { tl: [], tr: [], bl: [], br: [] };
+  cohort.forEach(u => {
+    const { x, y } = stratComputeXY(u, axisKey);
+    const q = (y >= 50 ? (x >= 50 ? "tr" : "tl") : (x >= 50 ? "br" : "bl"));
+    buckets[q].push({ u, x, y });
+  });
+  const byScore = (a, b) => b.u.partnership_score - a.u.partnership_score;
+  return {
+    quickWins:      buckets[hero].sort(byScore).slice(0, 5),
+    quickWinsLabel: ax[hero],
+    strategicBets:  (otherTop === hero ? [] : buckets[otherTop].sort(byScore).slice(0, 3)),
+    strategicBetsLabel: (otherTop === hero ? "" : ax[otherTop]),
+    ignoreCount:    buckets[ignoreCell].length,
+    ignoreLabel:    ax[ignoreCell],
+  };
+}
+
+// ============================================================================
+// AUTO-GENERATED INSIGHT SENTENCE — appears in the recommendation card.
+// One per axis so the action is concrete: not "interesting chart", but
+// "do X tomorrow".
+// ============================================================================
+function _stratRecommendationHeadline(opps, axisKey) {
+  const qn = opps.quickWins.length;
+  const bn = opps.strategicBets.length;
+  const inn = opps.ignoreCount;
+  if (axisKey === "effortFit") {
+    if (qn > 0 && bn > 0) return `Move on the <b>${qn}</b> Quick Win${qn === 1 ? "" : "s"} this cycle, then commit medium-term to the <b>${bn}</b> Strategic Bet${bn === 1 ? "" : "s"}. The <b>${inn}</b> in Don't Bother stay archived until something changes.`;
+    if (qn > 0)           return `Move on the <b>${qn}</b> Quick Win${qn === 1 ? "" : "s"} this cycle. Nothing in the Strategic Bet quadrant yet.`;
+    if (bn > 0)           return `No Quick Wins right now. Commit to the <b>${bn}</b> Strategic Bet${bn === 1 ? "" : "s"} on a multi-quarter horizon.`;
+    return `Field is balanced or unclassified. Push entities up the Fit axis before allocating effort.`;
+  }
+  if (axisKey === "reachReadiness") {
+    if (qn > 0 && bn > 0) return `Lock in the <b>${qn}</b> Active Win${qn === 1 ? "" : "s"} before they cool. <b>${bn}</b> Long Shot${bn === 1 ? "" : "s"} need patience but are worth nurturing.`;
+    if (qn > 0)           return `Lock in the <b>${qn}</b> Active Win${qn === 1 ? "" : "s"} before they cool.`;
+    if (bn > 0)           return `Nothing active and ready. <b>${bn}</b> Long Shot${bn === 1 ? "" : "s"} need patient cultivation.`;
+    return `Reach + readiness are both low across the board — invest in awareness building first.`;
+  }
+  if (axisKey === "costRoi") {
+    if (qn > 0 && bn > 0) return `Fund the <b>${qn}</b> Star Deal${qn === 1 ? "" : "s"} hard — top ROI per euro. <b>${bn}</b> Worth Fighting are expensive but the upside justifies the spend.`;
+    if (qn > 0)           return `Fund the <b>${qn}</b> Star Deal${qn === 1 ? "" : "s"} hard — top ROI per euro.`;
+    if (bn > 0)           return `No Star Deals visible. <b>${bn}</b> Worth Fighting are expensive but the upside justifies the spend.`;
+    return `ROI is low across the portfolio — re-qualify before committing more cost.`;
+  }
+  return "";
+}
+
+function _stratRenderRecommendation(cohort, axisKey, opts = {}) {
+  const opps = _stratTopOpportunities(cohort, axisKey);
+  const headline = _stratRecommendationHeadline(opps, axisKey);
+  const row = (item) => {
+    const u = item.u;
+    return `<div class="sm-rec-row" onclick="openDetail('${escape(u.id)}')">
+      <div>
+        <div class="sm-rec-name">${escape(u.name)}</div>
+        <div class="sm-rec-meta">${escape(u.country_canonical || u.country || u.continent || "—")} · ${escape(u.priority || "Unclassified")}</div>
+      </div>
+      <div class="sm-rec-score">${u.partnership_score}</div>
+    </div>`;
+  };
+  const reveal = opts.revealing ? " sm-rec-revealing" : "";
+  return `<div class="sm-recommendation${reveal}" id="sm-recommendation">
+    <div class="sm-recommendation-head">Decision layer</div>
+    <div class="sm-recommendation-headline">${headline}</div>
+    <div class="sm-rec-grid">
+      <div class="sm-rec-col quick">
+        <h4>${escape(opps.quickWinsLabel)}<span class="sm-rec-count">${opps.quickWins.length}</span></h4>
+        ${opps.quickWins.length ? opps.quickWins.map(row).join("") : '<div class="sm-rec-empty">No entities in this quadrant yet.</div>'}
+      </div>
+      <div class="sm-rec-col bet">
+        <h4>${escape(opps.strategicBetsLabel || "Strategic bets")}<span class="sm-rec-count">${opps.strategicBets.length}</span></h4>
+        ${opps.strategicBets.length ? opps.strategicBets.map(row).join("") : '<div class="sm-rec-empty">No entities in this quadrant yet.</div>'}
+      </div>
+      <div class="sm-rec-col ignore">
+        <h4>Deprioritise</h4>
+        <div class="sm-rec-ignore-num">${opps.ignoreCount}</div>
+        <div class="sm-rec-ignore-sub">entities in <b>${escape(opps.ignoreLabel || "the bottom-right")}</b>. Park them until something material changes.</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function stratToggle3D() {
   // Capture every bubble's current screen position BEFORE the re-render
   // wipes the SVG. Used by _animateStratTransition to interpolate the
@@ -9082,6 +9480,217 @@ function stratToggle3D() {
   STRAT_STATE.is3D = !STRAT_STATE.is3D;
   try { localStorage.setItem(LS_STRAT_3D, STRAT_STATE.is3D ? "1" : "0"); } catch {}
   renderStrategicView();
+}
+
+// ============================================================================
+// STORY PLAYBACK — 5-scene narrated reveal of the chart.
+//
+// Scene 1 (0–600ms)      floor + axis lines (already visible at re-render;
+//                         everything else starts hidden)
+// Scene 2 (600–1300ms)    quadrant labels + tints fade in
+// Scene 3 (1300–2900ms)   bubbles drop in by priority, lowest → highest
+//                         (Cold-storage → Cold → Warm → Hot → Critical →
+//                         Up & Running). Stems + shadows grow with them.
+// Scene 4 (2900–3500ms)   axis labels + Z overlay caption emphasized
+// Scene 5 (3500–4400ms)   hero rings around top opportunities + persistent
+//                         labels next to them + recommendation card reveal
+//
+// All timers tracked in STRAT_STATE._storyTimers so Skip ▸ can blow them
+// away cleanly. The button + skip overlay are always rendered; CSS hides
+// them unless the wrap carries .sm-storytelling.
+// ============================================================================
+function stratPlayStory() {
+  // Bail-and-restart if a previous playback is mid-flight
+  if (STRAT_STATE._storyTimers && STRAT_STATE._storyTimers.length) {
+    STRAT_STATE._storyTimers.forEach(clearTimeout);
+  }
+  STRAT_STATE._storyTimers = [];
+  STRAT_STATE._animateNext = false;   // don't double-animate via the toggle path
+  // Fresh render so we know exactly which elements exist + no leftover hero
+  // rings / top labels from a prior playback.
+  renderStrategicView();
+  _runStoryOrchestrator();
+}
+
+function stratSkipStory() {
+  if (STRAT_STATE._storyTimers) {
+    STRAT_STATE._storyTimers.forEach(clearTimeout);
+    STRAT_STATE._storyTimers = [];
+  }
+  const wrap = document.querySelector(".sm-chart-wrap");
+  const svg  = document.getElementById("sm-chart");
+  if (!svg || !wrap) return;
+  // Snap every staged element to fully visible.
+  svg.querySelectorAll("[data-story-stage]").forEach(el => {
+    el.style.opacity = "";
+    el.style.transition = "";
+  });
+  wrap.classList.remove("sm-storytelling");
+  // Jump straight to the finale: hero rings + top labels + revealed card.
+  _stratPaintHeroRingsAndLabels();
+  const rec = document.getElementById("sm-recommendation");
+  if (rec) rec.classList.add("sm-rec-revealing");
+}
+
+function _setSkipStage(n) {
+  const el = document.getElementById("sm-skip-stage");
+  if (el) el.textContent = `Scene ${n} of 5`;
+}
+
+function _runStoryOrchestrator() {
+  const wrap = document.querySelector(".sm-chart-wrap");
+  const svg  = document.getElementById("sm-chart");
+  if (!wrap || !svg) return;
+  wrap.classList.add("sm-storytelling");
+
+  // -- Tag elements with the scene they belong to so we can stage them.
+  // Floor + axes + grid are scene 1 (visible from t=0).
+  // Quadrant labels / tints are scene 2.
+  // Bubbles / stems / shadows / bases are scene 3 (per-priority staggered).
+  // Axis labels + endpoint labels are scene 4.
+  const tag = (sel, stage) => svg.querySelectorAll(sel).forEach(el => el.setAttribute("data-story-stage", String(stage)));
+
+  // 2D path tags
+  tag(".sm-quad-bg",     2);
+  tag(".sm-quad-label",  2);
+  tag(".sm-bubble",      3);
+  tag(".sm-axis-label",  4);
+  tag(".sm-axis-end",    4);
+  tag(".sm-mid-line",    4);
+  // 3D path tags
+  tag(".sm-3d-floor-label",  2);
+  tag(".sm-3d-tower",        3);   // group = bubble + stem + base + shadow
+  tag(".sm-3d-axis-label",   4);
+
+  // Hide every staged element instantly (no transition yet so initial paint
+  // doesn't flash).
+  svg.querySelectorAll("[data-story-stage]").forEach(el => {
+    el.style.transition = "none";
+    el.style.opacity    = "0";
+  });
+  // Hide the recommendation card too so it joins the finale.
+  const rec = document.getElementById("sm-recommendation");
+  if (rec) { rec.style.opacity = "0"; rec.classList.remove("sm-rec-revealing"); }
+  // Force reflow so the "no transition + opacity 0" sticks before we add
+  // the real transition durations below.
+  void svg.offsetHeight;
+  // Now arm the real transitions.
+  svg.querySelectorAll("[data-story-stage]").forEach(el => {
+    el.style.transition = "opacity 550ms cubic-bezier(.4,0,.2,1), transform 550ms cubic-bezier(.4,0,.2,1)";
+  });
+
+  const T = (ms, fn) => {
+    const t = setTimeout(fn, ms);
+    STRAT_STATE._storyTimers.push(t);
+  };
+
+  // ---------------- Scene 1: floor + axes already on screen ----------------
+  _setSkipStage(1);
+
+  // ---------------- Scene 2 @ 600ms: quadrants ----------------
+  T(600, () => {
+    _setSkipStage(2);
+    svg.querySelectorAll('[data-story-stage="2"]').forEach((el, i) => {
+      setTimeout(() => { el.style.opacity = "1"; }, i * 70);
+    });
+  });
+
+  // ---------------- Scene 3 @ 1300ms: bubbles by priority ----------------
+  T(1300, () => {
+    _setSkipStage(3);
+    // Stagger by priority — least-valuable first, builds anticipation
+    // toward the headline categories.
+    const priorityOrder = [
+      "", "Not interested", "Cold-storage", "Cold",
+      "Warm", "Hot", "Critical", "Up & Running",
+    ];
+    let dlay = 0;
+    priorityOrder.forEach(prio => {
+      const nodes = svg.querySelectorAll(`[data-story-stage="3"][data-priority="${prio}"]`);
+      if (!nodes.length) return;
+      setTimeout(() => {
+        nodes.forEach(el => { el.style.opacity = "1"; });
+      }, dlay);
+      dlay += 180;
+    });
+  });
+
+  // ---------------- Scene 4 @ 2900ms: axis labels + Z emphasis ----------------
+  T(2900, () => {
+    _setSkipStage(4);
+    svg.querySelectorAll('[data-story-stage="4"]').forEach(el => { el.style.opacity = "1"; });
+    // Pulse the Z axis (3D only) so the Z meaning lands
+    const zAxis = svg.querySelector(".sm-3d-axis-z");
+    if (zAxis) {
+      zAxis.style.transition = "stroke-width 400ms ease, stroke-opacity 400ms ease";
+      const orig = zAxis.getAttribute("stroke-width") || "2";
+      zAxis.setAttribute("stroke-width", "4");
+      setTimeout(() => { zAxis.setAttribute("stroke-width", orig); }, 800);
+    }
+  });
+
+  // ---------------- Scene 5 @ 3500ms: hero rings + labels + card ----------------
+  T(3500, () => {
+    _setSkipStage(5);
+    _stratPaintHeroRingsAndLabels();
+    if (rec) {
+      rec.style.opacity = "";   // clear inline opacity so CSS animation can play
+      rec.classList.add("sm-rec-revealing");
+    }
+  });
+
+  // ---------------- End of playback @ 4500ms: cleanup ----------------
+  T(4500, () => {
+    wrap.classList.remove("sm-storytelling");
+    STRAT_STATE._storyTimers = [];
+  });
+}
+
+// Highlight the top opportunities computed for the current axis:
+//   - Quick Wins get a red pulsing ring + persistent label
+//   - Strategic Bets get the same in green
+// Runs on both story finale and Skip.
+function _stratPaintHeroRingsAndLabels() {
+  const svg = document.getElementById("sm-chart");
+  if (!svg) return;
+  // Clear any rings/labels from a prior playback
+  svg.querySelectorAll(".sm-hero-ring, .sm-top-label, .sm-top-label-tag").forEach(el => el.remove());
+
+  // Mirror renderStrategicView's cohort logic so the rings line up exactly
+  // with what's painted on the chart.
+  if (typeof UNIS === "undefined" || !UNIS.length) return;
+  const filtered = (typeof applyFilters === "function" ? applyFilters(UNIS) : UNIS);
+  const sorted = filtered.slice().sort((a, b) => b.partnership_score - a.partnership_score);
+  const cohort = STRAT_STATE.showAll ? sorted : sorted.slice(0, 50);
+  const opps = _stratTopOpportunities(cohort, STRAT_STATE.axisKey);
+  const targets = [
+    ...opps.quickWins.map(o => ({ id: o.u.id, name: o.u.name, kind: "quick" })),
+    ...opps.strategicBets.map(o => ({ id: o.u.id, name: o.u.name, kind: "bet" })),
+  ];
+  if (!targets.length) return;
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  targets.forEach(t => {
+    const bub = svg.querySelector(`.sm-bubble[data-id="${t.id}"]`);
+    if (!bub) return;
+    const cx = parseFloat(bub.getAttribute("cx"));
+    const cy = parseFloat(bub.getAttribute("cy"));
+    const r  = parseFloat(bub.getAttribute("r"));
+    // Ring
+    const ring = document.createElementNS(SVG_NS, "circle");
+    ring.setAttribute("class", "sm-hero-ring");
+    ring.setAttribute("cx", cx); ring.setAttribute("cy", cy);
+    ring.setAttribute("r", (r + 5).toFixed(1));
+    if (t.kind === "bet") ring.setAttribute("stroke", "#2E7D5B");
+    bub.parentNode.insertBefore(ring, bub);
+    // Label — to the right of the bubble, truncated
+    const lbl = document.createElementNS(SVG_NS, "text");
+    lbl.setAttribute("class", "sm-top-label " + t.kind);
+    lbl.setAttribute("x", (cx + r + 8).toFixed(1));
+    lbl.setAttribute("y", (cy + 3).toFixed(1));
+    lbl.textContent = t.name.length > 28 ? t.name.slice(0, 26) + "…" : t.name;
+    bub.parentNode.appendChild(lbl);
+  });
 }
 
 // ---- Transition animation ----
