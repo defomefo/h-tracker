@@ -96,7 +96,23 @@ def _json_404(_e):
 @app.errorhandler(500)
 def _json_500(e):
     if request.path.startswith("/api/"):
-        return jsonify({"error": "internal server error", "detail": str(e)}), 500
+        # Pull the original exception out of werkzeug's wrapper and include
+        # its class + traceback in the response so the frontend can show
+        # something more useful than "internal server error".
+        import traceback as _tb
+        orig = getattr(e, "original_exception", None) or e
+        tb_str = "".join(_tb.format_exception(type(orig), orig, orig.__traceback__))
+        # Always log the full traceback so it lands in Render logs.
+        print(f"[500 on {request.method} {request.path}]\n{tb_str}")
+        return jsonify({
+            "error":      "internal server error",
+            "detail":     str(orig),
+            "exception_type": type(orig).__name__,
+            # Last 8 lines of traceback are usually enough to debug without
+            # leaking entire source paths.
+            "traceback_tail": "\n".join(tb_str.splitlines()[-8:]),
+            "path":       request.path,
+        }), 500
     return ("Internal server error", 500)
 
 
@@ -2303,55 +2319,34 @@ def prospects_discover():
 
     prompt = _build_prospect_prompt(criteria, search_results, existing_names, profile_json)
 
+    # Gemini call. We keep response_mime_type='application/json' as a soft
+    # hint and rely on the defensive parser below for the actual contract.
+    # response_schema was removed because the dict-form syntax broke under
+    # the installed google-genai version (caused a 500 from the SDK
+    # constructor before the call even fired). The defensive parser
+    # already handled the "wrapped in markdown / mixed text / plain text"
+    # failure modes, so the schema was belt-and-suspenders that the
+    # belt broke.
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
-        # response_schema enforces the JSON shape at the model level.
-        # Gemini 2.5 supports the dict-form schema with UPPERCASE type names.
-        # This is the primary defense against "Gemini returned non-JSON output";
-        # the defensive parser below is the fallback for when even this fails.
-        prospect_schema = {
-            "type": "OBJECT",
-            "properties": {
-                "candidates": {
-                    "type": "ARRAY",
-                    "items": {
-                        "type": "OBJECT",
-                        "properties": {
-                            "name":           {"type": "STRING"},
-                            "type":           {"type": "STRING"},
-                            "country":        {"type": "STRING"},
-                            "region":         {"type": "STRING"},
-                            "primary_url":    {"type": "STRING"},
-                            "description":    {"type": "STRING"},
-                            "fit_score":      {"type": "INTEGER"},
-                            "fit_reasoning":  {"type": "STRING"},
-                            "source_urls":    {"type": "ARRAY", "items": {"type": "STRING"}},
-                            "suggested_programs": {"type": "ARRAY", "items": {"type": "STRING"}},
-                        },
-                        "required": ["name", "type", "country", "primary_url", "fit_reasoning", "source_urls"],
-                    },
-                }
-            },
-            "required": ["candidates"],
-        }
         resp = client_ai.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
             config=_gtypes.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=prospect_schema,
                 temperature=0.2,
                 max_output_tokens=4096,
             ),
         )
         raw_text = (resp.text or "").strip()
-        # Always log the first ~500 chars so we can debug from Render logs
-        # without needing to add ad-hoc print statements later.
         print(f"[prospects] Gemini returned {len(raw_text)} chars; first 300: {raw_text[:300]!r}")
     except Exception as e:
-        print(f"[prospects] Gemini failed: {e}")
-        return jsonify({"ok": False, "error": f"Gemini call failed: {e}"}), 500
+        import traceback as _tb
+        print(f"[prospects] Gemini call failed: {e}\n{_tb.format_exc()}")
+        return jsonify({"ok": False, "error": f"Gemini call failed: {e}",
+                        "stage": "gemini_call",
+                        "exception_type": type(e).__name__}), 500
 
     # Defensive JSON parsing — even with response_schema set, models
     # occasionally wrap output in markdown fences or prepend explanatory text.

@@ -5121,11 +5121,23 @@ async function runProspectDiscover() {
     });
     const data = await r.json();
     if (!r.ok) {
-      // Surface the raw preview when Gemini misbehaves — saves us a Render log
-      // dive next time. Also shows the parse_error so we can see exactly which
-      // defense layer fell over.
-      const preview = data.raw_preview ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-soft)">Show what Gemini actually returned (${(data.raw_preview || '').length} chars)</summary><pre style="background:var(--paper);padding:10px;border-radius:4px;font-size:11px;font-family:'Consolas',monospace;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;margin-top:6px">${escape(data.raw_preview)}</pre>${data.parse_error ? `<div style="font-size:10px;color:var(--ink-mute);margin-top:4px">Parse error: ${escape(data.parse_error)}</div>` : ''}</details>` : '';
-      prog.innerHTML = `<div class="pd-progress-err">${escape(data.error || ("HTTP " + r.status))}${preview}</div>`;
+      // Show every diagnostic field the backend sends — raw_preview (when
+      // Gemini's JSON parsing fails), detail + exception_type + traceback_tail
+      // (when an uncaught exception trips the 500 handler), stage (which step
+      // of the discover pipeline died). Wrapped in collapsed <details> so the
+      // headline error stays terse but the full stack is one click away.
+      const blocks = [];
+      const headline = escape(data.error || ("HTTP " + r.status));
+      const subline = data.detail && data.detail !== data.error
+        ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:4px">${escape(data.detail)}${data.exception_type ? ` <span style="color:var(--ink-mute);font-family:'Consolas',monospace">(${escape(data.exception_type)})</span>` : ""}${data.stage ? ` · stage: <b>${escape(data.stage)}</b>` : ""}</div>`
+        : "";
+      if (data.raw_preview) {
+        blocks.push(`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-soft)">Show what Gemini actually returned (${(data.raw_preview || '').length} chars)</summary><pre style="background:var(--paper);padding:10px;border-radius:4px;font-size:11px;font-family:'Consolas',monospace;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;margin-top:6px">${escape(data.raw_preview)}</pre>${data.parse_error ? `<div style="font-size:10px;color:var(--ink-mute);margin-top:4px">Parse error: ${escape(data.parse_error)}</div>` : ''}</details>`);
+      }
+      if (data.traceback_tail) {
+        blocks.push(`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-soft)">Show server traceback</summary><pre style="background:var(--paper);padding:10px;border-radius:4px;font-size:11px;font-family:'Consolas',monospace;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;margin-top:6px">${escape(data.traceback_tail)}</pre></details>`);
+      }
+      prog.innerHTML = `<div class="pd-progress-err">${headline}${subline}${blocks.join("")}</div>`;
       btn.disabled = false; btn.textContent = "⚲ Run discovery";
       return;
     }
