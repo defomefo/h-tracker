@@ -2065,14 +2065,49 @@ def _build_prospect_prompt(criteria, search_results, existing_names, profile_jso
     profile_str = profile_json or "(no preference profile yet — first searches)"
 
     return f"""You are a partnership prospect analyst for H-FARM College, an Italian
-private higher-education institution. You are surfacing NEW prospective
-partners (universities, agencies, schools, or student organizations) for
-the global partnerships team to evaluate.
+private higher-education institution. You surface NEW prospective ACADEMIC /
+STUDENT-MOBILITY partners for the global partnerships team to evaluate.
 
+============================================================
+SCOPE — these are the ONLY categories we want to see:
+============================================================
+  ✅ Universities — public AND private, degree-granting peers globally.
+                     Both research-heavy and teaching-focused.
+  ✅ Higher-ed institutions — business schools, design schools,
+                     polytechnics, conservatories, applied-science unis.
+  ✅ Schools — secondary / high schools whose graduates go to university
+                     (potential pipeline for H-FARM bachelor's recruitment).
+  ✅ Student organizations + alumni networks — ESN chapters, AEGEE,
+                     subject-specific student associations.
+  ✅ Education agencies — student recruitment agencies, study-abroad
+                     consultancies, language schools that funnel students
+                     into higher-ed.
+
+============================================================
+OUT OF SCOPE — REJECT these even if the search results return them:
+============================================================
+  ❌ Government investment / FDI / business-development agencies
+     (e.g. ICEX, trade boards, chambers of commerce, "Invest in X"
+     entities). They serve business setup, not students.
+  ❌ Startup accelerators / VC funds — UNLESS they have an explicit
+     academic affiliation or programs FOR university students.
+  ❌ Generic consulting firms / law firms / professional services.
+  ❌ Industry employers / corporations / SaaS companies. (We track
+     companies separately as Career Day sponsors — that is a different
+     workflow, do NOT surface them here.)
+  ❌ Banks, insurance, real-estate firms unless they run a structured
+     academic-scholarship or research-collaboration program.
+
+If a search result is one of these, IGNORE IT. Do not pad your output
+with off-scope candidates just to hit the limit. The user has reported
+false positives from this category — they will reject you in seconds.
+
+============================================================
 REQUIRED OUTPUT: a JSON array of candidate objects, NEVER more than what
-the search results actually support. If only 2 candidates are well-grounded,
-return 2. NEVER invent facts. NEVER include a candidate whose existence
-isn't supported by at least one URL in the search results below.
+the search results actually support. If only 2 candidates are well-grounded
+AND in-scope, return 2. NEVER invent facts. NEVER include a candidate whose
+existence isn't supported by at least one URL in the search results below.
+============================================================
 
 SEARCH CRITERIA:
 {crit_str}
@@ -2080,14 +2115,15 @@ SEARCH CRITERIA:
 EXISTING PARTNERS (DO NOT SUGGEST any of these — we already have them):
 {exclude_str}
 
-USER PREFERENCE PROFILE (from past decisions, lean toward this):
+USER PREFERENCE PROFILE (from past decisions — lean STRONGLY toward
+"strongly_prefers" + "softly_prefers", actively AVOID "rejects"):
 {profile_str}
 
 WEB SEARCH RESULTS (your ONLY source of truth — cite indices [N] in your
 reasoning so the user can verify):
 {src_str}
 
-For each genuinely new prospect you find in the search results, produce:
+For each genuinely new IN-SCOPE prospect you find, produce:
 - name:             official organization name as it appears in the source
 - type:             university | agency | school | student_organization
 - country:          ISO country name
@@ -2102,7 +2138,9 @@ For each genuinely new prospect you find in the search results, produce:
                     (Coding Academy, Data & AI, Game Design, Fashion AI Lab,
                     Startup Summer, etc.) — leave [] if unsure
 
-If you can't find any genuinely new well-grounded prospects, return {{"candidates": []}}.
+If you can't find any genuinely new in-scope well-grounded prospects,
+return {{"candidates": []}}. An empty result is honest; padding with
+off-scope candidates is not.
 """
 
 
@@ -2178,6 +2216,186 @@ def _filter_candidates(raw_candidates, existing_unis_names, db):
         out.append(c)
         verifications.append((name, verification))
     return out, verifications
+
+
+# ============================================================================
+# P3 — SMART LEARNING LOOP
+# ----------------------------------------------------------------------------
+# Every time a user decides yes/no/maybe on a candidate, we accumulate a
+# signal. Periodically (every 5 decisions or on manual rebuild) we distill
+# those decisions into a SHORT JSON preference profile and store it in
+# `prospect_user_profile` keyed by user handle. The next discovery call
+# pulls that profile and injects it into the Gemini prompt, biasing the
+# model toward what the user has historically said YES to and away from
+# REJECTED patterns. This is what makes the system "learn" — without it,
+# every search starts from scratch and the user repeatedly rejects the
+# same off-scope categories (e.g. government FDI agencies, accelerators).
+# ============================================================================
+_DISTILL_AUTO_EVERY_N = 5   # rebuild profile every N decisions for a user
+
+
+def _distill_user_profile(handle, db):
+    """Pull this user's recent decisions, call Gemini to extract a
+    preference profile (strongly_prefers / softly_prefers / rejects /
+    notes), and upsert into prospect_user_profile.
+
+    Returns a dict with `ok` and either `profile` or `error`. Safe to call
+    inline — Gemini call is cheap (single prompt, ~2k tokens out)."""
+    if not handle:
+        return {"ok": False, "error": "no user handle"}
+    if not GEMINI_KEY:
+        return {"ok": False, "error": "GEMINI_API_KEY not configured"}
+
+    # Pull last 50 decisions for this user, joined with the candidate row
+    # so the LLM sees the actual entity attributes (type / country / fit /
+    # description) — not just yes/no flags.
+    rows = db.execute(
+        """SELECT d.decision, d.reason, d.decided_at,
+                  c.name, c.type, c.country, c.region, c.ai_fit_score, c.description
+             FROM prospect_decisions d
+             JOIN prospect_candidates c ON c.id = d.candidate_id
+            WHERE d.decided_by = ?
+            ORDER BY d.decided_at DESC
+            LIMIT 50""",
+        (handle,),
+    ).fetchall()
+    if not rows:
+        return {"ok": False, "error": "no decisions yet for this user"}
+
+    decisions_payload = []
+    for r in rows:
+        decisions_payload.append({
+            "name":        r["name"],
+            "type":        r["type"] or "",
+            "country":     r["country"] or "",
+            "region":      r["region"] or "",
+            "fit_score":   r["ai_fit_score"],
+            "description": (r["description"] or "")[:200],
+            "decision":    r["decision"],
+            "reason":      r["reason"] or "",
+        })
+
+    prompt = f"""You analyse a user's past partnership-prospect decisions
+for H-FARM College (Italian higher-education institution) and distil a
+SHORT, ACTIONABLE preference profile in STRICT JSON.
+
+The profile feeds back into FUTURE discovery prompts to bias what the
+model surfaces. Be specific, not generic. Cite concrete attributes
+(country, entity type, focus area, mission) — not feel-good fluff.
+
+PAST DECISIONS (most recent first):
+{json.dumps(decisions_payload, indent=2, ensure_ascii=False)}
+
+Produce STRICT JSON in exactly this shape:
+{{
+  "strongly_prefers": [
+    "<concrete pattern derived from YES decisions, e.g. 'public research
+     universities in EU with active Erasmus+ programs and design schools'>"
+  ],
+  "softly_prefers":   [ "<weaker, less-certain preferences>" ],
+  "rejects":          [
+    "<concrete anti-pattern derived from NO decisions, e.g. 'government
+     FDI / investment-promotion agencies (ICEX-style)' or 'startup
+     accelerators with no academic affiliation'>"
+  ],
+  "notes":            "<1-2 sentence overall summary of what this user
+                       cares about — used as a steering preamble>"
+}}
+
+Rules:
+- Max 5 items per list; QUALITY over quantity.
+- Each item must be derivable from at least one decision above.
+- Quote the reason text where possible — the user's own words are gold.
+- If a category is empty, return [] (not null).
+- No commentary outside the JSON object.
+"""
+
+    try:
+        from google.genai import types as _gtypes
+        client_ai = genai.Client(api_key=GEMINI_KEY)
+        resp = client_ai.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=_gtypes.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1,
+                max_output_tokens=2048,
+            ),
+        )
+        # Defensive multi-part concat (same trick as discover)
+        text_parts = []
+        if getattr(resp, "candidates", None):
+            for cand in resp.candidates:
+                content = getattr(cand, "content", None)
+                parts = getattr(content, "parts", None) if content else None
+                if parts:
+                    for p in parts:
+                        t = getattr(p, "text", None)
+                        if t:
+                            text_parts.append(t)
+        concat_text = "".join(text_parts).strip()
+        fallback_text = (resp.text or "").strip() if hasattr(resp, "text") else ""
+        raw_text = concat_text if len(concat_text) >= len(fallback_text) else fallback_text
+    except Exception as e:
+        import traceback as _tb
+        print(f"[distill] Gemini call failed: {e}\n{_tb.format_exc()}")
+        return {"ok": False, "error": f"Gemini call failed: {e}",
+                "exception_type": type(e).__name__}
+
+    # Loose JSON parse — fenced, mixed-text, or pure
+    s = (raw_text or "").strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```(?:json)?\s*", "", s)
+        s = re.sub(r"\s*```\s*$", "", s).strip()
+    profile = None
+    try:
+        profile = json.loads(s)
+    except Exception:
+        i, j = s.find("{"), s.rfind("}")
+        if i >= 0 and j > i:
+            try:
+                profile = json.loads(s[i:j+1])
+            except Exception:
+                pass
+    if not isinstance(profile, dict):
+        return {"ok": False, "error": "Gemini returned non-JSON profile",
+                "raw_preview": (raw_text or "")[:600]}
+
+    # Normalise shape so downstream code never has to guess
+    def _str_list(v):
+        if not isinstance(v, list):
+            return []
+        return [str(x).strip() for x in v if str(x).strip()][:5]
+
+    profile = {
+        "strongly_prefers": _str_list(profile.get("strongly_prefers")),
+        "softly_prefers":   _str_list(profile.get("softly_prefers")),
+        "rejects":          _str_list(profile.get("rejects")),
+        "notes":            str(profile.get("notes") or "").strip()[:400],
+    }
+    decision_count = len(decisions_payload)
+    now = _now_iso()
+    profile_json_str = json.dumps(profile, ensure_ascii=False)
+
+    # Upsert (same ON CONFLICT syntax works in SQLite ≥3.24 and Postgres)
+    db.execute(
+        """INSERT INTO prospect_user_profile
+               (user_handle, profile_json, distilled_at, decision_count)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(user_handle) DO UPDATE SET
+               profile_json   = excluded.profile_json,
+               distilled_at   = excluded.distilled_at,
+               decision_count = excluded.decision_count""",
+        (handle, profile_json_str, now, decision_count),
+    )
+    db.commit()
+    return {
+        "ok":             True,
+        "user_handle":    handle,
+        "profile":        profile,
+        "distilled_at":   now,
+        "decision_count": decision_count,
+    }
 
 
 def _prospect_row_to_dict(row):
@@ -2533,7 +2751,92 @@ def prospects_decide(prospect_id):
     db.execute("UPDATE prospect_candidates SET status = ? WHERE id = ?", (new_status, prospect_id))
     db.commit()
     _record_edit("prospect", "decide", prospect_id)
-    return jsonify({"ok": True, "decision_id": did, "new_status": new_status})
+
+    # P3 — auto-distil the user's preference profile every Nth decision.
+    # We do this inline (no background worker) — Gemini call is cheap and
+    # the user benefits immediately on their next discovery. If it fails,
+    # we swallow the error so it never breaks the decision flow.
+    distill_meta = None
+    if decided_by:
+        try:
+            count_row = db.execute(
+                "SELECT COUNT(*) AS n FROM prospect_decisions WHERE decided_by = ?",
+                (decided_by,),
+            ).fetchone()
+            total = (count_row["n"] if count_row else 0) or 0
+            if total and total % _DISTILL_AUTO_EVERY_N == 0:
+                res = _distill_user_profile(decided_by, db)
+                distill_meta = {
+                    "triggered":     True,
+                    "ok":            bool(res.get("ok")),
+                    "decision_count": res.get("decision_count"),
+                    "error":         res.get("error"),
+                }
+                print(f"[prospects] auto-distil for {decided_by!r} after {total} decisions: ok={res.get('ok')}")
+        except Exception as e:
+            print(f"[prospects] auto-distil failed silently: {e}")
+            distill_meta = {"triggered": True, "ok": False, "error": str(e)}
+
+    return jsonify({
+        "ok": True,
+        "decision_id": did,
+        "new_status": new_status,
+        "profile_distilled": distill_meta,
+    })
+
+
+@app.route("/api/prospects/profile/<handle>", methods=["GET"])
+@auth_required
+def prospects_profile_get(handle):
+    """Read the current preference profile for a user. Returns 404 if
+    the user has never had a profile distilled (i.e. <5 decisions)."""
+    db = get_db()
+    row = db.execute(
+        "SELECT user_handle, profile_json, distilled_at, decision_count "
+        "FROM prospect_user_profile WHERE user_handle = ?",
+        (handle,),
+    ).fetchone()
+    if not row:
+        # Tell the caller how many decisions are needed before the first
+        # distil — UX uses this to show "Learning from 2/5 decisions".
+        dc_row = db.execute(
+            "SELECT COUNT(*) AS n FROM prospect_decisions WHERE decided_by = ?",
+            (handle,),
+        ).fetchone()
+        return jsonify({
+            "ok":             False,
+            "exists":         False,
+            "user_handle":    handle,
+            "decision_count": (dc_row["n"] if dc_row else 0) or 0,
+            "threshold":      _DISTILL_AUTO_EVERY_N,
+        }), 200
+    try:
+        profile = json.loads(row["profile_json"])
+    except Exception:
+        profile = {}
+    return jsonify({
+        "ok":             True,
+        "exists":         True,
+        "user_handle":    row["user_handle"],
+        "profile":        profile,
+        "distilled_at":   row["distilled_at"],
+        "decision_count": row["decision_count"],
+        "threshold":      _DISTILL_AUTO_EVERY_N,
+    })
+
+
+@app.route("/api/prospects/profile/<handle>/distill", methods=["POST"])
+@auth_required
+def prospects_profile_distill(handle):
+    """Manually rebuild the profile for a user (bypasses the every-N
+    auto-trigger). Useful right after the user changes their mind or
+    flips a lot of decisions in one sitting."""
+    db = get_db()
+    res = _distill_user_profile(handle, db)
+    if not res.get("ok"):
+        return jsonify(res), 400 if res.get("error") == "no decisions yet for this user" else 500
+    _record_edit("prospect", "distill", handle)
+    return jsonify(res)
 
 
 @app.route("/api/prospects/<prospect_id>/approve", methods=["POST"])

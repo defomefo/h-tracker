@@ -1841,6 +1841,30 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .prospects-head .ph-discover{background:var(--hf-red);color:#fff;border:none;padding:11px 20px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.7px;font-family:inherit;text-transform:uppercase;transition:background .12s;white-space:nowrap;box-shadow:0 2px 8px rgba(217,83,79,.25)}
 .prospects-head .ph-discover:hover{background:var(--hf-red-deep)}
 
+/* P3 — Smart Learning Loop profile badge in the prospects view header */
+.ph-profile{margin-top:14px;font-size:12px;line-height:1.5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 12px;border-radius:6px;border:1px solid var(--rule);background:linear-gradient(180deg,#f6f8fc,#eef1f7);color:var(--ink-soft)}
+.ph-profile-noid{color:var(--ink-soft);font-style:italic}
+.ph-profile-loading{color:var(--ink-soft);font-style:italic;opacity:.85}
+.ph-profile-bootstrap{color:var(--navy)}
+.ph-profile-active{color:var(--navy);background:linear-gradient(180deg,#eaf3ec,#dfeee3);border-color:#bcd9c2}
+.ph-profile .pp-icon{font-size:14px}
+.ph-profile .pp-text{flex:1;min-width:200px}
+.ph-profile .pp-btn{background:#fff;border:1px solid var(--rule);font-family:inherit;font-size:11px;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;color:var(--ink);letter-spacing:.2px;transition:all .12s}
+.ph-profile .pp-btn:hover{border-color:var(--gold);background:#fffbe8}
+
+/* Profile inspect modal — strongly/softly/rejects sections */
+.ppi-section{margin-bottom:18px}
+.ppi-label{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+.ppi-label.ppi-strong{color:#1f7a35}
+.ppi-label.ppi-soft{color:#5c6f8a}
+.ppi-label.ppi-rej{color:#a4332b}
+.ppi-notes{font-size:13px;line-height:1.55;color:var(--ink);padding:8px 12px;background:var(--paper);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;font-style:italic}
+.ppi-list{margin:0;padding-left:20px;list-style:disc}
+.ppi-list li{font-size:13px;line-height:1.5;color:var(--ink);margin-bottom:4px}
+.ppi-empty{font-size:12px;color:var(--ink-mute);font-style:italic;padding:4px 0}
+.ppi-meta{font-size:11px;color:var(--ink-mute);line-height:1.5;padding:12px 0;border-top:1px solid var(--rule);margin-top:8px}
+.ppi-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)}
+
 .prospects-tabs{display:flex;gap:6px;border-bottom:1px solid var(--rule);padding-bottom:0;align-items:center}
 .prospects-tabs .pt-tab{background:transparent;border:none;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:8px;transition:all .12s;text-transform:uppercase}
 .prospects-tabs .pt-tab:hover{color:var(--navy)}
@@ -2833,6 +2857,17 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <button class="compare-close" onclick="closeProspectDetail()">&times;</button>
     </div>
     <div class="compare-body" id="prospect-detail-body"></div>
+  </div>
+</div>
+
+<!-- P3: Preference profile inspect modal (what the AI thinks you want) -->
+<div class="compare-modal" id="prospect-profile-modal" style="z-index:427">
+  <div class="compare-box" style="max-width:640px">
+    <div class="compare-head">
+      <h2 id="prospect-profile-title">🧠 Preference profile</h2>
+      <button class="compare-close" onclick="closeProspectsProfileInspect()">&times;</button>
+    </div>
+    <div class="compare-body" id="prospect-profile-body"></div>
   </div>
 </div>
 
@@ -4802,6 +4837,10 @@ async function syncProspectsFromServer() {
     _writeLocalProspects(PROSPECTS);
     if (STATE.view === "prospects" && typeof renderProspectsView === "function") renderProspectsView();
     if (STATE.view === "home"      && typeof renderHomeView      === "function") renderHomeView();
+    // Fire-and-forget the P3 preference profile — uses a separate endpoint
+    // so a profile failure never blocks the candidate list. Render runs
+    // again from inside syncProspectsProfile once it lands.
+    if (typeof syncProspectsProfile === "function") syncProspectsProfile();
     return true;
   } catch (e) {
     console.warn("[prospects] server unreachable, using local cache:", e.message);
@@ -4843,9 +4882,17 @@ async function decideProspect(prospectId, decision, reasonOverride) {
       alert("Decision failed: " + (j.error || r.status));
       return;
     }
-    // Refresh from server so status flips visibly
+    // Capture the decide response so we can surface the auto-distil event
+    // (server fires every Nth decision — toast tells the user their next
+    // search will be biased by the fresh profile).
+    const respJson = await r.json().catch(() => ({}));
+    // Refresh from server so status flips visibly (also pulls fresh profile)
     await syncProspectsFromServer();
-    showSyncToast(`Decision recorded · ${decision}`, "ok");
+    if (respJson && respJson.profile_distilled && respJson.profile_distilled.ok) {
+      showSyncToast(`🧠 Profile auto-updated · ${respJson.profile_distilled.decision_count || 0} decisions analysed`, "ok");
+    } else {
+      showSyncToast(`Decision recorded · ${decision}`, "ok");
+    }
   } catch (e) {
     alert("Network error: " + e.message);
   }
@@ -4941,7 +4988,69 @@ const PROSPECTS_STATE = {
   tab:       "pending",         // pending | maybe | approved | rejected | all
   search:    "",
   detailId:  null,
+  // P3 — Smart Learning Loop. Cached profile for the active user. Refreshed
+  // by syncProspectsProfile() and shown in the view header. The server
+  // distils a new profile every 5 decisions (or on manual rebuild) and the
+  // discovery prompt pulls it in to bias future searches.
+  profile:        null,    // { profile, distilled_at, decision_count, threshold } | null
+  profileLoading: false,
+  profileError:   null,
 };
+
+async function syncProspectsProfile() {
+  const handle = (typeof getDisplayName === "function" ? getDisplayName() : "") || "";
+  if (!handle) return null;
+  try {
+    const r = await apiFetch("/api/prospects/profile/" + encodeURIComponent(handle), { cache: "no-store" });
+    if (!r.ok) {
+      PROSPECTS_STATE.profile = null;
+      return null;
+    }
+    const j = await r.json();
+    PROSPECTS_STATE.profile = j;
+    if (STATE.view === "prospects" && typeof renderProspectsView === "function") renderProspectsView();
+    return j;
+  } catch (e) {
+    console.warn("[prospects] profile fetch failed:", e.message);
+    PROSPECTS_STATE.profileError = e.message;
+    return null;
+  }
+}
+
+async function rebuildProspectsProfile() {
+  const handle = (typeof getDisplayName === "function" ? getDisplayName() : "") || "";
+  if (!handle) { alert("Set your display name first (Who am I? at the top right)."); return; }
+  PROSPECTS_STATE.profileLoading = true;
+  if (STATE.view === "prospects") renderProspectsView();
+  try {
+    const r = await apiFetch("/api/prospects/profile/" + encodeURIComponent(handle) + "/distill", {
+      method: "POST", headers: _identityHeaders(),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = j.error || ("HTTP " + r.status);
+      alert("Profile rebuild failed: " + msg);
+      return;
+    }
+    // Backend returns { ok, profile, distilled_at, decision_count } — normalize
+    // to the same shape the GET endpoint returns so render code can be shared.
+    PROSPECTS_STATE.profile = {
+      ok:             true,
+      exists:         true,
+      user_handle:    j.user_handle,
+      profile:        j.profile,
+      distilled_at:   j.distilled_at,
+      decision_count: j.decision_count,
+      threshold:      PROSPECTS_STATE.profile && PROSPECTS_STATE.profile.threshold || 5,
+    };
+    showSyncToast("🧠 Profile rebuilt from " + (j.decision_count || 0) + " decisions", "ok");
+  } catch (e) {
+    alert("Network error: " + e.message);
+  } finally {
+    PROSPECTS_STATE.profileLoading = false;
+    if (STATE.view === "prospects") renderProspectsView();
+  }
+}
 
 function _prospectStatusLabel(s) {
   return {
@@ -4977,6 +5086,7 @@ function renderProspectsView() {
       <span class="ph-eyebrow">Discovery · AI partnership scout</span>
       <h1>Prospects</h1>
       <div class="ph-sub">AI-surfaced new partnership candidates with mandatory source URLs, ROR cross-check, and dedupe against your existing pipeline. The system learns from your yes/no decisions to bias future searches toward what you actually want.</div>
+      ${_prospectProfileBadgeHtml()}
     </div>
     <div class="ph-actions">
       <button class="ph-discover" onclick="openProspectDiscoverModal()">⚲ Find prospects</button>
@@ -5016,6 +5126,116 @@ function renderProspectsView() {
 
   html += `</div>`;
   el.innerHTML = html;
+}
+
+// P3 — Smart Learning Loop badge in the prospects header.
+// Three states:
+//   (1) no display name set — gentle prompt
+//   (2) no profile yet (decisions < threshold) — "Learning from N/5 decisions"
+//   (3) profile exists — "Learning from N decisions · updated Xh ago · 🧠 Rebuild · ⓘ Inspect"
+function _prospectProfileBadgeHtml() {
+  const handle = (typeof getDisplayName === "function" ? getDisplayName() : "") || "";
+  if (!handle) {
+    return `<div class="ph-profile ph-profile-noid">🧠 Set your display name to enable smart learning from your decisions.</div>`;
+  }
+  const ps = PROSPECTS_STATE.profile;
+  const loading = PROSPECTS_STATE.profileLoading;
+  if (loading) {
+    return `<div class="ph-profile ph-profile-loading">🧠 Rebuilding preference profile…</div>`;
+  }
+  if (!ps) {
+    // Haven't fetched yet — quiet placeholder; sync will fill it in
+    return `<div class="ph-profile ph-profile-loading">🧠 Loading preference profile…</div>`;
+  }
+  const threshold = ps.threshold || 5;
+  if (!ps.exists) {
+    const dc = ps.decision_count || 0;
+    const remaining = Math.max(0, threshold - (dc % threshold || threshold));
+    if (dc === 0) {
+      return `<div class="ph-profile ph-profile-bootstrap">🧠 No preference profile yet. Make ${threshold} yes/no decisions and I'll auto-distil what you actually want into the next search.</div>`;
+    }
+    return `<div class="ph-profile ph-profile-bootstrap">🧠 Learning from ${dc}/${threshold} decisions · ${remaining} more to unlock auto-bias on the next search.</div>`;
+  }
+  // Profile exists — show summary line + actions
+  const updatedHuman = _humanTimeAgo(ps.distilled_at);
+  const sp = (ps.profile && ps.profile.strongly_prefers) || [];
+  const rj = (ps.profile && ps.profile.rejects) || [];
+  const summary = ps.profile && ps.profile.notes
+    ? escape(ps.profile.notes)
+    : `${sp.length} preferences · ${rj.length} rejects identified`;
+  return `<div class="ph-profile ph-profile-active" title="${escapeAttr(summary)}">
+    <span class="pp-icon">🧠</span>
+    <span class="pp-text"><b>Learning from ${ps.decision_count || 0} decisions</b> · updated ${escape(updatedHuman)}</span>
+    <button class="pp-btn" onclick="openProspectsProfileInspect()" title="See what the AI thinks you want">ⓘ Inspect</button>
+    <button class="pp-btn" onclick="rebuildProspectsProfile()" title="Force a rebuild from your most recent ${ps.decision_count || 0} decisions">🧠 Rebuild</button>
+  </div>`;
+}
+
+// Tiny relative-time helper. Falls back to the ISO date if parsing fails.
+function _humanTimeAgo(iso) {
+  if (!iso) return "—";
+  const t = new Date(iso);
+  if (isNaN(t)) return iso;
+  const seconds = Math.max(0, Math.round((Date.now() - t.getTime()) / 1000));
+  if (seconds < 60)        return seconds + "s ago";
+  const mins = Math.round(seconds / 60);
+  if (mins < 60)           return mins + "m ago";
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24)            return hrs + "h ago";
+  const days = Math.round(hrs / 24);
+  if (days < 30)           return days + "d ago";
+  return t.toISOString().slice(0, 10);
+}
+
+// Modal showing the distilled profile in full — strongly/softly/rejects/notes.
+function openProspectsProfileInspect() {
+  const ps = PROSPECTS_STATE.profile;
+  if (!ps || !ps.exists || !ps.profile) {
+    alert("No profile yet — decide on at least 5 candidates first.");
+    return;
+  }
+  const p = ps.profile;
+  const list = (arr) => (arr && arr.length)
+    ? `<ul class="ppi-list">${arr.map(x => `<li>${escape(x)}</li>`).join("")}</ul>`
+    : `<div class="ppi-empty">— none identified —</div>`;
+  const body = `
+    <div class="ppi-section">
+      <div class="ppi-label">🧠 Summary (steering preamble)</div>
+      <div class="ppi-notes">${escape(p.notes || "—")}</div>
+    </div>
+    <div class="ppi-section">
+      <div class="ppi-label ppi-strong">✅ Strongly prefers</div>
+      ${list(p.strongly_prefers)}
+    </div>
+    <div class="ppi-section">
+      <div class="ppi-label ppi-soft">➕ Softly prefers</div>
+      ${list(p.softly_prefers)}
+    </div>
+    <div class="ppi-section">
+      <div class="ppi-label ppi-rej">❌ Rejects</div>
+      ${list(p.rejects)}
+    </div>
+    <div class="ppi-meta">
+      Distilled at ${escape(ps.distilled_at || "—")} from ${ps.decision_count || 0} decisions.<br/>
+      This profile is injected into every future <i>Find prospects</i> call so Gemini biases toward what you actually want.
+    </div>
+    <div class="ppi-actions">
+      <button class="btn outline" onclick="closeProspectsProfileInspect()">Close</button>
+      <button class="btn gold" onclick="closeProspectsProfileInspect(); rebuildProspectsProfile()">🧠 Rebuild now</button>
+    </div>
+  `;
+  const handle = (typeof getDisplayName === "function" ? getDisplayName() : "") || "";
+  const titleEl = document.getElementById("prospect-profile-title");
+  const bodyEl  = document.getElementById("prospect-profile-body");
+  const modal   = document.getElementById("prospect-profile-modal");
+  if (titleEl) titleEl.textContent = `🧠 Preference profile · ${handle}`;
+  if (bodyEl)  bodyEl.innerHTML = body;
+  if (modal)   modal.classList.add("open");
+}
+
+function closeProspectsProfileInspect() {
+  const modal = document.getElementById("prospect-profile-modal");
+  if (modal) modal.classList.remove("open");
 }
 
 function _prospectCardHtml(p) {
