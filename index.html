@@ -4542,26 +4542,45 @@ function applyEntityOverridesToUnis() {
     const unisIds = new Set(UNIS.map(u => u.id));
     Object.entries(overrides).forEach(([id, ov]) => {
       if (!ov || !ov._seed || unisIds.has(id) || !ov.name) return;
+      // Resolve geography from the prospect's country — without this the
+      // seed entity has no lat/lng, and drawDots() crashes with
+      // "Cannot read properties of undefined (reading 'toFixed')" the
+      // next time the globe view tries to render. lookupGeo returns
+      // [continent, lat, lng, country_canonical]; null lat/lng is fine
+      // (drawDots filters those out) but undefined is not.
+      const _geo = (typeof lookupGeo === "function")
+        ? lookupGeo(ov.country || "", "", "")
+        : ["", null, null, ov.country || ""];
       const seed = {
         id,
         name:                  ov.name,
         country:               ov.country || "",
-        country_canonical:     ov.country || "",
-        continent:             ov.continent || ov.region || "",
+        country_canonical:     _geo[3] || ov.country || "",
+        continent:             ov.continent || ov.region || _geo[0] || "",
+        // Coerce to null (not undefined) so cohort filters using `!== null`
+        // OR `!= null` both reject correctly.
+        lat:                   (_geo[1] === undefined ? null : _geo[1]),
+        lng:                   (_geo[2] === undefined ? null : _geo[2]),
+        city:                  "",
         type:                  ov.type || "university",
         priority:              ov.priority || "Warm",
         strategic_tier:        ov.strategic_tier || "",
         focus_areas:           ov.focus_areas || "",
         notes:                 ov.notes || "",
         contacts:              Array.isArray(ov.contacts) ? ov.contacts : [],
+        last_contacted:        null,
+        final_action:          "",
+        website:               "",
+        phone:                 "",
         partnership_readiness: ov.partnership_readiness || "Early",
         pipeline_stage:        ov.pipeline_stage || "identified",
         partnership_score:     0,
         partnership_breakdown: {},
         program_matches:       {},
-        top_program_id:        null,
+        match_details:         {},
+        top_program_id:        "ootb",
         top_program_score:     0,
-        days_dormant:          0,
+        days_dormant:          null,
       };
       if (typeof recomputeEntityDerived === "function") recomputeEntityDerived(seed);
       UNIS.push(seed);
@@ -6861,9 +6880,12 @@ function cfPhase2Lift(feature, durationMs) {
     // path. As the clone is morphed, the dots scale with it and stay visible
     // throughout the lift/zoom and once the country is in its final slot.
     const countryName = CF_STATE.country;
+    // `!= null` catches BOTH null and undefined (loose equality on purpose) —
+    // approved-prospect seeds without geo would slip past `!== null`.
     const cohort = UNIS.filter(u =>
       (u.country_canonical || u.country) === countryName
-      && u.lat !== null && u.lng !== null
+      && u.lat != null && u.lng != null
+      && typeof u.lat === "number" && typeof u.lng === "number"
     );
     // Size dots and jitter spread relative to the country bbox so they look
     // consistent regardless of country scale on the screen.
@@ -14899,7 +14921,7 @@ function spinToContinent(continent) {
 
 function spinToCountry(country) {
   // Find the lat/lng for this country from any matching entity
-  const u = UNIS.find(x => (x.country_canonical || x.country) === country && x.lat !== null && x.lng !== null);
+  const u = UNIS.find(x => (x.country_canonical || x.country) === country && x.lat != null && x.lng != null);
   if (u) spinGlobeTo(u.lng, u.lat);
 }
 
@@ -14989,7 +15011,13 @@ function drawDots() {
   if (typeof hideGlobeTip === "function") hideGlobeTip();
   dotsGroup.selectAll("*").remove();
   const filtered = applyFilters(UNIS);
-  const visible = filtered.filter(u => u.lat !== null && u.lng !== null);
+  // `!= null` catches null AND undefined; also require numeric type so an
+  // entity with stringly-typed geo or a missing seed (approved prospect
+  // without geo resolution) doesn't blow up `.toFixed()` below.
+  const visible = filtered.filter(u =>
+    u.lat != null && u.lng != null
+    && typeof u.lat === "number" && typeof u.lng === "number"
+  );
   // Group by coords — entities with unique city placement render exactly;
   // only collisions get deterministic jitter so they don't stack.
   const coordGroups = {};
