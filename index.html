@@ -1829,6 +1829,131 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .contract-form .cf-attach-del:hover{border-color:var(--crit);color:var(--crit)}
 .contract-form .cf-attach-add{font-size:11px;background:transparent;border:1px dashed var(--rule);color:var(--ink-soft);padding:6px 12px;border-radius:5px;cursor:pointer;font-family:inherit;align-self:flex-start;font-weight:600}
 .contract-form .cf-attach-add:hover{border-color:var(--navy);color:var(--navy);border-style:solid}
+/* ============================================================
+   FOLLOW-UPS — standalone view (Action Queue)
+   ============================================================ */
+.followups-shell{padding:22px 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.followups-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.followups-head .fh-title-block{display:flex;flex-direction:column;gap:4px}
+.followups-head .fh-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--hf-red)}
+.followups-head h1{font-size:26px;font-weight:800;color:var(--navy);letter-spacing:-0.4px;margin:0}
+.followups-head .fh-sub{font-size:13px;color:var(--ink-soft);line-height:1.5;max-width:680px}
+.followups-head .fh-new{background:var(--hf-red);color:#fff;border:none;padding:10px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.6px;font-family:inherit;text-transform:uppercase;transition:background .12s;white-space:nowrap}
+.followups-head .fh-new:hover{background:var(--hf-red-deep)}
+
+.followups-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.fk-tile{background:#fff;border:1px solid var(--rule);border-top:3px solid var(--ink-mute);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.fk-tile.urgent{border-top-color:var(--crit)}
+.fk-tile.today{border-top-color:var(--hf-red)}
+.fk-tile.week{border-top-color:var(--warm)}
+.fk-tile.total{border-top-color:var(--navy)}
+.fk-tile .fk-num{font-size:26px;font-weight:800;color:var(--navy);letter-spacing:-0.5px;font-variant-numeric:tabular-nums;line-height:1.1}
+.fk-tile .fk-lbl{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--ink-soft);text-transform:uppercase}
+.fk-tile .fk-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;font-style:italic;line-height:1.3}
+
+.followups-toolbar{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.followups-toolbar .ft-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.followups-toolbar .ft-label{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--ink-soft);margin-right:4px}
+.followups-toolbar .ft-pill{background:#fff;border:1px solid var(--rule);padding:5px 12px;font-family:inherit;font-size:11px;font-weight:600;color:var(--ink-soft);cursor:pointer;border-radius:14px;transition:all .12s}
+.followups-toolbar .ft-pill:hover{color:var(--navy);background:var(--paper);border-color:var(--navy)}
+.followups-toolbar .ft-pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.followups-toolbar .ft-spacer{flex:1}
+.followups-toolbar .ft-search{padding:7px 12px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink);width:240px;min-width:140px}
+.followups-toolbar .ft-search:focus{outline:none;border-color:var(--gold);background:#fff}
+
+.followups-group{background:#fff;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.followups-group .fg-head{padding:10px 16px;background:var(--paper);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--navy);display:flex;justify-content:space-between;border-bottom:1px solid var(--rule)}
+.followups-group .fg-head .fg-count{background:var(--ink);color:#fff;padding:1px 9px;border-radius:9px;font-size:10px;letter-spacing:.4px}
+.followups-group.group-overdue .fg-head{color:var(--crit);background:rgba(139,26,26,.06)}
+.followups-group.group-overdue .fg-head .fg-count{background:var(--crit)}
+.followups-group.group-today .fg-head{color:var(--hf-red-deep);background:rgba(217,83,79,.06)}
+.followups-group.group-today .fg-head .fg-count{background:var(--hf-red)}
+.followups-group.group-week .fg-head{color:#A87A20;background:rgba(224,169,59,.07)}
+.followups-group.group-week .fg-head .fg-count{background:var(--warm)}
+.followups-group.group-done{opacity:.7}
+.followups-group.group-done .fg-head{color:var(--ur);background:rgba(46,125,91,.05)}
+.followups-group.group-done .fg-head .fg-count{background:var(--ur)}
+
+.followup-row{display:grid;grid-template-columns:32px 1fr auto auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--rule);transition:background .12s}
+.followup-row:first-child{border-top:0}
+.followup-row:hover{background:var(--paper)}
+.followup-row.done .fr-title{text-decoration:line-through;color:var(--ink-mute)}
+.followup-row.done{opacity:.85}
+
+.fr-check{width:22px;height:22px;border:1.5px solid var(--rule);border-radius:50%;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:transparent;transition:all .12s;padding:0;font-family:inherit}
+.fr-check:hover{border-color:var(--ur);background:rgba(46,125,91,.08)}
+.fr-check.checked{background:var(--ur);border-color:var(--ur);color:#fff}
+
+.fr-main{cursor:pointer;min-width:0}
+.fr-title{font-size:13px;font-weight:600;color:var(--navy);line-height:1.4;margin-bottom:2px}
+.fr-meta{font-size:11px;color:var(--ink-soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fr-partner{font-weight:600}
+.fr-partner-sub{color:var(--ink-mute);font-weight:400}
+.fr-owner{background:var(--paper);color:var(--ink);padding:1px 8px;border-radius:8px;font-size:10px;font-weight:700;letter-spacing:.3px}
+
+.fr-due{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fr-due-overdue{background:rgba(139,26,26,.12);color:var(--crit)}
+.fr-due-today{background:rgba(217,83,79,.14);color:var(--hf-red-deep)}
+.fr-due-soon{background:rgba(224,169,59,.16);color:#7E5500}
+.fr-due-future{background:var(--paper);color:var(--ink-soft)}
+.fr-due-no-date{background:transparent;color:var(--ink-mute);font-style:italic;font-weight:600}
+
+.fr-actions{display:flex;gap:4px;align-items:center}
+.fr-edit,.fr-del{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);padding:4px 9px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;transition:all .12s}
+.fr-edit:hover{border-color:var(--navy);color:var(--navy)}
+.fr-del{padding:4px 8px;font-size:14px;line-height:1}
+.fr-del:hover{border-color:var(--crit);color:var(--crit)}
+
+.followups-empty{background:#fff;border:1px dashed var(--rule);border-radius:6px;padding:50px 30px;text-align:center;color:var(--ink-soft)}
+.followups-empty h3{font-size:15px;color:var(--navy);font-weight:700;margin-bottom:8px}
+.followups-empty p{font-size:12px;line-height:1.5;max-width:480px;margin:0 auto 14px}
+.followups-empty .btn{display:inline-block;background:var(--hf-red);color:#fff;border:none;padding:9px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.5px;font-family:inherit;text-transform:uppercase}
+.followups-empty .btn:hover{background:var(--hf-red-deep)}
+
+/* Follow-up modal form */
+.followup-form{display:flex;flex-direction:column;gap:14px}
+.followup-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.followup-form .ff-field{display:flex;flex-direction:column;gap:5px}
+.followup-form .ff-full{grid-column:1 / -1}
+.followup-form .ff-label{font-size:10px;letter-spacing:.9px;text-transform:uppercase;font-weight:700;color:var(--ink-soft)}
+.followup-form .ff-label .req{color:var(--crit);margin-left:3px}
+.followup-form input[type=text],.followup-form input[type=date],.followup-form select,.followup-form textarea{padding:8px 11px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink);transition:border-color .12s,background .12s}
+.followup-form input:focus,.followup-form select:focus,.followup-form textarea:focus{outline:none;border-color:var(--gold);background:#fff}
+.followup-form textarea{min-height:70px;resize:vertical;line-height:1.5;font-family:'Helvetica Neue','Segoe UI',sans-serif}
+.followup-form .ff-hint{font-size:10px;color:var(--ink-soft);font-style:italic;line-height:1.4}
+.followup-form .ff-presets{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.followup-form .ff-preset{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);padding:3px 9px;border-radius:11px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:600;transition:all .12s}
+.followup-form .ff-preset:hover{border-color:var(--hf-red);color:var(--hf-red);background:rgba(217,83,79,.05)}
+.followup-form .ff-status-row{display:flex;gap:14px;padding:4px 0}
+.followup-form .ff-radio{display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--ink)}
+.followup-form .ff-radio input{margin:0;cursor:pointer}
+
+/* Entity detail panel — Follow-ups tab */
+.ent-followups{display:flex;flex-direction:column;gap:10px}
+.ent-followups-empty{padding:12px 0;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.ent-followups-empty p{font-size:12px;color:var(--ink-soft);font-style:italic;margin:0}
+.ent-followup-add{background:transparent;border:1px dashed var(--rule);color:var(--ink-soft);padding:7px 14px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;transition:all .12s}
+.ent-followup-add:hover{border-color:var(--hf-red);color:var(--hf-red);border-style:solid}
+.ent-followups-foot{margin-top:6px}
+.ent-fu-group{display:flex;flex-direction:column;gap:5px}
+.ent-fu-group.done{opacity:.7;margin-top:8px}
+.ent-fu-group-head{font-size:9px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--ink-soft);display:flex;align-items:center;gap:6px;padding:2px 0}
+.ent-fu-group-head span{background:var(--paper);color:var(--ink);padding:1px 7px;border-radius:8px;font-size:9px;letter-spacing:.3px}
+.ent-followup-row{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;background:#fff;border:1px solid var(--rule);border-left:3px solid var(--ink-mute);border-radius:5px;padding:8px 12px;transition:background .12s}
+.ent-followup-row:hover{background:var(--paper)}
+.ent-followup-row.done .ent-fu-title{text-decoration:line-through;color:var(--ink-mute)}
+.ent-followup-row.done{border-left-color:var(--ur)}
+.ent-fu-check{width:18px;height:18px;border:1.5px solid var(--rule);border-radius:50%;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:transparent;transition:all .12s;padding:0;font-family:inherit}
+.ent-fu-check:hover{border-color:var(--ur);background:rgba(46,125,91,.08)}
+.ent-fu-check.checked{background:var(--ur);border-color:var(--ur);color:#fff}
+.ent-fu-main{min-width:0}
+.ent-fu-title{font-size:12px;font-weight:600;color:var(--navy);line-height:1.4}
+.ent-fu-notes{font-size:10.5px;color:var(--ink-soft);margin-top:2px;line-height:1.45;font-style:italic}
+.ent-fu-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.ent-fu-owner{font-size:9px;font-weight:700;letter-spacing:.3px;background:var(--paper);color:var(--ink);padding:2px 7px;border-radius:8px}
+.ent-fu-edit{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);padding:3px 8px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;transition:all .12s}
+.ent-fu-edit:hover{border-color:var(--navy);color:var(--navy)}
+
 /* Entity detail panel — Contracts tab */
 .ent-contracts{display:flex;flex-direction:column;gap:6px}
 .ent-contracts-empty{padding:12px 0;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
@@ -2267,6 +2392,10 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>
         <span class="nav-label">Outreach log</span>
       </button>
+      <button class="nav-item" data-view="followups" onclick="switchView('followups')" title="Concrete next step per partner — due date + owner. Prospective counterpart to Outreach log.">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span class="nav-label">Follow-ups</span>
+      </button>
 
       <div class="nav-section-label" style="margin-top:14px">H-FARM</div>
       <button class="nav-item" data-view="brochures" onclick="switchView('brochures')" title="PDFs + Google Drive links you can send to partners">
@@ -2396,6 +2525,9 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <!-- OUTREACH VIEW -->
     <section id="view-outreach" class="view hidden"></section>
 
+    <!-- FOLLOW-UPS VIEW -->
+    <section id="view-followups" class="view hidden"></section>
+
     <!-- BROCHURES VIEW -->
     <section id="view-brochures" class="view hidden"></section>
 
@@ -2461,6 +2593,25 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <button class="compare-close" onclick="closeContractDetail()">&times;</button>
     </div>
     <div class="compare-body" id="contract-detail-body"></div>
+  </div>
+</div>
+
+<!-- Follow-up new/edit modal -->
+<div class="compare-modal" id="followup-modal" style="z-index:421">
+  <div class="compare-box" style="max-width:560px">
+    <div class="compare-head">
+      <h2 id="followup-modal-title">New follow-up</h2>
+      <button class="compare-close" onclick="closeFollowupModal()">&times;</button>
+    </div>
+    <div class="compare-body">
+      <div id="followup-modal-body" class="followup-form"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--rule)">
+        <button class="btn outline" id="followup-modal-delete" onclick="deleteFollowupFromModal()" style="display:none;color:var(--crit);border-color:var(--crit)">Delete</button>
+        <div style="flex:1"></div>
+        <button class="btn outline" onclick="closeFollowupModal()">Cancel</button>
+        <button class="btn gold" onclick="submitFollowupForm()">Save</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -4215,6 +4366,163 @@ function _contractsTotalAnnualValue() {
     .reduce((s, c) => s + (c.annual_value_eur || 0), 0);
 }
 
+// ============================================================================
+// FOLLOW-UPS — prospective next-step-per-partner store.
+// Mirrors the contracts sync pattern: REST-backed table with a local
+// cache for snappy reads, optimistic mutations, and a 60s Undo toast
+// for destructive ops (delete). Wired into bootApp + focus listener
+// further down so multi-user state stays fresh.
+// ============================================================================
+const LS_FOLLOWUPS_KEY = "hfarm_followups_cache";
+function _readLocalFollowups() {
+  try { return JSON.parse(localStorage.getItem(LS_FOLLOWUPS_KEY) || "[]"); }
+  catch { return []; }
+}
+function _writeLocalFollowups(list) {
+  try { localStorage.setItem(LS_FOLLOWUPS_KEY, JSON.stringify(list || [])); } catch {}
+}
+let FOLLOWUPS = _readLocalFollowups();
+
+async function syncFollowupsFromServer() {
+  try {
+    const r = await apiFetch("/api/followups", { cache: "no-store" });
+    const data = await r.json();
+    FOLLOWUPS = data.followups || [];
+    _writeLocalFollowups(FOLLOWUPS);
+    if (STATE.view === "home"      && typeof renderHomeView      === "function") renderHomeView();
+    if (STATE.view === "followups" && typeof renderFollowupsView === "function") renderFollowupsView();
+    return true;
+  } catch (e) {
+    console.warn("[followups] server unreachable, using local cache:", e.message);
+    return false;
+  }
+}
+
+async function saveFollowup(followup) {
+  // Optimistic local update
+  const idx = FOLLOWUPS.findIndex(f => f.id === followup.id);
+  if (idx >= 0) FOLLOWUPS[idx] = followup;
+  else          FOLLOWUPS.push(followup);
+  _writeLocalFollowups(FOLLOWUPS);
+  try {
+    await apiFetch("/api/followups/" + encodeURIComponent(followup.id), {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body:    JSON.stringify(followup),
+    });
+  } catch (e) {
+    console.warn("[followups] save deferred (offline):", e.message);
+  }
+}
+
+async function deleteFollowup(followupId, opts = {}) {
+  const f = FOLLOWUPS.find(x => x.id === followupId);
+  if (!f) return;
+  // Skip the confirm dialog when called from the inline checkbox flow —
+  // there's already a 60s Undo. Hard delete always confirms.
+  if (!opts.silent && !confirm(
+    `Delete this follow-up for EVERYONE on the team?\n\n` +
+    `"${(f.title || '').slice(0, 80)}"\n\n` +
+    `You'll have 60 seconds to Undo from the toast that appears.`
+  )) return;
+  // Snapshot for undo
+  _lastReset = { kind: "followup-delete", followup: JSON.parse(JSON.stringify(f)) };
+  FOLLOWUPS = FOLLOWUPS.filter(x => x.id !== followupId);
+  _writeLocalFollowups(FOLLOWUPS);
+  if (STATE.view === "followups") renderFollowupsView();
+  if (STATE.detailId === f.entity_id && typeof openDetail === "function") openDetail(f.entity_id);
+  try {
+    await apiFetch("/api/followups/" + encodeURIComponent(followupId), {
+      method:  "DELETE",
+      headers: _identityHeaders(),
+    });
+  } catch (e) {
+    console.warn("[followups] delete deferred (offline):", e.message);
+  }
+  showResetUndoToast(`Follow-up deleted · "${(f.title || '').slice(0, 50)}"`);
+}
+
+// Toggle status open<->done without opening the modal. Used by the
+// checkbox in list rows and the entity detail panel section.
+async function toggleFollowupDone(followupId) {
+  const f = FOLLOWUPS.find(x => x.id === followupId);
+  if (!f) return;
+  const updated = {
+    ...f,
+    status: (f.status === "done") ? "open" : "done",
+    updated_at: new Date().toISOString(),
+  };
+  if (updated.status === "done") updated.completed_at = new Date().toISOString();
+  else                            updated.completed_at = null;
+  await saveFollowup(updated);
+  if (STATE.view === "followups") renderFollowupsView();
+  if (STATE.view === "home")      renderHomeView();
+  if (STATE.detailId === f.entity_id && typeof openDetail === "function") openDetail(f.entity_id);
+}
+
+// Bucket helpers — used by the Home briefing + the standalone view header KPIs.
+// All buckets reference TODAY (local) and exclude completed items unless the
+// caller asks for them.
+function _followupBuckets(opts = {}) {
+  const includeDone = !!opts.includeDone;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const oneDay = 86400000;
+  const endOfWeek = new Date(today.getTime() + (7 - today.getDay()) * oneDay);
+  const out = { overdue: [], today: [], thisWeek: [], later: [], noDate: [], done: [], total: 0 };
+  (FOLLOWUPS || []).forEach(f => {
+    if (!f) return;
+    if (f.status === "done") {
+      if (includeDone) out.done.push(f);
+      return;
+    }
+    out.total += 1;
+    if (!f.due_date) { out.noDate.push(f); return; }
+    const due = new Date(f.due_date);
+    if (isNaN(due)) { out.noDate.push(f); return; }
+    const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    if (dueDay < today)            out.overdue.push(f);
+    else if (dueDay.getTime() === today.getTime()) out.today.push(f);
+    else if (dueDay <= endOfWeek)  out.thisWeek.push(f);
+    else                            out.later.push(f);
+  });
+  return out;
+}
+
+function _followupsForEntity(entityId, opts = {}) {
+  const includeDone = !!opts.includeDone;
+  return (FOLLOWUPS || [])
+    .filter(f => f.entity_id === entityId && (includeDone || f.status !== "done"))
+    .sort((a, b) => {
+      // open before done, then by due date asc (no-date last), then created desc
+      if ((a.status || "open") !== (b.status || "open")) {
+        return (a.status === "done") ? 1 : -1;
+      }
+      const ad = a.due_date || "9999-99-99";
+      const bd = b.due_date || "9999-99-99";
+      if (ad !== bd) return ad.localeCompare(bd);
+      return (b.created_at || "").localeCompare(a.created_at || "");
+    });
+}
+
+// Due-date badge classifier — drives color + microcopy ("3d overdue",
+// "today", "in 5d") on every follow-up row across all surfaces.
+function _followupDueBadge(iso) {
+  if (!iso) return { label: "no date", cls: "no-date" };
+  const due = new Date(iso);
+  if (isNaN(due)) return { label: "no date", cls: "no-date" };
+  const today = new Date();
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const days = Math.round((dueDay - t) / 86400000);
+  if (days < 0)  return { label: `${-days}d overdue`, cls: "overdue" };
+  if (days === 0) return { label: "today",            cls: "today" };
+  if (days === 1) return { label: "tomorrow",         cls: "soon" };
+  if (days <= 7)  return { label: `in ${days}d`,      cls: "soon" };
+  if (days <= 30) return { label: `in ${days}d`,      cls: "future" };
+  return { label: _fmtDate(iso),                       cls: "future" };
+}
+
 // Save a single field's override + apply locally + mirror to server.
 // Called from the editable form controls in the detail panel.
 async function saveEntityField(entityId, field, value) {
@@ -4634,6 +4942,7 @@ function renderCurrentView() {
   if (viewId === "strategy")  renderStrategicView();
   if (viewId === "database")  renderDatabaseView();
   if (viewId === "outreach")  renderOutreachView();
+  if (viewId === "followups") renderFollowupsView();
   if (viewId === "brochures") renderBrochuresView();
   if (viewId === "contracts") renderContractsView();
   if (viewId === "teams")     renderTeamsView();
@@ -6300,6 +6609,9 @@ function detailHtml(u) {
         <button class="eng-tab" data-tab="contracts" onclick="switchEngTab(event,'contracts')">
           Contracts <span class="ct-badge">${(CONTRACTS || []).filter(c => c.entity_id === u.id).length}</span>
         </button>
+        <button class="eng-tab" data-tab="followups" onclick="switchEngTab(event,'followups')">
+          Follow-ups <span class="ct-badge">${_followupsForEntity(u.id).length}</span>
+        </button>
         <button class="eng-tab" data-tab="activity" onclick="switchEngTab(event,'activity');loadEntityActivity('${u.id}')">
           Activity
         </button>
@@ -6312,6 +6624,9 @@ function detailHtml(u) {
       </div>
       <div class="eng-panel" data-panel="contracts">
         ${renderEntityContractsBody(u)}
+      </div>
+      <div class="eng-panel" data-panel="followups">
+        ${renderEntityFollowupsBody(u)}
       </div>
       <div class="eng-panel" data-panel="activity">
         <div id="activity-list-${u.id}" class="activity-list"><div class="activity-empty">Loading…</div></div>
@@ -8163,7 +8478,19 @@ function renderHomeView() {
   const everEngaged = UNIS.filter(u => u.pipeline_stage !== "identified").length;
   const signedActive = UNIS.filter(u => u.pipeline_stage === "signed" || u.pipeline_stage === "active").length;
   const insights = [];
-  // Contract alarms win the front spot when present — they're time-sensitive.
+  // Follow-up alarms own the very front when present — these are today's
+  // actual to-do items, the most action-ready signal we have.
+  const fBuckets = (typeof _followupBuckets === "function") ? _followupBuckets() : { overdue: [], today: [], thisWeek: [], total: 0 };
+  if (fBuckets.overdue.length > 0) {
+    insights.push(`<strong style="color:var(--crit)">${fBuckets.overdue.length}</strong> follow-up${fBuckets.overdue.length === 1 ? " is" : "s are"} <strong>overdue</strong> — <a onclick="switchView('followups')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">clear now</a>`);
+  }
+  if (fBuckets.today.length > 0) {
+    insights.push(`<strong>${fBuckets.today.length}</strong> follow-up${fBuckets.today.length === 1 ? "" : "s"} due <strong>today</strong> — <a onclick="switchView('followups')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">go</a>`);
+  }
+  if (insights.length < 2 && fBuckets.thisWeek.length > 0) {
+    insights.push(`<strong>${fBuckets.thisWeek.length}</strong> follow-up${fBuckets.thisWeek.length === 1 ? "" : "s"} due this week`);
+  }
+  // Contract alarms next — also time-sensitive but less per-day.
   // Expired > 30d expiring > stuck > 60d expiring > 90d expiring (urgency order).
   const cAlarms = (typeof _contractAlarms === "function") ? _contractAlarms() : { stuck: [], expiring30: [], expiring60: [], expiring90: [], expired: [] };
   if (cAlarms.expired && cAlarms.expired.length > 0) {
@@ -8651,6 +8978,25 @@ async function undoLastReset() {
       console.warn("[contract-undo] server write failed, kept locally:", e.message);
     }
     showSyncToast("✓ Contract restored", "ok");
+  } else if (snap.kind === "followup-delete") {
+    // Same shape as contract-delete: re-insert locally + push the same id
+    // back via the upsert endpoint. Server keeps the original created_at
+    // because we send it in the payload.
+    const f = snap.followup;
+    FOLLOWUPS.push(f);
+    _writeLocalFollowups(FOLLOWUPS);
+    if (STATE.view === "followups") renderFollowupsView();
+    if (STATE.detailId === f.entity_id && typeof openDetail === "function") openDetail(f.entity_id);
+    try {
+      await apiFetch("/api/followups/" + encodeURIComponent(f.id), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ..._identityHeaders() },
+        body: JSON.stringify(f),
+      });
+    } catch (e) {
+      console.warn("[followup-undo] server write failed, kept locally:", e.message);
+    }
+    showSyncToast("✓ Follow-up restored", "ok");
   } else if (snap.kind === "kb-reset") {
     // Restore the draft to whatever the user had before the reset. If they
     // never had a draft (currentDraft was null), clear instead — which
@@ -11147,6 +11493,351 @@ function _contractDaysUntilExpiry(c) {
   return Math.ceil((d - today) / 86400000);
 }
 
+// ============================================================================
+// FOLLOW-UPS VIEW — standalone "what should I do this week" list.
+//
+// Groups open follow-ups into Overdue / Today / This week / Later / No date
+// + a collapsed Done section below. Per-row checkbox flips status; row click
+// opens the entity detail; per-row edit/delete buttons hit the modal +
+// undo-toast paths.
+//
+// Filters: status (Open / Done / All), owner (Me / All / per-roster handle),
+// search (matches title + partner name). Sort is implicit via group order +
+// due date asc within each group.
+// ============================================================================
+const FOLLOWUPS_STATE = {
+  filterStatus: "open",     // "open" | "done" | "all"
+  filterOwner:  "all",      // "all" | "me" | handle
+  search:       "",
+  editingId:    null,
+  prefillEntity: null,      // set by "+ Add follow-up" from a specific entity
+};
+
+function renderFollowupsView() {
+  const el = document.getElementById("view-followups");
+  if (!el) return;
+
+  const buckets = _followupBuckets({ includeDone: true });
+  const totalOpen = buckets.total;
+  const totalOverdue = buckets.overdue.length;
+  const totalToday = buckets.today.length;
+  const totalThisWeek = buckets.thisWeek.length;
+
+  // Build filtered list
+  const myHandle = (typeof getUserHandle === "function" ? getUserHandle() : "") || "";
+  const searchQ  = (FOLLOWUPS_STATE.search || "").toLowerCase().trim();
+  const matches = (f) => {
+    if (FOLLOWUPS_STATE.filterStatus === "open" && f.status !== "open") return false;
+    if (FOLLOWUPS_STATE.filterStatus === "done" && f.status !== "done") return false;
+    if (FOLLOWUPS_STATE.filterOwner === "me" && f.owner_handle !== myHandle) return false;
+    if (FOLLOWUPS_STATE.filterOwner !== "all" && FOLLOWUPS_STATE.filterOwner !== "me" && f.owner_handle !== FOLLOWUPS_STATE.filterOwner) return false;
+    if (searchQ) {
+      const ent = UNIS.find(u => u.id === f.entity_id);
+      const partnerName = ent ? ent.name.toLowerCase() : "";
+      if (!(f.title || "").toLowerCase().includes(searchQ) && !partnerName.includes(searchQ)) return false;
+    }
+    return true;
+  };
+
+  // Owner filter pill options — operators that actually have at least one follow-up
+  const ownerSet = new Set();
+  (FOLLOWUPS || []).forEach(f => { if (f.owner_handle) ownerSet.add(f.owner_handle); });
+  const ownerOptions = ["all", "me", ...[...ownerSet].sort()];
+
+  // ---- HTML ----
+  let html = `<div class="followups-shell">`;
+
+  // Header
+  html += `<div class="followups-head">
+    <div class="fh-title-block">
+      <span class="fh-eyebrow">Partnerships · Action queue</span>
+      <h1>Follow-ups</h1>
+      <div class="fh-sub">Concrete next steps per partner — with a due date and an owner. The prospective counterpart to the outreach log. Done items are kept for the activity trail.</div>
+    </div>
+    <button class="fh-new" onclick="openFollowupModal(null)">+ New follow-up</button>
+  </div>`;
+
+  // KPI tiles
+  html += `<div class="followups-kpis">
+    <div class="fk-tile ${totalOverdue > 0 ? 'urgent' : ''}">
+      <div class="fk-num">${totalOverdue}</div>
+      <div class="fk-lbl">Overdue</div>
+      <div class="fk-sub">${totalOverdue === 0 ? "Nothing past due" : "Past their due date"}</div>
+    </div>
+    <div class="fk-tile today">
+      <div class="fk-num">${totalToday}</div>
+      <div class="fk-lbl">Due today</div>
+      <div class="fk-sub">Tackle these first</div>
+    </div>
+    <div class="fk-tile week">
+      <div class="fk-num">${totalThisWeek}</div>
+      <div class="fk-lbl">Due this week</div>
+      <div class="fk-sub">Plan time blocks</div>
+    </div>
+    <div class="fk-tile total">
+      <div class="fk-num">${totalOpen}</div>
+      <div class="fk-lbl">Total open</div>
+      <div class="fk-sub">${buckets.noDate.length} with no date</div>
+    </div>
+  </div>`;
+
+  // Toolbar
+  const sp = (s, label) => `<button class="ft-pill ${FOLLOWUPS_STATE.filterStatus === s ? "active" : ""}" onclick="followupsApplyFilter('status','${s}')">${label}</button>`;
+  const op = (o, label) => `<button class="ft-pill ${FOLLOWUPS_STATE.filterOwner === o ? "active" : ""}" onclick="followupsApplyFilter('owner','${escapeAttr(o)}')">${label}</button>`;
+  html += `<div class="followups-toolbar">
+    <div class="ft-group">
+      <span class="ft-label">Status</span>
+      ${sp("open", "Open")}
+      ${sp("done", "Done")}
+      ${sp("all", "All")}
+    </div>
+    <div class="ft-group">
+      <span class="ft-label">Owner</span>
+      ${ownerOptions.map(o => op(o, o === "me" ? "Me" : o === "all" ? "All" : escape(o))).join("")}
+    </div>
+    <div class="ft-spacer"></div>
+    <input type="search" class="ft-search" placeholder="Search title or partner…" value="${escapeAttr(FOLLOWUPS_STATE.search)}" oninput="followupsApplyFilter('search', this.value)"/>
+  </div>`;
+
+  // Compose the visible rows by group order
+  const groupOrder = ["overdue", "today", "thisWeek", "later", "noDate", "done"];
+  const groupLabels = {
+    overdue:  { label: "Overdue",        cls: "overdue" },
+    today:    { label: "Due today",      cls: "today" },
+    thisWeek: { label: "Due this week",  cls: "week" },
+    later:    { label: "Later",          cls: "later" },
+    noDate:   { label: "No date",        cls: "no-date" },
+    done:     { label: "Done",           cls: "done" },
+  };
+
+  const visibleByGroup = {};
+  groupOrder.forEach(g => visibleByGroup[g] = (buckets[g] || []).filter(matches));
+  const anyVisible = groupOrder.some(g => visibleByGroup[g].length > 0);
+
+  if (!anyVisible) {
+    if ((FOLLOWUPS || []).length === 0) {
+      html += `<div class="followups-empty">
+        <h3>No follow-ups yet</h3>
+        <p>Every partner deserves a concrete next step. Open any partner from the Globe or Database and click <b>+ Follow-up</b> in the detail panel, or start one here.</p>
+        <button class="btn" onclick="openFollowupModal(null)">+ Log your first follow-up</button>
+      </div>`;
+    } else {
+      html += `<div class="followups-empty">
+        <h3>Nothing matches these filters</h3>
+        <p>Try clearing status / owner / search to see all follow-ups.</p>
+        <button class="btn" onclick="followupsClearFilters()">Clear filters</button>
+      </div>`;
+    }
+  } else {
+    groupOrder.forEach(g => {
+      const rows = visibleByGroup[g];
+      if (!rows.length) return;
+      const meta = groupLabels[g];
+      html += `<div class="followups-group group-${meta.cls}">
+        <div class="fg-head"><span class="fg-name">${escape(meta.label)}</span><span class="fg-count">${rows.length}</span></div>
+        <div class="fg-list">${rows.map(_followupRowHtml).join("")}</div>
+      </div>`;
+    });
+  }
+
+  html += `</div>`; // /.followups-shell
+  el.innerHTML = html;
+}
+
+function _followupRowHtml(f) {
+  const ent = UNIS.find(u => u.id === f.entity_id);
+  const partner = ent ? ent.name : (f.entity_id || "—");
+  const partnerSub = ent ? (ent.country || ent.continent || "") : "";
+  const badge = _followupDueBadge(f.due_date);
+  const owner = f.owner_handle || "";
+  const isDone = f.status === "done";
+  return `<div class="followup-row ${isDone ? 'done' : ''}">
+    <button class="fr-check ${isDone ? 'checked' : ''}" onclick="toggleFollowupDone('${escapeAttr(f.id)}')" title="${isDone ? 'Re-open' : 'Mark done'}" aria-label="${isDone ? 'Re-open' : 'Mark done'}">${isDone ? '✓' : ''}</button>
+    <div class="fr-main" onclick="openDetail('${escapeAttr(f.entity_id)}')">
+      <div class="fr-title">${escape(f.title)}</div>
+      <div class="fr-meta">
+        <span class="fr-partner">${escape(partner)}${partnerSub ? ` · <span class="fr-partner-sub">${escape(partnerSub)}</span>` : ''}</span>
+        ${owner ? `<span class="fr-owner">${escape(owner)}</span>` : ''}
+      </div>
+    </div>
+    <span class="fr-due fr-due-${badge.cls}">${escape(badge.label)}</span>
+    <div class="fr-actions">
+      <button class="fr-edit" onclick="openFollowupModal('${escapeAttr(f.id)}')" title="Edit">Edit</button>
+      <button class="fr-del" onclick="deleteFollowup('${escapeAttr(f.id)}')" title="Delete">×</button>
+    </div>
+  </div>`;
+}
+
+function followupsApplyFilter(kind, value) {
+  if (kind === "status") FOLLOWUPS_STATE.filterStatus = value;
+  else if (kind === "owner") FOLLOWUPS_STATE.filterOwner = value;
+  else if (kind === "search") FOLLOWUPS_STATE.search = value;
+  renderFollowupsView();
+}
+function followupsClearFilters() {
+  FOLLOWUPS_STATE.filterStatus = "open";
+  FOLLOWUPS_STATE.filterOwner  = "all";
+  FOLLOWUPS_STATE.search       = "";
+  renderFollowupsView();
+}
+
+// ---- New / edit modal ----
+function openFollowupModal(followupId) {
+  FOLLOWUPS_STATE.editingId = followupId;
+  const existing = followupId ? (FOLLOWUPS.find(f => f.id === followupId) || null) : null;
+
+  // Default entity: existing's entity, or prefill (set by per-entity quick add), or first Critical
+  const defaultEntityId = existing
+    ? existing.entity_id
+    : (FOLLOWUPS_STATE.prefillEntity
+       || (UNIS.find(u => u.priority === "Critical") || UNIS.find(u => u.priority === "Hot") || UNIS[0] || {}).id
+       || "");
+  FOLLOWUPS_STATE.prefillEntity = null;
+
+  const myHandle = (typeof getUserHandle === "function" ? getUserHandle() : "") || "";
+
+  const draft = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: "followup-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+    entity_id: defaultEntityId,
+    title: "",
+    due_date: "",
+    owner_handle: myHandle,
+    status: "open",
+    notes: "",
+  };
+
+  // Entity dropdown — sorted by priority then name
+  const prioOrder = { "Critical": 0, "Hot": 1, "Up & Running": 2, "Warm": 3, "Cold": 4, "Cold-storage": 5, "Not interested": 6 };
+  const entOpts = UNIS.slice()
+    .sort((a, b) => {
+      const pa = prioOrder[a.priority] !== undefined ? prioOrder[a.priority] : 9;
+      const pb = prioOrder[b.priority] !== undefined ? prioOrder[b.priority] : 9;
+      if (pa !== pb) return pa - pb;
+      return a.name.localeCompare(b.name);
+    })
+    .map(u => `<option value="${escapeAttr(u.id)}" ${u.id === draft.entity_id ? "selected" : ""}>${escape(u.name)}${u.priority ? ` · ${u.priority}` : ""}</option>`)
+    .join("");
+
+  // Owner dropdown — operators from roster
+  const ownerOpts = `<option value="">— unassigned —</option>` +
+    ((typeof OPERATORS !== "undefined" && OPERATORS) ? OPERATORS : [])
+      .map(o => `<option value="${escapeAttr(o.handle)}" ${o.handle === draft.owner_handle ? "selected" : ""}>${escape(o.handle)}${o.role ? ` · ${escape(o.role)}` : ""}</option>`)
+      .join("");
+
+  // Quick due-date presets
+  const today = new Date();
+  const fmtDate = (d) => d.toISOString().slice(0, 10);
+  const presetDays = [
+    { label: "Today",       d: 0 },
+    { label: "Tomorrow",    d: 1 },
+    { label: "End of week", d: (7 - today.getDay()) || 7 },
+    { label: "+2 weeks",    d: 14 },
+    { label: "+1 month",    d: 30 },
+  ];
+
+  const html = `
+    <div class="followup-form-grid">
+      <div class="ff-field ff-full">
+        <span class="ff-label">Partner<span class="req">*</span></span>
+        <select data-ff="entity_id">${entOpts}</select>
+      </div>
+      <div class="ff-field ff-full">
+        <span class="ff-label">What needs to happen<span class="req">*</span></span>
+        <input type="text" data-ff="title" placeholder="e.g. Send signed MoU draft to Anna" value="${escapeAttr(draft.title)}" maxlength="200"/>
+        <small class="ff-hint">Specific + actionable. "Send MoU to Anna" not "Reach out to CTU".</small>
+      </div>
+      <div class="ff-field">
+        <span class="ff-label">Due date</span>
+        <input type="date" data-ff="due_date" value="${escapeAttr(draft.due_date || "")}"/>
+        <div class="ff-presets">${presetDays.map(p => {
+          const dd = new Date(today.getTime() + p.d * 86400000);
+          return `<button type="button" class="ff-preset" onclick="document.querySelector('[data-ff=&quot;due_date&quot;]').value = '${fmtDate(dd)}'">${escape(p.label)}</button>`;
+        }).join("")}</div>
+      </div>
+      <div class="ff-field">
+        <span class="ff-label">Owner</span>
+        <select data-ff="owner_handle">${ownerOpts}</select>
+        <small class="ff-hint">Who's going to do this. Optional.</small>
+      </div>
+      <div class="ff-field ff-full">
+        <span class="ff-label">Status</span>
+        <div class="ff-status-row">
+          <label class="ff-radio"><input type="radio" name="ff-status" value="open" ${draft.status !== "done" ? "checked" : ""}/> Open</label>
+          <label class="ff-radio"><input type="radio" name="ff-status" value="done" ${draft.status === "done" ? "checked" : ""}/> Done</label>
+        </div>
+      </div>
+      <div class="ff-field ff-full">
+        <span class="ff-label">Notes</span>
+        <textarea data-ff="notes" placeholder="Context, dependencies, links to materials…">${escape(draft.notes || "")}</textarea>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("followup-modal-title").textContent = existing ? "Edit follow-up" : "New follow-up";
+  document.getElementById("followup-modal-body").innerHTML = html;
+  document.getElementById("followup-modal-delete").style.display = existing ? "inline-block" : "none";
+  document.getElementById("followup-modal").classList.add("open");
+  // Auto-focus the title — most common action is typing what needs to happen
+  setTimeout(() => {
+    const tit = document.querySelector('#followup-modal-body [data-ff="title"]');
+    if (tit && !existing) tit.focus();
+  }, 80);
+}
+
+function closeFollowupModal() {
+  document.getElementById("followup-modal").classList.remove("open");
+  FOLLOWUPS_STATE.editingId = null;
+}
+
+async function submitFollowupForm() {
+  const body = document.getElementById("followup-modal-body");
+  const val = key => {
+    const e = body.querySelector(`[data-ff="${key}"]`);
+    return e ? e.value : "";
+  };
+  const entity_id = val("entity_id").trim();
+  if (!entity_id) { alert("Partner is required."); return; }
+  const title = val("title").trim();
+  if (!title) { alert("Title is required."); return; }
+  const status = (body.querySelector('input[name="ff-status"]:checked') || { value: "open" }).value;
+
+  const editingId = FOLLOWUPS_STATE.editingId;
+  const existing  = editingId ? FOLLOWUPS.find(f => f.id === editingId) : null;
+  const now = new Date().toISOString();
+  const followup = {
+    id: existing ? existing.id : ("followup-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8)),
+    entity_id,
+    title,
+    due_date:     val("due_date") || null,
+    owner_handle: val("owner_handle").trim() || null,
+    status,
+    notes:        val("notes").trim(),
+    created_at:   existing ? (existing.created_at || now) : now,
+    updated_at:   now,
+    completed_at: status === "done" ? now : null,
+    created_by:   existing ? (existing.created_by || (typeof getDisplayName === "function" ? getDisplayName() : "")) : (typeof getDisplayName === "function" ? getDisplayName() : ""),
+  };
+  await saveFollowup(followup);
+  closeFollowupModal();
+  if (STATE.view === "followups") renderFollowupsView();
+  if (STATE.view === "home")      renderHomeView();
+  if (STATE.detailId === entity_id && typeof openDetail === "function") openDetail(entity_id);
+  showSyncToast("Follow-up saved", "ok");
+}
+
+async function deleteFollowupFromModal() {
+  const id = FOLLOWUPS_STATE.editingId;
+  if (!id) return;
+  closeFollowupModal();
+  await deleteFollowup(id);
+}
+
+// Convenience — used by entity detail panel "+ Follow-up" button
+function openFollowupModalForEntity(entityId) {
+  FOLLOWUPS_STATE.prefillEntity = entityId;
+  openFollowupModal(null);
+}
+
 function renderContractsView() {
   const el = document.getElementById("view-contracts");
   if (!el) return;
@@ -11420,6 +12111,63 @@ function openContractModalForEntity(entityId) {
   // can flip the dropdown immediately. Guard against the rare null case.
   const sel = document.querySelector('#contract-modal-body [data-cf="entity_id"]');
   if (sel) sel.value = entityId;
+}
+
+// ============================================================================
+// Entity detail panel — "Follow-ups" tab body.
+// Shows open + done follow-ups for this entity, with an always-visible
+// "+ New follow-up" CTA that pre-fills the entity in the modal.
+// ============================================================================
+function renderEntityFollowupsBody(u) {
+  const mine = _followupsForEntity(u.id, { includeDone: true });
+  const newBtn = `<button type="button" class="ent-followup-add" onclick="openFollowupModalForEntity('${escapeAttr(u.id)}')">+ New follow-up</button>`;
+
+  if (mine.length === 0) {
+    return `
+      <div class="ent-followups-empty">
+        <p>No follow-ups logged for this partner yet.</p>
+        ${newBtn}
+      </div>`;
+  }
+
+  // Split open vs done so the active work reads first.
+  const open = mine.filter(f => f.status !== "done");
+  const done = mine.filter(f => f.status === "done");
+
+  const rowFor = (f) => {
+    const badge = _followupDueBadge(f.due_date);
+    const isDone = f.status === "done";
+    const owner = f.owner_handle ? `<span class="ent-fu-owner">${escape(f.owner_handle)}</span>` : "";
+    return `<div class="ent-followup-row ${isDone ? 'done' : ''}">
+      <button class="ent-fu-check ${isDone ? 'checked' : ''}" onclick="toggleFollowupDone('${escapeAttr(f.id)}')" title="${isDone ? 'Re-open' : 'Mark done'}" aria-label="${isDone ? 'Re-open' : 'Mark done'}">${isDone ? '✓' : ''}</button>
+      <div class="ent-fu-main">
+        <div class="ent-fu-title">${escape(f.title)}</div>
+        ${f.notes ? `<div class="ent-fu-notes">${escape(f.notes)}</div>` : ''}
+      </div>
+      <div class="ent-fu-right">
+        <span class="fr-due fr-due-${badge.cls}">${escape(badge.label)}</span>
+        ${owner}
+        <button class="ent-fu-edit" onclick="openFollowupModal('${escapeAttr(f.id)}')" title="Edit">Edit</button>
+      </div>
+    </div>`;
+  };
+
+  let html = `<div class="ent-followups">`;
+  if (open.length) {
+    html += `<div class="ent-fu-group">
+      <div class="ent-fu-group-head">Open <span>${open.length}</span></div>
+      ${open.map(rowFor).join("")}
+    </div>`;
+  }
+  if (done.length) {
+    html += `<div class="ent-fu-group done">
+      <div class="ent-fu-group-head">Done <span>${done.length}</span></div>
+      ${done.map(rowFor).join("")}
+    </div>`;
+  }
+  html += `<div class="ent-followups-foot">${newBtn}</div>`;
+  html += `</div>`;
+  return html;
 }
 
 // Filter / sort wiring
@@ -12382,6 +13130,7 @@ async function bootApp(opts = {}) {
   syncStratOverridesFromServer();
   syncEntityOverridesFromServer();
   syncContractsFromServer();
+  syncFollowupsFromServer();
   startPresence();
   try {
     await loadKnowledgeBase();
@@ -12439,6 +13188,7 @@ window.addEventListener("focus", () => {
   if (typeof syncStratOverridesFromServer === "function")  syncStratOverridesFromServer();
   if (typeof syncEntityOverridesFromServer === "function") syncEntityOverridesFromServer();
   if (typeof syncContractsFromServer === "function")       syncContractsFromServer();
+  if (typeof syncFollowupsFromServer === "function")       syncFollowupsFromServer();
 });
 </script>
 </body>

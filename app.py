@@ -325,6 +325,27 @@ def _ensure_schema():
                 )""",
             "CREATE INDEX IF NOT EXISTS idx_snaps_date ON entity_position_snapshots(snapshot_date)",
             "CREATE INDEX IF NOT EXISTS idx_snaps_entity ON entity_position_snapshots(entity_id)",
+            # Follow-ups — the prospective counterpart to the (retrospective)
+            # outreach log. Each row = one concrete next step on one partner,
+            # with a due date and an owner. Status flips between "open" and
+            # "done"; done rows are kept for the activity timeline.
+            """CREATE TABLE IF NOT EXISTS followups (
+                    id            TEXT PRIMARY KEY,
+                    entity_id     TEXT NOT NULL,
+                    title         TEXT NOT NULL,
+                    due_date      TEXT,
+                    owner_handle  TEXT,
+                    status        TEXT NOT NULL DEFAULT 'open',
+                    notes         TEXT,
+                    created_at    TEXT NOT NULL,
+                    updated_at    TEXT NOT NULL,
+                    completed_at  TEXT,
+                    created_by    TEXT
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_followups_entity ON followups(entity_id)",
+            "CREATE INDEX IF NOT EXISTS idx_followups_status ON followups(status)",
+            "CREATE INDEX IF NOT EXISTS idx_followups_due    ON followups(due_date)",
+            "CREATE INDEX IF NOT EXISTS idx_followups_owner  ON followups(owner_handle)",
         ]
         conn = _connect()
         try:
@@ -1250,6 +1271,156 @@ def snapshots_take():
         "rows_received": len(rows),
         "rows_inserted": inserted,
     })
+
+
+# ============================================================================
+# FOLLOW-UPS — prospective task per partner ("Follow up with X by Friday").
+# ----------------------------------------------------------------------------
+# Complements the (retrospective) outreach log: outreach captures what we did,
+# follow-ups capture what we'll do. Single owner per task, optional due date,
+# status open|done. Done rows are retained so the activity timeline can show
+# "Defne ticked off 'send brochure to CTU' on 2026-05-22".
+# ============================================================================
+def _followup_row_to_dict(row):
+    """Postgres/sqlite row → dict, with consistent types for JSON."""
+    if not row:
+        return None
+    return {
+        "id":           row["id"],
+        "entity_id":    row["entity_id"],
+        "title":        row["title"],
+        "due_date":     row["due_date"],
+        "owner_handle": row["owner_handle"],
+        "status":       row["status"] or "open",
+        "notes":        row["notes"] or "",
+        "created_at":   row["created_at"],
+        "updated_at":   row["updated_at"],
+        "completed_at": row["completed_at"],
+        "created_by":   row["created_by"],
+    }
+
+
+@app.route("/api/followups", methods=["GET"])
+@auth_required
+def followups_list():
+    """List follow-ups; optional filters: status, owner_handle, entity_id."""
+    status  = (request.args.get("status") or "").strip()
+    owner   = (request.args.get("owner")  or "").strip()
+    entity  = (request.args.get("entity") or "").strip()
+    clauses = []
+    params  = []
+    if status:
+        clauses.append("status = ?")
+        params.append(status)
+    if owner:
+        clauses.append("owner_handle = ?")
+        params.append(owner)
+    if entity:
+        clauses.append("entity_id = ?")
+        params.append(entity)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    # Sort: open first (open before done alphabetically),
+    # then by due_date asc (NULLs last via a CASE trick), then created_at desc.
+    sql = (
+        "SELECT id, entity_id, title, due_date, owner_handle, status, "
+        "       notes, created_at, updated_at, completed_at, created_by "
+        "  FROM followups " + where + " "
+        " ORDER BY status ASC, "
+        "          CASE WHEN due_date IS NULL OR due_date = '' THEN 1 ELSE 0 END ASC, "
+        "          due_date ASC, "
+        "          created_at DESC"
+    )
+    db = get_db()
+    rows = db.execute(sql, tuple(params)).fetchall()
+    return jsonify({"followups": [_followup_row_to_dict(r) for r in rows]})
+
+
+@app.route("/api/followups/<followup_id>", methods=["GET"])
+@auth_required
+def followups_get(followup_id):
+    db = get_db()
+    row = db.execute(
+        "SELECT id, entity_id, title, due_date, owner_handle, status, "
+        "       notes, created_at, updated_at, completed_at, created_by "
+        "  FROM followups WHERE id = ?",
+        (followup_id,),
+    ).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(_followup_row_to_dict(row))
+
+
+@app.route("/api/followups/<followup_id>", methods=["PUT"])
+@auth_required
+def followups_upsert(followup_id):
+    body = request.get_json(force=True, silent=True) or {}
+    entity_id = (body.get("entity_id") or "").strip()
+    title     = (body.get("title")     or "").strip()
+    if not entity_id or not title:
+        return jsonify({"error": "entity_id and title are required"}), 400
+
+    now    = _now_iso()
+    status = (body.get("status") or "open").strip().lower()
+    if status not in ("open", "done"):
+        status = "open"
+    completed_at = (body.get("completed_at") or None) or (now if status == "done" else None)
+
+    db = get_db()
+    existing = db.execute(
+        "SELECT created_at, created_by FROM followups WHERE id = ?",
+        (followup_id,),
+    ).fetchone()
+    created_at = existing["created_at"] if existing else (body.get("created_at") or now)
+    created_by = (existing["created_by"] if existing else None) or (request.headers.get("X-Display-Name") or "").strip() or None
+
+    # If completing a previously-open followup, lock the completed_at to now
+    # (don't trust the client to backdate). If re-opening, clear it.
+    if existing:
+        prev = db.execute("SELECT status, completed_at FROM followups WHERE id = ?", (followup_id,)).fetchone()
+        if prev:
+            if status == "done" and (prev["status"] or "open") != "done":
+                completed_at = now
+            elif status == "open":
+                completed_at = None
+
+    db.execute(
+        "INSERT INTO followups "
+        "(id, entity_id, title, due_date, owner_handle, status, notes, "
+        " created_at, updated_at, completed_at, created_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT (id) DO UPDATE SET "
+        "  entity_id    = excluded.entity_id, "
+        "  title        = excluded.title, "
+        "  due_date     = excluded.due_date, "
+        "  owner_handle = excluded.owner_handle, "
+        "  status       = excluded.status, "
+        "  notes        = excluded.notes, "
+        "  updated_at   = excluded.updated_at, "
+        "  completed_at = excluded.completed_at",
+        (
+            followup_id, entity_id, title,
+            (body.get("due_date")     or "").strip() or None,
+            (body.get("owner_handle") or "").strip() or None,
+            status,
+            (body.get("notes") or ""),
+            created_at, now, completed_at, created_by,
+        ),
+    )
+    db.commit()
+    _record_edit("followup", "upsert", followup_id)
+    return jsonify({"ok": True, "id": followup_id})
+
+
+@app.route("/api/followups/<followup_id>", methods=["DELETE"])
+@auth_required
+def followups_delete(followup_id):
+    db = get_db()
+    cur = db.execute("DELETE FROM followups WHERE id = ?", (followup_id,))
+    db.commit()
+    if cur.rowcount == 0:
+        return jsonify({"error": "not found"}), 404
+    _record_edit("followup", "delete", followup_id)
+    return jsonify({"ok": True})
 
 
 # ============================================================================
