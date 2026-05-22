@@ -2098,15 +2098,44 @@ OUT OF SCOPE — REJECT these even if the search results return them:
   ❌ Banks, insurance, real-estate firms unless they run a structured
      academic-scholarship or research-collaboration program.
 
-If a search result is one of these, IGNORE IT. Do not pad your output
-with off-scope candidates just to hit the limit. The user has reported
-false positives from this category — they will reject you in seconds.
+If a search result is CLEARLY one of these (e.g. its URL or title plainly
+identifies it as a government investment promotion agency or a SaaS
+employer), skip it. But if you're UNSURE whether something is in-scope or
+out-of-scope, prefer to surface it with a LOW fit_score (20-40) and an
+honest "borderline because…" note in fit_reasoning. Empty results force
+the user to refine queries blindly; weak-but-real candidates they can
+quickly reject are strictly better.
+
+============================================================
+SPECIAL GUIDANCE FOR TYPE = "agency"
+============================================================
+"Agency" in this app means EDUCATION agency: study-abroad consultancies,
+student recruitment companies, university placement agents, language
+schools with bridging programs, education fairs / EdTech B2B platforms
+that connect students to higher-ed. In Turkey these are firms like
+"yurtdışı eğitim danışmanlığı" companies; in Spain they are firms like
+"agencias de estudios en el extranjero" or IELTS/TOEFL prep schools that
+funnel students abroad. Many such companies have small web footprints —
+their site alone is enough grounding, you don't need a major news source.
+Do NOT confuse them with state-run scholarship boards (Türkiye Bursları,
+Ministerio de Universidades) — those CAN be in-scope as government
+partners, but their primary identity should be EDUCATION promotion, not
+business / FDI / investment promotion.
 
 ============================================================
 REQUIRED OUTPUT: a JSON array of candidate objects, NEVER more than what
-the search results actually support. If only 2 candidates are well-grounded
-AND in-scope, return 2. NEVER invent facts. NEVER include a candidate whose
-existence isn't supported by at least one URL in the search results below.
+the search results actually support. NEVER invent facts. NEVER include a
+candidate whose existence isn't supported by at least one URL in the
+search results below.
+
+Aim to surface 3-5 candidates per search if any are remotely plausible.
+Use fit_score to communicate confidence:
+   • 80-100 — exact match, clearly in-scope, strong fit
+   • 50-79  — good fit, in-scope, minor reservations
+   • 20-49  — borderline / weak grounding / partially in-scope (let the
+              user decide; explain the uncertainty in fit_reasoning)
+   • <20    — only return at this score if the user explicitly asked for
+              a broad / exploratory scan
 ============================================================
 
 SEARCH CRITERIA:
@@ -2138,14 +2167,24 @@ For each genuinely new IN-SCOPE prospect you find, produce:
                     (Coding Academy, Data & AI, Game Design, Fashion AI Lab,
                     Startup Summer, etc.) — leave [] if unsure
 
-If you can't find any genuinely new in-scope well-grounded prospects,
-return {{"candidates": []}}. An empty result is honest; padding with
-off-scope candidates is not.
+Return {{"candidates": []}} ONLY when (a) the search results are entirely
+empty, or (b) every single result is clearly off-scope (e.g. all results
+are SaaS employers, all are government FDI bodies). If even ONE result
+is plausibly in-scope, surface it — let the human reject if needed.
+Do NOT use empty results as a way to be "safe"; the user is competent
+to filter borderline cases.
 """
 
 
 def _filter_candidates(raw_candidates, existing_unis_names, db):
-    """6-layer hallucination filter. Returns (filtered_list, verification_meta_per_id)."""
+    """6-layer hallucination filter. Returns (filtered_list,
+    verification_meta_per_survivor, rejection_breakdown).
+
+    The third return value is a count-by-reason dict so the discover
+    endpoint can tell the user EXACTLY where its candidates died (no
+    source URLs vs URL dead vs already-in-pipeline vs already-surfaced).
+    Empty 'surfaced' lists used to feel like silent failures — now the
+    user gets a one-line diagnostic explaining what happened."""
     from rapidfuzz import fuzz
 
     # Pre-fetch past candidate names for dedupe (single DB hit)
@@ -2155,9 +2194,30 @@ def _filter_candidates(raw_candidates, existing_unis_names, db):
     existing_norm = [_normalize_prospect_name(n) for n in (existing_unis_names or []) if n]
 
     out, verifications = [], []
+    # Counters for the breakdown returned to the frontend. Keys match the
+    # warning strings we add below — keep them stable so the UI can render
+    # human labels off them.
+    rejected = {
+        "no_source_urls":  0,
+        "url_dead":        0,
+        "dup_unis":        0,
+        "dup_past":        0,
+        "no_name":         0,
+    }
+    # Sample rejected names so the UI can show "(e.g. Foo Inc, Bar Univ)"
+    # — helps the user see whether Gemini was finding real things that
+    # the filter killed, vs Gemini finding nothing in the first place.
+    rejected_samples = {k: [] for k in rejected.keys()}
+
+    def _note(reason, name):
+        rejected[reason] += 1
+        if len(rejected_samples[reason]) < 3 and name:
+            rejected_samples[reason].append(name)
+
     for c in raw_candidates:
         name = (c.get("name") or "").strip()
         if not name:
+            _note("no_name", "")
             continue
         verification = {
             "has_source":    False,
@@ -2172,6 +2232,7 @@ def _filter_candidates(raw_candidates, existing_unis_names, db):
         srcs = [u for u in (c.get("source_urls") or []) if u and u.startswith(("http://", "https://"))]
         if not srcs:
             verification["warnings"].append("no source URLs")
+            _note("no_source_urls", name)
             continue
         verification["has_source"] = True
 
@@ -2184,6 +2245,7 @@ def _filter_candidates(raw_candidates, existing_unis_names, db):
         verification["url_alive"] = any_alive
         if not any_alive:
             verification["warnings"].append("no live source URL")
+            _note("url_dead", name)
             continue
 
         # Layer 3 — ROR cross-check (only for universities, others get NA)
@@ -2203,19 +2265,27 @@ def _filter_candidates(raw_candidates, existing_unis_names, db):
                 break
         if verification["dup_unis"]:
             verification["warnings"].append("already in UNIS")
+            _note("dup_unis", name)
             continue
 
         # Layer 5 — past candidates dedupe
         if norm in past_names:
             verification["dup_past"] = True
             verification["warnings"].append("already surfaced previously")
+            _note("dup_past", name)
             continue
 
         # If we got here, all hard layers passed
         verification["all_passed"] = True
         out.append(c)
         verifications.append((name, verification))
-    return out, verifications
+
+    breakdown = {
+        "rejected_counts":  rejected,
+        "rejected_samples": rejected_samples,
+        "total_rejected":   sum(rejected.values()),
+    }
+    return out, verifications, breakdown
 
 
 # ============================================================================
@@ -2656,7 +2726,7 @@ def prospects_discover():
 
     # ----- Step 3: 6-layer hallucination filter -----
     db = get_db()
-    filtered, verifications = _filter_candidates(raw_candidates, existing_names, db)
+    filtered, verifications, filter_breakdown = _filter_candidates(raw_candidates, existing_names, db)
     filtered_count = len(filtered)
 
     # ----- Step 4: Persist surfaced candidates -----
@@ -2707,14 +2777,27 @@ def prospects_discover():
     for cid in inserted_ids:
         row = db.execute("SELECT * FROM prospect_candidates WHERE id = ?", (cid,)).fetchone()
         surfaced.append(_prospect_row_to_dict(row))
+    # Build a human-readable diagnostic so the frontend can show WHY
+    # `surfaced` may be lower than expected — especially when it's 0.
+    # We bubble up: (a) the Tavily count, (b) what Gemini proposed,
+    # (c) per-reason rejection counts from the filter, plus top-3
+    # Tavily titles so the user can sanity-check the search itself.
+    tavily_preview = [
+        {"title": (r.get("title") or "")[:120],
+         "url":   r.get("url", ""),
+         "snippet": (r.get("content") or "")[:160]}
+        for r in (search_results or [])[:5]
+    ]
     return jsonify({
-        "ok":           True,
-        "run_id":       run_id,
-        "query":        final_query,
-        "raw_count":    raw_count,
-        "ai_proposed":  len(raw_candidates),
-        "surfaced":     filtered_count,
-        "candidates":   surfaced,
+        "ok":               True,
+        "run_id":           run_id,
+        "query":            final_query,
+        "raw_count":        raw_count,
+        "ai_proposed":      len(raw_candidates),
+        "surfaced":         filtered_count,
+        "candidates":       surfaced,
+        "filter_breakdown": filter_breakdown,
+        "tavily_preview":   tavily_preview,
     })
 
 

@@ -5362,6 +5362,86 @@ function closeProspectDiscoverModal() {
   document.getElementById("prospect-discover-modal").classList.remove("open");
 }
 
+// Honest diagnostic when surfaced=0. We have three failure modes:
+//   (a) Tavily empty       — search query problem (or country mistyped)
+//   (b) Gemini rejected all — prompt too strict, results off-scope, or
+//                              "agency" / "school" type with weak signal
+//   (c) Filter killed all  — dead URLs, dedupe, ROR misses, etc.
+// We render whichever applies + suggest a concrete next step.
+function _renderZeroSurfacedDiagnostic(data) {
+  const tavily   = data.raw_count || 0;
+  const proposed = data.ai_proposed || 0;
+  const fb       = data.filter_breakdown || {};
+  const counts   = fb.rejected_counts || {};
+  const samples  = fb.rejected_samples || {};
+  const previews = data.tavily_preview || [];
+
+  // Pick the headline cause
+  let cause, suggestion;
+  if (tavily === 0) {
+    cause = "Tavily returned <b>no web search results</b> for this query.";
+    suggestion = "Try fewer constraints — drop the focus, or simplify the query. Check the country spelling (e.g. 'Türkiye' vs 'Turkey').";
+  } else if (proposed === 0) {
+    cause = `Tavily found <b>${tavily} results</b>, but Gemini proposed <b>0 in-scope candidates</b>.`;
+    suggestion = "Likely the search results were mostly off-scope (news articles, government FDI bodies, employers) or the AI was over-cautious. Try a more specific query like \"private universities in Spain with international programs\" or \"yurtdışı eğitim danışmanlığı şirketi Türkiye\".";
+  } else {
+    // proposed > 0 but all filtered out
+    const reasonBits = [];
+    if (counts.no_source_urls)  reasonBits.push(`<b>${counts.no_source_urls}</b> had no source URLs`);
+    if (counts.url_dead)        reasonBits.push(`<b>${counts.url_dead}</b> had dead source URLs`);
+    if (counts.dup_unis)        reasonBits.push(`<b>${counts.dup_unis}</b> already in your pipeline`);
+    if (counts.dup_past)        reasonBits.push(`<b>${counts.dup_past}</b> already surfaced previously`);
+    cause = `Gemini proposed <b>${proposed} candidates</b>, but the hallucination defense killed all of them: ${reasonBits.join(" · ")}.`;
+    if (counts.dup_unis === proposed || counts.dup_past === proposed) {
+      suggestion = "Every candidate was a duplicate — try a different country or narrower focus to surface untouched ground.";
+    } else if (counts.url_dead) {
+      suggestion = "Source URLs failed liveness checks — Gemini may be citing stale links from Tavily. Re-run; sometimes it picks better URLs the second time.";
+    } else {
+      suggestion = "Adjust the query so the search results lead to candidates with stable source URLs.";
+    }
+  }
+
+  // Top Tavily titles so the user can spot-check the query quality
+  const previewHtml = previews.length ? `
+    <details style="margin-top:10px">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-soft)">Show top ${previews.length} Tavily results (what Gemini was looking at)</summary>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:11px;line-height:1.5">
+        ${previews.map(p => `<li style="margin-bottom:6px"><b>${escape(p.title || "(no title)")}</b><br><a href="${escapeAttr(p.url)}" target="_blank" style="color:var(--ink-soft);font-size:10px">${escape(p.url)}</a><br><span style="color:var(--ink-mute);font-size:10px">${escape((p.snippet || "").slice(0, 140))}…</span></li>`).join("")}
+      </ul>
+    </details>` : "";
+
+  // Rejected-sample names so the user sees Gemini WAS finding real things
+  const sampleBits = [];
+  Object.keys(samples).forEach(k => {
+    if (samples[k] && samples[k].length) {
+      const label = ({
+        no_source_urls: "no URLs",
+        url_dead:       "dead URLs",
+        dup_unis:       "already in pipeline",
+        dup_past:       "already surfaced",
+      })[k] || k;
+      sampleBits.push(`<b>${label}:</b> ${samples[k].map(escape).join(", ")}`);
+    }
+  });
+  const samplesHtml = sampleBits.length ? `
+    <div style="margin-top:8px;font-size:11px;color:var(--ink-soft);line-height:1.6">
+      Rejected examples: ${sampleBits.join(" · ")}
+    </div>` : "";
+
+  return `<div class="pd-progress-zero">
+    <div style="font-weight:700;color:var(--hf-red);margin-bottom:8px">0 candidates surfaced — here's why:</div>
+    <div style="line-height:1.6;font-size:12px;color:var(--ink)">${cause}</div>
+    <div style="margin-top:8px;padding:10px 12px;background:#fffbe8;border-left:3px solid var(--gold);border-radius:0 4px 4px 0;font-size:12px;line-height:1.55">
+      <b>Try:</b> ${suggestion}
+    </div>
+    ${samplesHtml}
+    <div style="margin-top:10px;font-size:11px;color:var(--ink-soft)">
+      Pipeline: <b>${tavily}</b> Tavily → <b>${proposed}</b> Gemini → <b>0</b> after filter · Query: <code>${escape(data.query || "")}</code>
+    </div>
+    ${previewHtml}
+  </div>`;
+}
+
 async function runProspectDiscover() {
   const query   = document.getElementById("pd-query").value.trim();
   const type    = document.getElementById("pd-type").value;
@@ -5418,14 +5498,23 @@ async function runProspectDiscover() {
       btn.disabled = false; btn.textContent = "⚲ Run discovery";
       return;
     }
-    prog.innerHTML = `<div class="pd-progress-ok">
-      <div><b>${data.surfaced}</b> candidates surfaced for your review
-        <small>(${data.ai_proposed} proposed by Gemini, ${(data.ai_proposed - data.surfaced)} filtered out by hallucination defense)</small></div>
-      <div style="margin-top:6px;font-size:11px;color:var(--ink-soft)">Search query used: <code>${escape(data.query)}</code></div>
-    </div>`;
-    await syncProspectsFromServer();
-    PROSPECTS_STATE.tab = "pending";
-    setTimeout(() => { closeProspectDiscoverModal(); renderProspectsView(); }, 1600);
+    // When surfaced=0, render an honest diagnostic so the user can see
+    // WHERE in the pipeline things died — Tavily / Gemini / filter —
+    // and act on it. Otherwise show the celebratory summary.
+    if (data.surfaced === 0) {
+      prog.innerHTML = _renderZeroSurfacedDiagnostic(data);
+      btn.disabled = false; btn.textContent = "⚲ Run discovery";
+      // DON'T auto-close; user needs to read the diagnostic
+    } else {
+      prog.innerHTML = `<div class="pd-progress-ok">
+        <div><b>${data.surfaced}</b> candidates surfaced for your review
+          <small>(${data.ai_proposed} proposed by Gemini, ${(data.ai_proposed - data.surfaced)} filtered out by hallucination defense)</small></div>
+        <div style="margin-top:6px;font-size:11px;color:var(--ink-soft)">Search query used: <code>${escape(data.query)}</code></div>
+      </div>`;
+      await syncProspectsFromServer();
+      PROSPECTS_STATE.tab = "pending";
+      setTimeout(() => { closeProspectDiscoverModal(); renderProspectsView(); }, 1600);
+    }
   } catch (e) {
     prog.innerHTML = `<div class="pd-progress-err">Network error: ${escape(e.message)}</div>`;
     btn.disabled = false; btn.textContent = "⚲ Run discovery";
