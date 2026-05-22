@@ -2395,31 +2395,73 @@ SHORT, ACTIONABLE preference profile in STRICT JSON.
 
 The profile feeds back into FUTURE discovery prompts to bias what the
 model surfaces. Be specific, not generic. Cite concrete attributes
-(country, entity type, focus area, mission) — not feel-good fluff.
+(country, entity type, directionality, focus area, mission) — not
+feel-good fluff.
 
+============================================================
+KEY CONCEPT — DIRECTIONALITY (read before analysing)
+============================================================
+H-FARM College is in Italy and is the RECEIVING side of student
+mobility. The user almost certainly cares about WHICH DIRECTION a
+prospective partner serves:
+  • OUTBOUND  — entities that send LOCAL students ABROAD (e.g. Turkish
+                study-abroad consultancy, Spanish "agencia de estudios
+                en el extranjero", IB high school whose graduates go to
+                European universities). These are GOOD partners.
+  • INBOUND   — entities that bring FOREIGN students INTO their own
+                country (e.g. "Study in Turkey" portals, "Apply to
+                Spanish Universities" agencies, foreign-student offices
+                of local universities). These are COMPETITORS.
+  • BIDIRECTIONAL — peer universities, exchange networks, ESN chapters.
+
+If you see a NO decision on something whose name/description sounds
+INBOUND (contains "Study in [country]", "Apply to [country]
+Universities", "international students in [country]", recruitment INTO
+local universities, etc.), do NOT just list that specific entity —
+GENERALISE the pattern as: "INBOUND education agencies (those
+recruiting foreign students INTO the local country instead of sending
+local students abroad)". This is the single most useful generalisation
+you can make from a rejection.
+
+Similarly, if a YES decision is on something clearly OUTBOUND, surface
+that as a positive directional pattern, not just the specific entity.
+
+============================================================
 PAST DECISIONS (most recent first):
+============================================================
 {json.dumps(decisions_payload, indent=2, ensure_ascii=False)}
 
 Produce STRICT JSON in exactly this shape:
 {{
   "strongly_prefers": [
-    "<concrete pattern derived from YES decisions, e.g. 'public research
-     universities in EU with active Erasmus+ programs and design schools'>"
+    "<concrete pattern derived from YES decisions. Prefer DIRECTIONAL
+     framing, e.g. 'outbound study-abroad consultancies in non-EU
+     markets' or 'public research universities in EU with active
+     Erasmus+ programs and design schools'>"
   ],
   "softly_prefers":   [ "<weaker, less-certain preferences>" ],
   "rejects":          [
-    "<concrete anti-pattern derived from NO decisions, e.g. 'government
-     FDI / investment-promotion agencies (ICEX-style)' or 'startup
-     accelerators with no academic affiliation'>"
+    "<concrete anti-pattern derived from NO decisions. Prefer
+     DIRECTIONAL framing where applicable, e.g. 'INBOUND education
+     agencies — Study in X / Apply to X portals — they recruit
+     foreigners INTO their local country instead of sending students
+     out' or 'government FDI / investment-promotion agencies
+     (ICEX-style)' or 'startup accelerators with no academic affiliation'>"
   ],
   "notes":            "<1-2 sentence overall summary of what this user
-                       cares about — used as a steering preamble>"
+                       cares about — used as a steering preamble. Mention
+                       directionality if the decisions show a clear
+                       outbound preference.>"
 }}
 
 Rules:
 - Max 5 items per list; QUALITY over quantity.
 - Each item must be derivable from at least one decision above.
 - Quote the reason text where possible — the user's own words are gold.
+- GENERALISE: don't list "rejected 'Study in Turkiye'" — instead infer
+  the underlying pattern and list "rejected: INBOUND education agencies".
+  One generalised pattern blocks many future false positives; one
+  specific entity blocks only that exact name.
 - If a category is empty, return [] (not null).
 - No commentary outside the JSON object.
 """
