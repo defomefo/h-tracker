@@ -2466,6 +2466,7 @@ Rules:
 - No commentary outside the JSON object.
 """
 
+    finish_reason = None
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
@@ -2475,13 +2476,20 @@ Rules:
             config=_gtypes.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.1,
-                max_output_tokens=2048,
+                # 4096 covers the richer directional-framed list items —
+                # 2048 was getting truncated on rebuilds with verbose
+                # rejection reasons, hitting MAX_TOKENS and breaking JSON.
+                max_output_tokens=4096,
             ),
         )
-        # Defensive multi-part concat (same trick as discover)
+        # Defensive multi-part concat (same trick as discover) + capture
+        # finish_reason so the diagnostic can explain WHY it failed
+        # (truncation vs safety vs recitation vs straight non-JSON).
         text_parts = []
         if getattr(resp, "candidates", None):
             for cand in resp.candidates:
+                if finish_reason is None:
+                    finish_reason = str(getattr(cand, "finish_reason", "") or "")
                 content = getattr(cand, "content", None)
                 parts = getattr(content, "parts", None) if content else None
                 if parts:
@@ -2492,30 +2500,56 @@ Rules:
         concat_text = "".join(text_parts).strip()
         fallback_text = (resp.text or "").strip() if hasattr(resp, "text") else ""
         raw_text = concat_text if len(concat_text) >= len(fallback_text) else fallback_text
+        print(f"[distill] Gemini: finish={finish_reason!r} text={len(raw_text)} chars; first 300: {raw_text[:300]!r}")
     except Exception as e:
         import traceback as _tb
         print(f"[distill] Gemini call failed: {e}\n{_tb.format_exc()}")
         return {"ok": False, "error": f"Gemini call failed: {e}",
                 "exception_type": type(e).__name__}
 
-    # Loose JSON parse — fenced, mixed-text, or pure
+    # Loose JSON parse — fenced, mixed-text, list-wrapped, or pure
     s = (raw_text or "").strip()
     if s.startswith("```"):
         s = re.sub(r"^```(?:json)?\s*", "", s)
         s = re.sub(r"\s*```\s*$", "", s).strip()
     profile = None
+    parse_err = None
     try:
         profile = json.loads(s)
-    except Exception:
+    except Exception as pe:
+        parse_err = str(pe)
         i, j = s.find("{"), s.rfind("}")
         if i >= 0 and j > i:
             try:
                 profile = json.loads(s[i:j+1])
-            except Exception:
-                pass
+                parse_err = None
+            except Exception as pe2:
+                parse_err = str(pe2)
+    # Sometimes Gemini wraps the dict in a list — accept that too
+    if isinstance(profile, list) and profile and isinstance(profile[0], dict):
+        profile = profile[0]
     if not isinstance(profile, dict):
-        return {"ok": False, "error": "Gemini returned non-JSON profile",
-                "raw_preview": (raw_text or "")[:600]}
+        # Hint at root cause based on finish_reason
+        fr_upper = (finish_reason or "").upper()
+        hint = ""
+        if "MAX_TOKENS" in fr_upper:
+            hint = "Output was truncated mid-JSON — max_output_tokens hit. Code-side fix needed."
+        elif "SAFETY" in fr_upper:
+            hint = "Safety filter blocked the output. Try removing the most recent NO reason from a decision and retry."
+        elif "RECITATION" in fr_upper:
+            hint = "Blocked for recitation risk — rephrase the most-quoted decision reason."
+        elif not (raw_text or "").strip():
+            hint = "Gemini returned EMPTY output. Could be a transient model glitch — try Rebuild again in a few seconds."
+        else:
+            hint = "Output wasn't valid JSON. Check the raw_preview below to see what Gemini actually returned."
+        print(f"[distill] parse failed: parse_err={parse_err!r} finish={finish_reason!r} raw={raw_text[:600]!r}")
+        return {"ok":            False,
+                "error":         "Gemini returned non-JSON profile",
+                "raw_preview":   (raw_text or "")[:600],
+                "raw_length":    len(raw_text or ""),
+                "parse_error":   parse_err,
+                "finish_reason": finish_reason,
+                "hint":          hint}
 
     # Normalise shape so downstream code never has to guess
     def _str_list(v):
