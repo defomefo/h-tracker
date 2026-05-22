@@ -346,6 +346,45 @@ def _ensure_schema():
             "CREATE INDEX IF NOT EXISTS idx_followups_status ON followups(status)",
             "CREATE INDEX IF NOT EXISTS idx_followups_due    ON followups(due_date)",
             "CREATE INDEX IF NOT EXISTS idx_followups_owner  ON followups(owner_handle)",
+            # Career Day sponsors — separate from UNIS (partnership pipeline)
+            # because the lifecycles are fundamentally different: sponsors are
+            # annual transactional events, UNIS entities are multi-year
+            # relationships. One row per (event_year, normalized_name) — a
+            # company that sponsors 2025 + 2026 gets two rows so year-over-
+            # year trajectory + renewal-cycle analytics are native.
+            # `linked_entity_id` is an optional bridge to UNIS when the same
+            # company also exists in the partner pipeline.
+            """CREATE TABLE IF NOT EXISTS sponsors (
+                    id                      TEXT PRIMARY KEY,
+                    event_year              INTEGER NOT NULL,
+                    event_name              TEXT NOT NULL DEFAULT 'Career Day',
+                    company_name            TEXT NOT NULL,
+                    normalized_name         TEXT NOT NULL,
+                    industry_sector         TEXT,
+                    sponsorship_tier        TEXT,
+                    value_no_iva_eur        INTEGER,
+                    value_with_iva_eur      INTEGER,
+                    amount_paid_eur         INTEGER,
+                    contract_signed_by_us   INTEGER DEFAULT 0,
+                    contract_signed_by_them INTEGER DEFAULT 0,
+                    invoice_no              TEXT,
+                    invoice_date            TEXT,
+                    payment_date            TEXT,
+                    participation_days      TEXT,
+                    attendee_count          INTEGER,
+                    attendees               TEXT,
+                    primary_contact_name    TEXT,
+                    primary_contact_email   TEXT,
+                    notes                   TEXT,
+                    linked_entity_id        TEXT,
+                    created_at              TEXT NOT NULL,
+                    updated_at              TEXT NOT NULL,
+                    created_by              TEXT
+                )""",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_sponsors_year_company ON sponsors(event_year, normalized_name)",
+            "CREATE INDEX IF NOT EXISTS idx_sponsors_tier  ON sponsors(sponsorship_tier)",
+            "CREATE INDEX IF NOT EXISTS idx_sponsors_year  ON sponsors(event_year)",
+            "CREATE INDEX IF NOT EXISTS idx_sponsors_linked ON sponsors(linked_entity_id)",
         ]
         conn = _connect()
         try:
@@ -1421,6 +1460,389 @@ def followups_delete(followup_id):
         return jsonify({"error": "not found"}), 404
     _record_edit("followup", "delete", followup_id)
     return jsonify({"ok": True})
+
+
+# ============================================================================
+# SPONSORS — Career Day annual sponsorship records.
+# ----------------------------------------------------------------------------
+# One row per (event_year, normalized_name). A company that sponsors
+# multiple years gets multiple rows so renewal-cycle analytics + year-
+# over-year revenue read natively. Deliberately separate from UNIS
+# (partnership pipeline) — different lifecycle, different stakeholders,
+# different KPIs. Bridge to UNIS via linked_entity_id when the same
+# company also exists in the partner database.
+# ============================================================================
+def _slug_for_sponsor(year: int, normalized_name: str) -> str:
+    """Stable id: sponsor-<year>-<slug-of-normalized-name>. Lets us upsert
+    by deterministic key without needing the client to coordinate."""
+    slug = re.sub(r"[^a-z0-9]+", "-", (normalized_name or "").lower()).strip("-")
+    return f"sponsor-{year}-{slug or 'unknown'}"
+
+
+def _normalize_sponsor_name(raw: str) -> str:
+    """Mirror of scripts/clean_sponsors.py's normalize_name(). Lowercase,
+    strip Italian/German legal suffixes, collapse whitespace + punctuation.
+    Keeps Group/Italia/SpA-like markers stripped consistently so the same
+    company import twice still upserts."""
+    if not raw:
+        return ""
+    s = str(raw).strip().lower()
+    s = re.sub(r"\s+", " ", s)
+    suffixes = [
+        r"\bs\.p\.a\.?", r"\bspa\b", r"\bs\.r\.l\.?", r"\bsrl\b",
+        r"\bscpa\b",     r"\bs\.c\.p\.a\.?", r"\bgmbh\b", r"\bsb\b",
+    ]
+    for pat in suffixes:
+        s = re.sub(pat, "", s)
+    s = re.sub(r"[.,'\"`]", "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _sponsor_row_to_dict(row):
+    if not row:
+        return None
+    try:
+        attendees = json.loads(row["attendees"]) if row["attendees"] else []
+    except Exception:
+        attendees = []
+    return {
+        "id":                      row["id"],
+        "event_year":              row["event_year"],
+        "event_name":              row["event_name"],
+        "company_name":            row["company_name"],
+        "normalized_name":         row["normalized_name"],
+        "industry_sector":         row["industry_sector"] or "",
+        "sponsorship_tier":        row["sponsorship_tier"] or "",
+        "value_no_iva_eur":        row["value_no_iva_eur"],
+        "value_with_iva_eur":      row["value_with_iva_eur"],
+        "amount_paid_eur":         row["amount_paid_eur"],
+        "contract_signed_by_us":   bool(row["contract_signed_by_us"]),
+        "contract_signed_by_them": bool(row["contract_signed_by_them"]),
+        "invoice_no":              row["invoice_no"] or "",
+        "invoice_date":            row["invoice_date"] or "",
+        "payment_date":            row["payment_date"] or "",
+        "participation_days":      row["participation_days"] or "",
+        "attendee_count":          row["attendee_count"],
+        "attendees":               attendees,
+        "primary_contact_name":    row["primary_contact_name"] or "",
+        "primary_contact_email":   row["primary_contact_email"] or "",
+        "notes":                   row["notes"] or "",
+        "linked_entity_id":        row["linked_entity_id"] or "",
+        "created_at":              row["created_at"],
+        "updated_at":              row["updated_at"],
+        "created_by":              row["created_by"] or "",
+    }
+
+
+@app.route("/api/sponsors", methods=["GET"])
+@auth_required
+def sponsors_list():
+    """List sponsors; optional filters: year, tier, sector, status."""
+    year   = request.args.get("year")
+    tier   = (request.args.get("tier")   or "").strip()
+    sector = (request.args.get("sector") or "").strip()
+    status = (request.args.get("status") or "").strip()   # signed|unsigned|all
+    clauses, params = [], []
+    if year:
+        try:
+            clauses.append("event_year = ?")
+            params.append(int(year))
+        except ValueError:
+            pass
+    if tier:
+        clauses.append("sponsorship_tier = ?")
+        params.append(tier)
+    if sector:
+        clauses.append("industry_sector = ?")
+        params.append(sector)
+    if status == "signed":
+        clauses.append("contract_signed_by_us = 1 AND contract_signed_by_them = 1")
+    elif status == "unsigned":
+        clauses.append("(contract_signed_by_us = 0 OR contract_signed_by_them = 0)")
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    sql = (
+        "SELECT * FROM sponsors " + where + " "
+        "ORDER BY event_year DESC, "
+        "         CASE sponsorship_tier "
+        "           WHEN 'Gold'   THEN 1 "
+        "           WHEN 'Bronze' THEN 2 "
+        "           WHEN 'Base'   THEN 3 "
+        "           ELSE 9 END, "
+        "         company_name ASC"
+    )
+    db = get_db()
+    rows = db.execute(sql, tuple(params)).fetchall()
+    return jsonify({"sponsors": [_sponsor_row_to_dict(r) for r in rows]})
+
+
+@app.route("/api/sponsors/years", methods=["GET"])
+@auth_required
+def sponsors_years():
+    """List distinct event_years for the year selector. Always include
+    current year so the picker shows the bucket users can populate now."""
+    db = get_db()
+    rows = db.execute("SELECT DISTINCT event_year FROM sponsors ORDER BY event_year DESC").fetchall()
+    years = [int(r["event_year"]) for r in rows]
+    current = _dt.datetime.now(_dt.timezone.utc).year
+    if current not in years:
+        years.insert(0, current)
+    return jsonify({"years": sorted(years, reverse=True)})
+
+
+@app.route("/api/sponsors/<sponsor_id>", methods=["GET"])
+@auth_required
+def sponsors_get(sponsor_id):
+    db = get_db()
+    row = db.execute("SELECT * FROM sponsors WHERE id = ?", (sponsor_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(_sponsor_row_to_dict(row))
+
+
+@app.route("/api/sponsors/<sponsor_id>", methods=["PUT"])
+@auth_required
+def sponsors_upsert(sponsor_id):
+    body = request.get_json(force=True, silent=True) or {}
+    event_year   = body.get("event_year")
+    company_name = (body.get("company_name") or "").strip()
+    if not event_year or not company_name:
+        return jsonify({"error": "event_year and company_name are required"}), 400
+    try:
+        event_year = int(event_year)
+    except (TypeError, ValueError):
+        return jsonify({"error": "event_year must be an integer"}), 400
+
+    normalized = (body.get("normalized_name") or "").strip().lower() or _normalize_sponsor_name(company_name)
+    # If client didn't send an id matching our slug scheme, regenerate it.
+    expected_id = _slug_for_sponsor(event_year, normalized)
+    # We accept any id; this just protects against id-vs-key drift on the
+    # import path.
+    if not sponsor_id:
+        sponsor_id = expected_id
+
+    now = _now_iso()
+    db  = get_db()
+    existing = db.execute("SELECT created_at, created_by FROM sponsors WHERE id = ?", (sponsor_id,)).fetchone()
+    created_at = existing["created_at"] if existing else (body.get("created_at") or now)
+    created_by = (existing["created_by"] if existing else None) or (request.headers.get("X-Display-Name") or "").strip() or None
+
+    attendees_json = json.dumps(body.get("attendees") or [])
+
+    db.execute(
+        "INSERT INTO sponsors "
+        "(id, event_year, event_name, company_name, normalized_name, industry_sector, "
+        " sponsorship_tier, value_no_iva_eur, value_with_iva_eur, amount_paid_eur, "
+        " contract_signed_by_us, contract_signed_by_them, invoice_no, invoice_date, "
+        " payment_date, participation_days, attendee_count, attendees, "
+        " primary_contact_name, primary_contact_email, notes, linked_entity_id, "
+        " created_at, updated_at, created_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT (id) DO UPDATE SET "
+        "  event_year              = excluded.event_year, "
+        "  event_name              = excluded.event_name, "
+        "  company_name            = excluded.company_name, "
+        "  normalized_name         = excluded.normalized_name, "
+        "  industry_sector         = excluded.industry_sector, "
+        "  sponsorship_tier        = excluded.sponsorship_tier, "
+        "  value_no_iva_eur        = excluded.value_no_iva_eur, "
+        "  value_with_iva_eur      = excluded.value_with_iva_eur, "
+        "  amount_paid_eur         = excluded.amount_paid_eur, "
+        "  contract_signed_by_us   = excluded.contract_signed_by_us, "
+        "  contract_signed_by_them = excluded.contract_signed_by_them, "
+        "  invoice_no              = excluded.invoice_no, "
+        "  invoice_date            = excluded.invoice_date, "
+        "  payment_date            = excluded.payment_date, "
+        "  participation_days      = excluded.participation_days, "
+        "  attendee_count          = excluded.attendee_count, "
+        "  attendees               = excluded.attendees, "
+        "  primary_contact_name    = excluded.primary_contact_name, "
+        "  primary_contact_email   = excluded.primary_contact_email, "
+        "  notes                   = excluded.notes, "
+        "  linked_entity_id        = excluded.linked_entity_id, "
+        "  updated_at              = excluded.updated_at",
+        (
+            sponsor_id, event_year,
+            (body.get("event_name") or "Career Day").strip(),
+            company_name, normalized,
+            (body.get("industry_sector")  or "").strip() or None,
+            (body.get("sponsorship_tier") or "").strip() or None,
+            int(body["value_no_iva_eur"])   if str(body.get("value_no_iva_eur")   or "").strip() else None,
+            int(body["value_with_iva_eur"]) if str(body.get("value_with_iva_eur") or "").strip() else None,
+            int(body["amount_paid_eur"])    if str(body.get("amount_paid_eur")    or "").strip() else None,
+            1 if body.get("contract_signed_by_us")   else 0,
+            1 if body.get("contract_signed_by_them") else 0,
+            (body.get("invoice_no")           or "").strip() or None,
+            (body.get("invoice_date")         or "").strip() or None,
+            (body.get("payment_date")         or "").strip() or None,
+            (body.get("participation_days")   or "").strip() or None,
+            int(body["attendee_count"]) if str(body.get("attendee_count") or "").strip() else None,
+            attendees_json,
+            (body.get("primary_contact_name")  or "").strip() or None,
+            (body.get("primary_contact_email") or "").strip() or None,
+            (body.get("notes") or ""),
+            (body.get("linked_entity_id")  or "").strip() or None,
+            created_at, now, created_by,
+        ),
+    )
+    db.commit()
+    _record_edit("sponsor", "upsert", sponsor_id)
+    return jsonify({"ok": True, "id": sponsor_id})
+
+
+@app.route("/api/sponsors/<sponsor_id>", methods=["DELETE"])
+@auth_required
+def sponsors_delete(sponsor_id):
+    db = get_db()
+    cur = db.execute("DELETE FROM sponsors WHERE id = ?", (sponsor_id,))
+    db.commit()
+    if cur.rowcount == 0:
+        return jsonify({"error": "not found"}), 404
+    _record_edit("sponsor", "delete", sponsor_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/sponsors/import", methods=["POST"])
+@auth_required
+def sponsors_import():
+    """Bulk upsert from the canonical CSV produced by scripts/clean_sponsors.py.
+
+    Accepts:
+      - multipart/form-data with `file` field (the CSV)
+      - OR application/json body { rows: [...] } for programmatic ingest
+
+    Query params:
+      - event_year (int, default = current UTC year)
+      - dry_run   (1 = preview without writing)
+
+    Returns:
+      { inserted, updated, errors[], dry_run, rows_seen }
+    """
+    try:
+        event_year = int(request.args.get("event_year") or _dt.datetime.now(_dt.timezone.utc).year)
+    except ValueError:
+        return jsonify({"error": "event_year must be int"}), 400
+    dry_run = (request.args.get("dry_run") or "").strip() in ("1", "true", "yes")
+
+    # Source rows: either multipart CSV or JSON body
+    rows = []
+    if "file" in request.files:
+        f = request.files["file"]
+        try:
+            content = f.read().decode("utf-8-sig")
+        except UnicodeDecodeError:
+            f.stream.seek(0)
+            content = f.read().decode("latin-1")
+        import csv as _csv
+        reader = _csv.DictReader(content.splitlines())
+        rows = list(reader)
+    else:
+        body = request.get_json(force=True, silent=True) or {}
+        rows = body.get("rows") or []
+
+    if not rows:
+        return jsonify({"error": "no rows; send multipart 'file' or JSON {rows:[...]}"}), 400
+
+    db = get_db()
+    inserted, updated, errors = 0, 0, []
+    now = _now_iso()
+    created_by = (request.headers.get("X-Display-Name") or "").strip() or None
+
+    for i, r in enumerate(rows):
+        try:
+            company = (r.get("display_name") or r.get("company_name") or "").strip()
+            if not company:
+                errors.append({"row": i, "error": "no company_name / display_name"})
+                continue
+            normalized = (r.get("normalized_name") or "").strip().lower() or _normalize_sponsor_name(company)
+            sid = _slug_for_sponsor(event_year, normalized)
+            attendees = []
+            if r.get("ospiti_names"):
+                attendees = [a.strip() for a in str(r["ospiti_names"]).split("|") if a.strip()]
+            # bool detection (Python True/False or "True"/"true"/"1")
+            def _bool(v):
+                if v is True or v is False:
+                    return v
+                return str(v or "").strip().lower() in ("true", "1", "yes")
+            # int-or-none from possibly-float string
+            def _int(v):
+                s = str(v or "").strip()
+                if not s:
+                    return None
+                try:
+                    return int(float(s))
+                except (TypeError, ValueError):
+                    return None
+
+            existing = db.execute("SELECT 1 FROM sponsors WHERE id = ?", (sid,)).fetchone()
+            payload = (
+                sid, event_year, "Career Day", company, normalized,
+                (r.get("area_tematica") or r.get("industry_sector") or "").strip() or None,
+                (r.get("sponsorship_tier") or "").strip() or None,
+                _int(r.get("value_no_iva_eur") or r.get("value_no_iva")),
+                _int(r.get("value_with_iva_eur")),
+                _int(r.get("amount_paid_eur") or r.get("incassato_eur") or r.get("incassato")),
+                1 if _bool(r.get("signed_by_us") or r.get("contract_signed_by_us")) else 0,
+                1 if _bool(r.get("signed_by_them") or r.get("contract_signed_by_them")) else 0,
+                (r.get("fattura_no") or r.get("invoice_no") or "").strip() or None,
+                (r.get("fattura_date") or r.get("invoice_date") or "").strip() or None,
+                (r.get("payment_date") or "").strip() or None,
+                (r.get("partecipazione") or r.get("participation_days") or "").strip() or None,
+                _int(r.get("ospiti_count") or r.get("attendee_count")),
+                json.dumps(attendees),
+                (r.get("primary_contact") or r.get("primary_contact_name") or "").strip() or None,
+                (r.get("primary_email")   or r.get("primary_contact_email") or "").strip() or None,
+                (r.get("note") or r.get("notes") or ""),
+                (r.get("linked_entity_id") or "").strip() or None,
+                now if not existing else None,   # created_at: only on insert
+                now,                              # updated_at: always
+                created_by,
+            )
+            if dry_run:
+                if existing:
+                    updated += 1
+                else:
+                    inserted += 1
+                continue
+            # Upsert (same SQL as PUT endpoint, but with proper created_at handling)
+            if existing:
+                db.execute(
+                    "UPDATE sponsors SET event_year=?, event_name=?, company_name=?, normalized_name=?, "
+                    "industry_sector=?, sponsorship_tier=?, value_no_iva_eur=?, value_with_iva_eur=?, "
+                    "amount_paid_eur=?, contract_signed_by_us=?, contract_signed_by_them=?, invoice_no=?, "
+                    "invoice_date=?, payment_date=?, participation_days=?, attendee_count=?, attendees=?, "
+                    "primary_contact_name=?, primary_contact_email=?, notes=?, linked_entity_id=?, updated_at=? "
+                    "WHERE id=?",
+                    payload[1:13] + payload[13:22] + (payload[23],) + (sid,),
+                )
+                updated += 1
+            else:
+                db.execute(
+                    "INSERT INTO sponsors "
+                    "(id, event_year, event_name, company_name, normalized_name, industry_sector, "
+                    " sponsorship_tier, value_no_iva_eur, value_with_iva_eur, amount_paid_eur, "
+                    " contract_signed_by_us, contract_signed_by_them, invoice_no, invoice_date, "
+                    " payment_date, participation_days, attendee_count, attendees, "
+                    " primary_contact_name, primary_contact_email, notes, linked_entity_id, "
+                    " created_at, updated_at, created_by) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    payload,
+                )
+                inserted += 1
+        except Exception as e:
+            errors.append({"row": i, "error": str(e), "company": r.get("display_name") or r.get("company_name") or "?"})
+    if not dry_run:
+        db.commit()
+        _record_edit("sponsor", "bulk_import", f"year={event_year},rows={inserted + updated}")
+    return jsonify({
+        "ok": True,
+        "event_year": event_year,
+        "dry_run": dry_run,
+        "rows_seen": len(rows),
+        "inserted": inserted,
+        "updated":  updated,
+        "errors":   errors,
+    })
 
 
 # ============================================================================

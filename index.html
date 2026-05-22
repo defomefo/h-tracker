@@ -1830,6 +1830,105 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .contract-form .cf-attach-add{font-size:11px;background:transparent;border:1px dashed var(--rule);color:var(--ink-soft);padding:6px 12px;border-radius:5px;cursor:pointer;font-family:inherit;align-self:flex-start;font-weight:600}
 .contract-form .cf-attach-add:hover{border-color:var(--navy);color:var(--navy);border-style:solid}
 /* ============================================================
+   SPONSORS — standalone view (Career Day annual records)
+   ============================================================ */
+.sponsors-shell{padding:22px 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.sponsors-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.sponsors-head .sh-title-block{display:flex;flex-direction:column;gap:4px}
+.sponsors-head .sh-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--hf-red)}
+.sponsors-head h1{font-size:26px;font-weight:800;color:var(--navy);letter-spacing:-0.4px;margin:0}
+.sponsors-head .sh-sub{font-size:13px;color:var(--ink-soft);line-height:1.5;max-width:680px}
+.sponsors-head .sh-actions{display:flex;gap:8px;align-items:center}
+.sponsors-head .sh-year-select{padding:9px 12px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-weight:700;font-family:inherit;background:#fff;color:var(--navy);cursor:pointer}
+.sponsors-head .sh-year-select:focus{outline:none;border-color:var(--gold)}
+.sponsors-head .sh-import{background:transparent;border:1px solid var(--ink);color:var(--ink);padding:9px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.4px;font-family:inherit;text-transform:uppercase;transition:all .12s}
+.sponsors-head .sh-import:hover{background:var(--ink);color:#fff}
+.sponsors-head .sh-new{background:var(--hf-red);color:#fff;border:none;padding:10px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.6px;font-family:inherit;text-transform:uppercase;transition:background .12s;white-space:nowrap}
+.sponsors-head .sh-new:hover{background:var(--hf-red-deep)}
+
+.sponsors-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.sk-tile{background:#fff;border:1px solid var(--rule);border-top:3px solid var(--ink-mute);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.sk-tile.value{border-top-color:var(--hf-red)}
+.sk-tile.paid{border-top-color:var(--ur)}
+.sk-tile.unsigned{border-top-color:var(--warm)}
+.sk-tile.unsigned.urgent{border-top-color:var(--crit)}
+.sk-tile.risk{border-top-color:var(--crit)}
+.sk-tile .sk-num{font-size:24px;font-weight:800;color:var(--navy);letter-spacing:-0.4px;font-variant-numeric:tabular-nums;line-height:1.1}
+.sk-tile .sk-lbl{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--ink-soft);text-transform:uppercase}
+.sk-tile .sk-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;font-style:italic;line-height:1.3}
+
+.sponsors-alert{background:linear-gradient(180deg,#fff 0%,var(--off-white) 100%);border:1px solid var(--crit);border-left:4px solid var(--crit);border-radius:6px;padding:12px 18px;display:flex;flex-direction:column;gap:4px}
+.sponsors-alert.mild{border-color:var(--rule);border-left-color:var(--warm)}
+.sponsors-alert .sa-head{font-size:9px;letter-spacing:1.8px;text-transform:uppercase;font-weight:800;color:var(--crit)}
+.sponsors-alert.mild .sa-head{color:#A87A20}
+.sponsors-alert .sa-body{font-size:13px;color:var(--ink);line-height:1.55}
+.sponsors-alert .sa-body b{color:var(--navy);font-weight:800}
+
+.sponsors-toolbar{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sponsors-toolbar .st-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sponsors-toolbar .st-label{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--ink-soft);margin-right:4px}
+.sponsors-toolbar .st-pill{background:#fff;border:1px solid var(--rule);padding:5px 12px;font-family:inherit;font-size:11px;font-weight:600;color:var(--ink-soft);cursor:pointer;border-radius:14px;transition:all .12s}
+.sponsors-toolbar .st-pill:hover{color:var(--navy);background:var(--paper);border-color:var(--navy)}
+.sponsors-toolbar .st-pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sponsors-toolbar .st-sector{padding:5px 10px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink);cursor:pointer}
+.sponsors-toolbar .st-sector:focus{outline:none;border-color:var(--gold);background:#fff}
+.sponsors-toolbar .st-spacer{flex:1}
+.sponsors-toolbar .st-search{padding:7px 12px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink);width:240px;min-width:140px}
+.sponsors-toolbar .st-search:focus{outline:none;border-color:var(--gold);background:#fff}
+
+.sponsors-table-wrap{background:#fff;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.sponsors-table{width:100%;border-collapse:collapse;font-size:12px}
+.sponsors-table thead th{background:var(--ink);color:#fff;padding:10px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap}
+.sponsors-table thead th.num-col{text-align:right}
+.sponsors-table tbody tr{cursor:pointer;transition:background .12s;border-top:1px solid var(--rule)}
+.sponsors-table tbody tr:hover{background:var(--paper)}
+.sponsors-table tbody td{padding:10px 12px;vertical-align:middle}
+.sponsors-table tbody td.num-col{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--navy)}
+.sponsors-table .st-company{font-weight:700;color:var(--navy);font-size:13px}
+.sponsors-table .st-company-sub{font-size:10px;color:var(--ink-soft);font-weight:400;font-family:'Consolas',monospace}
+.sponsors-table .st-meta-cell{font-size:11px;color:var(--ink-soft)}
+
+.sponsor-tier{display:inline-block;font-size:9px;letter-spacing:.6px;font-weight:800;color:#fff;padding:3px 9px;border-radius:10px;text-transform:uppercase;white-space:nowrap}
+.sponsor-status{display:inline-block;font-size:9px;letter-spacing:.4px;font-weight:700;padding:3px 9px;border-radius:10px;text-transform:uppercase;white-space:nowrap}
+.sponsor-status.signed{background:rgba(46,125,91,.14);color:var(--ur)}
+.sponsor-status.unsigned{background:rgba(139,26,26,.12);color:var(--crit)}
+.sponsor-status.awaiting-us{background:rgba(224,169,59,.16);color:#7E5500}
+.sponsor-status.awaiting-them{background:rgba(74,107,138,.16);color:var(--cold)}
+
+.sponsors-empty{background:#fff;border:1px dashed var(--rule);border-radius:6px;padding:50px 30px;text-align:center;color:var(--ink-soft)}
+.sponsors-empty h3{font-size:15px;color:var(--navy);font-weight:700;margin-bottom:8px}
+.sponsors-empty p{font-size:12px;line-height:1.5;max-width:480px;margin:0 auto 14px}
+.sponsors-empty .btn{display:inline-block;background:var(--hf-red);color:#fff;border:none;padding:9px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.5px;font-family:inherit;text-transform:uppercase}
+.sponsors-empty .btn:hover{background:var(--hf-red-deep)}
+
+/* Sponsor edit/new modal form */
+.sponsor-form{display:flex;flex-direction:column;gap:14px}
+.sponsor-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sponsor-form .sf-field{display:flex;flex-direction:column;gap:5px}
+.sponsor-form .sf-full{grid-column:1 / -1}
+.sponsor-form .sf-label{font-size:10px;letter-spacing:.9px;text-transform:uppercase;font-weight:700;color:var(--ink-soft)}
+.sponsor-form .sf-label .req{color:var(--crit);margin-left:3px}
+.sponsor-form input[type=text],.sponsor-form input[type=number],.sponsor-form input[type=date],.sponsor-form input[type=email],.sponsor-form select,.sponsor-form textarea{padding:8px 11px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink)}
+.sponsor-form input:focus,.sponsor-form select:focus,.sponsor-form textarea:focus{outline:none;border-color:var(--gold);background:#fff}
+.sponsor-form textarea{min-height:70px;resize:vertical;line-height:1.5;font-family:'Helvetica Neue','Segoe UI',sans-serif}
+.sponsor-form .sf-hint{font-size:10px;color:var(--ink-soft);font-style:italic;line-height:1.4}
+.sponsor-form .sf-hint code{background:var(--paper);padding:1px 4px;border-radius:3px;font-size:10px;font-family:'Consolas',monospace}
+.sponsor-form .sf-checkrow{display:flex;gap:18px;padding:4px 0;flex-wrap:wrap}
+.sponsor-form .sf-checkrow label{display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--ink)}
+.sponsor-form .sf-checkrow input{margin:0;cursor:pointer}
+
+/* Import CSV preview area */
+.sf-import{display:flex;flex-direction:column;gap:14px}
+.sf-import-pending{font-size:12px;color:var(--ink-soft);font-style:italic;padding:10px 14px;background:var(--paper);border-radius:5px}
+.sf-import-err{font-size:12px;color:var(--crit);padding:10px 14px;background:rgba(139,26,26,.06);border:1px solid rgba(139,26,26,.2);border-radius:5px;line-height:1.5}
+.sf-import-err b{color:var(--crit)}
+.sf-import-err ul{margin:6px 0 0;padding-left:20px}
+.sf-import-ok{font-size:12px;padding:12px 14px;background:rgba(46,125,91,.06);border:1px solid var(--ur);border-radius:5px}
+.sf-import-ok .sii-head{font-weight:800;color:var(--ur);letter-spacing:.4px;margin-bottom:6px;font-size:11px;text-transform:uppercase}
+.sf-import-ok .sii-stats{display:flex;gap:18px;font-size:12px;color:var(--ink)}
+.sf-import-ok .sii-stats b{color:var(--navy);font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ============================================================
    FOLLOW-UPS — standalone view (Action Queue)
    ============================================================ */
 .followups-shell{padding:22px 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -2406,6 +2505,10 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
         <span class="nav-label">Contracts</span>
       </button>
+      <button class="nav-item" data-view="sponsors" onclick="switchView('sponsors')" title="Career Day annual sponsorship records — financial + contract per company per year">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <span class="nav-label">Sponsors</span>
+      </button>
       <button class="nav-item" data-view="teams" onclick="switchView('teams')" title="Workload by team — who owns what, primary vs supporting">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span class="nav-label">Teams</span>
@@ -2534,6 +2637,9 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <!-- CONTRACTS VIEW -->
     <section id="view-contracts" class="view hidden"></section>
 
+    <!-- SPONSORS VIEW -->
+    <section id="view-sponsors" class="view hidden"></section>
+
     <!-- TEAMS VIEW -->
     <section id="view-teams" class="view hidden"></section>
 
@@ -2593,6 +2699,47 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <button class="compare-close" onclick="closeContractDetail()">&times;</button>
     </div>
     <div class="compare-body" id="contract-detail-body"></div>
+  </div>
+</div>
+
+<!-- Sponsor new/edit modal -->
+<div class="compare-modal" id="sponsor-modal" style="z-index:422">
+  <div class="compare-box" style="max-width:720px">
+    <div class="compare-head">
+      <h2 id="sponsor-modal-title">New sponsor</h2>
+      <button class="compare-close" onclick="closeSponsorModal()">&times;</button>
+    </div>
+    <div class="compare-body">
+      <div id="sponsor-modal-body" class="sponsor-form"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--rule)">
+        <button class="btn outline" id="sponsor-modal-delete" onclick="deleteSponsorFromModal()" style="display:none;color:var(--crit);border-color:var(--crit)">Delete</button>
+        <div style="flex:1"></div>
+        <button class="btn outline" onclick="closeSponsorModal()">Cancel</button>
+        <button class="btn gold" onclick="submitSponsorForm()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sponsor detail modal -->
+<div class="compare-modal" id="sponsor-detail-modal" style="z-index:423">
+  <div class="compare-box" style="max-width:720px">
+    <div class="compare-head" id="sponsor-detail-head">
+      <h2 id="sponsor-detail-title">Sponsor</h2>
+      <button class="compare-close" onclick="closeSponsorDetail()">&times;</button>
+    </div>
+    <div class="compare-body" id="sponsor-detail-body"></div>
+  </div>
+</div>
+
+<!-- Import sponsors CSV modal (multipart upload) -->
+<div class="compare-modal" id="sponsor-import-modal" style="z-index:424">
+  <div class="compare-box" style="max-width:680px">
+    <div class="compare-head">
+      <h2>Import sponsors CSV</h2>
+      <button class="compare-close" onclick="closeSponsorImportModal()">&times;</button>
+    </div>
+    <div class="compare-body" id="sponsor-import-body"></div>
   </div>
 </div>
 
@@ -4460,6 +4607,95 @@ async function toggleFollowupDone(followupId) {
   if (STATE.detailId === f.entity_id && typeof openDetail === "function") openDetail(f.entity_id);
 }
 
+// ============================================================================
+// SPONSORS — Career Day annual sponsorship records.
+// Separate from UNIS (partnership pipeline) per CLAUDE.md decision:
+// different lifecycle, different stakeholders, different KPIs. One row per
+// (event_year, company) so renewal-cycle analytics + year-over-year read
+// natively. Mirrors the contracts/followups sync pattern.
+// ============================================================================
+const LS_SPONSORS_KEY = "hfarm_sponsors_cache";
+function _readLocalSponsors() {
+  try { return JSON.parse(localStorage.getItem(LS_SPONSORS_KEY) || "[]"); }
+  catch { return []; }
+}
+function _writeLocalSponsors(list) {
+  try { localStorage.setItem(LS_SPONSORS_KEY, JSON.stringify(list || [])); } catch {}
+}
+let SPONSORS = _readLocalSponsors();
+
+async function syncSponsorsFromServer() {
+  try {
+    const r = await apiFetch("/api/sponsors", { cache: "no-store" });
+    const data = await r.json();
+    SPONSORS = data.sponsors || [];
+    _writeLocalSponsors(SPONSORS);
+    if (STATE.view === "sponsors" && typeof renderSponsorsView === "function") renderSponsorsView();
+    if (STATE.view === "home"     && typeof renderHomeView     === "function") renderHomeView();
+    return true;
+  } catch (e) {
+    console.warn("[sponsors] server unreachable, using local cache:", e.message);
+    return false;
+  }
+}
+
+async function saveSponsor(sponsor) {
+  const idx = SPONSORS.findIndex(s => s.id === sponsor.id);
+  if (idx >= 0) SPONSORS[idx] = sponsor;
+  else          SPONSORS.push(sponsor);
+  _writeLocalSponsors(SPONSORS);
+  try {
+    await apiFetch("/api/sponsors/" + encodeURIComponent(sponsor.id), {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body:    JSON.stringify(sponsor),
+    });
+  } catch (e) {
+    console.warn("[sponsors] save deferred (offline):", e.message);
+  }
+}
+
+async function deleteSponsor(sponsorId) {
+  const s = SPONSORS.find(x => x.id === sponsorId);
+  if (!s) return;
+  if (!confirm(
+    `Delete this sponsor record for EVERYONE on the team?\n\n` +
+    `${s.event_year} · ${s.company_name} · ${s.sponsorship_tier || "(no tier)"}\n\n` +
+    `You'll have 60 seconds to Undo from the toast that appears.`
+  )) return;
+  _lastReset = { kind: "sponsor-delete", sponsor: JSON.parse(JSON.stringify(s)) };
+  SPONSORS = SPONSORS.filter(x => x.id !== sponsorId);
+  _writeLocalSponsors(SPONSORS);
+  if (STATE.view === "sponsors") renderSponsorsView();
+  try {
+    await apiFetch("/api/sponsors/" + encodeURIComponent(sponsorId), {
+      method: "DELETE", headers: _identityHeaders(),
+    });
+  } catch (e) {
+    console.warn("[sponsors] delete deferred (offline):", e.message);
+  }
+  showResetUndoToast(`Sponsor deleted · "${s.company_name}"`);
+}
+
+// Tier → color swatch (gold/bronze/base + fallback)
+const SPONSOR_TIER_COLORS = {
+  "Gold":   "#C5A04E",
+  "Bronze": "#B07A4A",
+  "Base":   "#6E6E6E",
+};
+function _sponsorTierColor(tier) { return SPONSOR_TIER_COLORS[tier] || "#999"; }
+
+// Aggregate stats for a given year's sponsor set
+function _sponsorYearStats(year) {
+  const subset = (SPONSORS || []).filter(s => s.event_year === year);
+  const total      = subset.length;
+  const totalValue = subset.reduce((sum, s) => sum + (s.value_no_iva_eur || 0), 0);
+  const paid       = subset.reduce((sum, s) => sum + (s.amount_paid_eur || 0), 0);
+  const unsigned   = subset.filter(s => !s.contract_signed_by_us || !s.contract_signed_by_them).length;
+  const unsignedHighTier = subset.filter(s => (!s.contract_signed_by_us || !s.contract_signed_by_them) && s.sponsorship_tier === "Gold").length;
+  return { total, totalValue, paid, unsigned, unsignedHighTier, subset };
+}
+
 // Bucket helpers — used by the Home briefing + the standalone view header KPIs.
 // All buckets reference TODAY (local) and exclude completed items unless the
 // caller asks for them.
@@ -4945,6 +5181,7 @@ function renderCurrentView() {
   if (viewId === "followups") renderFollowupsView();
   if (viewId === "brochures") renderBrochuresView();
   if (viewId === "contracts") renderContractsView();
+  if (viewId === "sponsors")  renderSponsorsView();
   if (viewId === "teams")     renderTeamsView();
   if (viewId === "about")     renderAboutView();
   if (viewId === "admin")     renderAdminView();
@@ -8997,6 +9234,21 @@ async function undoLastReset() {
       console.warn("[followup-undo] server write failed, kept locally:", e.message);
     }
     showSyncToast("✓ Follow-up restored", "ok");
+  } else if (snap.kind === "sponsor-delete") {
+    const s = snap.sponsor;
+    SPONSORS.push(s);
+    _writeLocalSponsors(SPONSORS);
+    if (STATE.view === "sponsors") renderSponsorsView();
+    try {
+      await apiFetch("/api/sponsors/" + encodeURIComponent(s.id), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ..._identityHeaders() },
+        body: JSON.stringify(s),
+      });
+    } catch (e) {
+      console.warn("[sponsor-undo] server write failed, kept locally:", e.message);
+    }
+    showSyncToast("✓ Sponsor restored", "ok");
   } else if (snap.kind === "kb-reset") {
     // Restore the draft to whatever the user had before the reset. If they
     // never had a draft (currentDraft was null), clear instead — which
@@ -11863,6 +12115,565 @@ function openFollowupModalForEntity(entityId) {
   openFollowupModal(null);
 }
 
+// ============================================================================
+// SPONSORS VIEW — annual Career Day sponsorship records.
+// Filters: year (selector) + tier pills + contract status + sector dropdown
+// + search. Recommendation strip at bottom calls out unsigned high-tier
+// contracts (the real money on the table this week).
+// ============================================================================
+const SPONSORS_STATE = {
+  filterYear:   null,         // null = "latest available" picked automatically
+  filterTier:   "all",
+  filterStatus: "all",
+  filterSector: "all",
+  search:       "",
+  editingId:    null,
+};
+
+function _sponsorYearsAvailable() {
+  const years = new Set((SPONSORS || []).map(s => s.event_year).filter(y => y));
+  const now = new Date().getFullYear();
+  years.add(now);
+  return [...years].sort((a, b) => b - a);
+}
+
+function _sponsorStatusLabel(s) {
+  if (s.contract_signed_by_us && s.contract_signed_by_them) return { label: "Signed", cls: "signed" };
+  if (s.contract_signed_by_them && !s.contract_signed_by_us) return { label: "Awaiting us", cls: "awaiting-us" };
+  if (s.contract_signed_by_us && !s.contract_signed_by_them) return { label: "Awaiting them", cls: "awaiting-them" };
+  return { label: "Unsigned", cls: "unsigned" };
+}
+
+function _fmtMoneyShort(n) {
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  return "€" + Number(n).toLocaleString("en-GB");
+}
+
+function renderSponsorsView() {
+  const el = document.getElementById("view-sponsors");
+  if (!el) return;
+
+  const years = _sponsorYearsAvailable();
+  if (SPONSORS_STATE.filterYear === null || !years.includes(SPONSORS_STATE.filterYear)) {
+    // Default to most recent year that actually has data, else current year
+    const yearsWithData = years.filter(y => SPONSORS.some(s => s.event_year === y));
+    SPONSORS_STATE.filterYear = (yearsWithData[0] || years[0]);
+  }
+  const year = SPONSORS_STATE.filterYear;
+
+  const stats = _sponsorYearStats(year);
+  const allYearSubset = stats.subset;
+
+  // Apply filters
+  const searchQ = (SPONSORS_STATE.search || "").toLowerCase().trim();
+  const matches = (s) => {
+    if (SPONSORS_STATE.filterTier !== "all" && s.sponsorship_tier !== SPONSORS_STATE.filterTier) return false;
+    if (SPONSORS_STATE.filterStatus !== "all") {
+      const sig = _sponsorStatusLabel(s).cls;
+      if (SPONSORS_STATE.filterStatus === "signed"   && sig !== "signed")   return false;
+      if (SPONSORS_STATE.filterStatus === "unsigned" && sig === "signed")   return false;
+    }
+    if (SPONSORS_STATE.filterSector !== "all" && s.industry_sector !== SPONSORS_STATE.filterSector) return false;
+    if (searchQ && !(s.company_name || "").toLowerCase().includes(searchQ) && !(s.industry_sector || "").toLowerCase().includes(searchQ)) return false;
+    return true;
+  };
+  const filtered = allYearSubset.filter(matches);
+
+  // Sector options (from the year's subset)
+  const sectorSet = new Set();
+  allYearSubset.forEach(s => { if (s.industry_sector) sectorSet.add(s.industry_sector); });
+  const sectorOptions = ["all", ...[...sectorSet].sort()];
+
+  // ---- HTML ----
+  let html = `<div class="sponsors-shell">`;
+
+  // Header
+  html += `<div class="sponsors-head">
+    <div class="sh-title-block">
+      <span class="sh-eyebrow">Event · ${escape(year ? "Career Day " + year : "Career Day")}</span>
+      <h1>Sponsors</h1>
+      <div class="sh-sub">Annual sponsorship records — one row per company per event year. Financial + contract status maintained separately from the partnership pipeline so year-over-year analytics stay clean.</div>
+    </div>
+    <div class="sh-actions">
+      <select class="sh-year-select" onchange="sponsorsApplyFilter('year', parseInt(this.value))">
+        ${years.map(y => `<option value="${y}" ${y === year ? "selected" : ""}>${y}</option>`).join("")}
+      </select>
+      <button class="sh-import" onclick="openSponsorImportModal()" title="Bulk import from canonical CSV">⤓ Import CSV</button>
+      <button class="sh-new" onclick="openSponsorModal(null)">+ New sponsor</button>
+    </div>
+  </div>`;
+
+  // KPI tiles
+  const unsignedGold = allYearSubset.filter(s => s.sponsorship_tier === "Gold" && (!s.contract_signed_by_us || !s.contract_signed_by_them)).length;
+  const goldAtRisk = allYearSubset
+    .filter(s => s.sponsorship_tier === "Gold" && (!s.contract_signed_by_us || !s.contract_signed_by_them))
+    .reduce((sum, s) => sum + (s.value_no_iva_eur || 0), 0);
+
+  html += `<div class="sponsors-kpis">
+    <div class="sk-tile value">
+      <div class="sk-num">${_fmtMoneyShort(stats.totalValue)}</div>
+      <div class="sk-lbl">Total revenue</div>
+      <div class="sk-sub">${stats.total} compan${stats.total === 1 ? "y" : "ies"} · senza IVA</div>
+    </div>
+    <div class="sk-tile paid">
+      <div class="sk-num">${_fmtMoneyShort(stats.paid)}</div>
+      <div class="sk-lbl">Incassato</div>
+      <div class="sk-sub">${stats.totalValue ? Math.round(stats.paid / stats.totalValue * 100) : 0}% of total</div>
+    </div>
+    <div class="sk-tile unsigned ${stats.unsigned > 0 ? 'urgent' : ''}">
+      <div class="sk-num">${stats.unsigned}</div>
+      <div class="sk-lbl">Unsigned contracts</div>
+      <div class="sk-sub">${unsignedGold} of those at Gold tier</div>
+    </div>
+    <div class="sk-tile risk">
+      <div class="sk-num">${_fmtMoneyShort(goldAtRisk)}</div>
+      <div class="sk-lbl">Gold at risk</div>
+      <div class="sk-sub">Unsigned Gold value</div>
+    </div>
+  </div>`;
+
+  // Recommendation strip — top urgent action
+  if (unsignedGold > 0) {
+    const goldNames = allYearSubset
+      .filter(s => s.sponsorship_tier === "Gold" && (!s.contract_signed_by_us || !s.contract_signed_by_them))
+      .map(s => s.company_name).slice(0, 5).join(", ");
+    html += `<div class="sponsors-alert">
+      <div class="sa-head">Decision layer</div>
+      <div class="sa-body"><b>${unsignedGold}</b> Gold-tier ${unsignedGold === 1 ? "contract is" : "contracts are"} still unsigned (${_fmtMoneyShort(goldAtRisk)} at risk). Chase ${escape(goldNames)} this week.</div>
+    </div>`;
+  } else if (stats.unsigned > 0) {
+    html += `<div class="sponsors-alert mild">
+      <div class="sa-head">Action queue</div>
+      <div class="sa-body"><b>${stats.unsigned}</b> ${stats.unsigned === 1 ? "contract is" : "contracts are"} still unsigned. Gold tier is clear — focus on Bronze + Base when convenient.</div>
+    </div>`;
+  }
+
+  // Toolbar
+  const tp = (t, label) => `<button class="st-pill ${SPONSORS_STATE.filterTier === t ? "active" : ""}" onclick="sponsorsApplyFilter('tier','${t}')">${label}</button>`;
+  const sp = (st, label) => `<button class="st-pill ${SPONSORS_STATE.filterStatus === st ? "active" : ""}" onclick="sponsorsApplyFilter('status','${st}')">${label}</button>`;
+  html += `<div class="sponsors-toolbar">
+    <div class="st-group">
+      <span class="st-label">Tier</span>
+      ${tp("all", "All")} ${tp("Gold", "Gold")} ${tp("Bronze", "Bronze")} ${tp("Base", "Base")}
+    </div>
+    <div class="st-group">
+      <span class="st-label">Status</span>
+      ${sp("all", "All")} ${sp("signed", "Signed")} ${sp("unsigned", "Unsigned")}
+    </div>
+    <div class="st-group">
+      <span class="st-label">Sector</span>
+      <select class="st-sector" onchange="sponsorsApplyFilter('sector', this.value)">
+        ${sectorOptions.map(o => `<option value="${escapeAttr(o)}" ${o === SPONSORS_STATE.filterSector ? "selected" : ""}>${o === "all" ? "All sectors" : escape(o)}</option>`).join("")}
+      </select>
+    </div>
+    <div class="st-spacer"></div>
+    <input type="search" class="st-search" placeholder="Search company or sector…" value="${escapeAttr(SPONSORS_STATE.search)}" oninput="_sponsorsSearchInput(this.value)" autocomplete="off" spellcheck="false"/>
+  </div>`;
+
+  // Table or empty state
+  if (!filtered.length) {
+    if (!allYearSubset.length) {
+      html += `<div class="sponsors-empty">
+        <h3>No sponsors recorded for ${year} yet</h3>
+        <p>Import the canonical CSV from <code>scripts/clean_sponsors.py</code> or add sponsors manually.</p>
+        <button class="btn" onclick="openSponsorImportModal()">⤓ Import sponsors CSV</button>
+      </div>`;
+    } else {
+      html += `<div class="sponsors-empty">
+        <h3>No sponsors match these filters</h3>
+        <p>Try clearing tier / status / sector to see all ${allYearSubset.length} sponsors for ${year}.</p>
+        <button class="btn" onclick="sponsorsClearFilters()">Clear filters</button>
+      </div>`;
+    }
+  } else {
+    html += `<div class="sponsors-table-wrap"><table class="sponsors-table">
+      <thead><tr>
+        <th>Company</th>
+        <th>Tier</th>
+        <th class="num-col">Value</th>
+        <th>Sector</th>
+        <th>Contract</th>
+        <th>Invoice</th>
+        <th>Attendees</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${filtered.map(s => {
+          const status = _sponsorStatusLabel(s);
+          const tierColor = _sponsorTierColor(s.sponsorship_tier);
+          return `<tr onclick="openSponsorDetail('${escapeAttr(s.id)}')">
+            <td>
+              <div class="st-company">${escape(s.company_name)}</div>
+              ${s.primary_contact_email ? `<div class="st-company-sub">${escape(s.primary_contact_email)}</div>` : ""}
+            </td>
+            <td><span class="sponsor-tier" style="background:${tierColor}">${escape(s.sponsorship_tier || "—")}</span></td>
+            <td class="num-col">${_fmtMoneyShort(s.value_no_iva_eur)}</td>
+            <td class="st-meta-cell">${escape(s.industry_sector || "—")}</td>
+            <td><span class="sponsor-status ${status.cls}">${status.label}</span></td>
+            <td class="st-meta-cell">${escape(s.invoice_no || "—")}</td>
+            <td class="st-meta-cell">${s.attendee_count || "—"}</td>
+            <td style="text-align:right;white-space:nowrap">
+              <button class="btn outline btn-small" onclick="event.stopPropagation();openSponsorModal('${escapeAttr(s.id)}')">Edit</button>
+            </td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table></div>`;
+  }
+
+  html += `</div>`;  // /.sponsors-shell
+  el.innerHTML = html;
+}
+
+function sponsorsApplyFilter(kind, value) {
+  if (kind === "year")   SPONSORS_STATE.filterYear = value;
+  else if (kind === "tier")   SPONSORS_STATE.filterTier   = value;
+  else if (kind === "status") SPONSORS_STATE.filterStatus = value;
+  else if (kind === "sector") SPONSORS_STATE.filterSector = value;
+  else if (kind === "search") SPONSORS_STATE.search       = value;
+  renderSponsorsView();
+}
+function sponsorsClearFilters() {
+  SPONSORS_STATE.filterTier = "all";
+  SPONSORS_STATE.filterStatus = "all";
+  SPONSORS_STATE.filterSector = "all";
+  SPONSORS_STATE.search = "";
+  renderSponsorsView();
+}
+// Debounced search — same pattern as followups, so typing doesn't destroy the input
+let _sponsorsSearchTimer = null;
+function _sponsorsSearchInput(value) {
+  SPONSORS_STATE.search = value;
+  if (_sponsorsSearchTimer) clearTimeout(_sponsorsSearchTimer);
+  _sponsorsSearchTimer = setTimeout(() => {
+    renderSponsorsView();
+    const el = document.querySelector(".st-search");
+    if (el) { el.focus(); try { const v = el.value; el.setSelectionRange(v.length, v.length); } catch {} }
+  }, 220);
+}
+
+// ---- Sponsor detail modal ----
+function openSponsorDetail(sponsorId) {
+  const s = SPONSORS.find(x => x.id === sponsorId);
+  if (!s) return;
+  const status = _sponsorStatusLabel(s);
+  const tierColor = _sponsorTierColor(s.sponsorship_tier);
+  const attendees = Array.isArray(s.attendees) ? s.attendees : [];
+
+  let html = `
+    <div class="cd-section">
+      <h4>Parties</h4>
+      <div class="cd-grid">
+        <div class="cd-field"><span class="cd-k">Company</span><span class="cd-v">${escape(s.company_name)}</span></div>
+        <div class="cd-field"><span class="cd-k">Industry sector</span><span class="cd-v ${s.industry_sector ? "" : "muted"}">${escape(s.industry_sector || "Not classified")}</span></div>
+        <div class="cd-field"><span class="cd-k">Primary contact</span><span class="cd-v ${s.primary_contact_name ? "" : "muted"}">${escape(s.primary_contact_name || "—")}</span></div>
+        <div class="cd-field"><span class="cd-k">Email</span><span class="cd-v ${s.primary_contact_email ? "" : "muted"}">${s.primary_contact_email ? `<a href="mailto:${escape(s.primary_contact_email)}" style="color:var(--hf-red);text-decoration:none">${escape(s.primary_contact_email)}</a>` : "—"}</span></div>
+      </div>
+    </div>
+
+    <div class="cd-section">
+      <h4>Sponsorship</h4>
+      <div class="cd-grid three">
+        <div class="cd-field"><span class="cd-k">Event</span><span class="cd-v">${escape(s.event_name || "Career Day")} ${s.event_year}</span></div>
+        <div class="cd-field"><span class="cd-k">Tier</span><span class="cd-v"><span class="sponsor-tier" style="background:${tierColor}">${escape(s.sponsorship_tier || "—")}</span></span></div>
+        <div class="cd-field"><span class="cd-k">Status</span><span class="cd-v"><span class="sponsor-status ${status.cls}">${status.label}</span></span></div>
+        <div class="cd-field"><span class="cd-k">Value (senza IVA)</span><span class="cd-v value">${_fmtMoneyShort(s.value_no_iva_eur)}</span></div>
+        <div class="cd-field"><span class="cd-k">Paid</span><span class="cd-v value">${_fmtMoneyShort(s.amount_paid_eur)}</span></div>
+        <div class="cd-field"><span class="cd-k">Participation</span><span class="cd-v ${s.participation_days ? "" : "muted"}">${escape(s.participation_days || "—")}</span></div>
+      </div>
+    </div>
+
+    <div class="cd-section">
+      <h4>Invoice + payment</h4>
+      <div class="cd-grid three">
+        <div class="cd-field"><span class="cd-k">Invoice no.</span><span class="cd-v ${s.invoice_no ? "" : "muted"}">${escape(s.invoice_no || "—")}</span></div>
+        <div class="cd-field"><span class="cd-k">Invoice date</span><span class="cd-v ${s.invoice_date ? "" : "muted"}">${escape(s.invoice_date || "—")}</span></div>
+        <div class="cd-field"><span class="cd-k">Payment date</span><span class="cd-v ${s.payment_date ? "" : "muted"}">${escape(s.payment_date || "—")}</span></div>
+      </div>
+    </div>
+
+    <div class="cd-section">
+      <h4>Attendees (${s.attendee_count || attendees.length})</h4>
+      ${attendees.length ? `<div class="cd-progs">${attendees.map(a => `<span class="cd-prog">${escape(a)}</span>`).join("")}</div>` : '<div class="cd-v muted" style="font-size:12px">No attendees recorded.</div>'}
+    </div>
+
+    ${s.notes ? `<div class="cd-section">
+      <h4>Notes</h4>
+      <div class="cd-notes">${escape(s.notes)}</div>
+    </div>` : ""}
+
+    <div class="cd-foot">
+      <div class="cd-meta">id: ${escape(s.id)}</div>
+      <div class="cd-actions">
+        <button class="btn outline" onclick="closeSponsorDetail()">Close</button>
+        <button class="btn gold" onclick="closeSponsorDetail();openSponsorModal('${escapeAttr(s.id)}')">Edit</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("sponsor-detail-title").textContent = `${s.company_name} · ${s.event_year}`;
+  document.getElementById("sponsor-detail-body").innerHTML = html;
+  document.getElementById("sponsor-detail-modal").classList.add("open");
+}
+function closeSponsorDetail() {
+  document.getElementById("sponsor-detail-modal").classList.remove("open");
+}
+
+// ---- Sponsor new / edit modal ----
+function openSponsorModal(sponsorId) {
+  SPONSORS_STATE.editingId = sponsorId;
+  const existing = sponsorId ? (SPONSORS.find(s => s.id === sponsorId) || null) : null;
+  const currentYear = SPONSORS_STATE.filterYear || new Date().getFullYear();
+  const draft = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: "",
+    event_year: currentYear,
+    event_name: "Career Day",
+    company_name: "",
+    normalized_name: "",
+    industry_sector: "",
+    sponsorship_tier: "Base",
+    value_no_iva_eur: "",
+    amount_paid_eur: "",
+    contract_signed_by_us: false,
+    contract_signed_by_them: false,
+    invoice_no: "",
+    invoice_date: "",
+    payment_date: "",
+    participation_days: "",
+    attendee_count: "",
+    attendees: [],
+    primary_contact_name: "",
+    primary_contact_email: "",
+    notes: "",
+  };
+
+  const attendeesText = (Array.isArray(draft.attendees) ? draft.attendees : []).join("\n");
+
+  const html = `
+    <div class="sponsor-form-grid">
+      <div class="sf-field">
+        <span class="sf-label">Event year<span class="req">*</span></span>
+        <input type="number" data-sf="event_year" value="${escapeAttr(draft.event_year)}" min="2020" max="2099"/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Event name</span>
+        <input type="text" data-sf="event_name" value="${escapeAttr(draft.event_name || "Career Day")}"/>
+      </div>
+      <div class="sf-field sf-full">
+        <span class="sf-label">Company name<span class="req">*</span></span>
+        <input type="text" data-sf="company_name" value="${escapeAttr(draft.company_name)}" placeholder="e.g. JAKALA" required/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Sponsorship tier</span>
+        <select data-sf="sponsorship_tier">
+          ${["Base", "Bronze", "Gold"].map(t => `<option value="${t}" ${t === draft.sponsorship_tier ? "selected" : ""}>${t}</option>`).join("")}
+        </select>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Industry sector</span>
+        <input type="text" data-sf="industry_sector" value="${escapeAttr(draft.industry_sector)}" placeholder="e.g. Finance, Banking & Insurance"/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Value (senza IVA, €)</span>
+        <input type="number" data-sf="value_no_iva_eur" value="${escapeAttr(draft.value_no_iva_eur || "")}" min="0" step="100"/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Incassato (€)</span>
+        <input type="number" data-sf="amount_paid_eur" value="${escapeAttr(draft.amount_paid_eur || "")}" min="0" step="100"/>
+      </div>
+      <div class="sf-field sf-full">
+        <span class="sf-label">Contract status</span>
+        <div class="sf-checkrow">
+          <label><input type="checkbox" data-sf="contract_signed_by_us" ${draft.contract_signed_by_us ? "checked" : ""}/> Signed by us</label>
+          <label><input type="checkbox" data-sf="contract_signed_by_them" ${draft.contract_signed_by_them ? "checked" : ""}/> Signed by them</label>
+        </div>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Invoice no.</span>
+        <input type="text" data-sf="invoice_no" value="${escapeAttr(draft.invoice_no)}"/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Invoice date</span>
+        <input type="date" data-sf="invoice_date" value="${escapeAttr(draft.invoice_date)}"/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Payment date</span>
+        <input type="date" data-sf="payment_date" value="${escapeAttr(draft.payment_date)}"/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Participation</span>
+        <input type="text" data-sf="participation_days" value="${escapeAttr(draft.participation_days)}" placeholder="entrambe le giornate / 14 Nov / ..."/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Primary contact name</span>
+        <input type="text" data-sf="primary_contact_name" value="${escapeAttr(draft.primary_contact_name)}"/>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">Primary contact email</span>
+        <input type="email" data-sf="primary_contact_email" value="${escapeAttr(draft.primary_contact_email)}"/>
+      </div>
+      <div class="sf-field sf-full">
+        <span class="sf-label">Attendees (one per line)</span>
+        <textarea data-sf="attendees" rows="3" placeholder="Vincenzo Di Girolamo\nGiacomo Sartori\n...">${escape(attendeesText)}</textarea>
+      </div>
+      <div class="sf-field sf-full">
+        <span class="sf-label">Notes</span>
+        <textarea data-sf="notes" rows="3" placeholder="Special arrangements, focus areas, dietary notes...">${escape(draft.notes || "")}</textarea>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("sponsor-modal-title").textContent = existing ? "Edit sponsor" : "New sponsor";
+  document.getElementById("sponsor-modal-body").innerHTML = html;
+  document.getElementById("sponsor-modal-delete").style.display = existing ? "inline-block" : "none";
+  document.getElementById("sponsor-modal").classList.add("open");
+}
+
+function closeSponsorModal() {
+  document.getElementById("sponsor-modal").classList.remove("open");
+  SPONSORS_STATE.editingId = null;
+}
+
+async function submitSponsorForm() {
+  const body = document.getElementById("sponsor-modal-body");
+  const val = key => {
+    const e = body.querySelector(`[data-sf="${key}"]`);
+    if (!e) return "";
+    if (e.type === "checkbox") return e.checked;
+    return e.value;
+  };
+  const event_year = parseInt(val("event_year"), 10);
+  const company_name = val("company_name").trim();
+  if (!event_year || !company_name) { alert("Event year + company name required."); return; }
+
+  const attendees = val("attendees").split("\n").map(s => s.trim()).filter(Boolean);
+
+  const editingId = SPONSORS_STATE.editingId;
+  const existing  = editingId ? SPONSORS.find(s => s.id === editingId) : null;
+  // Generate id from natural key
+  const normalized = company_name.toLowerCase().replace(/\s+/g, " ").trim();
+  const slug = normalized.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const id = existing ? existing.id : `sponsor-${event_year}-${slug || "unknown"}`;
+
+  const now = new Date().toISOString();
+  const sponsor = {
+    id, event_year,
+    event_name: val("event_name").trim() || "Career Day",
+    company_name,
+    normalized_name: normalized,
+    industry_sector: val("industry_sector").trim() || null,
+    sponsorship_tier: val("sponsorship_tier").trim() || null,
+    value_no_iva_eur:  val("value_no_iva_eur") === "" ? null : parseInt(val("value_no_iva_eur"), 10),
+    value_with_iva_eur: null,
+    amount_paid_eur:   val("amount_paid_eur")  === "" ? null : parseInt(val("amount_paid_eur"), 10),
+    contract_signed_by_us:   !!val("contract_signed_by_us"),
+    contract_signed_by_them: !!val("contract_signed_by_them"),
+    invoice_no:        val("invoice_no").trim() || null,
+    invoice_date:      val("invoice_date") || null,
+    payment_date:      val("payment_date") || null,
+    participation_days: val("participation_days").trim() || null,
+    attendee_count:    val("attendee_count") === "" ? (attendees.length || null) : parseInt(val("attendee_count"), 10),
+    attendees,
+    primary_contact_name:  val("primary_contact_name").trim() || null,
+    primary_contact_email: val("primary_contact_email").trim() || null,
+    notes:             val("notes").trim() || "",
+    linked_entity_id:  existing ? existing.linked_entity_id : null,
+    created_at:        existing ? (existing.created_at || now) : now,
+    updated_at:        now,
+    created_by:        existing ? existing.created_by : (typeof getDisplayName === "function" ? getDisplayName() : ""),
+  };
+  await saveSponsor(sponsor);
+  closeSponsorModal();
+  if (STATE.view === "sponsors") renderSponsorsView();
+  if (STATE.view === "home")     renderHomeView();
+  showSyncToast("Sponsor saved", "ok");
+}
+
+async function deleteSponsorFromModal() {
+  const id = SPONSORS_STATE.editingId;
+  if (!id) return;
+  closeSponsorModal();
+  await deleteSponsor(id);
+}
+
+// ---- Import sponsors CSV modal ----
+function openSponsorImportModal() {
+  const currentYear = SPONSORS_STATE.filterYear || new Date().getFullYear();
+  document.getElementById("sponsor-import-body").innerHTML = `
+    <div class="sf-import">
+      <div class="sf-field">
+        <span class="sf-label">Event year<span class="req">*</span></span>
+        <input type="number" id="sponsor-import-year" value="${currentYear}" min="2020" max="2099"/>
+        <small class="sf-hint">Rows are upserted by (event_year, normalized_name) — re-running with the same year + file safely updates existing records.</small>
+      </div>
+      <div class="sf-field">
+        <span class="sf-label">CSV file<span class="req">*</span></span>
+        <input type="file" id="sponsor-import-file" accept=".csv,text/csv"/>
+        <small class="sf-hint">Use the output of <code>scripts/clean_sponsors.py</code> — file <code>sponsors_canonical_YYYY.csv</code>.</small>
+      </div>
+      <div id="sponsor-import-preview" style="min-height:60px"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)">
+        <button class="btn outline" onclick="closeSponsorImportModal()">Cancel</button>
+        <button class="btn outline" onclick="sponsorImportRun(true)">🔍 Preview (dry-run)</button>
+        <button class="btn gold" onclick="sponsorImportRun(false)">Import</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("sponsor-import-modal").classList.add("open");
+}
+
+function closeSponsorImportModal() {
+  document.getElementById("sponsor-import-modal").classList.remove("open");
+}
+
+async function sponsorImportRun(dryRun) {
+  const fileEl = document.getElementById("sponsor-import-file");
+  const yearEl = document.getElementById("sponsor-import-year");
+  const previewEl = document.getElementById("sponsor-import-preview");
+  if (!fileEl || !fileEl.files.length) {
+    previewEl.innerHTML = `<div class="sf-import-err">Pick a CSV file first.</div>`;
+    return;
+  }
+  const year = parseInt(yearEl.value, 10);
+  if (!year) {
+    previewEl.innerHTML = `<div class="sf-import-err">Event year is required.</div>`;
+    return;
+  }
+  previewEl.innerHTML = `<div class="sf-import-pending">${dryRun ? "Previewing" : "Importing"}…</div>`;
+
+  const formData = new FormData();
+  formData.append("file", fileEl.files[0]);
+  try {
+    const r = await apiFetch(`/api/sponsors/import?event_year=${year}${dryRun ? "&dry_run=1" : ""}`, {
+      method: "POST", headers: _identityHeaders(), body: formData,
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      previewEl.innerHTML = `<div class="sf-import-err">Server rejected: ${escape(String(data.error || r.status))}</div>`;
+      return;
+    }
+    const errSummary = (data.errors || []).length
+      ? `<div class="sf-import-err"><b>${data.errors.length} error(s):</b><ul>${data.errors.slice(0, 5).map(e => `<li>row ${e.row}: ${escape(e.error)} (${escape(e.company || "?")})</li>`).join("")}${data.errors.length > 5 ? `<li>… +${data.errors.length - 5} more</li>` : ""}</ul></div>`
+      : "";
+    previewEl.innerHTML = `<div class="sf-import-ok">
+      <div class="sii-head">${dryRun ? "Preview" : "✓ Imported"}</div>
+      <div class="sii-stats">
+        <span><b>${data.rows_seen}</b> rows seen</span>
+        <span><b>${data.inserted}</b> inserted</span>
+        <span><b>${data.updated}</b> updated</span>
+      </div>
+      ${errSummary}
+    </div>`;
+    if (!dryRun) {
+      // Re-sync from server so the new rows show up
+      await syncSponsorsFromServer();
+      setTimeout(() => closeSponsorImportModal(), 1400);
+    }
+  } catch (e) {
+    previewEl.innerHTML = `<div class="sf-import-err">Network error: ${escape(e.message || String(e))}</div>`;
+  }
+}
+
 function renderContractsView() {
   const el = document.getElementById("view-contracts");
   if (!el) return;
@@ -13156,6 +13967,7 @@ async function bootApp(opts = {}) {
   syncEntityOverridesFromServer();
   syncContractsFromServer();
   syncFollowupsFromServer();
+  syncSponsorsFromServer();
   startPresence();
   try {
     await loadKnowledgeBase();
@@ -13214,6 +14026,7 @@ window.addEventListener("focus", () => {
   if (typeof syncEntityOverridesFromServer === "function") syncEntityOverridesFromServer();
   if (typeof syncContractsFromServer === "function")       syncContractsFromServer();
   if (typeof syncFollowupsFromServer === "function")       syncFollowupsFromServer();
+  if (typeof syncSponsorsFromServer === "function")        syncSponsorsFromServer();
 });
 </script>
 </body>
