@@ -5835,9 +5835,14 @@ async function parseAndRender(csvText) {
     search._wired = true;
   }
 
-  // Land on the last-used view (default = Home, not Globe).
-  const initial = localStorage.getItem("hfarm_view") || "home";
-  switchView(initial);
+  // Always land on Home on a fresh page load — the morning briefing is the
+  // highest-value landing surface. Previously we restored the last-used view
+  // from localStorage ("resume where you left off"), but external users
+  // reported landing on Pipeline (or whichever view they last visited) and
+  // missing the briefing entirely. localStorage still tracks the current
+  // tab for active-state highlighting during the session, but boot always
+  // starts on Home.
+  switchView("home");
 
   // First-visit tour — auto-fire ~600ms after the app appears so the user
   // sees the platform paint first. The "?" floating button re-opens it.
@@ -8128,6 +8133,13 @@ async function upsertOutreach(entry) {
   if (idx >= 0) list[idx] = entry; else list.push(entry);
   _writeLocalOutreach(OUTREACH);
 
+  // Refresh the entity's recency-derived fields so badges like
+  // "never contacted" and the recency component of the partnership score
+  // flip immediately — without waiting for the next CSV reload. Previously
+  // an entity logged outreach but still showed "never contacted" on the
+  // kanban card because days_dormant only got set during CSV ingest.
+  _refreshEntityRecency(entry.entityId);
+
   try {
     const r = await apiFetch("/api/state/outreach/" + encodeURIComponent(entry.id), {
       method: "PUT",
@@ -8140,6 +8152,37 @@ async function upsertOutreach(entry) {
     OUTREACH_BACKEND = "local";
     OUTREACH_PENDING_FLUSH = true;
     console.warn("[outreach] save deferred (offline):", e.message);
+  }
+}
+
+// Recompute days_dormant (+ partnership_score) for ONE entity from the
+// current OUTREACH state, then trigger a re-render so the badges flip.
+// Called after upsert + delete so the "never contacted" chip + recency
+// component of the score stay live.
+function _refreshEntityRecency(entityId) {
+  const u = UNIS.find(x => x.id === entityId);
+  if (!u) return;
+  const entries = (OUTREACH[entityId] || []).filter(e => e && e.date);
+  if (entries.length) {
+    // Pick the most recent date (ISO strings sort lexicographically)
+    const latest = entries.map(e => e.date).sort().pop();
+    const latestDate = new Date(latest);
+    if (!isNaN(latestDate)) {
+      const today = new Date();
+      const ms = today - latestDate;
+      u.days_dormant = Math.max(0, Math.round(ms / 86400000));
+    }
+  } else {
+    // No outreach left → back to "never contacted"
+    u.days_dormant = null;
+  }
+  if (typeof recomputeEntityDerived === "function") recomputeEntityDerived(u);
+  // Re-paint visible surfaces so kanban / globe / home / database all flip
+  if (typeof render === "function")            render();
+  if (typeof drawDots === "function")          drawDots();
+  if (typeof renderCurrentView === "function") renderCurrentView();
+  if (STATE.detailId === entityId && document.getElementById("detail-panel").classList.contains("open")) {
+    openDetail(entityId);
   }
 }
 
@@ -8158,6 +8201,8 @@ async function deleteOutreach(entityId, entryId) {
   // Optimistic local removal
   OUTREACH[entityId] = OUTREACH[entityId].filter(e => e.id !== entryId);
   _writeLocalOutreach(OUTREACH);
+  // Recompute days_dormant from what's left (could flip back to never-contacted)
+  _refreshEntityRecency(entityId);
   if (STATE.detailId === entityId) openDetail(entityId);
 
   try {
