@@ -1939,7 +1939,13 @@ def sponsors_import():
 # ============================================================================
 TAVILY_API_KEY      = os.environ.get("TAVILY_API_KEY", "").strip()
 ROR_API             = "https://api.ror.org/organizations"
-PROSPECT_FUZZY_THRESHOLD = 80   # rapidfuzz token_set_ratio
+PROSPECT_FUZZY_THRESHOLD = 90   # rapidfuzz token_set_ratio
+# Was 80 — too generous with token_set_ratio (subset-friendly metric);
+# "Global International Education Consultancy" was matching anything in
+# UNIS with "Global" / "International" / "Education" / "Consultancy" in
+# the name (single common word triggered ≥80 easily). 90 still catches
+# real near-dupes ("Univ. of Foo" vs "University of Foo" → ~95) without
+# the noisy false positives.
 
 
 _tavily_client = None
@@ -2303,13 +2309,18 @@ def _filter_candidates(raw_candidates, existing_unis_names, db):
 
         # Layer 4 — UNIS dedupe
         norm = _normalize_prospect_name(name)
+        matched_existing = None
         for existing in existing_norm:
             if existing and fuzz.token_set_ratio(norm, existing) >= PROSPECT_FUZZY_THRESHOLD:
                 verification["dup_unis"] = True
+                matched_existing = existing
                 break
         if verification["dup_unis"]:
             verification["warnings"].append("already in UNIS")
-            _note("dup_unis", name)
+            # Show "candidate → matched-existing" so the user can spot
+            # false positives at a glance (e.g. "Atayurt Consultancy → Atatürk University"
+            # would obviously be wrong, even if it scored 90+).
+            _note("dup_unis", f"{name} → {matched_existing or '?'}")
             continue
 
         # Layer 5 — past candidates dedupe
