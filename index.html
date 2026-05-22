@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>H-FARM Global Partnerships</title>
+<title>H-FARM College Global Partnerships</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -2493,7 +2493,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     </div>
     <div class="login-err" id="login-err" role="alert" aria-live="polite"></div>
     <button type="submit" class="login-btn" id="login-btn">Sign in</button>
-    <p class="login-foot">Ask your H-FARM Global Partnerships lead for access.</p>
+    <p class="login-foot">Ask your H-FARM College Global Partnerships lead for access.</p>
   </form>
 </div>
 
@@ -2523,7 +2523,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   </div>
 </div>
 
-<!-- Program Dashboard modal (z-index above About-H-FARM modal so it stacks on top) -->
+<!-- Program Dashboard modal (z-index above About-H-FARM College modal so it stacks on top) -->
 <div class="compare-modal" id="program-modal" style="z-index:401">
   <div class="compare-box" style="max-width:1000px">
     <div class="compare-head" id="program-modal-head">
@@ -2551,7 +2551,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   </div>
 </div>
 
-<!-- About H-FARM (knowledge base) modal -->
+<!-- About H-FARM College (knowledge base) modal -->
 <div class="compare-modal" id="hfarm-info-modal">
   <div class="compare-box" style="max-width:980px">
     <div class="compare-head">
@@ -2572,7 +2572,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   <p class="err" id="loading-error" style="display:none"></p>
   <div class="config-box" id="config-box" style="display:none">
     <h3>Connect to your Google Sheet</h3>
-    <p>Open your H-FARM partnerships sheet in Google Sheets, then:</p>
+    <p>Open your H-FARM College partnerships sheet in Google Sheets, then:</p>
     <div class="help-step"><div class="num">1</div><div><strong>File</strong> &rarr; <strong>Share</strong> &rarr; <strong>Publish to web</strong></div></div>
     <div class="help-step"><div class="num">2</div><div>Pick the data tab. Format: <code>Comma-separated values (.csv)</code>. Click Publish.</div></div>
     <div class="help-step"><div class="num">3</div><div>Copy the URL it gives you (looks like <code>docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv</code>) and paste below.</div></div>
@@ -2629,7 +2629,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
         <span class="nav-label">Prospects</span>
       </button>
 
-      <div class="nav-section-label" style="margin-top:14px">H-FARM</div>
+      <div class="nav-section-label" style="margin-top:14px">H-FARM College</div>
       <button class="nav-item" data-view="brochures" onclick="switchView('brochures')" title="PDFs + Google Drive links you can send to partners">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         <span class="nav-label">Brochures</span>
@@ -2646,9 +2646,9 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span class="nav-label">Teams</span>
       </button>
-      <button class="nav-item" data-view="about" onclick="switchView('about')" title="H-FARM programmes, formats, team roster — internal reference">
+      <button class="nav-item" data-view="about" onclick="switchView('about')" title="H-FARM College programmes, formats, team roster — internal reference">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span class="nav-label">About H-FARM</span>
+        <span class="nav-label">About H-FARM College</span>
       </button>
       <button class="nav-item" data-view="admin" onclick="switchView('admin')" title="Edit the knowledge base — programs, teams, brochures, templates, etc.">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -2693,7 +2693,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   <aside class="hero-side">
     <div>
       <span class="live-badge">Live &middot; from your data source</span>
-      <div class="hero-title">Where <span class="accent">H-FARM</span> is in conversation.</div>
+      <div class="hero-title">Where <span class="accent">H-FARM College</span> is in conversation.</div>
       <div class="hero-sub">Click any region on the globe (or country in the panel) to filter. The action queue below auto-updates to show the top picks in your current scope.</div>
     </div>
     <div class="aq-wrap">
@@ -2779,7 +2779,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <!-- TEAMS VIEW -->
     <section id="view-teams" class="view hidden"></section>
 
-    <!-- ABOUT H-FARM VIEW -->
+    <!-- ABOUT H-FARM College VIEW -->
     <section id="view-about" class="view hidden"></section>
 
     <!-- ADMIN VIEW -->
@@ -3079,7 +3079,7 @@ async function apiFetch(path, opts = {}) {
 // ========================================================================
 // H-FARM College Knowledge Base — embedded in the codebase as source of truth
 // Sources: college.h-farm.com/en/ (Contact, Talent H-UB, Summer Programs 2026,
-// University Courses, H-FARM Experience, Partner with us)
+// University Courses, H-FARM College Experience, Partner with us)
 // ========================================================================
 // HFARM_KB — populated by loadKnowledgeBase() at boot from data/*.json
 // (organization, bachelors, masters, preparatory, experiences, exchangeOnly, talentHub).
@@ -3101,7 +3101,7 @@ let TEAMS = [];
 let TEAM_BY_ID = {};
 
 // ========================================================================
-// H-FARM Summer Programs (2026 verified from college.h-farm.com)
+// H-FARM College Summer Programs (2026 verified from college.h-farm.com)
 //   primary_kw  →  high-signal matches (+25 each, cap 75 of 100)
 //   secondary_kw → weak/contextual signals (+5 each, cap 25 of 100)
 //   pitch_to    →  ideal partner-profile description used in reasoning
@@ -3111,7 +3111,7 @@ let PROGRAMS = [];
 let PROG_BY_ID = {};
 
 // ========================================================================
-// H-FARM Collaboration Formats for university partners
+// H-FARM College Collaboration Formats for university partners
 // (verified from college.h-farm.com/en/international-collaborations)
 // ========================================================================
 // Collaboration formats — loaded from data/collab_formats.json at boot.
@@ -3225,7 +3225,7 @@ const KB_SCHEMA = {
     ],
   },
   experiences: {
-    title: "H-FARM Experience",
+    title: "H-FARM College Experience",
     file: "data/experiences.json",
     lsKey: "hfarm_kb_experiences_draft",
     keyField: null,
@@ -3278,7 +3278,7 @@ const KB_SCHEMA = {
       {key:"handle", label:"Handle (unique id, e.g. Defne or defne)", type:"text", required:true},
       {key:"name",   label:"Display name (e.g. Defne Tuncer)", type:"text", required:true},
       {key:"role",   label:"Role (e.g. Intern · Global Partnerships)", type:"text"},
-      {key:"email",  label:"H-FARM email (e.g. defne.tuncer@h-farm.com)", type:"text", placeholder:"name.surname@h-farm.com"},
+      {key:"email",  label:"H-FARM College email (e.g. defne.tuncer@h-farm.com)", type:"text", placeholder:"name.surname@h-farm.com"},
     ],
   },
 };
@@ -3699,7 +3699,7 @@ const ONBOARDING_STEPS = [
   {
     target: null,
     eyebrow: "Welcome",
-    title: "H-FARM Global Partnerships Tracker",
+    title: "H-FARM College Global Partnerships Tracker",
     body: "60-second tour of what's where. You can skip anytime — and re-open this tour from the <strong>?</strong> button bottom-right.",
     view: "home",
   },
@@ -3708,7 +3708,7 @@ const ONBOARDING_STEPS = [
     placement: 'right',
     eyebrow: "Navigation",
     title: "Two sections in the sidebar",
-    body: "<strong>Explore</strong> = views on your partnership data. <strong>H-FARM</strong> = your in-house knowledge (brochures, teams, programmes, contracts).",
+    body: "<strong>Explore</strong> = views on your partnership data. <strong>H-FARM College</strong> = your in-house knowledge (brochures, teams, programmes, contracts).",
   },
   {
     target: '.home-kpis',
@@ -3761,9 +3761,9 @@ const ONBOARDING_STEPS = [
   {
     target: 'button[data-view="brochures"]',
     placement: 'right',
-    eyebrow: "H-FARM section",
+    eyebrow: "H-FARM College section",
     title: "Brochures · Contracts · Teams · About",
-    body: "Reference content you send or consult: brochure links, MoU tracking, team workload, and the embedded H-FARM knowledge base.",
+    body: "Reference content you send or consult: brochure links, MoU tracking, team workload, and the embedded H-FARM College knowledge base.",
     view: "brochures",
   },
   {
@@ -5462,7 +5462,7 @@ function openProspectDetail(prospectId) {
         <div class="prospect-fit-bar-track"><div style="width:${p.ai_fit_score || 0}%"></div></div>
       </div>
       <div class="prospect-reasoning">${escape(p.ai_reasoning || "—")}</div>
-      ${(p.suggested_programs || []).length ? `<div style="margin-top:10px"><div class="cd-k" style="margin-bottom:4px">Suggested H-FARM programs</div><div class="cd-progs">${p.suggested_programs.map(s => `<span class="cd-prog">${escape(s)}</span>`).join("")}</div></div>` : ''}
+      ${(p.suggested_programs || []).length ? `<div style="margin-top:10px"><div class="cd-k" style="margin-bottom:4px">Suggested H-FARM College programs</div><div class="cd-progs">${p.suggested_programs.map(s => `<span class="cd-prog">${escape(s)}</span>`).join("")}</div></div>` : ''}
     </div>
 
     <div class="cd-section">
@@ -6936,7 +6936,7 @@ function cfRenderPanel(country) {
       <div class="cf-sub"><b>${cohort.length}</b> entit${cohort.length === 1 ? 'y' : 'ies'} · avg score <b>${avgScore}</b> · <b>${outreachCount}</b> outreach</div>
     </div>
     ${a ? `<div class="cf-card"><h4>Pipeline mix</h4><div class="cf-pri">${pieHtml}</div></div>` : ''}
-    ${a ? `<div class="cf-card"><h4>H-FARM Summer fit · top 4</h4><div class="cf-progs">${progHtml}</div></div>` : ''}
+    ${a ? `<div class="cf-card"><h4>H-FARM College Summer fit · top 4</h4><div class="cf-progs">${progHtml}</div></div>` : ''}
     <div class="cf-entities">
       <div class="cf-entities-head">Entities · click to open detail</div>
       <div class="cf-entities-list">${entHtml}</div>
@@ -7208,7 +7208,7 @@ function renderRegionAnalysis() {
   }).sort((x,y) => y.avg - x.avg).slice(0, 4);
   const pfHtml = progRanked.map(p => `<div class="mli"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></i>${escape(p.name)}</span><b>${p.avg}</b></div>`).join("");
   html += `<div class="ra-card">
-    <h5>H-FARM Summer fit · avg</h5>
+    <h5>H-FARM College Summer fit · avg</h5>
     <div class="mini-list">${pfHtml}</div>
     <div class="sub" style="margin-top:auto">Lead pitch: <strong style="color:var(--navy)">${escape(a.topProgObj.name)}</strong></div>
   </div>`;
@@ -7731,7 +7731,7 @@ function detailHtml(u) {
     </div>
 
     <div class="detail-section">
-      <h3>Recommended H-FARM format</h3>
+      <h3>Recommended H-FARM College format</h3>
       <div class="collab-card">
         <div class="collab-head">
           <span class="collab-badge">${escape(collab.name)}</span>
@@ -7817,8 +7817,8 @@ function detailHtml(u) {
     <div class="detail-section"><h3>Action recommendation</h3><div class="action-rec">${actionRec}</div></div>
 
     <div class="detail-section">
-      <h3>H-FARM Summer Programs · fit analysis</h3>
-      <p style="font-size:11px;color:var(--ink-soft);margin-bottom:10px">Scored against verified H-FARM 2026 programme keywords (primary +25, secondary +5). Top 4 include reasoning.</p>
+      <h3>H-FARM College Summer Programs · fit analysis</h3>
+      <p style="font-size:11px;color:var(--ink-soft);margin-bottom:10px">Scored against verified H-FARM College 2026 programme keywords (primary +25, secondary +5). Top 4 include reasoning.</p>
       ${progRows}
     </div>
 
@@ -8564,7 +8564,7 @@ function showOutreachForm(entityId, entryId) {
         ${AI_ENABLED ? '' : '<span class="ai-soon-badge">SOON</span>'}
       </button>
       <span class="ai-draft-hint">${AI_ENABLED
-        ? `Fills <b>Subject</b> + <b>Email body</b> below with a tailored intro email, using ${escape(entity.name)}'s profile + the recommended H-FARM offering.`
+        ? `Fills <b>Subject</b> + <b>Email body</b> below with a tailored intro email, using ${escape(entity.name)}'s profile + the recommended H-FARM College offering.`
         : `<b>Coming soon</b> — generates a tailored intro email from this partner's profile. Awaiting admin to configure the AI integration.`}</span>
     </div>
     ${OUTREACH_TEMPLATES.length ? `<div class="template-row">
@@ -9200,7 +9200,7 @@ function generateOutreachPdf(entityId, entryId) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("H-FARM COLLEGE", M, 32);
+  doc.text("H-FARM College COLLEGE", M, 32);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(220, 200, 160);
@@ -9294,7 +9294,7 @@ function generateOutreachPdf(entityId, entryId) {
 }
 
 // ========================================================================
-// "About H-FARM" modal — shows the embedded knowledge base as a reference
+// "About H-FARM College" modal — shows the embedded knowledge base as a reference
 // ========================================================================
 function showHfarmInfo() {
   const body = document.getElementById("hfarm-info-body");
@@ -9360,7 +9360,7 @@ function showHfarmInfo() {
       </div>
     </div>
     <div class="kb-section">
-      <h4>H-FARM Experience touchpoints</h4>
+      <h4>H-FARM College Experience touchpoints</h4>
       <div class="kb-flex">
         ${kb.experiences.map(e => `<span class="kb-pill-soft">${escape(e)}</span>`).join("")}
       </div>
@@ -9803,8 +9803,8 @@ function renderHomeView() {
             <button class="home-tile" onclick="switchView('pipeline')"><span class="tile-name">Pipeline matrix</span><small>Region × priority deep-dive</small></button>
             <button class="home-tile" onclick="switchView('database')"><span class="tile-name">Database</span><small>All ${total} entities, sortable table</small></button>
             <button class="home-tile" onclick="switchView('outreach')"><span class="tile-name">Outreach log</span><small>All emails &amp; calls logged</small></button>
-            <button class="home-tile" onclick="switchView('brochures')"><span class="tile-name">Brochures</span><small>H-FARM PDFs ready to send</small></button>
-            <button class="home-tile" onclick="switchView('about')"><span class="tile-name">About H-FARM</span><small>Programmes &amp; teams reference</small></button>
+            <button class="home-tile" onclick="switchView('brochures')"><span class="tile-name">Brochures</span><small>H-FARM College PDFs ready to send</small></button>
+            <button class="home-tile" onclick="switchView('about')"><span class="tile-name">About H-FARM College</span><small>Programmes &amp; teams reference</small></button>
           </div>
         </div>
       </div>
@@ -10522,12 +10522,12 @@ function bottleneckExplanation(stage) {
 function bottleneckPrescription(stage) {
   const map = {
     identified:  "Batch-classify the unset entities by strategic priority (top 50 = first-touch this quarter). Use the Database view's bulk-edit to set Priority=Cold and Outreach=Pending for 50 high-fit institutions, then queue a 3-touch email sequence.",
-    first_touch: "Implement a 3-touch sequence: D+0 (intro), D+5 (case study + one programme one-pager), D+14 (alumni success story or H-FARM news hook). Expected lift to engaged: +9pp.",
+    first_touch: "Implement a 3-touch sequence: D+0 (intro), D+5 (case study + one programme one-pager), D+14 (alumni success story or H-FARM College news hook). Expected lift to engaged: +9pp.",
     engaged:     "On every reply, propose a 20-min Discovery call with two concrete time options. Don't ask 'are you available' — propose. Conversion to Discovery rises from 35% to ~60%.",
     discovery:   "Within 48h of the Discovery call, send a tailored Partnership Proposal one-pager (use the Brochures tab). Concrete artifact = the difference between Proposal and ghosting.",
     proposal:    "Identify the institution's <em>decision committee</em> (rector + provost + intl office head). Have your contact forward your proposal to them — and CC you. Direct multi-stakeholder visibility halves committee dwell.",
-    negotiation: "Send H-FARM's standard MoU template upfront. Most academic legal departments will accept 80% of clauses as-is; only the institution-specific clauses get negotiated. Cuts negotiation from 6 months to ~10 weeks.",
-    signed:      "Schedule kickoff within 2 weeks of signing — assign an H-FARM team owner and a counterpart owner. Activation drift kills momentum.",
+    negotiation: "Send H-FARM College's standard MoU template upfront. Most academic legal departments will accept 80% of clauses as-is; only the institution-specific clauses get negotiated. Cuts negotiation from 6 months to ~10 weeks.",
+    signed:      "Schedule kickoff within 2 weeks of signing — assign an H-FARM College team owner and a counterpart owner. Activation drift kills momentum.",
   };
   return map[stage] || "Apply structured follow-up sequence.";
 }
@@ -11060,7 +11060,7 @@ function renderStrategicView() {
 
     // Quadrant backgrounds — position-based tints matching the sidebar card
     // colors so users can map between the chart and the cards at a glance.
-    // The hero quadrant gets an additional H-FARM red wash on top.
+    // The hero quadrant gets an additional H-FARM College red wash on top.
     const QUAD_TINT = { tl:"rgba(201,122,26,0.07)", tr:"rgba(31,111,180,0.07)", bl:"rgba(142,154,171,0.06)", br:"rgba(176,50,46,0.06)" };
     const heroTint = "rgba(217,83,79,0.06)";
     ["tl","tr","bl","br"].forEach(q => {
@@ -11795,7 +11795,7 @@ function _initPresentationScene(mods, mount, cohort, axisKey, opps, headline) {
   const key = new THREE.DirectionalLight(0xffffff, 1.1);
   key.position.set(60, 120, 40);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xff8b85, 0.35);   // soft red rim from H-FARM angle
+  const rim = new THREE.DirectionalLight(0xff8b85, 0.35);   // soft red rim from H-FARM College angle
   rim.position.set(-60, 30, -40);
   scene.add(rim);
 
@@ -12642,7 +12642,7 @@ function renderOutreachView() {
 function renderBrochuresView() {
   const el = document.getElementById("view-brochures");
   const brochures = BROCHURES;
-  let html = `<div class="view-header"><h1>Brochures &amp; assets</h1><p>Resources you can send. Official H-FARM links open in a new tab. Edit this list in the Admin view.</p></div>`;
+  let html = `<div class="view-header"><h1>Brochures &amp; assets</h1><p>Resources you can send. Official H-FARM College links open in a new tab. Edit this list in the Admin view.</p></div>`;
   html += `<div class="brochure-grid">`;
   brochures.forEach(b => {
     html += `<div class="brochure-card">
@@ -14076,7 +14076,7 @@ function openContractModal(contractId) {
 
     <div class="contract-form-grid">
       <div class="cf-field">
-        <span class="cf-label">H-FARM signer</span>
+        <span class="cf-label">H-FARM College signer</span>
         <input type="text" data-cf="hfarm_signer" value="${escapeAttr(draft.hfarm_signer || "")}" placeholder="e.g. Antonella Sannella"/>
       </div>
       <div class="cf-field">
@@ -14228,7 +14228,7 @@ function openContractDetail(contractId) {
       <div class="cd-grid">
         <div class="cd-field"><span class="cd-k">Partner</span><span class="cd-v">${escape(partner)}${ent ? ` <a onclick="closeContractDetail();openDetail('${escapeAttr(ent.id)}')" style="font-size:10px;color:var(--hf-red);cursor:pointer;text-decoration:underline;margin-left:6px">open ↗</a>` : ""}</span></div>
         <div class="cd-field"><span class="cd-k">Type</span><span class="cd-v"><span class="contract-type">${escape(c.type || "—")}</span></span></div>
-        <div class="cd-field"><span class="cd-k">H-FARM signer</span><span class="cd-v ${c.hfarm_signer ? "" : "muted"}">${escape(c.hfarm_signer || "Not recorded")}</span></div>
+        <div class="cd-field"><span class="cd-k">H-FARM College signer</span><span class="cd-v ${c.hfarm_signer ? "" : "muted"}">${escape(c.hfarm_signer || "Not recorded")}</span></div>
         <div class="cd-field"><span class="cd-k">Partner signer</span><span class="cd-v ${c.partner_signer ? "" : "muted"}">${escape(c.partner_signer || "Not recorded")}</span></div>
       </div>
     </div>
@@ -14387,7 +14387,7 @@ function renderTeamsView() {
 // ABOUT — the KB content as a dedicated view
 function renderAboutView() {
   const el = document.getElementById("view-about");
-  let html = `<div class="view-header"><h1>About H-FARM</h1><p>The full knowledge base embedded in this platform — what we offer and which team owns what.</p></div>`;
+  let html = `<div class="view-header"><h1>About H-FARM College</h1><p>The full knowledge base embedded in this platform — what we offer and which team owns what.</p></div>`;
   // Reuse the KB structure (copy from showHfarmInfo)
   const kb = HFARM_KB;
   html += `<div id="hfarm-info-body" style="padding:0 24px 28px">`;
@@ -14397,7 +14397,7 @@ function renderAboutView() {
   html += `<div class="kb-section"><h4>Summer Programs 2026 (${PROGRAMS.length})</h4><div class="kb-progs">${PROGRAMS.map(p => `<div class="kb-prog" data-prog-id="${p.id}" style="border-top:3px solid ${p.color}"><div class="kb-prog-name">${escape(p.name)}</div><div class="kb-prog-meta">${escape(p.age)} · ${escape(p.lang)}</div><div class="kb-prog-topic">${escape(p.topic)}</div><div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div></div>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>University collaboration formats (${COLLAB_FORMATS.length})</h4><div class="kb-progs">${COLLAB_FORMATS.map(f => `<div class="kb-prog"><div class="kb-prog-name">${escape(f.name)}</div><div class="kb-prog-meta">${escape(f.duration)} · ${escape(f.group)}</div><div class="kb-prog-topic">${escape(f.ideal)}</div>${f.case ? `<div class="kb-prog-pitch"><b>Case:</b> ${escape(f.case)}</div>` : ''}</div>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>Talent H-UB formats (for companies)</h4><div class="kb-flex">${kb.talentHub.formats.map(f => `<span class="kb-pill">${escape(f)}</span>`).join("")}</div></div>`;
-  html += `<div class="kb-section"><h4>H-FARM Experience touchpoints</h4><div class="kb-flex">${kb.experiences.map(e => `<span class="kb-pill-soft">${escape(e)}</span>`).join("")}</div></div>`;
+  html += `<div class="kb-section"><h4>H-FARM College Experience touchpoints</h4><div class="kb-flex">${kb.experiences.map(e => `<span class="kb-pill-soft">${escape(e)}</span>`).join("")}</div></div>`;
   html += `<div class="kb-section" style="text-align:center;border-top:1px solid var(--rule);padding-top:14px"><a href="${kb.organization.website}" target="_blank" style="font-size:11px;color:var(--navy-light);text-decoration:none">${kb.organization.website} →</a></div>`;
   html += `</div>`;
   el.innerHTML = html;
@@ -14423,7 +14423,7 @@ function recommendAction(u) {
   if (p === "Warm") return `<strong>Nurture.</strong> Send tailored value: sample MoU, agenda, ${topProg ? `<em>${topProg.name}</em> deck` : 'programme deck'}. Schedule follow-up in 14 days.`;
   if (p === "Cold") {
     if (dorm && dorm > 60) return `<strong>Re-warm needed.</strong> ${dorm} days since last contact. New hook required &mdash; propose <em>${topProg.name}</em> (match ${top}/100) or a conference touchpoint.`;
-    return `<strong>Soft sequence.</strong> Send the H-FARM brochure + ${topProg ? `<em>${topProg.name}</em> teaser` : 'programme deck'}. Aim for a 15-min intro call.`;
+    return `<strong>Soft sequence.</strong> Send the H-FARM College brochure + ${topProg ? `<em>${topProg.name}</em> teaser` : 'programme deck'}. Aim for a 15-min intro call.`;
   }
   if (p === "Cold-storage") return `<strong>Dormant.</strong> Don't push generic outreach. Wait for a new hook (new programme, ranking change, alumni event), then re-open with that as anchor.`;
   if (p === "Not interested") return `<strong>Parked.</strong> Reassess next academic cycle. If email bounced, finding a new contact via LinkedIn for the same university is the fastest path.`;

@@ -1,4 +1,4 @@
-"""H-FARM Global Partnerships Tracker — Flask backend.
+"""H-FARM College Global Partnerships Tracker — Flask backend.
 
 Serves the static frontend (index.html + data/ + Logo/), proxies AI
 drafting requests to Anthropic, and provides a thin REST layer backed
@@ -544,9 +544,9 @@ Voice rules:
 
 Structure of the body:
 1. Open with a specific, partner-relevant observation.
-2. Propose the recommended H-FARM offering that fits THEM (use the supplied programme/format).
+2. Propose the recommended H-FARM College offering that fits THEM (use the supplied programme/format).
 3. Single clear call-to-action: a 20-min intro call with two concrete time options, or a specific next artefact.
-4. Brief signature line with the sender team's role at H-FARM.
+4. Brief signature line with the sender team's role at H-FARM College.
 
 If you do not have the recipient's first name, use "Dear [First Name]" as a placeholder. If you have title + last name, use "Dear Dr [Last Name]" or similar.
 
@@ -1041,7 +1041,7 @@ def _build_prompt(d):
     if entity.get("notes"):
         lines.append(f"- Internal notes: {entity['notes']}")
 
-    lines += ["", "## Recommended H-FARM offering to propose"]
+    lines += ["", "## Recommended H-FARM College offering to propose"]
     if recommended.get("name"):
         lines.append(f"- Name: {recommended['name']}")
         if recommended.get("topic"):
@@ -1055,7 +1055,7 @@ def _build_prompt(d):
         if recommended.get("case"):
             lines.append(f"  Reference case: {recommended['case']}")
 
-    lines += ["", "## Sender (H-FARM team)"]
+    lines += ["", "## Sender (H-FARM College team)"]
     if team.get("name"):
         lines.append(f"- Team: {team['name']}")
     if team.get("remit"):
@@ -1077,7 +1077,7 @@ def _build_prompt(d):
     if recipient.get("email"):
         lines.append(f"- Email: {recipient['email']}")
 
-    lines += ["", "## H-FARM context"]
+    lines += ["", "## H-FARM College context"]
     if kb.get("org_name"):
         lines.append(f"- {kb['org_name']} — {kb.get('location', 'Italy')}")
     if kb.get("website"):
@@ -2076,7 +2076,7 @@ SCOPE — these are the ONLY categories we want to see:
   ✅ Higher-ed institutions — business schools, design schools,
                      polytechnics, conservatories, applied-science unis.
   ✅ Schools — secondary / high schools whose graduates go to university
-                     (potential pipeline for H-FARM bachelor's recruitment).
+                     (potential pipeline for H-FARM College bachelor's recruitment).
   ✅ Student organizations + alumni networks — ESN chapters, AEGEE,
                      subject-specific student associations.
   ✅ Education agencies — student recruitment agencies, study-abroad
@@ -2132,9 +2132,9 @@ For each genuinely new IN-SCOPE prospect you find, produce:
 - description:      1-sentence summary of who they are
 - fit_score:        integer 0-100, your honest assessment of fit
 - fit_reasoning:    2-3 sentences citing search-result indices [N] explaining
-                    why this fits H-FARM (or doesn't). Be specific.
+                    why this fits H-FARM College (or doesn't). Be specific.
 - source_urls:      array of at least 2 URLs from the search results
-- suggested_programs: array of 1-3 H-FARM program names that might match
+- suggested_programs: array of 1-3 H-FARM College program names that might match
                     (Coding Academy, Data & AI, Game Design, Fashion AI Lab,
                     Startup Summer, etc.) — leave [] if unsure
 
@@ -3040,7 +3040,7 @@ Entity fields you can rely on (per entity):
   partnership_score (0-100), partnership_readiness (Ready|Warming|Early|Cold|Dormant),
   days_dormant (int|null), last_contacted (date string|null),
   focus_areas (string), notes (string), website (string),
-  top_program_id (id of best-fit H-FARM offering), top_program_score (0-100),
+  top_program_id (id of best-fit H-FARM College offering), top_program_score (0-100),
   contacts (array of {name, role, email} — may be empty)
 
 Rules:
@@ -3184,7 +3184,7 @@ def chat_query():
 
 if __name__ == "__main__":
     print(
-        f"H-FARM tracker backend starting on http://127.0.0.1:8000 (model: {MODEL})"
+        f"H-FARM College tracker backend starting on http://127.0.0.1:8000 (model: {MODEL})"
     )
     if not GEMINI_KEY:
         print(

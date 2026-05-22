@@ -90,21 +90,21 @@ after sleep takes ~30–50 s. Acceptable for an internal tool.
 | `app.py` | ~2,100 | Flask backend. Auth, kv_store, outreach, presence, edits, sheets writeback, Gemini proxy, contracts, snapshots, follow-ups, sponsors, brief PDF render. Dual SQLite (local) / Postgres (prod). |
 | `templates/brief.html` | ~250 | WeasyPrint Jinja template for the typeset 1-page partnership PDF. |
 | `scripts/clean_sponsors.py` | ~370 | One-shot, re-runnable Career Day Excel ingest pipeline (3-sheet xlsx → canonical CSV + review CSV). Uses rapidfuzz for variant matching. Outputs to `scripts/output/` (gitignored). |
-| `data/programs.json` | — | H-FARM summer programmes catalogue |
-| `data/teams.json` | — | H-FARM internal teams (Executive, Marketing, etc.) |
+| `data/programs.json` | — | H-FARM College summer programmes catalogue |
+| `data/teams.json` | — | H-FARM College internal teams (Executive, Marketing, etc.) |
 | `data/collab_formats.json` | — | Partnership offering formats |
 | `data/brochures.json` | — | Drive links to PDFs |
 | `data/templates.json` | — | 7 starter outreach email templates |
 | `data/users.json` | — | Operator roster (handle, name, role, email) — Tier-1 identity |
 | `data/bachelors.json` etc. | — | Programme catalogues by track |
-| `H-FARM_Global_Partnerships_DATABASE.csv` | — | Local-dev fallback CSV. In prod, the app fetches a Google Sheets published-as-CSV URL the user pastes. |
+| `H-FARM College_Global_Partnerships_DATABASE.csv` | — | Local-dev fallback CSV. In prod, the app fetches a Google Sheets published-as-CSV URL the user pastes. |
 | `requirements.txt` | — | flask, flask-cors, gunicorn, google-genai, psycopg, python-dotenv, weasyprint, jinja2 |
 | `Dockerfile` | — | Backend container (Python 3.12-slim, gunicorn) — includes Cairo + Pango + fonts for WeasyPrint |
 | `vercel.json` | — | Rewrites `/api/:path*` → `https://h-tracker-api.onrender.com/api/:path*` |
 | `render.yaml` | — | Render Blueprint: Python web service, free plan, frankfurt region |
 | `DEPLOY.md` | — | Render + Neon setup walkthrough |
 | `SHEETS_SYNC.md` | — | Apps Script for bidirectional Google Sheets sync |
-| `design.md` | — | H-FARM brand design system (uploaded to Stitch + used by future designers) |
+| `design.md` | — | H-FARM College brand design system (uploaded to Stitch + used by future designers) |
 
 ---
 
@@ -279,7 +279,7 @@ Secrets live in Render dashboard → Environment tab. Never committed.
   `scripts/clean_sponsors.py` canonical output, dry-run preview,
   idempotent by natural key).
   - `scripts/clean_sponsors.py` is the matched ingest tool:
-    reads the raw event Excel, drops H-FARM internal entries
+    reads the raw event Excel, drops H-FARM College internal entries
     (Staff/Studenti HFC), fuzzy-matches variants (rapidfuzz
     token_set_ratio ≥ 85), outputs `sponsors_canonical_YYYY.csv`
     + `sponsors_review_YYYY.csv`. Output dir is gitignored.
@@ -360,7 +360,7 @@ by adding `event_name` discrimination — already in the schema.
 | Idea | Why deferred | Trigger to revisit |
 |---|---|---|
 | Per-user passwords (Tier 2) | Shared password is honest for current trust level; multi-user identity already works via roster | Team grows past ~20 or external auditors require it |
-| Google Workspace SSO (Tier 3) | Premature before platform is approved by H-FARM IT | Platform officially adopted |
+| Google Workspace SSO (Tier 3) | Premature before platform is approved by H-FARM College IT | Platform officially adopted |
 | Mobile responsive cleanup | Desktop-first; sales team usage from phone not validated | Field-staff feedback shows phone use |
 | Contracts view with real MoU model | Placeholder is fine for v1 | Legal team wants signed-date + expiry tracking in-app |
 | Calendar / reminders | Out of scope for v1 | "Why didn't we follow up?" complaints |
@@ -463,7 +463,7 @@ then go heavy on A.
 | 4 | **AI-generated weekly digest email** | 4-5 h | Every Monday, each roster member gets a personalized email: what changed, what's stuck, what to action. Snapshots + Gemini = doable. Solves "I have to remember to open the tool" problem. |
 | 5 | **Pre-meeting briefing card** | 5-6 h | Calendar OAuth + AI brief = 30 seconds before any partner meeting, get a card with state, last 3 interactions, suggested agenda. PDF brief skeleton already exists. |
 | 6 | **Email integration** (Gmail OAuth + auto-log) | 10-12 h | Standard CRM table stakes. Without it, manual outreach logging eventually decays. Strategic prerequisite for trajectory + digest accuracy. |
-| 7 | **Inverse programme matchmaking** | 2-3 h | "Show me the 47 partners who fit Coding Academy" — score function already computes both directions, just needs a programme-centric view. Lives inside About H-FARM (no new sidebar item). |
+| 7 | **Inverse programme matchmaking** | 2-3 h | "Show me the 47 partners who fit Coding Academy" — score function already computes both directions, just needs a programme-centric view. Lives inside About H-FARM College (no new sidebar item). |
 | 8 | **Cmd+K command palette** | 4-5 h | Type "Robert College" → enter → opens entity; type "MoU stuck" → contracts alarm. Solves navigation without bloating sidebar to 17 items. |
 | 9 | **Decision audit trail** | 3-4 h | Every priority/tier override captures a free-text reasoning note + searchable later. Pairs naturally with aspirational drag (every aspiration is a decision). |
 | 10 | **Counterfactual scenario planning** | 5-6 h | "If I sign these 3 partners in Q3, what does the forecast look like?" Extends the existing Monte Carlo in the Funnel view. |

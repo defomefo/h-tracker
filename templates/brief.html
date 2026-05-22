@@ -5,9 +5,9 @@
 <title>Partnership brief — {{ entity.name }}</title>
 <style>
   /* ============================================================
-     H-FARM Partnership brief — A4 single-page typeset PDF
+     H-FARM College Partnership brief — A4 single-page typeset PDF
      Designed for WeasyPrint. Print-only stylesheet (no screen).
-     Editorial feel: warm paper background, H-FARM red eyebrow,
+     Editorial feel: warm paper background, H-FARM College red eyebrow,
      ink body text, sentence-case headings.
      ============================================================ */
   @page {
@@ -357,7 +357,7 @@
     <div class="loc">{{ entity.country or entity.continent or "—" }}{% if entity.continent and entity.country %} · {{ entity.continent }}{% endif %}</div>
   </div>
   <div class="head-right">
-    <div class="brand">H-FARM</div>
+    <div class="brand">H-FARM College</div>
     <div>Global Partnerships</div>
     <div class="gen">{{ generated_at }}</div>
     {% if generated_by %}<div class="gen">by {{ generated_by }}</div>{% endif %}
