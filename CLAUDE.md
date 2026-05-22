@@ -11,18 +11,31 @@ the code.
 
 ## What it is
 
-A 285-entity (and growing) partnership pipeline with:
+A 285-entity (and growing) partnership pipeline + adjacent workflows:
 
 - D3 orthographic globe with country dots + cinematic country-detail zoom
 - 8-stage kanban (drag entities between stages)
 - 3 strategic 2×2 maps (Effort × Fit, Reach × Readiness, Cost × ROI)
+  with engagement-depth Z axis, animated 2D↔3D toggle, narrated
+  storytelling, decision-layer card, and a Three.js cinematic
+  presentation mode (lazy-loaded, executive-facing)
 - Conversion funnel + Monte Carlo 90-day signing forecast
-- Per-entity detail panel with editable profile + activity timeline + outreach log
+- Per-entity detail panel with editable profile + activity timeline +
+  outreach log + contracts + follow-ups + engagement-depth breakdown
 - AI chat assistant ("ask the platform") + AI-drafted outreach emails (Gemini)
 - Shared multi-user state, real edit attribution, "live activity" feed
 - 7-template outreach library with `{{entity.name}}`-style variable substitution
 - Per-entity field edits sync back to Google Sheets via Apps Script
 - 60-second Undo toast on destructive operations
+- **Contracts** — MoU/NDA tracker with alarms (stuck negotiating 60+ d,
+  expiring 30/60/90 d, expired), per-entity inline create, activity timeline
+- **Follow-ups** — prospective "next step per partner" with due date +
+  owner, grouped action queue, Home briefing alarms, undo
+- **Sponsors** — *separate* annual sponsorship pipeline (Career Day),
+  one row per (event_year, company), Gold-at-risk decision layer,
+  CSV import flow
+- **PDF brief generation** — WeasyPrint server-side typeset 1-pager
+  per partner (FT/McKinsey style, real text, embeddable in decks)
 
 ---
 
@@ -73,8 +86,10 @@ after sleep takes ~30–50 s. Acceptable for an internal tool.
 
 | File | Lines | Role |
 |---|---:|---|
-| `index.html` | ~8000 | Entire SPA. D3 globe, kanban, 2×2, funnel, database, outreach, admin, chat, identity. No build step — vanilla JS + D3 + PapaParse + jsPDF (CDN). |
-| `app.py` | ~1000 | Flask backend. Auth, kv_store, outreach, presence, edits, sheets writeback, Gemini proxy. Dual SQLite (local) / Postgres (prod). |
+| `index.html` | ~13,000 | Entire SPA. D3 globe, kanban, 3×2×2 maps (with Three.js Present mode lazy-loaded), funnel, database, outreach, admin, chat, identity, contracts, follow-ups, sponsors. No build step — vanilla JS + D3 + PapaParse + jsPDF + Three.js (all via CDN). |
+| `app.py` | ~2,100 | Flask backend. Auth, kv_store, outreach, presence, edits, sheets writeback, Gemini proxy, contracts, snapshots, follow-ups, sponsors, brief PDF render. Dual SQLite (local) / Postgres (prod). |
+| `templates/brief.html` | ~250 | WeasyPrint Jinja template for the typeset 1-page partnership PDF. |
+| `scripts/clean_sponsors.py` | ~370 | One-shot, re-runnable Career Day Excel ingest pipeline (3-sheet xlsx → canonical CSV + review CSV). Uses rapidfuzz for variant matching. Outputs to `scripts/output/` (gitignored). |
 | `data/programs.json` | — | H-FARM summer programmes catalogue |
 | `data/teams.json` | — | H-FARM internal teams (Executive, Marketing, etc.) |
 | `data/collab_formats.json` | — | Partnership offering formats |
@@ -83,12 +98,13 @@ after sleep takes ~30–50 s. Acceptable for an internal tool.
 | `data/users.json` | — | Operator roster (handle, name, role, email) — Tier-1 identity |
 | `data/bachelors.json` etc. | — | Programme catalogues by track |
 | `H-FARM_Global_Partnerships_DATABASE.csv` | — | Local-dev fallback CSV. In prod, the app fetches a Google Sheets published-as-CSV URL the user pastes. |
-| `requirements.txt` | — | flask, flask-cors, gunicorn, google-genai, psycopg, python-dotenv |
+| `requirements.txt` | — | flask, flask-cors, gunicorn, google-genai, psycopg, python-dotenv, weasyprint, jinja2 |
+| `Dockerfile` | — | Backend container (Python 3.12-slim, gunicorn) — includes Cairo + Pango + fonts for WeasyPrint |
 | `vercel.json` | — | Rewrites `/api/:path*` → `https://h-tracker-api.onrender.com/api/:path*` |
 | `render.yaml` | — | Render Blueprint: Python web service, free plan, frankfurt region |
-| `Dockerfile` | — | Backend container (Python 3.12-slim, gunicorn) |
 | `DEPLOY.md` | — | Render + Neon setup walkthrough |
 | `SHEETS_SYNC.md` | — | Apps Script for bidirectional Google Sheets sync |
+| `design.md` | — | H-FARM brand design system (uploaded to Stitch + used by future designers) |
 
 ---
 
@@ -200,6 +216,78 @@ Secrets live in Render dashboard → Environment tab. Never committed.
   "+N more" expand toggle (was placeholder alert), recommended-team
   PRIMARY chip overflow.
 
+**Phase 6+ — major features shipped after CLAUDE.md v1**
+
+- **Contracts view** (`contracts` table + 4 REST + per-entity tab):
+  MoU/NDA/Service Agreement tracker. Alarms by band: expired,
+  expiring 30/60/90 d, stuck in negotiation 60+ d. Each contract
+  has type / status / dates / value / programs / signers / notes /
+  attachments. Per-entity inline create. Activity timeline +
+  linked outreach inside detail modal. `_record_edit("contract", ...)`
+  feeds the entity Activity tab.
+
+- **3D strategic maps** (in 3 phases, `entity_position_snapshots`
+  table backing all of it):
+  - *Phase A* — `engagementDepth(u)` client-side formula
+    (40 outreach + 30 contacts + 30 persistence). Surfaced in
+    detail panel as a transparent breakdown. Daily client-side
+    opportunistic snapshot to `entity_position_snapshots` so
+    trajectory analytics has historical data 4-6 months out.
+  - *Phase B* — 2D/3D toggle on each Strategic Map. Axonometric
+    JS projection (no library), floor + grid + axes + per-entity
+    tower (rod + sphere + shadow). Hero rings + persistent labels
+    on Top-N opportunities. Per-axis "What the Z axis reveals"
+    overlay (sunk-cost trap / strategic neglect / hidden goldmine).
+    Smooth 2D↔3D transition animation (rAF bubble interp +
+    CSS fade staggers + stem-grow).
+  - *Phase C* — Three.js cinematic Present mode. Fullscreen
+    overlay, lazy-loaded from `esm.sh/three@0.160`. Real spheres
+    with phong material, UnrealBloom pass on hero rings, camera
+    intro tween (1.6s easeOutQuart), OrbitControls (drag rotate +
+    wheel zoom + autoRotate), HTML axis labels projected from
+    world space. Operational SVG view stays 0 KB extra; Three.js
+    only downloads when the user clicks ◉ Present.
+
+- **PDF brief generation** (`/api/brief/<id>` + `templates/brief.html`):
+  WeasyPrint server-side typeset 1-page brief. Real text (not
+  raster), embedded fonts, FT/McKinsey aesthetic. Pulls full
+  context (entity + depth + programs + contacts + outreach +
+  contracts + action_html) and produces a downloadable PDF.
+  Dockerfile installs Cairo + Pango + Pango-FT2 + GDK-Pixbuf +
+  DejaVu fonts.
+
+- **Follow-ups** (`followups` table + 4 REST + per-entity tab +
+  standalone view at `/followups`): prospective counterpart to
+  the outreach log. Title + due_date + owner_handle + status
+  (open/done) + notes. Standalone view groups by Overdue / Today /
+  This week / Later / No date / Done. KPI tiles, status + owner
+  filter pills, debounced search. Home briefing surfaces overdue
+  + due today + due this week. Undo on delete. `_record_edit
+  ("followup", ...)` feeds activity timeline.
+
+- **Sponsors** (`sponsors` table + 5 REST + standalone view at
+  `/sponsors`): annual Career Day sponsorship pipeline. *Separate
+  from UNIS by design* — different lifecycle (annual transactional)
+  + stakeholders (Marketing/Events) + KPIs (revenue + contract
+  close rate). One row per (`event_year`, `normalized_name`) so a
+  returning sponsor has multiple rows + year-over-year + renewal
+  analytics read natively. Year selector + KPI tiles (revenue /
+  paid / unsigned / Gold-at-risk) + tier pills (Gold/Bronze/Base)
+  + status filter + sector dropdown + search. Decision-layer alert
+  calls out unsigned Gold-tier contracts by name. Detail modal +
+  edit modal + **CSV import modal** (multipart upload of the
+  `scripts/clean_sponsors.py` canonical output, dry-run preview,
+  idempotent by natural key).
+  - `scripts/clean_sponsors.py` is the matched ingest tool:
+    reads the raw event Excel, drops H-FARM internal entries
+    (Staff/Studenti HFC), fuzzy-matches variants (rapidfuzz
+    token_set_ratio ≥ 85), outputs `sponsors_canonical_YYYY.csv`
+    + `sponsors_review_YYYY.csv`. Output dir is gitignored.
+  - `linked_entity_id` field on `sponsors` rows is a bridge to
+    UNIS.id when the same company also lives in the partner DB;
+    UI exposure deferred (no current overlap is large enough to
+    justify).
+
 ---
 
 ## Patterns to follow (when extending)
@@ -242,6 +330,28 @@ and `_build_prompt` (backend AI) use the same shape — don't drift.
 **Frontend `apiFetch` wrapper.** Use `apiFetch("/api/...")` for every
 own-API call. It adds `credentials: "include"` and shows the login
 overlay on confirmed 401. Don't bypass it.
+
+**Natural-key idempotent upsert** (contracts, followups, sponsors).
+Each of these tables uses an `ON CONFLICT (id) DO UPDATE SET ...`
+pattern with the id derived from a natural key (e.g. sponsors:
+`sponsor-{year}-{slug}`). This makes bulk import scripts safely
+re-runnable + means client-driven retries don't create duplicates.
+Both SQLite ≥ 3.24 and Postgres support the same syntax — no
+per-backend branch needed.
+
+**Debounced + focus-restoring search inputs.** Standalone views
+(Follow-ups, Sponsors) that re-render the entire view on every
+input keystroke would destroy + recreate the `<input>`, losing
+focus + Shift modifier state mid-keypress (capital letters land
+wrong). Fix: 220 ms debounce + after-render focus restore +
+caret-pinned-to-end. See `_followupsSearchInput` / `_sponsorsSearchInput`.
+
+**Annual-event tables use composite natural keys.** Sponsors are
+one row per (year, normalized_name) so the same company in 2025
++ 2026 lives in two rows. Year-over-year + renewal-cycle analytics
+read off this naturally; no need for a "campaigns" join table.
+Future events (Open Day, Innovation Summit) can reuse this pattern
+by adding `event_name` discrimination — already in the schema.
 
 ---
 
@@ -347,8 +457,8 @@ then go heavy on A.
 
 | Rank | Feature | Est. | Notes |
 |---:|---|---:|---|
-| 1 | **Follow-ups** (full feature) | 5-6 h | Real "next concrete step per partner" with due date + owner. Standalone view + per-entity inline create + Home briefing integration. Bootstraps several others (see #2). The only proposal from Defne's 5-item sidebar list that's a genuinely new capability. |
-| 2 | **Aspirational drag** (depends on #1) | 7-8 h | Drag a sphere on the 2D strategic map to a desired position → modal opens with AI-generated action list to actually move the entity there. Saves as "aspiration goal" (not an override). Actions can be one-click added to Follow-ups. This is the **killer Direction-A feature** — no CRM does this. See risks below. |
+| ~~1~~ | ~~**Follow-ups** (full feature)~~ | ~~5-6 h~~ | ✅ **SHIPPED** (commit `038488e`). Standalone view + per-entity tab + Home briefing alarms + Undo. Now bootstraps Aspirational drag below. |
+| 2 | **Aspirational drag** (depends on Follow-ups, now ready) | 7-8 h | **Next up.** Drag a sphere on the 2D strategic map to a desired position → modal opens with AI-generated action list to actually move the entity there. Saves as "aspiration goal" (not an override). Actions can be one-click added to Follow-ups. This is the **killer Direction-A feature** — no CRM does this. See risks below. |
 | 3 | **Partner Health Trajectory** | 3-4 h | Sparkline next to every entity showing 30/60/90 day engagement_depth trend. Auto-alert when a Hot partner cools. Snapshot infra (`engagement_depth_snapshots` table) already collects the daily data — just needs a renderer + threshold detector. |
 | 4 | **AI-generated weekly digest email** | 4-5 h | Every Monday, each roster member gets a personalized email: what changed, what's stuck, what to action. Snapshots + Gemini = doable. Solves "I have to remember to open the tool" problem. |
 | 5 | **Pre-meeting briefing card** | 5-6 h | Calendar OAuth + AI brief = 30 seconds before any partner meeting, get a card with state, last 3 interactions, suggested agenda. PDF brief skeleton already exists. |
@@ -392,20 +502,36 @@ then go heavy on A.
 
 ### Suggested next-session sequence
 
-If picking up here cold, the highest-leverage sequence is:
+Follow-ups + Sponsors are done. The remaining killer-feature loop:
 
-1. **Follow-ups** (5-6 h) — gives the system somewhere for tasks to land
-2. **Aspirational drag** (7-8 h) — the killer feature, but only sings if Follow-ups exists to absorb the action list
-3. **Partner Health Trajectory** (3-4 h) — leverages existing snapshot data, gives the trajectory thesis a first concrete payoff
+1. ~~**Follow-ups**~~ ✅ shipped (commit `038488e`) — system now has
+   somewhere for tasks to land
+2. **Aspirational drag** (7-8 h) — the killer feature. Drag a sphere
+   on the 2D strategic map → AI generates 4-6 specific action items
+   → one-click each into Follow-ups. Saves as an "aspiration goal"
+   (not a position override) with 90-day TTL.
+3. **Partner Health Trajectory** (3-4 h) — sparkline + velocity arrow
+   per entity from the snapshot data we've been collecting since
+   Phase A. Auto-alert when a Hot partner cools.
 
-Together: ~17 hours / 3 focused sessions. End-to-end "see current
-state → aspire to a better state → ship the actions → watch the
-trajectory respond" flow. That's a feature loop no CRM in the
-market has.
+Together: ~10-12 hours / 2 focused sessions. Closes the end-to-end
+"see current state → aspire to a better state → ship the actions →
+watch the trajectory respond" loop. No CRM in the market has it.
+
+### Adjacent feature shipped outside the backlog
+
+**Sponsors** (commit `fc062c8`) — wasn't in the original backlog
+because the Career Day workflow surfaced during a strategy chat,
+not the original strategic planning session. Kept deliberately
+*separate* from UNIS (different lifecycle, stakeholders, KPIs).
+Year-keyed natural-key schema means 2026 + 2027 Career Days drop
+in via the Import CSV button without any new code.
 
 ---
 
-_Last meaningful update: this file was generated after 23 features +
-several rounds of polish, then extended with a Strategic Backlog
-section after Strategic Maps Phase C shipped. Edit when architecture
-or non-goals change, not for every feature added._
+_Last meaningful update: extended after shipping Contracts (P1+P2),
+3D strategic maps (Phases A-C incl. Three.js Present mode), PDF
+brief generation, Follow-ups (full feature), and Sponsors (separate
+annual pipeline + CSV ingest). Roughly tripled the codebase from
+the original v1 snapshot. Edit when architecture or non-goals change,
+not for every feature added._
