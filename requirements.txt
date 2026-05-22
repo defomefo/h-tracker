@@ -20,3 +20,6 @@ tavily-python>=0.5
 # URL-alive checks (HEAD requests) for the hallucination defense + ROR API
 # (Research Organization Registry) for university existence verification.
 requests>=2.31
+# Fuzzy matching for UNIS dedupe (layer 4 of the prospect-discovery
+# hallucination defense). Same dependency as scripts/clean_sponsors.py.
+rapidfuzz>=3.5
