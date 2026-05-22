@@ -1960,18 +1960,67 @@ def _get_tavily():
 
 
 def _normalize_prospect_name(raw):
-    """Same normalization rules as sponsors — strip legal suffixes, lowercase,
-    collapse whitespace. Keeps Bauli ↔ Bauli S.p.A. matchable."""
+    """Strip legal suffixes + multi-language education boilerplate so the
+    fuzzy dedupe compares MEANINGFUL tokens (the distinctive brand name),
+    not generic frazlar like "Yurtdışı Eğitim Danışmanlığı" that every
+    Turkish outbound consultancy includes in its full legal name.
+
+    Without this, "ATEC Yurtdışı Eğitim Danışmanlığı" and "Global
+    Yurtdışı Eğitim Danışmanlığı" share 3-of-4 tokens and score 75+
+    against each other (and against any pipeline entity with one of
+    those words), creating false-positive dupe rejections.
+
+    Keeps Bauli ↔ Bauli S.p.A. matchable; ATEC vs Global no longer
+    collide on shared boilerplate."""
     if not raw:
         return ""
     s = str(raw).strip().lower()
     s = re.sub(r"\s+", " ", s)
-    for pat in [r"\bs\.p\.a\.?", r"\bspa\b", r"\bs\.r\.l\.?", r"\bsrl\b",
-                r"\bscpa\b", r"\bs\.c\.p\.a\.?", r"\bgmbh\b", r"\bsb\b",
-                r"\buniversity of\b", r"\buniversit[aàá] (di|del|della|degli)\b"]:
-        s = re.sub(pat, "", s)
+    for pat in [
+        # ---- Legal suffixes (corp form) ----
+        r"\bs\.p\.a\.?", r"\bspa\b", r"\bs\.r\.l\.?", r"\bsrl\b",
+        r"\bscpa\b", r"\bs\.c\.p\.a\.?", r"\bgmbh\b", r"\bsb\b",
+        r"\bltd\.?", r"\blimited\b", r"\bllc\b", r"\binc\.?", r"\bincorporated\b",
+        r"\bplc\b", r"\bcorp\.?", r"\bcorporation\b",
+        # ---- Italian uni boilerplate ----
+        r"\buniversity of\b",
+        r"\buniversit[aàá] (di|del|della|degli)\b",
+        # ---- Turkish education-agency boilerplate ----
+        # "yurtdışı eğitim danışmanlığı/ı" = "abroad education consultancy"
+        # Every Turkish outbound consultancy uses these — strip so distinctive
+        # brand tokens (ATEC, NGGlobal, Atayurt, Sage, IDP, Mojo) drive matching.
+        r"\byurt ?d[ıi]ş[ıi]\b",
+        r"\beğ[ıi]t[ıi]m\b",
+        r"\bdan[ıi]şmanl[ıi]ğ[ıi]\b",
+        r"\bdan[ıi]şmanl[ıi]k\b",
+        r"\bdanışmanı\b",
+        # ---- Spanish education-agency boilerplate ----
+        r"\bagencia (de )?(estudios|educaci[oó]n)( en el extranjero)?\b",
+        r"\bconsultor[ií]a (de )?(educaci[oó]n|estudios)( internacional)?\b",
+        r"\bestudios en el extranjero\b",
+        # ---- French / German / Portuguese boilerplate ----
+        r"\bagence (d')?(études|education)( à l'étranger)?\b",
+        r"\bauslandsstudium beratung\b",
+        r"\bag[eê]ncia de interc[âa]mbio\b",
+        # ---- Generic English study-abroad boilerplate ----
+        r"\bstudy abroad\b",
+        r"\beducation consultancy\b",
+        r"\beducational consultancy\b",
+        r"\bstudent recruitment\b",
+        r"\boverseas education\b",
+        r"\binternational education( services)?\b",
+    ]:
+        s = re.sub(pat, "", s, flags=re.IGNORECASE)
     s = re.sub(r"[.,'\"`]", "", s)
     s = re.sub(r"\s+", " ", s).strip()
+    # Safety net: if aggressive boilerplate stripping left less than 3 chars
+    # (e.g. an entity whose distinctive name IS the boilerplate itself),
+    # fall back to a minimally-cleaned original so we don't compare empty
+    # strings or single letters. Without this, an entity literally named
+    # "Agencia de Estudios en el Extranjero" would normalize to ''.
+    if len(s) < 3:
+        s = re.sub(r"[.,'\"`]", "", str(raw).strip().lower())
+        s = re.sub(r"\s+", " ", s).strip()
     return s
 
 
