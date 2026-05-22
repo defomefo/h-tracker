@@ -5141,14 +5141,24 @@ function renderProspectsView() {
     </div>
   </div>`;
 
-  // Tabs
+  // Smart default — if the user hasn't actively switched tabs and
+  // PENDING is empty, jump to ALL so they don't land on an empty view.
+  // (`prospectsApplyTab` sets _userPickedTab=true; new discoveries also
+  // explicitly set tab=pending so taze candidates still surface.)
+  if (!PROSPECTS_STATE._userPickedTab && PROSPECTS_STATE.tab === "pending" && (counts.pending || 0) === 0 && all.length > 0) {
+    PROSPECTS_STATE.tab = "all";
+  }
+
+  // Tabs — order: ALL first (overview-first), then workflow buckets.
+  // ALL gives an at-a-glance portfolio count; PENDING stays second
+  // because it's where new discoveries land and needs quick reach.
   const tabBtn = (k, label) => `<button class="pt-tab ${PROSPECTS_STATE.tab === k ? 'active' : ''}" onclick="prospectsApplyTab('${k}')">${label}<span class="pt-count">${counts[k] || 0}</span></button>`;
   html += `<div class="prospects-tabs">
+    ${tabBtn("all", "All")}
     ${tabBtn("pending", "Pending")}
     ${tabBtn("maybe", "Maybe")}
     ${tabBtn("approved", "Approved")}
     ${tabBtn("rejected", "Rejected")}
-    ${tabBtn("all", "All")}
     <div style="flex:1"></div>
     <input type="search" class="pt-search" placeholder="Search name or country…" value="${escapeAttr(PROSPECTS_STATE.search)}" oninput="_prospectsSearchInput(this.value)" autocomplete="off" spellcheck="false"/>
   </div>`;
@@ -5332,6 +5342,9 @@ function _prospectCardHtml(p) {
 
 function prospectsApplyTab(tab) {
   PROSPECTS_STATE.tab = tab;
+  // User explicitly picked a tab → stop the smart-default from
+  // auto-switching them to ALL when Pending empties out.
+  PROSPECTS_STATE._userPickedTab = true;
   renderProspectsView();
 }
 
@@ -5560,7 +5573,11 @@ async function runProspectDiscover() {
         <div style="margin-top:6px;font-size:11px;color:var(--ink-soft)">Search query used: <code>${escape(data.query)}</code></div>
       </div>`;
       await syncProspectsFromServer();
+      // Fresh discovery → land on PENDING so the new candidates are
+      // immediately actionable. Reset _userPickedTab so the smart-default
+      // doesn't fight us if the user clears Pending later.
       PROSPECTS_STATE.tab = "pending";
+      PROSPECTS_STATE._userPickedTab = true;
       setTimeout(() => { closeProspectDiscoverModal(); renderProspectsView(); }, 1600);
     }
   } catch (e) {
