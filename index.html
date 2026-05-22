@@ -4477,9 +4477,11 @@ function recomputeEntityDerived(u) {
 // Apply every saved override on top of UNIS. Called after CSV ingest and
 // whenever entity overrides arrive from the server.
 function applyEntityOverridesToUnis() {
-  if (!Array.isArray(UNIS) || !UNIS.length) return;
+  if (!Array.isArray(UNIS)) UNIS = [];
   const overrides = ENTITY_OVERRIDES || {};
   let changed = false;
+
+  // Pass 1: PATCH existing entities (original behavior — partial field overrides).
   UNIS.forEach(u => {
     const ov = overrides[u.id];
     if (!ov) return;
@@ -4495,6 +4497,42 @@ function applyEntityOverridesToUnis() {
     });
     recomputeEntityDerived(u);
   });
+
+  // Pass 2: CREATE new entities from "_seed" overrides whose id isn't in UNIS.
+  // This is how approved prospects (created via the discovery flow) survive a
+  // CSV reload — the Google Sheet doesn't have these rows yet, so we
+  // materialize from the seed snapshot stored at approve time. Without this,
+  // approved candidates would vanish on every refresh.
+  if (UNIS.length || Object.keys(overrides).length) {
+    const unisIds = new Set(UNIS.map(u => u.id));
+    Object.entries(overrides).forEach(([id, ov]) => {
+      if (!ov || !ov._seed || unisIds.has(id) || !ov.name) return;
+      const seed = {
+        id,
+        name:                  ov.name,
+        country:               ov.country || "",
+        country_canonical:     ov.country || "",
+        continent:             ov.continent || ov.region || "",
+        type:                  ov.type || "university",
+        priority:              ov.priority || "Warm",
+        strategic_tier:        ov.strategic_tier || "",
+        focus_areas:           ov.focus_areas || "",
+        notes:                 ov.notes || "",
+        contacts:              Array.isArray(ov.contacts) ? ov.contacts : [],
+        partnership_readiness: ov.partnership_readiness || "Early",
+        pipeline_stage:        ov.pipeline_stage || "identified",
+        partnership_score:     0,
+        partnership_breakdown: {},
+        program_matches:       {},
+        top_program_id:        null,
+        top_program_score:     0,
+        days_dormant:          0,
+      };
+      if (typeof recomputeEntityDerived === "function") recomputeEntityDerived(seed);
+      UNIS.push(seed);
+      changed = true;
+    });
+  }
   return changed;
 }
 
@@ -4864,16 +4902,28 @@ async function approveProspect(prospectId) {
     };
     if (typeof recomputeEntityDerived === "function") recomputeEntityDerived(newEntity);
     UNIS.push(newEntity);
-    // Save as entity_override so it persists in shared state across users
-    if (typeof saveEntityField === "function") {
-      // Trigger the override save by setting a field — the saveEntityField path
-      // creates the entry in ENTITY_OVERRIDES if missing
-      try { await kvStore.put("entity_override", newId, {
-        name: newEntity.name, country: newEntity.country, type: newEntity.type,
-        priority: newEntity.priority, focus_areas: newEntity.focus_areas,
-        notes: newEntity.notes,
-      }); } catch (e) { console.warn("[prospect-approve] kv put failed:", e); }
-    }
+    // Save as entity_override with _seed:true marker. The seed flag tells
+    // applyEntityOverridesToUnis to MATERIALIZE this as a new entity (not
+    // just patch) so it survives the next CSV reload — the Google Sheet
+    // doesn't have this row yet.
+    try {
+      ENTITY_OVERRIDES[newId] = {
+        _seed:                 true,
+        name:                  newEntity.name,
+        country:               newEntity.country,
+        continent:             newEntity.continent,
+        type:                  newEntity.type,
+        priority:              newEntity.priority,
+        strategic_tier:        newEntity.strategic_tier || "",
+        focus_areas:           newEntity.focus_areas,
+        notes:                 newEntity.notes,
+        contacts:              newEntity.contacts || [],
+        partnership_readiness: newEntity.partnership_readiness,
+        pipeline_stage:        newEntity.pipeline_stage,
+      };
+      if (typeof _writeLocalEntityOverrides === "function") _writeLocalEntityOverrides(ENTITY_OVERRIDES);
+      await kvStore.put("entity_override", newId, ENTITY_OVERRIDES[newId]);
+    } catch (e) { console.warn("[prospect-approve] kv put failed:", e); }
     await syncProspectsFromServer();
     // Re-render any active surfaces
     if (typeof render === "function") render();
