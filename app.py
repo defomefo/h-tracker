@@ -3154,18 +3154,116 @@ def prospects_profile_distill(handle):
     return jsonify(res)
 
 
+def _build_provenance_notes(rec, user_handle):
+    """Compose a human-readable provenance block that gets written into
+    the entity's `notes` field on approval. This is what ends up in the
+    Google Sheet so anyone looking at the row sees clearly that this
+    was AI-discovered + when + by whom + with what evidence — not a
+    human-entered partner.
+
+    Format is deliberately greppable: a teammate scanning the Sheet for
+    "AI-DISCOVERED" can filter all AI-sourced rows instantly."""
+    when = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    src_urls = rec.get("source_urls") or []
+    ver = rec.get("verification") or {}
+    ver_bits = []
+    if ver.get("all_passed"):    ver_bits.append("all hallucination checks passed")
+    if ver.get("ror_match"):     ver_bits.append("ROR cross-checked")
+    if ver.get("url_alive"):     ver_bits.append("source URLs live")
+    ver_str = "; ".join(ver_bits) if ver_bits else "no verification metadata"
+    lines = [
+        "🤖 AI-DISCOVERED · approved by " + (user_handle or "an unknown user") + " on " + when,
+        "Source: Prospect Discovery (Tavily web search + Gemini 2.5 Flash analysis)",
+        "Verification: " + ver_str,
+        "AI fit score: " + str(rec.get("ai_fit_score") or "?") + "/100",
+        "",
+        "AI reasoning:",
+        (rec.get("ai_reasoning") or "(none)").strip(),
+        "",
+        "Source URLs:",
+    ]
+    if src_urls:
+        for u in src_urls[:5]:
+            lines.append("  • " + u)
+    else:
+        lines.append("  (none)")
+    if rec.get("description"):
+        lines.append("")
+        lines.append("Description: " + rec["description"].strip())
+    lines.append("")
+    lines.append("---")
+    lines.append("(Human-edited notes go below this divider)")
+    return "\n".join(lines)
+
+
+def _push_new_entity_to_sheets(entity_id, fields):
+    """Append a new entity row to the linked Google Sheet via Apps Script
+    `op: append`. Returns {ok, configured, error?, ...} — best-effort,
+    never raises. Callers should surface the result to the user but NOT
+    block their flow if Sheets is down/misconfigured.
+
+    The Apps Script must be on the updated version (see SHEETS_SYNC.md
+    for the doPost code that handles `op: append`)."""
+    if not WRITEBACK_URL:
+        return {"ok": False, "configured": False,
+                "error": "Sheets write-back not configured — set HFARM_SHEETS_WRITEBACK_URL on the server."}
+    payload = {"op": "append", "entity_id": entity_id, "fields": fields}
+    try:
+        req = _urlreq.Request(
+            WRITEBACK_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with _urlreq.urlopen(req, timeout=15) as resp:
+            raw = resp.read()
+        try:
+            inner = json.loads(raw.decode("utf-8"))
+        except Exception:
+            return {"ok": False, "configured": True,
+                    "error": "Apps Script returned non-JSON: " + raw[:200].decode("utf-8", errors="replace")}
+        return {
+            "ok":          bool(inner.get("ok")),
+            "configured":  True,
+            "apps_script": inner,
+            "error":       inner.get("error"),
+        }
+    except _urlerr.URLError as e:
+        return {"ok": False, "configured": True, "error": "Network error reaching Apps Script: " + str(e)}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "configured": True, "error": "Unexpected: " + type(e).__name__ + ": " + str(e)}
+
+
 @app.route("/api/prospects/<prospect_id>/approve", methods=["POST"])
 @auth_required
 def prospects_approve(prospect_id):
     """Move an approved candidate to the UNIS pipeline.
-    Generates a new entity id, marks the candidate as approved+linked, and
-    returns the seed payload the frontend can use to push into UNIS.
-    The frontend handles the actual UNIS push (since UNIS lives in the
-    client's in-memory state — server doesn't own it)."""
+    Generates a new entity id, marks the candidate as approved+linked,
+    AND (if WRITEBACK_URL is configured) appends a new row to the linked
+    Google Sheet with a provenance block in the notes so the team can
+    see who/when/how this came in.
+
+    The frontend handles the in-memory UNIS push (since UNIS lives in
+    the client). The Sheets push is best-effort — never blocks approval."""
     db = get_db()
     row = db.execute("SELECT * FROM prospect_candidates WHERE id = ?", (prospect_id,)).fetchone()
     if not row:
         return jsonify({"error": "not found"}), 404
+
+    # Idempotency: if already approved, return the existing entity id
+    # instead of minting a new one (otherwise a double-click would orphan
+    # the first entity + push a second row to Sheets).
+    if (row["status"] or "") == "approved" and row["approved_entity_id"]:
+        rec = _prospect_row_to_dict(row)
+        return jsonify({
+            "ok":               True,
+            "candidate":        rec,
+            "new_entity_id":    row["approved_entity_id"],
+            "already_approved": True,
+            "sheets_push":      {"ok": False, "configured": bool(WRITEBACK_URL),
+                                 "error": "skipped — already approved, would have created a duplicate Sheet row"},
+        })
+
     new_entity_id = "ent-" + secrets.token_hex(6)
     db.execute(
         "UPDATE prospect_candidates SET status = ?, approved_entity_id = ? WHERE id = ?",
@@ -3173,11 +3271,48 @@ def prospects_approve(prospect_id):
     )
     db.commit()
     _record_edit("prospect", "approve", prospect_id)
+
     rec = _prospect_row_to_dict(row)
+    user_handle = (request.headers.get("X-Display-Name") or "").strip()
+
+    # Build the field dict the Apps Script will write. Keys must match
+    # the Sheet's column headers — Apps Script silently skips any key
+    # whose header doesn't exist, so over-supplying is safe.
+    notes_block = _build_provenance_notes(rec, user_handle)
+    sheet_fields = {
+        "id":                      new_entity_id,
+        "name":                    rec.get("name") or "",
+        "country":                 rec.get("country") or "",
+        "country_canonical":       rec.get("country") or "",
+        "continent":               rec.get("region") or "",
+        "type":                    rec.get("type") or "university",
+        "priority":                "Warm",
+        "strategic_tier":          "",
+        "partnership_readiness":   "Early",
+        "pipeline_stage":          "identified",
+        "focus_areas":             ", ".join(rec.get("suggested_programs") or []),
+        "notes":                   notes_block,
+        # Provenance flag column — Apps Script will write this only if a
+        # `source` column exists in the sheet (otherwise silently skipped).
+        # Teams who want filterable "show me all AI-sourced rows" can
+        # add a `source` column to their Sheet; if they don't, the same
+        # info is already in the notes block above.
+        "source":                  "AI-discovered (Prospect Discovery)",
+        "source_user":             user_handle or "",
+        "source_date":             _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d"),
+        "ai_fit_score":            rec.get("ai_fit_score") or "",
+    }
+
+    # Best-effort push — never block approval on Sheets failure
+    push_result = _push_new_entity_to_sheets(new_entity_id, sheet_fields)
+    if not push_result.get("ok"):
+        print(f"[approve] Sheets push for {new_entity_id} ({rec.get('name')!r}): {push_result.get('error')}")
+
     return jsonify({
-        "ok": True,
+        "ok":            True,
         "candidate":     rec,
         "new_entity_id": new_entity_id,
+        "sheets_push":   push_result,
     })
 
 

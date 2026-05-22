@@ -4900,15 +4900,18 @@ async function decideProspect(prospectId, decision, reasonOverride) {
 
 // Approve flow — backend marks candidate as approved + returns a new entity
 // id; we push the prospect into the UNIS array as a fresh entity (seeded
-// from the AI fields). The Sheets writeback is a manual follow-up step
-// since UNIS source-of-truth is Google Sheets, not the DB.
+// from the AI fields). Backend ALSO appends a new row to the linked Google
+// Sheet via Apps Script (op:append) — including a provenance block in
+// `notes` so the team sees this was AI-discovered + when + by whom.
+// If Sheets writeback isn't configured or fails, the approval still
+// succeeds locally and the user gets a "manual sync needed" toast.
 async function approveProspect(prospectId) {
   const p = PROSPECTS.find(x => x.id === prospectId);
   if (!p) return;
   if (!confirm(
     `Move "${p.name}" to the pipeline?\n\n` +
-    `A new entity will be created with priority "Warm" (you can edit it from the detail panel).\n` +
-    `Heads up: this DOES NOT write back to Google Sheets — you'll need to add the row there manually so other tools see it too.`
+    `A new entity will be created with priority "Warm" (you can edit it from the detail panel).\n\n` +
+    `If Google Sheets write-back is configured, a row will also be appended to your Sheet with full provenance (🤖 AI-DISCOVERED · approved by ${(typeof getDisplayName === "function" ? getDisplayName() : "") || "you"} · source URLs · fit score).`
   )) return;
   try {
     const r = await apiFetch(`/api/prospects/${encodeURIComponent(prospectId)}/approve`, {
@@ -4974,7 +4977,25 @@ async function approveProspect(prospectId) {
     await syncProspectsFromServer();
     // Re-render any active surfaces
     if (typeof render === "function") render();
-    showSyncToast(`✓ "${p.name}" moved to pipeline`, "ok");
+    // Pick toast wording based on Sheets push outcome — three states:
+    //   (a) configured + pushed   → "✓ moved to pipeline + Sheet updated"
+    //   (b) configured + failed   → loud warning so user can re-sync manually
+    //   (c) not configured        → quiet "manual sync needed" hint
+    const sp = data.sheets_push || {};
+    if (sp.ok) {
+      showSyncToast(`✓ "${p.name}" moved to pipeline · 📋 Sheet row appended`, "ok");
+    } else if (sp.configured) {
+      // Loud, multi-line — the platform succeeded but Sheets is out of sync.
+      // Show the actual error so the user can act (re-add manually or fix script).
+      alert(
+        `✓ "${p.name}" added to platform pipeline.\n\n` +
+        `⚠ But Google Sheets push FAILED:\n   ${sp.error || "unknown error"}\n\n` +
+        `→ Add the row to the Sheet manually OR check Apps Script (may need update for op:append — see SHEETS_SYNC.md).`
+      );
+    } else {
+      // Not configured → just a quiet hint (default state for fresh installs)
+      showSyncToast(`✓ "${p.name}" moved to pipeline · ⓘ add to Sheet manually (writeback not configured)`, "ok");
+    }
     setTimeout(() => openDetail(newId), 400);
   } catch (e) {
     alert("Network error: " + e.message);

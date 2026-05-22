@@ -53,6 +53,16 @@ The write-back needs to find the right row by stable ID.
 function doPost(e) {
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+
+    // NEW: `op: append` creates a new row with the supplied fields dict.
+    // Used by the Prospect Discovery flow when a user approves an
+    // AI-discovered partner — adds it to the Sheet with full provenance
+    // so the team sees it just like a human-entered partner.
+    if (String(body.op || '').toLowerCase() === 'append') {
+      return _handleAppend(body);
+    }
+
+    // Existing: single-cell update by entity_id + field
     const entityId = String(body.entity_id || '').trim();
     const field = String(body.field || '').trim();
     if (!entityId || !field) return _json({ok: false, error: 'entity_id and field are required'});
@@ -81,6 +91,56 @@ function doPost(e) {
   }
 }
 
+/**
+ * Append a new row. Body shape: {op: 'append', entity_id: 'ent-xxx', fields: {col: val, ...}}.
+ * Only writes columns whose headers exist in the sheet — unknown keys are silently skipped,
+ * so the server can over-supply optional columns like `source` / `source_user` / `source_date`
+ * that some sheets may not have.
+ *
+ * Idempotency: if a row with the given entity_id already exists, returns ok:false so the
+ * caller can decide. (Server-side dedupe is the primary defense; this is the safety net.)
+ */
+function _handleAppend(body) {
+  const entityId = String(body.entity_id || '').trim();
+  const fields = body.fields || {};
+  if (!entityId) return _json({ok: false, error: "append requires entity_id"});
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const idCol = headers.indexOf('id') + 1;
+  if (idCol === 0) return _json({ok: false, error: "Sheet has no 'id' column"});
+
+  // Dedupe: scan existing IDs
+  const lastRow = sheet.getLastRow();
+  if (lastRow >= 2) {
+    const ids = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]).trim() === entityId) {
+        return _json({ok: false, error: "Row with id '" + entityId + "' already exists at row " + (i + 2), already_exists: true, row: i + 2});
+      }
+    }
+  }
+
+  // Build the row in header order. Unknown columns in `fields` are skipped
+  // (filtered to headers); missing columns become empty strings.
+  const filled = [];
+  const newRow = headers.map(function(h) {
+    var v = fields[h];
+    if (v === undefined || v === null) return '';
+    filled.push(h);
+    return v;
+  });
+
+  sheet.appendRow(newRow);
+  return _json({
+    ok: true,
+    op: 'append',
+    row: sheet.getLastRow(),
+    columns_filled: filled,
+    columns_skipped_in_payload: Object.keys(fields).filter(function(k) { return headers.indexOf(k) === -1; })
+  });
+}
+
 function doGet() {
   return _json({ok: true, message: 'H-Tracker writeback endpoint is alive'});
 }
@@ -90,6 +150,23 @@ function _json(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 ```
+
+### Optional: add a `source` column to your Sheet
+
+The append operation will populate a `source` / `source_user` / `source_date`
+column ONLY if those columns exist in your Sheet. If they do, you get a
+filterable "where did this row come from?" column — useful when you want
+to filter to all AI-discovered partners. Headers to add:
+
+| Header        | What goes there                                    |
+|---------------|----------------------------------------------------|
+| `source`      | `AI-discovered (Prospect Discovery)` for AI rows; empty for human rows |
+| `source_user` | Display name of the user who approved the AI find  |
+| `source_date` | YYYY-MM-DD when the approval happened              |
+
+If you skip this, no problem — the same info is also embedded in the
+`notes` column with a clear "🤖 AI-DISCOVERED" header so anyone reading
+the row sees provenance.
 
 ## 5. Deploy as Web App
 
