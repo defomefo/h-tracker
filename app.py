@@ -2065,27 +2065,66 @@ def _build_prospect_prompt(criteria, search_results, existing_names, profile_jso
     profile_str = profile_json or "(no preference profile yet — first searches)"
 
     return f"""You are a partnership prospect analyst for H-FARM College, an Italian
-private higher-education institution. You surface NEW prospective ACADEMIC /
-STUDENT-MOBILITY partners for the global partnerships team to evaluate.
+private higher-education institution based in Roncade (Treviso). You
+surface NEW prospective ACADEMIC / STUDENT-MOBILITY partners for the
+global partnerships team to evaluate.
+
+============================================================
+DIRECTIONALITY — H-FARM College is the RECEIVING side.
+============================================================
+We are based in Italy. We want partners who can SEND students TO US (or
+exchange students WITH US as peers). We do NOT want partners whose
+business is bringing students INTO their own country — those are
+COMPETITORS, not partners.
+
+Concretely, for the country in the search criteria:
+  ✅ OUTBOUND — agencies / schools / orgs that send LOCAL students
+                 ABROAD to study at foreign universities. H-FARM College
+                 wants to be on their list of recommended destinations.
+                 (e.g. "yurtdışı eğitim danışmanlığı" in Turkey,
+                 "agencia de estudios en el extranjero" in Spain,
+                 "Auslandsstudium" consultancies in Germany.)
+  ❌ INBOUND  — agencies / orgs whose business is bringing FOREIGN
+                 students INTO their own country. Their interest is in
+                 filling LOCAL universities, not sending students to
+                 Italian ones. (e.g. "Study in Turkey", "Study in Spain",
+                 "Apply to Turkish Universities", "Bienvenue en France"
+                 student-recruitment portals.)
+  ✅ BIDIRECTIONAL — peer universities and exchange partners are fine
+                 regardless of direction (since we exchange students).
+
+Quick test: if the agency's homepage call-to-action is "Study in
+[search-country]" or "Apply to [search-country] universities", it is
+INBOUND and must be rejected. If it is "Study abroad", "Apply to
+European / US / UK universities from [search-country]", it is OUTBOUND
+and is exactly what we want.
 
 ============================================================
 SCOPE — these are the ONLY categories we want to see:
 ============================================================
   ✅ Universities — public AND private, degree-granting peers globally.
                      Both research-heavy and teaching-focused.
+                     (Directionality flexible — peer exchanges welcome.)
   ✅ Higher-ed institutions — business schools, design schools,
                      polytechnics, conservatories, applied-science unis.
-  ✅ Schools — secondary / high schools whose graduates go to university
-                     (potential pipeline for H-FARM College bachelor's recruitment).
+  ✅ Schools — secondary / high schools whose graduates go to
+                     INTERNATIONAL universities (feeder schools — IB
+                     programs, international schools, private schools
+                     with strong abroad-placement records).
   ✅ Student organizations + alumni networks — ESN chapters, AEGEE,
-                     subject-specific student associations.
-  ✅ Education agencies — student recruitment agencies, study-abroad
-                     consultancies, language schools that funnel students
-                     into higher-ed.
+                     subject-specific student associations, mobility-
+                     focused alumni groups.
+  ✅ Education agencies — OUTBOUND ONLY. Study-abroad consultancies,
+                     university placement agents that send local
+                     students to foreign universities, IELTS/TOEFL prep
+                     schools that funnel students abroad.
 
 ============================================================
 OUT OF SCOPE — REJECT these even if the search results return them:
 ============================================================
+  ❌ INBOUND education agencies — "Study in [country]" portals,
+     foreign-student recruitment offices serving local universities.
+     These are competitors. THIS IS THE MOST COMMON FALSE POSITIVE.
   ❌ Government investment / FDI / business-development agencies
      (e.g. ICEX, trade boards, chambers of commerce, "Invest in X"
      entities). They serve business setup, not students.
@@ -2099,8 +2138,8 @@ OUT OF SCOPE — REJECT these even if the search results return them:
      academic-scholarship or research-collaboration program.
 
 If a search result is CLEARLY one of these (e.g. its URL or title plainly
-identifies it as a government investment promotion agency or a SaaS
-employer), skip it. But if you're UNSURE whether something is in-scope or
+identifies it as an inbound "Study in X" portal or a SaaS employer),
+skip it. But if you're UNSURE whether something is in-scope or
 out-of-scope, prefer to surface it with a LOW fit_score (20-40) and an
 honest "borderline because…" note in fit_reasoning. Empty results force
 the user to refine queries blindly; weak-but-real candidates they can
@@ -2109,18 +2148,23 @@ quickly reject are strictly better.
 ============================================================
 SPECIAL GUIDANCE FOR TYPE = "agency"
 ============================================================
-"Agency" in this app means EDUCATION agency: study-abroad consultancies,
-student recruitment companies, university placement agents, language
-schools with bridging programs, education fairs / EdTech B2B platforms
-that connect students to higher-ed. In Turkey these are firms like
-"yurtdışı eğitim danışmanlığı" companies; in Spain they are firms like
-"agencias de estudios en el extranjero" or IELTS/TOEFL prep schools that
-funnel students abroad. Many such companies have small web footprints —
-their site alone is enough grounding, you don't need a major news source.
-Do NOT confuse them with state-run scholarship boards (Türkiye Bursları,
-Ministerio de Universidades) — those CAN be in-scope as government
-partners, but their primary identity should be EDUCATION promotion, not
-business / FDI / investment promotion.
+"Agency" in this app means OUTBOUND education agency — a firm whose
+core business is sending students from their local country to study at
+universities abroad. In Turkey these are "yurtdışı eğitim danışmanlığı"
+companies (Atayurt, Sage Group, ARC Education, Mojo, IDP Türkiye, etc.).
+In Spain these are "agencias de estudios en el extranjero" or "estudia
+en el extranjero" consultancies. Many such companies have small web
+footprints — their site alone is enough grounding, you don't need a
+major news source. They tend to rank for native-language queries, so
+weak English presence is normal.
+
+DO NOT surface "Study in [country]" portals, even if they're well-known.
+Those are inbound and serve local universities. They are competitors.
+
+State-run scholarship boards (Türkiye Bursları, Ministerio de
+Universidades) can be in-scope ONLY if their primary mission is
+sending LOCAL students abroad — most are actually inbound (bringing
+foreigners to local universities). Read carefully before surfacing.
 
 ============================================================
 REQUIRED OUTPUT: a JSON array of candidate objects, NEVER more than what
@@ -2571,14 +2615,66 @@ def prospects_discover():
     limit = max(1, min(15, int(body.get("limit") or 5)))
     existing_names = body.get("existing_entity_names") or []
 
-    # Compose the search query — type + country + free-text combined
+    # Compose the search query — type + country + free-text combined.
+    # CRITICAL for type=agency: bias hard toward OUTBOUND (local students
+    # going abroad) — inbound agencies like "Study in Turkey" are
+    # competitors, not partners. We do this two ways:
+    #   1) English search terms include "study abroad" + "sending students"
+    #   2) Add native-language search term for known countries — outbound
+    #      consultancies often have weak English web presence.
     search_terms = []
-    if criteria["type"] == "university":     search_terms.append("universities")
-    elif criteria["type"] == "agency":       search_terms.append("education agencies")
-    elif criteria["type"] == "school":       search_terms.append("high schools")
-    elif criteria["type"] == "student_organization": search_terms.append("student organizations")
-    else:                                     search_terms.append("partnership prospects")
-    if criteria["country"]:                  search_terms.append("in " + criteria["country"])
+    if criteria["type"] == "university":
+        search_terms.append("universities")
+    elif criteria["type"] == "agency":
+        # Directional English (Tavily understands both English and local
+        # language results — adding both terms broadens recall)
+        search_terms.append('"study abroad" agencies sending students to European universities')
+    elif criteria["type"] == "school":
+        # Schools that send graduates to international universities —
+        # IB / international / private schools are the strongest pipeline.
+        search_terms.append("international high schools whose graduates study abroad")
+    elif criteria["type"] == "student_organization":
+        search_terms.append("student organizations international mobility Erasmus")
+    else:
+        search_terms.append("partnership prospects")
+
+    if criteria["country"]:
+        search_terms.append("in " + criteria["country"])
+
+    # Native-language outbound-agency boost. Many top-tier outbound
+    # consultancies in non-English markets only rank for native-language
+    # search ("yurtdışı eğitim danışmanlığı" finds 100× more relevant
+    # firms than "Turkish education agency"). Only fires for type=agency.
+    if criteria["type"] == "agency" and criteria["country"]:
+        native = {
+            "turkey":   "yurtdışı eğitim danışmanlığı",
+            "türkiye":  "yurtdışı eğitim danışmanlığı",
+            "spain":    "agencia de estudios en el extranjero",
+            "españa":   "agencia de estudios en el extranjero",
+            "italy":    "agenzia studio all'estero",
+            "italia":   "agenzia studio all'estero",
+            "germany":  "Auslandsstudium Beratung",
+            "deutschland": "Auslandsstudium Beratung",
+            "france":   "agence études à l'étranger",
+            "poland":   "agencja studiów za granicą",
+            "polska":   "agencja studiów za granicą",
+            "greece":   "πρακτορείο σπουδών στο εξωτερικό",
+            "ελλάδα":   "πρακτορείο σπουδών στο εξωτερικό",
+            "japan":    "留学エージェント",
+            "china":    "留学中介",
+            "korea":    "유학원",
+            "south korea": "유학원",
+            "vietnam":  "tư vấn du học",
+            "thailand": "เอเจนซี่เรียนต่อต่างประเทศ",
+            "indonesia": "konsultan pendidikan luar negeri",
+            "brazil":   "intercâmbio agência",
+            "brasil":   "intercâmbio agência",
+            "mexico":   "agencia de intercambio educativo",
+            "méxico":   "agencia de intercambio educativo",
+        }.get((criteria["country"] or "").strip().lower())
+        if native:
+            search_terms.append(native)
+
     if criteria["focus"]:                    search_terms.append("focusing on " + criteria["focus"])
     if criteria["query"]:                    search_terms.append(criteria["query"])
     final_query = " ".join(search_terms).strip() or "international higher-education partnerships"
