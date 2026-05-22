@@ -4898,6 +4898,37 @@ async function decideProspect(prospectId, decision, reasonOverride) {
   }
 }
 
+// Manual re-push to Google Sheets for an already-approved prospect.
+// Triggered from the Detail modal when status='approved' — covers the
+// case where the original approve-time push failed (typically because
+// the Apps Script hadn't been updated to handle op:append yet).
+// Shows a clear toast/alert with the actual result so the user can act.
+async function pushProspectToSheets(prospectId) {
+  const p = PROSPECTS.find(x => x.id === prospectId);
+  if (!p) return;
+  if (!confirm(`Push "${p.name}" to Google Sheets now?\n\nThis appends a new row with full provenance to your linked Sheet. Apps Script must be updated to the version in SHEETS_SYNC.md for op:append. If a row with the same entity id already exists, Apps Script will refuse with 'already_exists' (no duplicate created).`)) return;
+  try {
+    const r = await apiFetch(`/api/prospects/${encodeURIComponent(prospectId)}/push-to-sheets`, {
+      method: "POST", headers: _identityHeaders(),
+    });
+    const j = await r.json().catch(() => ({}));
+    const sp = j.sheets_push || {};
+    if (j.ok && sp.ok) {
+      showSyncToast(`📋 "${p.name}" pushed to Sheet (entity ${j.entity_id})`, "ok");
+    } else if (sp.apps_script && sp.apps_script.already_exists) {
+      showSyncToast(`✓ "${p.name}" is already in the Sheet at row ${sp.apps_script.row} — no action needed.`, "ok");
+    } else {
+      alert(
+        `Push to Sheet failed for "${p.name}":\n\n` +
+        `   ${sp.error || j.error || "unknown error"}\n\n` +
+        `→ Update Apps Script per SHEETS_SYNC.md (it needs the op:append handler) OR add the row to your Sheet manually.`
+      );
+    }
+  } catch (e) {
+    alert("Network error: " + e.message);
+  }
+}
+
 // Approve flow — backend marks candidate as approved + returns a new entity
 // id; we push the prospect into the UNIS array as a fresh entity (seeded
 // from the AI fields). Backend ALSO appends a new row to the linked Google
@@ -5658,7 +5689,7 @@ function openProspectDetail(prospectId) {
     </div>
 
     <div class="cd-foot">
-      <div class="cd-meta">id: ${escape(p.id)} · discovered ${escape((p.discovered_at || "").slice(0, 10))} · status <span class="sponsor-status ${status.cls}">${status.label}</span></div>
+      <div class="cd-meta">id: ${escape(p.id)} · discovered ${escape((p.discovered_at || "").slice(0, 10))} · status <span class="sponsor-status ${status.cls}">${status.label}</span>${p.approved_entity_id ? ` · entity ${escape(p.approved_entity_id)}` : ''}</div>
       <div class="cd-actions">
         ${p.status === 'pending' ? `
           <button class="btn outline" onclick="decideProspect('${escapeAttr(p.id)}','no');closeProspectDetail()">No</button>
@@ -5667,6 +5698,9 @@ function openProspectDetail(prospectId) {
         ` : p.status === 'maybe' ? `
           <button class="btn outline" onclick="decideProspect('${escapeAttr(p.id)}','no');closeProspectDetail()">Reject</button>
           <button class="btn gold" onclick="approveProspect('${escapeAttr(p.id)}');closeProspectDetail()">✓ Move to pipeline</button>
+        ` : p.status === 'approved' ? `
+          <button class="btn outline" onclick="pushProspectToSheets('${escapeAttr(p.id)}')" title="Re-push this approved prospect to the Google Sheet — useful if the original push failed (e.g. Apps Script needed updating).">📋 Push to Sheet</button>
+          <button class="btn outline" onclick="closeProspectDetail()">Close</button>
         ` : `
           <button class="btn outline" onclick="closeProspectDetail()">Close</button>
         `}

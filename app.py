@@ -3316,6 +3316,57 @@ def prospects_approve(prospect_id):
     })
 
 
+@app.route("/api/prospects/<prospect_id>/push-to-sheets", methods=["POST"])
+@auth_required
+def prospects_push_to_sheets(prospect_id):
+    """Re-push an already-approved prospect to Google Sheets. Useful when
+    the first push during approval failed (e.g. Apps Script hadn't been
+    updated to handle op:append yet) — instead of forcing the user to
+    manually re-enter the row, they hit Retry once the script is fixed.
+
+    Does NOT change candidate status or mint a new entity_id — uses the
+    one already stored from the original approval. The Apps Script's
+    own dedupe (`already_exists:true`) prevents accidental duplicates if
+    the Sheet already has the row."""
+    db = get_db()
+    row = db.execute("SELECT * FROM prospect_candidates WHERE id = ?", (prospect_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    if (row["status"] or "") != "approved" or not row["approved_entity_id"]:
+        return jsonify({"error": "candidate must be approved before pushing to sheets",
+                        "current_status": row["status"]}), 400
+
+    rec = _prospect_row_to_dict(row)
+    user_handle = (request.headers.get("X-Display-Name") or "").strip()
+    notes_block = _build_provenance_notes(rec, user_handle)
+    sheet_fields = {
+        "id":                      row["approved_entity_id"],
+        "name":                    rec.get("name") or "",
+        "country":                 rec.get("country") or "",
+        "country_canonical":       rec.get("country") or "",
+        "continent":               rec.get("region") or "",
+        "type":                    rec.get("type") or "university",
+        "priority":                "Warm",
+        "strategic_tier":          "",
+        "partnership_readiness":   "Early",
+        "pipeline_stage":          "identified",
+        "focus_areas":             ", ".join(rec.get("suggested_programs") or []),
+        "notes":                   notes_block,
+        "source":                  "AI-discovered (Prospect Discovery)",
+        "source_user":             user_handle or "",
+        "source_date":             _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d"),
+        "ai_fit_score":            rec.get("ai_fit_score") or "",
+    }
+    push_result = _push_new_entity_to_sheets(row["approved_entity_id"], sheet_fields)
+    _record_edit("prospect", "push_sheets", prospect_id)
+    return jsonify({
+        "ok":          push_result.get("ok"),
+        "entity_id":   row["approved_entity_id"],
+        "name":        rec.get("name"),
+        "sheets_push": push_result,
+    })
+
+
 @app.route("/api/prospects/<prospect_id>", methods=["DELETE"])
 @auth_required
 def prospects_delete(prospect_id):
