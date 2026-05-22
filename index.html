@@ -5128,8 +5128,15 @@ async function runProspectDiscover() {
       // headline error stays terse but the full stack is one click away.
       const blocks = [];
       const headline = escape(data.error || ("HTTP " + r.status));
-      const subline = data.detail && data.detail !== data.error
-        ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:4px">${escape(data.detail)}${data.exception_type ? ` <span style="color:var(--ink-mute);font-family:'Consolas',monospace">(${escape(data.exception_type)})</span>` : ""}${data.stage ? ` · stage: <b>${escape(data.stage)}</b>` : ""}</div>`
+      const sublineBits = [];
+      if (data.detail && data.detail !== data.error) sublineBits.push(escape(data.detail));
+      if (data.exception_type) sublineBits.push(`<span style="color:var(--ink-mute);font-family:'Consolas',monospace">(${escape(data.exception_type)})</span>`);
+      if (data.stage)          sublineBits.push(`stage: <b>${escape(data.stage)}</b>`);
+      if (data.finish_reason)  sublineBits.push(`Gemini finish_reason: <b>${escape(data.finish_reason)}</b>`);
+      if (data.raw_length)     sublineBits.push(`raw ${data.raw_length} chars`);
+      if (data.hint)           sublineBits.push(`<span style="color:var(--hf-red);font-weight:700">→ ${escape(data.hint)}</span>`);
+      const subline = sublineBits.length
+        ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.6">${sublineBits.join(' · ')}</div>`
         : "";
       if (data.raw_preview) {
         blocks.push(`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-soft)">Show what Gemini actually returned (${(data.raw_preview || '').length} chars)</summary><pre style="background:var(--paper);padding:10px;border-radius:4px;font-size:11px;font-family:'Consolas',monospace;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;margin-top:6px">${escape(data.raw_preview)}</pre>${data.parse_error ? `<div style="font-size:10px;color:var(--ink-mute);margin-top:4px">Parse error: ${escape(data.parse_error)}</div>` : ''}</details>`);

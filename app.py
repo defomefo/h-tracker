@@ -2321,12 +2321,14 @@ def prospects_discover():
 
     # Gemini call. We keep response_mime_type='application/json' as a soft
     # hint and rely on the defensive parser below for the actual contract.
-    # response_schema was removed because the dict-form syntax broke under
-    # the installed google-genai version (caused a 500 from the SDK
-    # constructor before the call even fired). The defensive parser
-    # already handled the "wrapped in markdown / mixed text / plain text"
-    # failure modes, so the schema was belt-and-suspenders that the
-    # belt broke.
+    # Two layers of defense beyond that:
+    #   (a) concat ALL parts of the response (resp.text occasionally only
+    #       returns the first chunk on multi-part outputs — caused mid-
+    #       string JSON truncation in the wild)
+    #   (b) inspect finish_reason — STOP is the happy path; MAX_TOKENS
+    #       means bump max_output_tokens; SAFETY / RECITATION need a
+    #       different fix entirely. We surface this in the error JSON
+    #       so the frontend can show it without a Render-log dive.
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
@@ -2336,11 +2338,31 @@ def prospects_discover():
             config=_gtypes.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.2,
-                max_output_tokens=4096,
+                max_output_tokens=8192,   # was 4096 — bumped to be safe
             ),
         )
-        raw_text = (resp.text or "").strip()
-        print(f"[prospects] Gemini returned {len(raw_text)} chars; first 300: {raw_text[:300]!r}")
+        # Manually concat every part across every candidate (works around
+        # the SDK quirk where resp.text only returns the first chunk).
+        text_parts = []
+        finish_reason = None
+        if getattr(resp, "candidates", None):
+            for cand in resp.candidates:
+                if finish_reason is None:
+                    finish_reason = str(getattr(cand, "finish_reason", "") or "")
+                content = getattr(cand, "content", None)
+                parts = getattr(content, "parts", None) if content else None
+                if parts:
+                    for p in parts:
+                        t = getattr(p, "text", None)
+                        if t:
+                            text_parts.append(t)
+        concat_text = "".join(text_parts).strip()
+        fallback_text = (resp.text or "").strip() if hasattr(resp, "text") else ""
+        # Use whichever is longer — the parts concat almost always wins on
+        # multi-part responses, but fall back to .text if parts came up empty.
+        raw_text = concat_text if len(concat_text) >= len(fallback_text) else fallback_text
+        print(f"[prospects] Gemini: finish={finish_reason!r} text={len(raw_text)} chars "
+              f"(parts={len(concat_text)} / .text={len(fallback_text)}); first 300: {raw_text[:300]!r}")
     except Exception as e:
         import traceback as _tb
         print(f"[prospects] Gemini call failed: {e}\n{_tb.format_exc()}")
@@ -2385,10 +2407,23 @@ def prospects_discover():
         if not isinstance(raw_candidates, list):
             raw_candidates = []
     except Exception as e:
-        print(f"[prospects] JSON parse failed: {e}; raw: {raw_text[:600]}")
-        return jsonify({"ok": False, "error": "Gemini returned non-JSON output",
+        print(f"[prospects] JSON parse failed: {e}; finish={finish_reason!r}; raw: {raw_text[:600]}")
+        # Friendlier hint when the model bailed early due to length/safety
+        hint = ""
+        fr = (finish_reason or "").upper()
+        if "MAX_TOKENS" in fr:
+            hint = "Model hit max_output_tokens — bump the cap in app.py or ask for fewer candidates."
+        elif "SAFETY" in fr:
+            hint = "Response was blocked by safety filter — try a less sensitive query."
+        elif "RECITATION" in fr:
+            hint = "Response blocked for recitation risk — rephrase the query."
+        return jsonify({"ok": False,
+                        "error":       "Gemini returned non-JSON output",
                         "raw_preview": raw_text[:600],
-                        "parse_error": str(e)}), 500
+                        "raw_length":  len(raw_text),
+                        "parse_error": str(e),
+                        "finish_reason": finish_reason,
+                        "hint":        hint or None}), 500
 
     # ----- Step 3: 6-layer hallucination filter -----
     db = get_db()
