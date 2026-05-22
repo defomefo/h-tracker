@@ -11596,7 +11596,7 @@ function renderFollowupsView() {
       ${ownerOptions.map(o => op(o, o === "me" ? "Me" : o === "all" ? "All" : escape(o))).join("")}
     </div>
     <div class="ft-spacer"></div>
-    <input type="search" class="ft-search" placeholder="Search title or partner…" value="${escapeAttr(FOLLOWUPS_STATE.search)}" oninput="followupsApplyFilter('search', this.value)"/>
+    <input type="search" class="ft-search" placeholder="Search title or partner…" value="${escapeAttr(FOLLOWUPS_STATE.search)}" oninput="_followupsSearchInput(this.value)" autocomplete="off" spellcheck="false"/>
   </div>`;
 
   // Compose the visible rows by group order
@@ -11679,6 +11679,32 @@ function followupsClearFilters() {
   FOLLOWUPS_STATE.filterOwner  = "all";
   FOLLOWUPS_STATE.search       = "";
   renderFollowupsView();
+}
+
+// Debounced search handler. The standalone view re-renders the entire
+// HTML on filter change, which destroys + recreates the search <input>
+// — that's why typing felt broken: focus was lost on every keystroke,
+// Shift+letter sequences got split across two different input elements,
+// and backspace targeted a body element instead of the (gone) input.
+//
+// Fix: update state immediately (so any read sees the latest), but
+// debounce the actual render by ~220ms. After re-rendering, refocus
+// the new search input and pin the caret to the end of the value.
+let _followupsSearchTimer = null;
+function _followupsSearchInput(value) {
+  FOLLOWUPS_STATE.search = value;
+  if (_followupsSearchTimer) clearTimeout(_followupsSearchTimer);
+  _followupsSearchTimer = setTimeout(() => {
+    renderFollowupsView();
+    const el = document.querySelector(".ft-search");
+    if (el) {
+      el.focus();
+      try {
+        const v = el.value;
+        el.setSelectionRange(v.length, v.length);
+      } catch {}
+    }
+  }, 220);
 }
 
 // ---- New / edit modal ----
