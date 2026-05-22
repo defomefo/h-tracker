@@ -1830,6 +1830,111 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .contract-form .cf-attach-add{font-size:11px;background:transparent;border:1px dashed var(--rule);color:var(--ink-soft);padding:6px 12px;border-radius:5px;cursor:pointer;font-family:inherit;align-self:flex-start;font-weight:600}
 .contract-form .cf-attach-add:hover{border-color:var(--navy);color:var(--navy);border-style:solid}
 /* ============================================================
+   PROSPECTS — AI-surfaced partnership candidates view
+   ============================================================ */
+.prospects-shell{padding:22px 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.prospects-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.prospects-head .ph-title-block{display:flex;flex-direction:column;gap:4px;max-width:780px}
+.prospects-head .ph-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--hf-red)}
+.prospects-head h1{font-size:26px;font-weight:800;color:var(--navy);letter-spacing:-0.4px;margin:0}
+.prospects-head .ph-sub{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.prospects-head .ph-discover{background:var(--hf-red);color:#fff;border:none;padding:11px 20px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.7px;font-family:inherit;text-transform:uppercase;transition:background .12s;white-space:nowrap;box-shadow:0 2px 8px rgba(217,83,79,.25)}
+.prospects-head .ph-discover:hover{background:var(--hf-red-deep)}
+
+.prospects-tabs{display:flex;gap:6px;border-bottom:1px solid var(--rule);padding-bottom:0;align-items:center}
+.prospects-tabs .pt-tab{background:transparent;border:none;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:8px;transition:all .12s;text-transform:uppercase}
+.prospects-tabs .pt-tab:hover{color:var(--navy)}
+.prospects-tabs .pt-tab.active{color:var(--hf-red);border-bottom-color:var(--hf-red)}
+.prospects-tabs .pt-count{background:var(--paper);color:var(--navy);font-size:10px;padding:1px 8px;border-radius:9px;font-weight:700;letter-spacing:0}
+.prospects-tabs .pt-tab.active .pt-count{background:var(--hf-red);color:#fff}
+.prospects-tabs .pt-search{margin-left:14px;padding:7px 12px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink);width:240px}
+.prospects-tabs .pt-search:focus{outline:none;border-color:var(--gold);background:#fff}
+
+.prospects-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px}
+
+.prospect-card{background:#fff;border:1px solid var(--rule);border-top:3px solid var(--ink-mute);border-radius:6px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:transform .12s,box-shadow .12s}
+.prospect-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(10,37,64,.12)}
+.prospect-card.status-pending{border-top-color:var(--hf-red)}
+.prospect-card.status-maybe{border-top-color:var(--warm)}
+.prospect-card.status-approved{border-top-color:var(--ur);opacity:.92}
+.prospect-card.status-rejected{border-top-color:var(--ink-mute);opacity:.7}
+.prospect-card .pc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.prospect-card .pc-name{font-size:15px;font-weight:800;color:var(--navy);line-height:1.3}
+.prospect-card .pc-meta{font-size:11px;color:var(--ink-soft);margin-top:3px;letter-spacing:.2px}
+.prospect-card .pc-fit{text-align:right;flex-shrink:0}
+.prospect-card .pc-fit-num{font-size:24px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink-mute)}
+.prospect-card .pc-fit-num.high{color:var(--ur)}
+.prospect-card .pc-fit-num.mid{color:var(--warm)}
+.prospect-card .pc-fit-num.low{color:var(--ink-mute)}
+.prospect-card .pc-fit-lbl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--ink-soft);margin-top:2px}
+.prospect-card .pc-desc{font-size:12px;color:var(--ink);line-height:1.45;font-style:italic}
+.prospect-card .pc-reasoning{font-size:12px;color:var(--ink);line-height:1.55}
+.prospect-card .pc-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--rule);flex-wrap:wrap}
+.prospect-card .pc-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.prospect-card .pc-ver{font-size:9px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:9px;text-transform:uppercase}
+.prospect-card .pc-ver-ok{background:rgba(46,125,91,.14);color:var(--ur)}
+.prospect-card .pc-ver-warn{background:rgba(224,169,59,.16);color:#7E5500;cursor:help}
+.prospect-card .pc-ror{font-size:9px;font-weight:800;letter-spacing:.4px;background:var(--paper);color:var(--navy);padding:2px 7px;border-radius:9px;text-transform:uppercase;text-decoration:none}
+.prospect-card .pc-ror:hover{background:var(--ink);color:#fff}
+.prospect-card .pc-sources{font-size:9px;font-weight:700;letter-spacing:.4px;color:var(--ink-mute);background:var(--paper);padding:2px 7px;border-radius:9px}
+.prospect-card .pc-actions{display:flex;gap:5px;flex-shrink:0}
+.prospect-card .pc-act{background:transparent;border:1px solid var(--rule);color:var(--ink-soft);padding:5px 11px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;transition:all .12s}
+.prospect-card .pc-act:hover{border-color:var(--navy);color:var(--navy)}
+.prospect-card .pc-act.pc-yes{border-color:var(--ur);color:var(--ur)}
+.prospect-card .pc-act.pc-yes:hover{background:var(--ur);color:#fff}
+.prospect-card .pc-act.pc-no{border-color:var(--crit);color:var(--crit)}
+.prospect-card .pc-act.pc-no:hover{background:var(--crit);color:#fff}
+.prospect-card .pc-act.pc-maybe{border-color:var(--warm);color:#7E5500}
+.prospect-card .pc-act.pc-approve{background:var(--ur);border-color:var(--ur);color:#fff}
+.prospect-card .pc-act.pc-approve:hover{background:#1F5340}
+.prospect-card .pc-act.pc-del:hover{border-color:var(--crit);color:var(--crit)}
+
+.prospects-empty{background:#fff;border:1px dashed var(--rule);border-radius:6px;padding:50px 30px;text-align:center;color:var(--ink-soft);grid-column:1 / -1}
+.prospects-empty h3{font-size:15px;color:var(--navy);font-weight:700;margin-bottom:8px}
+.prospects-empty p{font-size:12px;line-height:1.55;max-width:520px;margin:0 auto 14px}
+.prospects-empty .btn{display:inline-block;background:var(--hf-red);color:#fff;border:none;padding:9px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.5px;font-family:inherit;text-transform:uppercase}
+.prospects-empty .btn:hover{background:var(--hf-red-deep)}
+
+/* Discovery modal */
+.prospect-discover-form{display:flex;flex-direction:column;gap:12px}
+.prospect-discover-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prospect-discover-form .pd-field{display:flex;flex-direction:column;gap:5px}
+.prospect-discover-form .pd-label{font-size:10px;letter-spacing:.9px;text-transform:uppercase;font-weight:700;color:var(--ink-soft)}
+.prospect-discover-form input[type=text],.prospect-discover-form select{padding:9px 12px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:inherit;background:var(--paper);color:var(--ink)}
+.prospect-discover-form input:focus,.prospect-discover-form select:focus{outline:none;border-color:var(--gold);background:#fff}
+.prospect-discover-form .pd-hint{font-size:10px;color:var(--ink-soft);font-style:italic;line-height:1.4}
+.prospect-discover-form .pd-defenses{background:var(--paper);border:1px solid var(--rule);border-radius:5px;padding:12px 14px;margin-top:6px}
+.prospect-discover-form .pd-defense-head{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:var(--ur);margin-bottom:8px}
+.prospect-discover-form .pd-defense-list{margin:0;padding-left:18px;font-size:11px;color:var(--ink);line-height:1.7}
+
+.pd-progress-step{display:flex;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--gold);padding:12px 16px;border-radius:5px;font-size:12px;color:var(--ink);line-height:1.5}
+.pd-progress-spinner{width:24px;height:24px;border:2.5px solid var(--rule);border-top-color:var(--hf-red);border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0}
+.pd-progress-ok{background:rgba(46,125,91,.08);border:1px solid var(--ur);border-radius:5px;padding:12px 16px;font-size:13px;color:var(--navy);line-height:1.55}
+.pd-progress-ok b{color:var(--ur);font-weight:800;font-size:18px}
+.pd-progress-ok code{background:#fff;padding:1px 5px;border-radius:3px;font-family:'Consolas',monospace;font-size:11px}
+.pd-progress-err{background:rgba(139,26,26,.06);border:1px solid rgba(139,26,26,.3);border-radius:5px;padding:12px 16px;font-size:12px;color:var(--crit);line-height:1.5}
+
+/* Prospect detail modal extensions */
+.prospect-fit-bar{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.prospect-fit-num{font-size:30px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1;flex-shrink:0}
+.prospect-fit-num small{font-size:13px;color:var(--ink-mute);font-weight:600;margin-left:2px}
+.prospect-fit-bar-track{flex:1;height:8px;background:var(--paper);border-radius:4px;overflow:hidden}
+.prospect-fit-bar-track>div{height:100%;background:linear-gradient(90deg,var(--warm),var(--ur));border-radius:4px}
+.prospect-reasoning{font-size:13px;color:var(--ink);line-height:1.65;background:var(--paper);padding:10px 14px;border-radius:5px}
+
+.prospect-ver-list{list-style:none;padding:0;margin:0;font-size:12px;color:var(--ink);line-height:1.7}
+.prospect-ver-list li{padding:4px 0;border-bottom:1px dashed var(--rule)}
+.prospect-ver-list li:last-child{border-bottom:0}
+.prospect-ver-list .prospect-ver-warn{color:var(--warm);font-weight:600}
+.prospect-ver-list a{color:var(--hf-red);text-decoration:none}
+
+.prospect-sources{display:flex;flex-direction:column;gap:5px}
+.prospect-source-link{font-size:11px;color:var(--navy);font-family:'Consolas',monospace;text-decoration:none;background:var(--paper);padding:6px 10px;border-radius:4px;display:block;word-break:break-all;border:1px solid var(--rule)}
+.prospect-source-link:hover{border-color:var(--hf-red);color:var(--hf-red)}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
    SPONSORS — standalone view (Career Day annual records)
    ============================================================ */
 .sponsors-shell{padding:22px 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -2495,6 +2600,10 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         <span class="nav-label">Follow-ups</span>
       </button>
+      <button class="nav-item" data-view="prospects" onclick="switchView('prospects')" title="AI-surfaced new partnership candidates with verification + decision learning loop">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
+        <span class="nav-label">Prospects</span>
+      </button>
 
       <div class="nav-section-label" style="margin-top:14px">H-FARM</div>
       <button class="nav-item" data-view="brochures" onclick="switchView('brochures')" title="PDFs + Google Drive links you can send to partners">
@@ -2631,6 +2740,9 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <!-- FOLLOW-UPS VIEW -->
     <section id="view-followups" class="view hidden"></section>
 
+    <!-- PROSPECTS VIEW -->
+    <section id="view-prospects" class="view hidden"></section>
+
     <!-- BROCHURES VIEW -->
     <section id="view-brochures" class="view hidden"></section>
 
@@ -2699,6 +2811,28 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
       <button class="compare-close" onclick="closeContractDetail()">&times;</button>
     </div>
     <div class="compare-body" id="contract-detail-body"></div>
+  </div>
+</div>
+
+<!-- Prospect discovery modal (Mode A — manual trigger) -->
+<div class="compare-modal" id="prospect-discover-modal" style="z-index:425">
+  <div class="compare-box" style="max-width:640px">
+    <div class="compare-head">
+      <h2>Find new prospects</h2>
+      <button class="compare-close" onclick="closeProspectDiscoverModal()">&times;</button>
+    </div>
+    <div class="compare-body" id="prospect-discover-body"></div>
+  </div>
+</div>
+
+<!-- Prospect detail modal (read-mostly + sources + decisions) -->
+<div class="compare-modal" id="prospect-detail-modal" style="z-index:426">
+  <div class="compare-box" style="max-width:760px">
+    <div class="compare-head" id="prospect-detail-head">
+      <h2 id="prospect-detail-title">Prospect</h2>
+      <button class="compare-close" onclick="closeProspectDetail()">&times;</button>
+    </div>
+    <div class="compare-body" id="prospect-detail-body"></div>
   </div>
 </div>
 
@@ -4608,6 +4742,481 @@ async function toggleFollowupDone(followupId) {
 }
 
 // ============================================================================
+// PROSPECT DISCOVERY — AI-surfaced new partnership candidates.
+// Mirrors the sync pattern of contracts/followups/sponsors. Decision flow:
+// user reviews → yes/no/maybe → "yes" surfaces an Approve step that creates
+// a fresh UNIS entity using the candidate data as the seed.
+// ============================================================================
+const LS_PROSPECTS_KEY = "hfarm_prospects_cache";
+let PROSPECTS = (() => {
+  try { return JSON.parse(localStorage.getItem(LS_PROSPECTS_KEY) || "[]"); }
+  catch { return []; }
+})();
+function _writeLocalProspects(list) {
+  try { localStorage.setItem(LS_PROSPECTS_KEY, JSON.stringify(list || [])); } catch {}
+}
+
+async function syncProspectsFromServer() {
+  try {
+    const r = await apiFetch("/api/prospects", { cache: "no-store" });
+    const data = await r.json();
+    PROSPECTS = data.prospects || [];
+    _writeLocalProspects(PROSPECTS);
+    if (STATE.view === "prospects" && typeof renderProspectsView === "function") renderProspectsView();
+    if (STATE.view === "home"      && typeof renderHomeView      === "function") renderHomeView();
+    return true;
+  } catch (e) {
+    console.warn("[prospects] server unreachable, using local cache:", e.message);
+    return false;
+  }
+}
+
+async function deleteProspect(prospectId) {
+  const p = PROSPECTS.find(x => x.id === prospectId);
+  if (!p) return;
+  if (!confirm(`Archive prospect "${p.name}"? You can undo from the toast.`)) return;
+  _lastReset = { kind: "prospect-delete", prospect: JSON.parse(JSON.stringify(p)) };
+  PROSPECTS = PROSPECTS.filter(x => x.id !== prospectId);
+  _writeLocalProspects(PROSPECTS);
+  if (STATE.view === "prospects") renderProspectsView();
+  try {
+    await apiFetch("/api/prospects/" + encodeURIComponent(prospectId), {
+      method: "DELETE", headers: _identityHeaders(),
+    });
+  } catch (e) { console.warn("[prospects] delete deferred (offline):", e.message); }
+  showResetUndoToast(`Prospect archived · "${p.name}"`);
+}
+
+// Decision capture (yes / no / maybe). On "yes" the candidate stays in
+// the maybe bucket until the user explicitly Approves (which creates a
+// UNIS entity). No accidental auto-add to the pipeline.
+async function decideProspect(prospectId, decision, reasonOverride) {
+  const reason = reasonOverride !== undefined
+    ? reasonOverride
+    : (decision === "no" ? prompt("Optional reason for rejecting (helps the AI learn):") : "");
+  try {
+    const r = await apiFetch(`/api/prospects/${encodeURIComponent(prospectId)}/decide`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body: JSON.stringify({ decision, reason: reason || "" }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      alert("Decision failed: " + (j.error || r.status));
+      return;
+    }
+    // Refresh from server so status flips visibly
+    await syncProspectsFromServer();
+    showSyncToast(`Decision recorded · ${decision}`, "ok");
+  } catch (e) {
+    alert("Network error: " + e.message);
+  }
+}
+
+// Approve flow — backend marks candidate as approved + returns a new entity
+// id; we push the prospect into the UNIS array as a fresh entity (seeded
+// from the AI fields). The Sheets writeback is a manual follow-up step
+// since UNIS source-of-truth is Google Sheets, not the DB.
+async function approveProspect(prospectId) {
+  const p = PROSPECTS.find(x => x.id === prospectId);
+  if (!p) return;
+  if (!confirm(
+    `Move "${p.name}" to the pipeline?\n\n` +
+    `A new entity will be created with priority "Warm" (you can edit it from the detail panel).\n` +
+    `Heads up: this DOES NOT write back to Google Sheets — you'll need to add the row there manually so other tools see it too.`
+  )) return;
+  try {
+    const r = await apiFetch(`/api/prospects/${encodeURIComponent(prospectId)}/approve`, {
+      method: "POST", headers: _identityHeaders(),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      alert("Approval failed: " + (j.error || r.status));
+      return;
+    }
+    const data = await r.json();
+    const newId = data.new_entity_id;
+    // Construct a UNIS entry from candidate fields. Use the same normalization
+    // recomputeEntityDerived runs (priority defaults to Warm — user can change).
+    const newEntity = {
+      id:            newId,
+      name:          p.name,
+      country:       p.country || "",
+      country_canonical: p.country || "",
+      continent:     p.region || "",
+      type:          p.type || "university",
+      priority:      "Warm",
+      strategic_tier: "",
+      partnership_readiness: "Early",
+      partnership_score: 0,
+      partnership_breakdown: {},
+      pipeline_stage: "identified",
+      days_dormant:  0,
+      focus_areas:   p.suggested_programs ? p.suggested_programs.join(", ") : "",
+      notes:         `Sourced via AI prospect discovery on ${(p.discovered_at || "").slice(0, 10)}.\n` +
+                     `AI fit score: ${p.ai_fit_score || "—"}/100\n` +
+                     `Reasoning: ${p.ai_reasoning || "—"}\n` +
+                     `Source URLs: ${(p.source_urls || []).join(", ")}`,
+      contacts:      [],
+      program_matches: {},
+      top_program_id: null,
+      top_program_score: 0,
+    };
+    if (typeof recomputeEntityDerived === "function") recomputeEntityDerived(newEntity);
+    UNIS.push(newEntity);
+    // Save as entity_override so it persists in shared state across users
+    if (typeof saveEntityField === "function") {
+      // Trigger the override save by setting a field — the saveEntityField path
+      // creates the entry in ENTITY_OVERRIDES if missing
+      try { await kvStore.put("entity_override", newId, {
+        name: newEntity.name, country: newEntity.country, type: newEntity.type,
+        priority: newEntity.priority, focus_areas: newEntity.focus_areas,
+        notes: newEntity.notes,
+      }); } catch (e) { console.warn("[prospect-approve] kv put failed:", e); }
+    }
+    await syncProspectsFromServer();
+    // Re-render any active surfaces
+    if (typeof render === "function") render();
+    showSyncToast(`✓ "${p.name}" moved to pipeline`, "ok");
+    setTimeout(() => openDetail(newId), 400);
+  } catch (e) {
+    alert("Network error: " + e.message);
+  }
+}
+
+// ============================================================================
+// PROSPECT VIEW — Pending / Approved / Rejected tabs + Discovery button.
+// ============================================================================
+const PROSPECTS_STATE = {
+  tab:       "pending",         // pending | maybe | approved | rejected | all
+  search:    "",
+  detailId:  null,
+};
+
+function _prospectStatusLabel(s) {
+  return {
+    pending:  { label: "Pending",  cls: "pending" },
+    maybe:    { label: "Maybe",    cls: "maybe" },
+    approved: { label: "Approved", cls: "approved" },
+    rejected: { label: "Rejected", cls: "rejected" },
+  }[s] || { label: s || "—", cls: "pending" };
+}
+
+function renderProspectsView() {
+  const el = document.getElementById("view-prospects");
+  if (!el) return;
+  const all = PROSPECTS || [];
+
+  // Tab counts
+  const counts = { pending: 0, maybe: 0, approved: 0, rejected: 0, all: all.length };
+  all.forEach(p => { counts[p.status] = (counts[p.status] || 0) + 1; });
+
+  // Filter by tab + search
+  const sq = (PROSPECTS_STATE.search || "").toLowerCase().trim();
+  const visible = all.filter(p => {
+    if (PROSPECTS_STATE.tab !== "all" && p.status !== PROSPECTS_STATE.tab) return false;
+    if (sq && !(p.name || "").toLowerCase().includes(sq) && !(p.country || "").toLowerCase().includes(sq)) return false;
+    return true;
+  });
+
+  let html = `<div class="prospects-shell">`;
+
+  // Header
+  html += `<div class="prospects-head">
+    <div class="ph-title-block">
+      <span class="ph-eyebrow">Discovery · AI partnership scout</span>
+      <h1>Prospects</h1>
+      <div class="ph-sub">AI-surfaced new partnership candidates with mandatory source URLs, ROR cross-check, and dedupe against your existing pipeline. The system learns from your yes/no decisions to bias future searches toward what you actually want.</div>
+    </div>
+    <div class="ph-actions">
+      <button class="ph-discover" onclick="openProspectDiscoverModal()">⚲ Find prospects</button>
+    </div>
+  </div>`;
+
+  // Tabs
+  const tabBtn = (k, label) => `<button class="pt-tab ${PROSPECTS_STATE.tab === k ? 'active' : ''}" onclick="prospectsApplyTab('${k}')">${label}<span class="pt-count">${counts[k] || 0}</span></button>`;
+  html += `<div class="prospects-tabs">
+    ${tabBtn("pending", "Pending")}
+    ${tabBtn("maybe", "Maybe")}
+    ${tabBtn("approved", "Approved")}
+    ${tabBtn("rejected", "Rejected")}
+    ${tabBtn("all", "All")}
+    <div style="flex:1"></div>
+    <input type="search" class="pt-search" placeholder="Search name or country…" value="${escapeAttr(PROSPECTS_STATE.search)}" oninput="_prospectsSearchInput(this.value)" autocomplete="off" spellcheck="false"/>
+  </div>`;
+
+  if (!visible.length) {
+    if (!all.length) {
+      html += `<div class="prospects-empty">
+        <h3>No prospects yet</h3>
+        <p>Click <b>⚲ Find prospects</b> to ask the AI for new partnership candidates. Every suggestion comes with source URLs you can verify — the system never invents institutions.</p>
+        <button class="btn" onclick="openProspectDiscoverModal()">⚲ Find your first prospects</button>
+      </div>`;
+    } else {
+      html += `<div class="prospects-empty">
+        <h3>Nothing in "${PROSPECTS_STATE.tab}" right now</h3>
+        <p>Try another tab or run a new discovery search.</p>
+      </div>`;
+    }
+  } else {
+    // Sort by fit score desc within the visible set
+    visible.sort((a, b) => (b.ai_fit_score || 0) - (a.ai_fit_score || 0));
+    html += `<div class="prospects-list">${visible.map(_prospectCardHtml).join("")}</div>`;
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function _prospectCardHtml(p) {
+  const status = _prospectStatusLabel(p.status);
+  const fit = p.ai_fit_score || 0;
+  const fitClass = fit >= 75 ? "high" : fit >= 50 ? "mid" : "low";
+  const ver = p.verification || {};
+  const verBadge = ver.all_passed
+    ? `<span class="pc-ver pc-ver-ok" title="All hallucination-defense layers passed">✓ verified</span>`
+    : `<span class="pc-ver pc-ver-warn" title="${escape((ver.warnings || []).join(', ') || 'Some checks failed')}">⚠ unverified</span>`;
+  const rorBadge = ver.ror_match ? `<a href="${escapeAttr(ver.ror_match)}" target="_blank" class="pc-ror" title="Cross-checked in Research Organization Registry">ROR ✓</a>` : "";
+
+  return `<div class="prospect-card status-${p.status || 'pending'}" onclick="openProspectDetail('${escapeAttr(p.id)}')">
+    <div class="pc-head">
+      <div class="pc-name-block">
+        <div class="pc-name">${escape(p.name)}</div>
+        <div class="pc-meta">${escape(p.country || "—")} · ${escape(p.type || "—")}${p.region ? ` · ${escape(p.region)}` : ''}</div>
+      </div>
+      <div class="pc-fit">
+        <div class="pc-fit-num ${fitClass}">${fit}</div>
+        <div class="pc-fit-lbl">fit</div>
+      </div>
+    </div>
+    ${p.description ? `<div class="pc-desc">${escape(p.description)}</div>` : ''}
+    <div class="pc-reasoning">${escape((p.ai_reasoning || '').slice(0, 280))}${(p.ai_reasoning || '').length > 280 ? '…' : ''}</div>
+    <div class="pc-footer">
+      <div class="pc-badges">
+        <span class="sponsor-status ${status.cls}">${status.label}</span>
+        ${verBadge}
+        ${rorBadge}
+        <span class="pc-sources" title="Source URLs">${(p.source_urls || []).length} src</span>
+      </div>
+      ${p.status === 'pending' || p.status === 'maybe' ? `
+      <div class="pc-actions" onclick="event.stopPropagation()">
+        ${p.status === 'maybe' ? `<button class="pc-act pc-approve" onclick="approveProspect('${escapeAttr(p.id)}')">✓ Move to pipeline</button>` : ''}
+        ${p.status === 'pending' ? `<button class="pc-act pc-yes" onclick="decideProspect('${escapeAttr(p.id)}','yes')">Yes</button>` : ''}
+        <button class="pc-act pc-no" onclick="decideProspect('${escapeAttr(p.id)}','no')">No</button>
+        ${p.status === 'pending' ? `<button class="pc-act pc-maybe" onclick="decideProspect('${escapeAttr(p.id)}','maybe','')">Maybe</button>` : ''}
+      </div>` : `
+      <div class="pc-actions" onclick="event.stopPropagation()">
+        <button class="pc-act pc-del" onclick="deleteProspect('${escapeAttr(p.id)}')" title="Archive">Archive</button>
+      </div>`}
+    </div>
+  </div>`;
+}
+
+function prospectsApplyTab(tab) {
+  PROSPECTS_STATE.tab = tab;
+  renderProspectsView();
+}
+
+let _prospectsSearchTimer = null;
+function _prospectsSearchInput(value) {
+  PROSPECTS_STATE.search = value;
+  if (_prospectsSearchTimer) clearTimeout(_prospectsSearchTimer);
+  _prospectsSearchTimer = setTimeout(() => {
+    renderProspectsView();
+    const el = document.querySelector(".pt-search");
+    if (el) { el.focus(); try { const v = el.value; el.setSelectionRange(v.length, v.length); } catch {} }
+  }, 220);
+}
+
+// ---- Discovery modal (Mode A) ----
+function openProspectDiscoverModal() {
+  const html = `
+    <div class="prospect-discover-form">
+      <div class="pd-field">
+        <span class="pd-label">Free-text query</span>
+        <input type="text" id="pd-query" placeholder="e.g. design schools in Madrid, business universities in Asia, agencies for Turkish students"/>
+        <small class="pd-hint">Plain language. Get specific — "small private engineering universities in northern Germany" beats "European universities".</small>
+      </div>
+      <div class="prospect-discover-grid">
+        <div class="pd-field">
+          <span class="pd-label">Entity type</span>
+          <select id="pd-type">
+            <option value="">Any</option>
+            <option value="university">University</option>
+            <option value="agency">Agency</option>
+            <option value="school">School</option>
+            <option value="student_organization">Student organization</option>
+          </select>
+        </div>
+        <div class="pd-field">
+          <span class="pd-label">Country / region</span>
+          <input type="text" id="pd-country" placeholder="e.g. Spain, MENA, Western Europe"/>
+        </div>
+        <div class="pd-field">
+          <span class="pd-label">Focus area (optional)</span>
+          <input type="text" id="pd-focus" placeholder="e.g. AI, design, fashion, computer science"/>
+        </div>
+        <div class="pd-field">
+          <span class="pd-label">Max results</span>
+          <select id="pd-limit">
+            <option value="5">5 candidates</option>
+            <option value="10">10 candidates</option>
+            <option value="3">3 candidates (fastest)</option>
+          </select>
+        </div>
+      </div>
+      <div class="pd-defenses">
+        <div class="pd-defense-head">Hallucination defense (always on)</div>
+        <ol class="pd-defense-list">
+          <li>Tavily web search → grounded source URLs only</li>
+          <li>HEAD/GET liveness probe on each source URL</li>
+          <li>ROR (Research Organization Registry) cross-check for universities</li>
+          <li>Fuzzy-match dedupe against your ${UNIS ? UNIS.length : 0} existing partners</li>
+          <li>Dedupe against past prospect_candidates</li>
+          <li>Conservative output — never pads to a target count</li>
+        </ol>
+      </div>
+      <div id="pd-progress" style="min-height:48px;margin-top:14px"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)">
+        <button class="btn outline" onclick="closeProspectDiscoverModal()">Cancel</button>
+        <button class="btn gold" id="pd-run-btn" onclick="runProspectDiscover()">⚲ Run discovery</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("prospect-discover-body").innerHTML = html;
+  document.getElementById("prospect-discover-modal").classList.add("open");
+  setTimeout(() => document.getElementById("pd-query").focus(), 80);
+}
+
+function closeProspectDiscoverModal() {
+  document.getElementById("prospect-discover-modal").classList.remove("open");
+}
+
+async function runProspectDiscover() {
+  const query   = document.getElementById("pd-query").value.trim();
+  const type    = document.getElementById("pd-type").value;
+  const country = document.getElementById("pd-country").value.trim();
+  const focus   = document.getElementById("pd-focus").value.trim();
+  const limit   = parseInt(document.getElementById("pd-limit").value, 10) || 5;
+  if (!query && !country && !type) {
+    alert("Need at least a query, country, or type.");
+    return;
+  }
+  const btn = document.getElementById("pd-run-btn");
+  const prog = document.getElementById("pd-progress");
+  btn.disabled = true; btn.textContent = "Searching…";
+  prog.innerHTML = `<div class="pd-progress-step">
+    <div class="pd-progress-spinner"></div>
+    <div>Searching the web · running Gemini grounding · checking each URL · ROR cross-check · dedupe vs your ${UNIS.length} partners…
+    <br><small>This usually takes 15-40 seconds on first call (Render cold-start) then ~5-10s after.</small></div>
+  </div>`;
+  try {
+    const r = await apiFetch("/api/prospects/discover", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body:    JSON.stringify({
+        query, type, country, focus, limit,
+        existing_entity_names: (UNIS || []).map(u => u.name).filter(Boolean),
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      prog.innerHTML = `<div class="pd-progress-err">${escape(data.error || ("HTTP " + r.status))}</div>`;
+      btn.disabled = false; btn.textContent = "⚲ Run discovery";
+      return;
+    }
+    prog.innerHTML = `<div class="pd-progress-ok">
+      <div><b>${data.surfaced}</b> candidates surfaced for your review
+        <small>(${data.ai_proposed} proposed by Gemini, ${(data.ai_proposed - data.surfaced)} filtered out by hallucination defense)</small></div>
+      <div style="margin-top:6px;font-size:11px;color:var(--ink-soft)">Search query used: <code>${escape(data.query)}</code></div>
+    </div>`;
+    await syncProspectsFromServer();
+    PROSPECTS_STATE.tab = "pending";
+    setTimeout(() => { closeProspectDiscoverModal(); renderProspectsView(); }, 1600);
+  } catch (e) {
+    prog.innerHTML = `<div class="pd-progress-err">Network error: ${escape(e.message)}</div>`;
+    btn.disabled = false; btn.textContent = "⚲ Run discovery";
+  }
+}
+
+// ---- Detail modal ----
+function openProspectDetail(prospectId) {
+  const p = PROSPECTS.find(x => x.id === prospectId);
+  if (!p) return;
+  PROSPECTS_STATE.detailId = prospectId;
+  const status = _prospectStatusLabel(p.status);
+  const ver = p.verification || {};
+  const sources = (p.source_urls || []).map(u =>
+    `<a href="${escapeAttr(u)}" target="_blank" class="prospect-source-link">${escape(u)}</a>`).join("");
+
+  let html = `
+    <div class="cd-section">
+      <h4>Identity</h4>
+      <div class="cd-grid">
+        <div class="cd-field"><span class="cd-k">Name</span><span class="cd-v">${escape(p.name)}</span></div>
+        <div class="cd-field"><span class="cd-k">Type</span><span class="cd-v">${escape(p.type || "—")}</span></div>
+        <div class="cd-field"><span class="cd-k">Country</span><span class="cd-v">${escape(p.country || "—")}</span></div>
+        <div class="cd-field"><span class="cd-k">Region</span><span class="cd-v">${escape(p.region || "—")}</span></div>
+        <div class="cd-field cd-full"><span class="cd-k">Primary URL</span><span class="cd-v">${p.primary_url ? `<a href="${escapeAttr(p.primary_url)}" target="_blank" style="color:var(--hf-red)">${escape(p.primary_url)}</a>` : '—'}</span></div>
+        ${p.description ? `<div class="cd-field cd-full"><span class="cd-k">Description</span><span class="cd-v">${escape(p.description)}</span></div>` : ''}
+      </div>
+    </div>
+
+    <div class="cd-section">
+      <h4>AI fit assessment</h4>
+      <div class="prospect-fit-bar">
+        <div class="prospect-fit-num">${p.ai_fit_score || 0}<small>/100</small></div>
+        <div class="prospect-fit-bar-track"><div style="width:${p.ai_fit_score || 0}%"></div></div>
+      </div>
+      <div class="prospect-reasoning">${escape(p.ai_reasoning || "—")}</div>
+      ${(p.suggested_programs || []).length ? `<div style="margin-top:10px"><div class="cd-k" style="margin-bottom:4px">Suggested H-FARM programs</div><div class="cd-progs">${p.suggested_programs.map(s => `<span class="cd-prog">${escape(s)}</span>`).join("")}</div></div>` : ''}
+    </div>
+
+    <div class="cd-section">
+      <h4>Verification (${ver.all_passed ? '✓ all layers passed' : '⚠ partial'})</h4>
+      <ul class="prospect-ver-list">
+        <li>Source URLs cited: ${ver.has_source ? '✓' : '✗'} (${(p.source_urls || []).length})</li>
+        <li>URL liveness check: ${ver.url_alive ? '✓ at least one alive' : '✗ none responded'}</li>
+        <li>ROR cross-check: ${ver.ror_match ? `✓ <a href="${escapeAttr(ver.ror_match)}" target="_blank">${escape(ver.ror_match)}</a>` : (p.type === 'university' ? '✗ not in ROR' : 'NA (non-university)')}</li>
+        <li>Not a duplicate of existing partner: ${ver.dup_unis ? '✗ matched UNIS' : '✓'}</li>
+        <li>Not a duplicate of past prospect: ${ver.dup_past ? '✗ already surfaced' : '✓'}</li>
+        ${(ver.warnings || []).length ? `<li class="prospect-ver-warn">Warnings: ${ver.warnings.map(escape).join(", ")}</li>` : ''}
+      </ul>
+    </div>
+
+    <div class="cd-section">
+      <h4>Source URLs (${(p.source_urls || []).length})</h4>
+      <div class="prospect-sources">${sources || '<i>(none)</i>'}</div>
+    </div>
+
+    <div class="cd-foot">
+      <div class="cd-meta">id: ${escape(p.id)} · discovered ${escape((p.discovered_at || "").slice(0, 10))} · status <span class="sponsor-status ${status.cls}">${status.label}</span></div>
+      <div class="cd-actions">
+        ${p.status === 'pending' ? `
+          <button class="btn outline" onclick="decideProspect('${escapeAttr(p.id)}','no');closeProspectDetail()">No</button>
+          <button class="btn outline" onclick="decideProspect('${escapeAttr(p.id)}','maybe','');closeProspectDetail()">Maybe</button>
+          <button class="btn gold" onclick="decideProspect('${escapeAttr(p.id)}','yes');closeProspectDetail()">Yes</button>
+        ` : p.status === 'maybe' ? `
+          <button class="btn outline" onclick="decideProspect('${escapeAttr(p.id)}','no');closeProspectDetail()">Reject</button>
+          <button class="btn gold" onclick="approveProspect('${escapeAttr(p.id)}');closeProspectDetail()">✓ Move to pipeline</button>
+        ` : `
+          <button class="btn outline" onclick="closeProspectDetail()">Close</button>
+        `}
+      </div>
+    </div>
+  `;
+
+  document.getElementById("prospect-detail-title").textContent = p.name;
+  document.getElementById("prospect-detail-body").innerHTML = html;
+  document.getElementById("prospect-detail-modal").classList.add("open");
+}
+
+function closeProspectDetail() {
+  document.getElementById("prospect-detail-modal").classList.remove("open");
+  PROSPECTS_STATE.detailId = null;
+}
+
+// ============================================================================
 // SPONSORS — Career Day annual sponsorship records.
 // Separate from UNIS (partnership pipeline) per CLAUDE.md decision:
 // different lifecycle, different stakeholders, different KPIs. One row per
@@ -5179,6 +5788,7 @@ function renderCurrentView() {
   if (viewId === "database")  renderDatabaseView();
   if (viewId === "outreach")  renderOutreachView();
   if (viewId === "followups") renderFollowupsView();
+  if (viewId === "prospects") renderProspectsView();
   if (viewId === "brochures") renderBrochuresView();
   if (viewId === "contracts") renderContractsView();
   if (viewId === "sponsors")  renderSponsorsView();
@@ -9249,6 +9859,16 @@ async function undoLastReset() {
       console.warn("[sponsor-undo] server write failed, kept locally:", e.message);
     }
     showSyncToast("✓ Sponsor restored", "ok");
+  } else if (snap.kind === "prospect-delete") {
+    // Prospects can't be re-inserted via PUT (no upsert endpoint by id) —
+    // re-trigger the sync and let the user re-discover. For now we just
+    // restore locally so the row reappears immediately; a future server-
+    // side restore endpoint could close the loop.
+    const p = snap.prospect;
+    PROSPECTS.push(p);
+    _writeLocalProspects(PROSPECTS);
+    if (STATE.view === "prospects") renderProspectsView();
+    showSyncToast("✓ Prospect restored locally (re-sync may overwrite if server still has it deleted)", "warn");
   } else if (snap.kind === "kb-reset") {
     // Restore the draft to whatever the user had before the reset. If they
     // never had a draft (currentDraft was null), clear instead — which
@@ -13968,6 +14588,7 @@ async function bootApp(opts = {}) {
   syncContractsFromServer();
   syncFollowupsFromServer();
   syncSponsorsFromServer();
+  syncProspectsFromServer();
   startPresence();
   try {
     await loadKnowledgeBase();
@@ -14027,6 +14648,7 @@ window.addEventListener("focus", () => {
   if (typeof syncContractsFromServer === "function")       syncContractsFromServer();
   if (typeof syncFollowupsFromServer === "function")       syncFollowupsFromServer();
   if (typeof syncSponsorsFromServer === "function")        syncSponsorsFromServer();
+  if (typeof syncProspectsFromServer === "function")       syncProspectsFromServer();
 });
 </script>
 </body>

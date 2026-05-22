@@ -13,3 +13,10 @@ weasyprint>=63.0
 # Jinja2 ships with Flask but we pin it explicitly because we depend on
 # it directly for the brief template.
 jinja2>=3.1
+# Prospect Discovery — Tavily is purpose-built for AI grounding, returns
+# clean web search results with content snippets. Used to feed Gemini
+# verifiable sources so we never hallucinate institutions.
+tavily-python>=0.5
+# URL-alive checks (HEAD requests) for the hallucination defense + ROR API
+# (Research Organization Registry) for university existence verification.
+requests>=2.31

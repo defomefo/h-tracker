@@ -385,6 +385,67 @@ def _ensure_schema():
             "CREATE INDEX IF NOT EXISTS idx_sponsors_tier  ON sponsors(sponsorship_tier)",
             "CREATE INDEX IF NOT EXISTS idx_sponsors_year  ON sponsors(event_year)",
             "CREATE INDEX IF NOT EXISTS idx_sponsors_linked ON sponsors(linked_entity_id)",
+            # ====================================================================
+            # PROSPECT DISCOVERY — AI-surfaced partnership candidates.
+            # The pipeline (UNIS) tracks what we know about; this is what we
+            # SHOULD know about. Hallucination defense lives in app code, not
+            # schema, but the `verification` JSON captures the result of each
+            # check so the UI can show a confidence indicator.
+            # ====================================================================
+            """CREATE TABLE IF NOT EXISTS prospect_candidates (
+                    id              TEXT PRIMARY KEY,
+                    name            TEXT NOT NULL,
+                    normalized_name TEXT NOT NULL,
+                    type            TEXT,
+                    country         TEXT,
+                    region          TEXT,
+                    primary_url     TEXT,
+                    description     TEXT,
+                    ai_reasoning    TEXT,
+                    ai_fit_score    INTEGER,
+                    source_urls     TEXT,
+                    suggested_programs TEXT,
+                    verification    TEXT,
+                    discovered_at   TEXT NOT NULL,
+                    discovered_via  TEXT,
+                    status          TEXT NOT NULL DEFAULT 'pending',
+                    approved_entity_id TEXT,
+                    search_run_id   TEXT
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospect_candidates(status)",
+            "CREATE INDEX IF NOT EXISTS idx_prospects_norm   ON prospect_candidates(normalized_name)",
+            "CREATE INDEX IF NOT EXISTS idx_prospects_run    ON prospect_candidates(search_run_id)",
+            # Decisions feed the learning loop (yes / no / maybe + reason)
+            """CREATE TABLE IF NOT EXISTS prospect_decisions (
+                    id              TEXT PRIMARY KEY,
+                    candidate_id    TEXT NOT NULL,
+                    decision        TEXT NOT NULL,
+                    reason          TEXT,
+                    decided_at      TEXT NOT NULL,
+                    decided_by      TEXT
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_decisions_candidate ON prospect_decisions(candidate_id)",
+            # Audit + cost tracking per search run
+            """CREATE TABLE IF NOT EXISTS prospect_search_runs (
+                    id              TEXT PRIMARY KEY,
+                    trigger_kind    TEXT NOT NULL,
+                    query           TEXT,
+                    criteria        TEXT,
+                    raw_count       INTEGER,
+                    filtered_count  INTEGER,
+                    surfaced_count  INTEGER,
+                    cost_estimate   REAL,
+                    notes           TEXT,
+                    run_at          TEXT NOT NULL,
+                    run_by          TEXT
+                )""",
+            # Distilled user preference profile (rebuilt periodically from decisions)
+            """CREATE TABLE IF NOT EXISTS prospect_user_profile (
+                    user_handle     TEXT PRIMARY KEY,
+                    profile_json    TEXT NOT NULL,
+                    distilled_at    TEXT NOT NULL,
+                    decision_count  INTEGER
+                )""",
         ]
         conn = _connect()
         try:
@@ -1843,6 +1904,570 @@ def sponsors_import():
         "updated":  updated,
         "errors":   errors,
     })
+
+
+# ============================================================================
+# PROSPECT DISCOVERY — AI-surfaced partnership candidates.
+# ----------------------------------------------------------------------------
+# Workflow: Tavily web search → Gemini structured output → 6-layer
+# hallucination filter → prospect_candidates table → user reviews + decides
+# (yes/no/maybe) → approved ones become UNIS entries.
+#
+# Hallucination defense (the whole point of the feature):
+#   1. Mandatory grounding — every candidate must cite ≥ 1 source URL
+#   2. URL alive check — HEAD/GET 200 for at least one source URL
+#   3. Authority cross-check — ROR API for universities (research org registry)
+#   4. UNIS dedupe — skip anything fuzzy-matched ≥ 80 with existing entity
+#   5. Past candidates dedupe — skip anything already in our prospect bucket
+#   6. Conservative output — never pad to hit a target count
+# ============================================================================
+TAVILY_API_KEY      = os.environ.get("TAVILY_API_KEY", "").strip()
+ROR_API             = "https://api.ror.org/organizations"
+PROSPECT_FUZZY_THRESHOLD = 80   # rapidfuzz token_set_ratio
+
+
+_tavily_client = None
+def _get_tavily():
+    """Lazy-load the Tavily client — keeps cold-start cheap when nobody
+    triggers discovery."""
+    global _tavily_client
+    if _tavily_client is None and TAVILY_API_KEY:
+        from tavily import TavilyClient
+        _tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
+    return _tavily_client
+
+
+def _normalize_prospect_name(raw):
+    """Same normalization rules as sponsors — strip legal suffixes, lowercase,
+    collapse whitespace. Keeps Bauli ↔ Bauli S.p.A. matchable."""
+    if not raw:
+        return ""
+    s = str(raw).strip().lower()
+    s = re.sub(r"\s+", " ", s)
+    for pat in [r"\bs\.p\.a\.?", r"\bspa\b", r"\bs\.r\.l\.?", r"\bsrl\b",
+                r"\bscpa\b", r"\bs\.c\.p\.a\.?", r"\bgmbh\b", r"\bsb\b",
+                r"\buniversity of\b", r"\buniversit[aàá] (di|del|della|degli)\b"]:
+        s = re.sub(pat, "", s)
+    s = re.sub(r"[.,'\"`]", "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _check_url_alive(url, timeout=4):
+    """Quick liveness probe. HEAD first, fall back to GET on 405/403. Returns
+    True only if 200 ≤ status < 400 within the timeout."""
+    if not url or not url.startswith(("http://", "https://")):
+        return False
+    try:
+        import requests as _r
+        for method in ("head", "get"):
+            try:
+                resp = _r.request(method, url, timeout=timeout, allow_redirects=True,
+                                  headers={"User-Agent": "h-tracker-prospect/1.0"})
+                if 200 <= resp.status_code < 400:
+                    return True
+                if resp.status_code in (403, 405) and method == "head":
+                    continue   # try GET
+            except Exception:
+                if method == "head":
+                    continue
+                return False
+        return False
+    except Exception:
+        return False
+
+
+def _check_ror_existence(name, country=None):
+    """Query Research Organization Registry for a matching institution.
+    Returns ROR id (e.g. 'https://ror.org/...') if found, else None.
+    Free, public, no API key — but rate-limited so we cap usage."""
+    if not name or len(name) < 3:
+        return None
+    try:
+        import requests as _r
+        params = {"query": name}
+        resp = _r.get(ROR_API, params=params, timeout=5,
+                      headers={"User-Agent": "h-tracker-prospect/1.0"})
+        if not resp.ok:
+            return None
+        data = resp.json()
+        items = data.get("items") or []
+        if not items:
+            return None
+        # Take the top match (ROR ranks by relevance). Optional country filter.
+        for item in items[:3]:
+            top_name = (item.get("name") or "").lower()
+            if name.lower() in top_name or top_name in name.lower():
+                if country:
+                    countries = [c.get("country", {}).get("country_code", "").upper()
+                                 for c in item.get("country", []) if isinstance(c, dict)]
+                    if countries and country.upper()[:2] not in [c[:2] for c in countries]:
+                        continue
+                return item.get("id")
+        return None
+    except Exception as e:
+        print(f"[ror] check failed for {name!r}: {e}")
+        return None
+
+
+def _tavily_search(query, max_results=10):
+    """Run a single Tavily search. Returns list of {url, content, title}.
+    Returns [] on failure — caller decides whether to abort or proceed."""
+    client = _get_tavily()
+    if not client:
+        return []
+    try:
+        result = client.search(query=query, search_depth="advanced",
+                               max_results=max_results, include_answer=False)
+        return result.get("results", [])
+    except Exception as e:
+        print(f"[tavily] search failed: {e}")
+        return []
+
+
+def _build_prospect_prompt(criteria, search_results, existing_names, profile_json):
+    """Construct the Gemini prompt for structured candidate extraction.
+    Hard constraint: candidates must cite source URLs from the search results."""
+    crit_lines = []
+    if criteria.get("type"):    crit_lines.append(f"- Entity type: {criteria['type']}")
+    if criteria.get("country"): crit_lines.append(f"- Country / region: {criteria['country']}")
+    if criteria.get("focus"):   crit_lines.append(f"- Focus: {criteria['focus']}")
+    if criteria.get("query"):   crit_lines.append(f"- Free-text query: {criteria['query']}")
+    crit_str = "\n".join(crit_lines) or "(no specific criteria)"
+
+    # Trim source content to keep prompt cheap
+    src_lines = []
+    for i, r in enumerate(search_results[:15], 1):
+        url   = r.get("url", "")
+        title = (r.get("title") or "")[:140]
+        snip  = (r.get("content") or "")[:600]
+        src_lines.append(f"[{i}] {title}\n    URL: {url}\n    SNIPPET: {snip}")
+    src_str = "\n\n".join(src_lines) or "(no search results)"
+
+    exclude_str = ", ".join(existing_names[:60]) if existing_names else "(none)"
+
+    profile_str = profile_json or "(no preference profile yet — first searches)"
+
+    return f"""You are a partnership prospect analyst for H-FARM College, an Italian
+private higher-education institution. You are surfacing NEW prospective
+partners (universities, agencies, schools, or student organizations) for
+the global partnerships team to evaluate.
+
+REQUIRED OUTPUT: a JSON array of candidate objects, NEVER more than what
+the search results actually support. If only 2 candidates are well-grounded,
+return 2. NEVER invent facts. NEVER include a candidate whose existence
+isn't supported by at least one URL in the search results below.
+
+SEARCH CRITERIA:
+{crit_str}
+
+EXISTING PARTNERS (DO NOT SUGGEST any of these — we already have them):
+{exclude_str}
+
+USER PREFERENCE PROFILE (from past decisions, lean toward this):
+{profile_str}
+
+WEB SEARCH RESULTS (your ONLY source of truth — cite indices [N] in your
+reasoning so the user can verify):
+{src_str}
+
+For each genuinely new prospect you find in the search results, produce:
+- name:             official organization name as it appears in the source
+- type:             university | agency | school | student_organization
+- country:          ISO country name
+- region:           continent (Europe / Asia / North America / etc.)
+- primary_url:      the most authoritative URL from the search results
+- description:      1-sentence summary of who they are
+- fit_score:        integer 0-100, your honest assessment of fit
+- fit_reasoning:    2-3 sentences citing search-result indices [N] explaining
+                    why this fits H-FARM (or doesn't). Be specific.
+- source_urls:      array of at least 2 URLs from the search results
+- suggested_programs: array of 1-3 H-FARM program names that might match
+                    (Coding Academy, Data & AI, Game Design, Fashion AI Lab,
+                    Startup Summer, etc.) — leave [] if unsure
+
+If you can't find any genuinely new well-grounded prospects, return {{"candidates": []}}.
+"""
+
+
+def _filter_candidates(raw_candidates, existing_unis_names, db):
+    """6-layer hallucination filter. Returns (filtered_list, verification_meta_per_id)."""
+    from rapidfuzz import fuzz
+
+    # Pre-fetch past candidate names for dedupe (single DB hit)
+    past_rows = db.execute("SELECT normalized_name FROM prospect_candidates").fetchall()
+    past_names = {(r["normalized_name"] or "").strip() for r in past_rows if r["normalized_name"]}
+
+    existing_norm = [_normalize_prospect_name(n) for n in (existing_unis_names or []) if n]
+
+    out, verifications = [], []
+    for c in raw_candidates:
+        name = (c.get("name") or "").strip()
+        if not name:
+            continue
+        verification = {
+            "has_source":    False,
+            "url_alive":     False,
+            "ror_match":     None,
+            "dup_unis":      False,
+            "dup_past":      False,
+            "all_passed":    False,
+            "warnings":      [],
+        }
+        # Layer 1 — mandatory grounding
+        srcs = [u for u in (c.get("source_urls") or []) if u and u.startswith(("http://", "https://"))]
+        if not srcs:
+            verification["warnings"].append("no source URLs")
+            continue
+        verification["has_source"] = True
+
+        # Layer 2 — URL alive
+        any_alive = False
+        for u in srcs[:3]:
+            if _check_url_alive(u):
+                any_alive = True
+                break
+        verification["url_alive"] = any_alive
+        if not any_alive:
+            verification["warnings"].append("no live source URL")
+            continue
+
+        # Layer 3 — ROR cross-check (only for universities, others get NA)
+        if (c.get("type") or "").lower() == "university":
+            ror = _check_ror_existence(name, c.get("country"))
+            verification["ror_match"] = ror
+            if not ror:
+                verification["warnings"].append("not in ROR — may be hallucinated or obscure")
+                # Don't reject outright (small/new universities may not be in ROR),
+                # but UI will badge "unverified"
+
+        # Layer 4 — UNIS dedupe
+        norm = _normalize_prospect_name(name)
+        for existing in existing_norm:
+            if existing and fuzz.token_set_ratio(norm, existing) >= PROSPECT_FUZZY_THRESHOLD:
+                verification["dup_unis"] = True
+                break
+        if verification["dup_unis"]:
+            verification["warnings"].append("already in UNIS")
+            continue
+
+        # Layer 5 — past candidates dedupe
+        if norm in past_names:
+            verification["dup_past"] = True
+            verification["warnings"].append("already surfaced previously")
+            continue
+
+        # If we got here, all hard layers passed
+        verification["all_passed"] = True
+        out.append(c)
+        verifications.append((name, verification))
+    return out, verifications
+
+
+def _prospect_row_to_dict(row):
+    if not row:
+        return None
+    try:
+        source_urls = json.loads(row["source_urls"]) if row["source_urls"] else []
+    except Exception:
+        source_urls = []
+    try:
+        suggested_programs = json.loads(row["suggested_programs"]) if row["suggested_programs"] else []
+    except Exception:
+        suggested_programs = []
+    try:
+        verification = json.loads(row["verification"]) if row["verification"] else {}
+    except Exception:
+        verification = {}
+    return {
+        "id":                  row["id"],
+        "name":                row["name"],
+        "normalized_name":     row["normalized_name"],
+        "type":                row["type"] or "",
+        "country":             row["country"] or "",
+        "region":              row["region"] or "",
+        "primary_url":         row["primary_url"] or "",
+        "description":         row["description"] or "",
+        "ai_reasoning":        row["ai_reasoning"] or "",
+        "ai_fit_score":        row["ai_fit_score"],
+        "source_urls":         source_urls,
+        "suggested_programs":  suggested_programs,
+        "verification":        verification,
+        "discovered_at":       row["discovered_at"],
+        "discovered_via":      row["discovered_via"] or "",
+        "status":              row["status"] or "pending",
+        "approved_entity_id":  row["approved_entity_id"] or "",
+        "search_run_id":       row["search_run_id"] or "",
+    }
+
+
+@app.route("/api/prospects", methods=["GET"])
+@auth_required
+def prospects_list():
+    """List candidates; filters: status, type, country, search_run_id."""
+    status  = (request.args.get("status") or "").strip()
+    ptype   = (request.args.get("type")   or "").strip()
+    country = (request.args.get("country") or "").strip()
+    run_id  = (request.args.get("run_id") or "").strip()
+    clauses, params = [], []
+    if status:  clauses.append("status = ?");        params.append(status)
+    if ptype:   clauses.append("type = ?");          params.append(ptype)
+    if country: clauses.append("country LIKE ?");    params.append(f"%{country}%")
+    if run_id:  clauses.append("search_run_id = ?"); params.append(run_id)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    sql = (
+        "SELECT * FROM prospect_candidates " + where + " "
+        "ORDER BY CASE status WHEN 'pending' THEN 1 WHEN 'maybe' THEN 2 "
+        "                     WHEN 'approved' THEN 3 ELSE 4 END, "
+        "         ai_fit_score DESC, discovered_at DESC"
+    )
+    db = get_db()
+    rows = db.execute(sql, tuple(params)).fetchall()
+    return jsonify({"prospects": [_prospect_row_to_dict(r) for r in rows]})
+
+
+@app.route("/api/prospects/<prospect_id>", methods=["GET"])
+@auth_required
+def prospects_get(prospect_id):
+    db = get_db()
+    row = db.execute("SELECT * FROM prospect_candidates WHERE id = ?", (prospect_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    # Also fetch decisions for this candidate
+    decisions = db.execute(
+        "SELECT id, decision, reason, decided_at, decided_by "
+        "FROM prospect_decisions WHERE candidate_id = ? "
+        "ORDER BY decided_at DESC", (prospect_id,)
+    ).fetchall()
+    out = _prospect_row_to_dict(row)
+    out["decisions"] = [dict(d) for d in decisions]
+    return jsonify(out)
+
+
+@app.route("/api/prospects/discover", methods=["POST"])
+@auth_required
+def prospects_discover():
+    """Run a single discovery cycle. Body:
+       { query: str, type?: str, country?: str, focus?: str, limit?: int,
+         existing_entity_names?: [str] }
+    Returns the search run + the candidates surfaced.
+    """
+    if not GEMINI_KEY:
+        return jsonify({"error": "GEMINI_API_KEY not configured"}), 500
+    if not TAVILY_API_KEY:
+        return jsonify({"error": "TAVILY_API_KEY not configured — set it in Render env vars"}), 500
+
+    body = request.get_json(force=True, silent=True) or {}
+    criteria = {
+        "query":   (body.get("query")   or "").strip(),
+        "type":    (body.get("type")    or "").strip(),
+        "country": (body.get("country") or "").strip(),
+        "focus":   (body.get("focus")   or "").strip(),
+    }
+    limit = max(1, min(15, int(body.get("limit") or 5)))
+    existing_names = body.get("existing_entity_names") or []
+
+    # Compose the search query — type + country + free-text combined
+    search_terms = []
+    if criteria["type"] == "university":     search_terms.append("universities")
+    elif criteria["type"] == "agency":       search_terms.append("education agencies")
+    elif criteria["type"] == "school":       search_terms.append("high schools")
+    elif criteria["type"] == "student_organization": search_terms.append("student organizations")
+    else:                                     search_terms.append("partnership prospects")
+    if criteria["country"]:                  search_terms.append("in " + criteria["country"])
+    if criteria["focus"]:                    search_terms.append("focusing on " + criteria["focus"])
+    if criteria["query"]:                    search_terms.append(criteria["query"])
+    final_query = " ".join(search_terms).strip() or "international higher-education partnerships"
+
+    # ----- Step 1: Tavily web search -----
+    search_results = _tavily_search(final_query, max_results=max(8, limit * 2))
+    raw_count = len(search_results)
+    if not search_results:
+        return jsonify({"ok": False, "error": "no search results — Tavily returned empty",
+                        "criteria": criteria, "query": final_query}), 200
+
+    # ----- Step 2: Gemini structured output (no fancy schema; ask for JSON) -----
+    # Pull the user's preference profile if we have one
+    user_handle = (request.headers.get("X-Display-Name") or "").strip()
+    profile_json = None
+    if user_handle:
+        try:
+            pr = get_db().execute(
+                "SELECT profile_json FROM prospect_user_profile WHERE user_handle = ?",
+                (user_handle,),
+            ).fetchone()
+            if pr and pr["profile_json"]:
+                profile_json = pr["profile_json"]
+        except Exception:
+            pass
+
+    prompt = _build_prospect_prompt(criteria, search_results, existing_names, profile_json)
+
+    try:
+        from google.genai import types as _gtypes
+        client_ai = genai.Client(api_key=GEMINI_KEY)
+        resp = client_ai.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=_gtypes.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2,
+                max_output_tokens=4096,
+            ),
+        )
+        raw_text = (resp.text or "").strip()
+    except Exception as e:
+        print(f"[prospects] Gemini failed: {e}")
+        return jsonify({"ok": False, "error": f"Gemini call failed: {e}"}), 500
+
+    try:
+        parsed = json.loads(raw_text)
+        raw_candidates = parsed.get("candidates") or []
+        if not isinstance(raw_candidates, list):
+            raw_candidates = []
+    except Exception as e:
+        print(f"[prospects] JSON parse failed: {e}; raw: {raw_text[:400]}")
+        return jsonify({"ok": False, "error": "Gemini returned non-JSON output",
+                        "raw_preview": raw_text[:400]}), 500
+
+    # ----- Step 3: 6-layer hallucination filter -----
+    db = get_db()
+    filtered, verifications = _filter_candidates(raw_candidates, existing_names, db)
+    filtered_count = len(filtered)
+
+    # ----- Step 4: Persist surfaced candidates -----
+    run_id = "run-" + _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%d%H%M%S") + "-" + secrets.token_hex(3)
+    now    = _now_iso()
+    user_label = user_handle or None
+    via = "manual:" + (criteria["query"] or final_query)[:120]
+
+    inserted_ids = []
+    for c, (_n, ver) in zip(filtered, verifications):
+        norm = _normalize_prospect_name(c.get("name") or "")
+        cid  = "prospect-" + secrets.token_hex(6)
+        db.execute(
+            "INSERT INTO prospect_candidates "
+            "(id, name, normalized_name, type, country, region, primary_url, description, "
+            " ai_reasoning, ai_fit_score, source_urls, suggested_programs, verification, "
+            " discovered_at, discovered_via, status, search_run_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                cid, c.get("name"), norm, (c.get("type") or "").lower(),
+                c.get("country"), c.get("region"),
+                c.get("primary_url"), c.get("description"),
+                c.get("fit_reasoning"), int(c.get("fit_score") or 0),
+                json.dumps(c.get("source_urls") or []),
+                json.dumps(c.get("suggested_programs") or []),
+                json.dumps(ver),
+                now, via, "pending", run_id,
+            ),
+        )
+        inserted_ids.append(cid)
+
+    # ----- Step 5: Audit row for this run -----
+    db.execute(
+        "INSERT INTO prospect_search_runs "
+        "(id, trigger_kind, query, criteria, raw_count, filtered_count, surfaced_count, "
+        " cost_estimate, run_at, run_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (run_id, "manual", final_query, json.dumps(criteria),
+         raw_count, len(raw_candidates), filtered_count,
+         0.05,    # rough Tavily + Gemini cost estimate per run
+         now, user_label),
+    )
+    db.commit()
+    _record_edit("prospect", "discover", run_id)
+
+    # Return the surfaced candidates
+    surfaced = []
+    for cid in inserted_ids:
+        row = db.execute("SELECT * FROM prospect_candidates WHERE id = ?", (cid,)).fetchone()
+        surfaced.append(_prospect_row_to_dict(row))
+    return jsonify({
+        "ok":           True,
+        "run_id":       run_id,
+        "query":        final_query,
+        "raw_count":    raw_count,
+        "ai_proposed":  len(raw_candidates),
+        "surfaced":     filtered_count,
+        "candidates":   surfaced,
+    })
+
+
+@app.route("/api/prospects/<prospect_id>/decide", methods=["POST"])
+@auth_required
+def prospects_decide(prospect_id):
+    """Record a yes/no/maybe decision + optional reason. Updates the
+    candidate's status. Feeds the learning loop (profile distillation
+    is built on top of these rows)."""
+    body = request.get_json(force=True, silent=True) or {}
+    decision = (body.get("decision") or "").strip().lower()
+    if decision not in ("yes", "no", "maybe"):
+        return jsonify({"error": "decision must be yes / no / maybe"}), 400
+    reason = (body.get("reason") or "").strip()
+    db = get_db()
+    cand = db.execute("SELECT id FROM prospect_candidates WHERE id = ?", (prospect_id,)).fetchone()
+    if not cand:
+        return jsonify({"error": "candidate not found"}), 404
+    decided_by = (request.headers.get("X-Display-Name") or "").strip() or None
+    did = "decision-" + secrets.token_hex(5)
+    now = _now_iso()
+    db.execute(
+        "INSERT INTO prospect_decisions (id, candidate_id, decision, reason, decided_at, decided_by) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (did, prospect_id, decision, reason or None, now, decided_by),
+    )
+    # Update candidate status. "yes" stays as "pending" until explicit /approve
+    # creates the UNIS entry; we use a separate transition to be deliberate.
+    new_status = {"yes": "maybe", "no": "rejected", "maybe": "maybe"}[decision]
+    # If user said yes, mark as "approved-intent" via the maybe bucket until
+    # they explicitly hit Approve; that way "yes" alone never auto-creates UNIS.
+    if decision == "yes":
+        new_status = "maybe"   # caller should follow up with /approve
+    db.execute("UPDATE prospect_candidates SET status = ? WHERE id = ?", (new_status, prospect_id))
+    db.commit()
+    _record_edit("prospect", "decide", prospect_id)
+    return jsonify({"ok": True, "decision_id": did, "new_status": new_status})
+
+
+@app.route("/api/prospects/<prospect_id>/approve", methods=["POST"])
+@auth_required
+def prospects_approve(prospect_id):
+    """Move an approved candidate to the UNIS pipeline.
+    Generates a new entity id, marks the candidate as approved+linked, and
+    returns the seed payload the frontend can use to push into UNIS.
+    The frontend handles the actual UNIS push (since UNIS lives in the
+    client's in-memory state — server doesn't own it)."""
+    db = get_db()
+    row = db.execute("SELECT * FROM prospect_candidates WHERE id = ?", (prospect_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    new_entity_id = "ent-" + secrets.token_hex(6)
+    db.execute(
+        "UPDATE prospect_candidates SET status = ?, approved_entity_id = ? WHERE id = ?",
+        ("approved", new_entity_id, prospect_id),
+    )
+    db.commit()
+    _record_edit("prospect", "approve", prospect_id)
+    rec = _prospect_row_to_dict(row)
+    return jsonify({
+        "ok": True,
+        "candidate":     rec,
+        "new_entity_id": new_entity_id,
+    })
+
+
+@app.route("/api/prospects/<prospect_id>", methods=["DELETE"])
+@auth_required
+def prospects_delete(prospect_id):
+    db = get_db()
+    cur = db.execute("DELETE FROM prospect_candidates WHERE id = ?", (prospect_id,))
+    db.execute("DELETE FROM prospect_decisions WHERE candidate_id = ?", (prospect_id,))
+    db.commit()
+    if cur.rowcount == 0:
+        return jsonify({"error": "not found"}), 404
+    _record_edit("prospect", "delete", prospect_id)
+    return jsonify({"ok": True})
 
 
 # ============================================================================
