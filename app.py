@@ -2306,29 +2306,94 @@ def prospects_discover():
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
+        # response_schema enforces the JSON shape at the model level.
+        # Gemini 2.5 supports the dict-form schema with UPPERCASE type names.
+        # This is the primary defense against "Gemini returned non-JSON output";
+        # the defensive parser below is the fallback for when even this fails.
+        prospect_schema = {
+            "type": "OBJECT",
+            "properties": {
+                "candidates": {
+                    "type": "ARRAY",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "name":           {"type": "STRING"},
+                            "type":           {"type": "STRING"},
+                            "country":        {"type": "STRING"},
+                            "region":         {"type": "STRING"},
+                            "primary_url":    {"type": "STRING"},
+                            "description":    {"type": "STRING"},
+                            "fit_score":      {"type": "INTEGER"},
+                            "fit_reasoning":  {"type": "STRING"},
+                            "source_urls":    {"type": "ARRAY", "items": {"type": "STRING"}},
+                            "suggested_programs": {"type": "ARRAY", "items": {"type": "STRING"}},
+                        },
+                        "required": ["name", "type", "country", "primary_url", "fit_reasoning", "source_urls"],
+                    },
+                }
+            },
+            "required": ["candidates"],
+        }
         resp = client_ai.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
             config=_gtypes.GenerateContentConfig(
                 response_mime_type="application/json",
+                response_schema=prospect_schema,
                 temperature=0.2,
                 max_output_tokens=4096,
             ),
         )
         raw_text = (resp.text or "").strip()
+        # Always log the first ~500 chars so we can debug from Render logs
+        # without needing to add ad-hoc print statements later.
+        print(f"[prospects] Gemini returned {len(raw_text)} chars; first 300: {raw_text[:300]!r}")
     except Exception as e:
         print(f"[prospects] Gemini failed: {e}")
         return jsonify({"ok": False, "error": f"Gemini call failed: {e}"}), 500
 
+    # Defensive JSON parsing — even with response_schema set, models
+    # occasionally wrap output in markdown fences or prepend explanatory text.
+    # We handle: pure JSON / fenced JSON / JSON inside mixed text /
+    # plain-text "no candidates" fallback.
+    def _parse_loose_json(text):
+        if not text:
+            return {"candidates": []}
+        s = text.strip()
+        # Strip ```json … ``` (or ``` … ```) fences
+        if s.startswith("```"):
+            s = re.sub(r"^```(?:json)?\s*", "", s)
+            s = re.sub(r"\s*```\s*$", "", s)
+            s = s.strip()
+        # Direct parse
+        try:
+            return json.loads(s)
+        except json.JSONDecodeError:
+            pass
+        # Find first { and last } and try the slice
+        i, j = s.find("{"), s.rfind("}")
+        if i >= 0 and j > i:
+            try:
+                return json.loads(s[i:j+1])
+            except json.JSONDecodeError:
+                pass
+        # "No results" plain-text fallback
+        low = s.lower()
+        if any(p in low for p in ["no candidate", "no suitable", "no relevant", "no new", "no prospect", "could not find"]):
+            return {"candidates": []}
+        raise ValueError("could not extract JSON")
+
     try:
-        parsed = json.loads(raw_text)
+        parsed = _parse_loose_json(raw_text)
         raw_candidates = parsed.get("candidates") or []
         if not isinstance(raw_candidates, list):
             raw_candidates = []
     except Exception as e:
-        print(f"[prospects] JSON parse failed: {e}; raw: {raw_text[:400]}")
+        print(f"[prospects] JSON parse failed: {e}; raw: {raw_text[:600]}")
         return jsonify({"ok": False, "error": "Gemini returned non-JSON output",
-                        "raw_preview": raw_text[:400]}), 500
+                        "raw_preview": raw_text[:600],
+                        "parse_error": str(e)}), 500
 
     # ----- Step 3: 6-layer hallucination filter -----
     db = get_db()
