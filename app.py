@@ -2403,7 +2403,18 @@ def prospects_discover():
 
     try:
         parsed = _parse_loose_json(raw_text)
-        raw_candidates = parsed.get("candidates") or []
+        # Gemini sometimes returns the array directly ([...]) and sometimes
+        # the wrapper object ({"candidates": [...]}) — accept both.
+        if isinstance(parsed, list):
+            raw_candidates = parsed
+        elif isinstance(parsed, dict):
+            raw_candidates = parsed.get("candidates") or []
+            # Or sometimes a single candidate object without the wrapper —
+            # detect via the presence of a "name" field.
+            if not raw_candidates and parsed.get("name"):
+                raw_candidates = [parsed]
+        else:
+            raw_candidates = []
         if not isinstance(raw_candidates, list):
             raw_candidates = []
     except Exception as e:
