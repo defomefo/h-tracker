@@ -2233,6 +2233,92 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .brochure-link:hover{background:var(--navy);color:#fff}
 .brochure-placeholder{margin-top:8px;font-size:10px;font-style:italic;color:var(--ink-soft);padding:6px 0;text-align:center}
 
+/* ============================================================
+   BROCHURES & ASSETS — Stitch redesign (.br-*)
+   ----------------------------------------------------------
+   Replaces the simple .brochure-* grid with a richer layout:
+   category-filtered card grid + Recently shared sidebar.
+   Category accent color flows through --catc CSS variable
+   set per .br-card and per .br-chip via .cat-* classes.
+   Old .brochure-* CSS kept above for backward compat (unused
+   by the new renderBrochuresView).
+============================================================ */
+.br-shell{padding:24px 28px 60px;max-width:1500px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.br-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.br-title-block{display:flex;flex-direction:column;gap:4px;max-width:680px}
+.br-title{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--ink);line-height:1.15}
+.br-sub{font-size:13px;color:var(--ink-soft);line-height:1.5}
+.br-head-actions{display:flex;gap:8px;flex-shrink:0}
+.br-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.3px;cursor:pointer;border:1px solid transparent;text-decoration:none;transition:all var(--motion-fast,140ms) var(--ease-standard,ease)}
+.br-btn.primary{background:var(--hf-red);color:#fff;border-color:var(--hf-red)}
+.br-btn.primary:hover{background:var(--hf-red-deep);border-color:var(--hf-red-deep);transform:translateY(-1px)}
+.br-btn.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
+.br-btn.ghost:hover{border-color:var(--ink)}
+.br-btn.upload{background:transparent;border:1px dashed var(--ink-soft);color:var(--ink-soft);padding:11px 18px;width:100%;justify-content:center}
+.br-btn.upload:hover{border-color:var(--hf-red);color:var(--hf-red);background:rgba(217,83,79,.04)}
+
+/* Category palette — drives both filter chips and card accents via --catc */
+.cat-all          {--catc:#1A1A1A}
+.cat-general      {--catc:#D9534F}
+.cat-corporate    {--catc:#2D3150}
+.cat-summer       {--catc:#C97A1A}
+.cat-university   {--catc:#2E7D5B}
+.cat-institutional{--catc:#1F6FB4}
+.cat-legal        {--catc:#6B4C7D}
+.cat-other        {--catc:#6E6E6E}
+
+/* Filter chips row */
+.br-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.br-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;background:#fff;border:1px solid var(--rule);border-radius:16px;color:var(--ink-soft);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.2px;cursor:pointer;transition:all var(--motion-fast,140ms) var(--ease-standard,ease)}
+.br-chip-dot{width:6px;height:6px;border-radius:50%;background:var(--catc)}
+.br-chip-count{background:var(--paper);color:var(--ink-mute);font-size:10px;padding:1px 7px;border-radius:8px;font-weight:800;min-width:22px;text-align:center}
+.br-chip:hover{border-color:var(--catc);color:var(--ink)}
+.br-chip.on{background:var(--catc);color:#fff;border-color:var(--catc)}
+.br-chip.on .br-chip-dot{background:#fff}
+.br-chip.on .br-chip-count{background:rgba(255,255,255,.18);color:#fff}
+
+/* Body grid: cards left, sidebar right */
+.br-body{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+.br-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-content:start}
+
+/* Card */
+.br-card{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:18px 20px 16px;display:flex;flex-direction:column;gap:10px;transition:transform var(--motion-base,240ms) var(--ease-elegant,ease),box-shadow var(--motion-base,240ms) var(--ease-elegant,ease),border-color var(--motion-fast,140ms) var(--ease-standard,ease);position:relative}
+.br-card.ready{border-top:3px solid var(--catc);padding-top:16px}
+.br-card.ready:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(10,37,64,.07);border-color:var(--catc)}
+.br-card.pending{border:1px dashed var(--rule);background:#fff}
+.br-card.pending{border-color:var(--catc);opacity:.85}
+.br-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.br-cat{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:1.6px;font-weight:800;color:var(--catc);text-transform:uppercase}
+.br-cat-dot{width:6px;height:6px;border-radius:50%;background:var(--catc)}
+.br-file{font-family:'Consolas','SF Mono',Menlo,monospace;font-size:11px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:var(--paper);border-radius:4px;font-weight:600;white-space:nowrap}
+.br-file b{color:var(--ink);font-weight:800;letter-spacing:.3px}
+.br-file-sep{color:var(--ink-mute)}
+.br-card-title{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.3}
+.br-card-desc{font-size:12px;color:var(--ink-soft);line-height:1.5;flex:1}
+.br-card-meta{display:flex;gap:0;padding:10px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.br-meta-item{display:flex;flex-direction:column;gap:2px;flex:1;padding-right:8px;border-right:1px solid var(--rule)}
+.br-meta-item:last-child{border-right:none;padding-right:0;padding-left:8px}
+.br-meta-item:first-child{padding-left:0}
+.br-meta-key{font-size:9px;letter-spacing:1px;color:var(--ink-mute);text-transform:uppercase;font-weight:800}
+.br-meta-val{font-size:12px;color:var(--ink);font-weight:700}
+.br-card-foot{display:flex;gap:8px;align-items:center}
+.br-card-foot .br-btn{flex:1;justify-content:center;padding:8px 12px;font-size:11px}
+.br-card-foot .br-btn.primary{flex:2}
+.br-pending-tag{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-mute);font-weight:700;padding:2px 8px;background:var(--paper);border-radius:4px}
+
+/* Recently-shared sidebar */
+.br-side{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:18px 18px 14px;display:flex;flex-direction:column;gap:6px;height:fit-content;position:sticky;top:14px}
+.br-side-eyebrow{font-size:10px;letter-spacing:1.8px;color:var(--hf-red);font-weight:800;text-transform:uppercase}
+.br-side-title{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.2px;padding-bottom:12px;border-bottom:2px solid var(--hf-red);margin-bottom:6px}
+.br-side-empty{font-size:12px;color:var(--ink-soft);font-style:italic;line-height:1.5;padding:14px 4px}
+.br-side-empty small{display:block;margin-top:6px;color:var(--ink-mute);font-size:11px;font-style:normal}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .br-body{grid-template-columns:1fr}
+  .br-side{position:static}
+}
+
 /* CONTRACTS */
 .contracts-shell{padding:22px 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .contracts-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
@@ -14579,21 +14665,180 @@ function renderOutreachView() {
 }
 
 // BROCHURES — list loaded from data/brochures.json (editable in Admin view)
+// ============================================================
+// BROCHURES & ASSETS — Stitch redesign
+// ----------------------------------------------------------
+// Card grid filtered by category chips + Recently-shared
+// sidebar (currently empty-state since we don't track per-
+// brochure shares yet; the layout slot is ready for when
+// kv_store.namespace="brochure_share" gets added).
+// Card data (tag/title/desc/url) comes from BROCHURES which
+// is loaded from data/brochures.json at boot; missing fields
+// (pages/lang/updated/file-size) render as "—".
+// ============================================================
+let _brochuresFilter = "all";   // active category, sticky across re-renders
+
+function _broCategoryClass(tag) {
+  const k = String(tag || "").toLowerCase().trim();
+  // Map known tags to the CSS .cat-* classes; unknown → 'other' (grey)
+  if (k.startsWith("general"))      return "cat-general";
+  if (k.startsWith("corporate"))    return "cat-corporate";
+  if (k.startsWith("summer"))       return "cat-summer";
+  if (k.startsWith("univ"))         return "cat-university";
+  if (k.startsWith("institutional"))return "cat-institutional";
+  if (k.startsWith("legal"))        return "cat-legal";
+  return "cat-other";
+}
+
+function _broCategoryLabel(tag) {
+  if (!tag) return "Other";
+  const s = String(tag).trim().toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function renderBrochuresView() {
   const el = document.getElementById("view-brochures");
-  const brochures = BROCHURES;
-  let html = `<div class="view-header"><h1>Brochures &amp; assets</h1><p>Resources you can send. Official H-FARM College links open in a new tab. Edit this list in the Admin view.</p></div>`;
-  html += `<div class="brochure-grid">`;
-  brochures.forEach(b => {
-    html += `<div class="brochure-card">
-      <div class="brochure-tag">${escape(b.tag)}</div>
-      <div class="brochure-title">${escape(b.title)}</div>
-      <div class="brochure-desc">${escape(b.desc)}</div>
-      ${b.url ? `<a class="brochure-link" href="${b.url}" target="_blank">Open</a>` : '<span class="brochure-placeholder">Not yet linked</span>'}
-    </div>`;
+  if (!el) return;
+  const items = BROCHURES || [];
+
+  // Build category counts (always show All + each category that has items)
+  const catCounts = { all: items.length };
+  items.forEach(b => {
+    const cls = _broCategoryClass(b.tag);
+    catCounts[cls] = (catCounts[cls] || 0) + 1;
   });
-  html += `</div>`;
-  el.innerHTML = html;
+
+  const filtered = _brochuresFilter === "all"
+    ? items
+    : items.filter(b => _broCategoryClass(b.tag) === _brochuresFilter);
+
+  // Filter chips — fixed canonical order; only include cats with at least 1 item
+  const catOrder = ["all", "cat-general", "cat-corporate", "cat-summer", "cat-university", "cat-institutional", "cat-legal", "cat-other"];
+  const catLabels = {
+    "all": "All",
+    "cat-general":      "General",
+    "cat-corporate":    "Corporate",
+    "cat-summer":       "Summer",
+    "cat-university":   "University",
+    "cat-institutional":"Institutional",
+    "cat-legal":        "Legal",
+    "cat-other":        "Other",
+  };
+  const chipsHtml = catOrder
+    .filter(k => k === "all" || (catCounts[k] || 0) > 0)
+    .map(k => `<button class="br-chip ${k} ${_brochuresFilter === k ? 'on' : ''}" onclick="_broApplyFilter('${k}')">
+        <span class="br-chip-dot"></span>${escape(catLabels[k])}<span class="br-chip-count">${catCounts[k] || 0}</span>
+      </button>`).join("");
+
+  // Card grid
+  const cardsHtml = filtered.length
+    ? filtered.map(b => {
+        const cls    = _broCategoryClass(b.tag);
+        const label  = _broCategoryLabel(b.tag);
+        const isReady = !!(b.url && String(b.url).trim());
+        const fileTag = isReady
+          ? `<div class="br-file"><b>PDF</b><span class="br-file-sep">·</span>${escape(b.size || "—")}</div>`
+          : `<div class="br-file"><b>NOT YET LINKED</b></div>`;
+        const meta = `<div class="br-card-meta">
+          <div class="br-meta-item"><div class="br-meta-key">Pages</div><div class="br-meta-val">${escape(b.pages || "—")}</div></div>
+          <div class="br-meta-item"><div class="br-meta-key">Lang</div><div class="br-meta-val">${escape(b.lang || "—")}</div></div>
+          <div class="br-meta-item"><div class="br-meta-key">Updated</div><div class="br-meta-val">${escape(b.updated || "—")}</div></div>
+        </div>`;
+        const foot = isReady
+          ? `<div class="br-card-foot">
+              <a class="br-btn primary" href="${escapeAttr(b.url)}" target="_blank" rel="noopener">↗ Open</a>
+              <button class="br-btn ghost" onclick="_broCopyShareLink('${escapeAttr(b.url)}','${escapeAttr(b.title)}')">⎘ Share link</button>
+            </div>`
+          : `<div class="br-card-foot">
+              <button class="br-btn upload" onclick="_broUploadPrompt('${escapeAttr(b.title)}')">↑ Upload PDF</button>
+            </div>`;
+        return `<div class="br-card ${cls} ${isReady ? 'ready' : 'pending'}">
+          <div class="br-card-head">
+            <span class="br-cat"><span class="br-cat-dot"></span>${escape(label)}</span>
+            ${fileTag}
+          </div>
+          <div class="br-card-title">${escape(b.title || "Untitled")}</div>
+          <div class="br-card-desc">${escape(b.desc || "")}</div>
+          ${meta}
+          ${foot}
+        </div>`;
+      }).join("")
+    : `<div style="grid-column:1/-1;padding:40px 20px;text-align:center;color:var(--ink-soft);font-style:italic;font-size:13px">No brochures in this category yet.</div>`;
+
+  el.innerHTML = `
+    <div class="br-shell">
+      <div class="br-head">
+        <div class="br-title-block">
+          <h1 class="br-title">Brochures &amp; assets</h1>
+          <p class="br-sub">Resources you can send to partners. Official H-FARM College links open in a new tab. Edit this list in the <b>Admin</b> view.</p>
+        </div>
+        <div class="br-head-actions">
+          <button class="br-btn ghost" onclick="_broBulkExport()">⥥ Bulk export</button>
+          <button class="br-btn primary" onclick="switchView('admin')">+ Add resource</button>
+        </div>
+      </div>
+
+      <div class="br-filters">${chipsHtml}</div>
+
+      <div class="br-body">
+        <div class="br-grid">${cardsHtml}</div>
+
+        <aside class="br-side">
+          <div class="br-side-eyebrow">Recently shared</div>
+          <div class="br-side-title">Outbound resources · last 7 days</div>
+          <div class="br-side-empty">
+            No brochure shares logged yet.
+            <small>This panel will populate when share-link clicks start being tracked. Coming with the next pass.</small>
+          </div>
+        </aside>
+      </div>
+    </div>
+  `;
+}
+
+function _broApplyFilter(cat) {
+  _brochuresFilter = cat;
+  renderBrochuresView();
+}
+
+function _broCopyShareLink(url, title) {
+  if (!url) return;
+  try {
+    navigator.clipboard.writeText(url).then(
+      () => { if (typeof showSyncToast === "function") showSyncToast(`⎘ Share link copied · ${title}`, "ok"); else alert("Link copied"); },
+      () => alert("Link: " + url),
+    );
+  } catch { alert("Link: " + url); }
+}
+
+function _broUploadPrompt(title) {
+  alert(
+    `Uploading "${title}":\n\n` +
+    `1. Place the PDF in the team Drive / workspace folder\n` +
+    `2. Open Admin view → Brochures section → edit this row\n` +
+    `3. Paste the share URL into the URL field\n\n` +
+    `Inline file-upload is on the backlog — for now this is a manual paste.`
+  );
+}
+
+function _broBulkExport() {
+  const items = BROCHURES || [];
+  if (!items.length) { alert("No brochures to export."); return; }
+  const rows = items.map(b => ({
+    category: b.tag || "",
+    title:    b.title || "",
+    description: b.desc || "",
+    url:      b.url || "",
+  }));
+  const csv = "category,title,description,url\n" + rows.map(r => [r.category, r.title, r.description, r.url]
+    .map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "h-tracker-brochures.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  if (typeof showSyncToast === "function") showSyncToast(`⥥ Exported ${rows.length} brochures to CSV`, "ok");
 }
 
 // ============================================================================
