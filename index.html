@@ -2811,9 +2811,9 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
     <div class="lp-top-meta">
       <span class="lp-status">
         <span class="lp-status-dot"></span>
-        <span id="lp-online-count">5 operators online</span>
+        <span id="lp-online-count">— operators online</span>
       </span>
-      <span id="lp-synced-meta">Synced just now</span>
+      <span id="lp-synced-meta">Connecting…</span>
     </div>
   </div>
 
@@ -2895,14 +2895,18 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
     </svg>
   </div>
 
+  <!-- All four stats are populated live by _populateLandingLiveData()
+       from the published CSV + data/teams.json + data/programs.json.
+       "—" shows briefly until each fetch lands; if a fetch fails it
+       stays as "—" (no fake numbers ever displayed). -->
   <div class="lp-stats-ribbon">
-    <span class="lp-stat-cell"><b id="lp-stat-partners">285</b> Partnerships</span>
+    <span class="lp-stat-cell"><b id="lp-stat-partners">—</b> Partnerships</span>
     <span class="lp-stats-sep">·</span>
-    <span class="lp-stat-cell"><b>8</b> Pipeline stages</span>
+    <span class="lp-stat-cell"><b id="lp-stat-countries">—</b> Countries</span>
     <span class="lp-stats-sep">·</span>
-    <span class="lp-stat-cell"><b>7</b> Outreach templates</span>
+    <span class="lp-stat-cell"><b id="lp-stat-teams">—</b> Internal teams</span>
     <span class="lp-stats-sep">·</span>
-    <span class="lp-stat-cell"><b>60s</b> Undo on everything</span>
+    <span class="lp-stat-cell"><b id="lp-stat-programs">—</b> Summer programmes</span>
   </div>
 </div>
 
@@ -16192,23 +16196,81 @@ async function checkAuthAndBoot() {
 function showLanding() {
   const el = document.getElementById("landing-screen");
   if (!el) { showLoginOverlay(); return; }
-  // Populate live-meta placeholders where we have data. Anything still
-  // missing falls back to sensible defaults that read as 'fresh' instead
-  // of stale "—" markers (which would look broken on a brand surface).
+  // Initial DOM setup with what we know synchronously
   try {
     const accessEl = document.getElementById("lp-access-meta");
     if (accessEl) {
-      const email = localStorage.getItem("hfarm_user_email") || "your team's lead";
-      accessEl.textContent = `Last access · ${email} · just now`;
+      const email = localStorage.getItem("hfarm_user_email");
+      accessEl.textContent = email
+        ? `Last access · ${email}`
+        : "Click 'Open H-Tracker' to sign in";
     }
-    const syncedEl = document.getElementById("lp-synced-meta");
-    if (syncedEl) syncedEl.textContent = "Synced just now";
-    // Operator count + partner total are filled with believable defaults
-    // already in the markup; left as-is — pre-auth has no live data.
   } catch (e) { /* non-blocking */ }
   el.classList.add("visible");
   el.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+  // Fire-and-forget live data loads — landing renders immediately with
+  // "—" placeholders that get filled as each fetch lands.
+  _populateLandingLiveData();
+}
+
+// Pre-auth live data for the landing's stats. Four parallel fetches,
+// each best-effort: if any fails the placeholder ("—") stays so we
+// never display fake numbers. No PII surfaces — only aggregate counts.
+async function _populateLandingLiveData() {
+  // 1) Operators online — public presence count endpoint (no auth)
+  fetch(API_BASE + "/api/presence/count", { cache: "no-store" })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      const n = data.count || 0;
+      const onlineEl = document.getElementById("lp-online-count");
+      if (onlineEl) onlineEl.textContent = `${n} operator${n === 1 ? "" : "s"} online`;
+      const syncedEl = document.getElementById("lp-synced-meta");
+      if (syncedEl) syncedEl.textContent = "Synced just now";
+    })
+    .catch(() => {
+      const syncedEl = document.getElementById("lp-synced-meta");
+      if (syncedEl) syncedEl.textContent = "Backend offline";
+    });
+
+  // 2) Partnerships + countries — count rows of the published CSV the
+  //    user previously connected to. Same URL the app loads at boot.
+  const csvUrl = localStorage.getItem(LS_URL_KEY);
+  if (csvUrl && typeof Papa !== "undefined") {
+    const fetchUrl = csvUrl + (csvUrl.includes("?") ? "&" : "?") + "_cb=" + Date.now();
+    fetch(fetchUrl, { cache: "no-store" })
+      .then(r => r.ok ? r.text() : null)
+      .then(text => {
+        if (!text || text.toLowerCase().includes("<!doctype") || text.toLowerCase().includes("<html")) return;
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        const rows = (parsed.data || []).filter(r => r && r.name && String(r.name).trim());
+        const countries = new Set(rows.map(r => String(r.country || "").trim()).filter(Boolean));
+        const pEl = document.getElementById("lp-stat-partners");
+        const cEl = document.getElementById("lp-stat-countries");
+        if (pEl) pEl.textContent = rows.length;
+        if (cEl) cEl.textContent = countries.size;
+      })
+      .catch(() => { /* placeholder stays "—" */ });
+  }
+
+  // 3) Internal teams — public data/teams.json (Vercel static)
+  fetch("data/teams.json", { cache: "no-store" })
+    .then(r => r.ok ? r.json() : null)
+    .then(teams => {
+      const el = document.getElementById("lp-stat-teams");
+      if (el && Array.isArray(teams)) el.textContent = teams.length;
+    })
+    .catch(() => {});
+
+  // 4) Summer programmes — public data/programs.json (Vercel static)
+  fetch("data/programs.json", { cache: "no-store" })
+    .then(r => r.ok ? r.json() : null)
+    .then(programs => {
+      const el = document.getElementById("lp-stat-programs");
+      if (el && Array.isArray(programs)) el.textContent = programs.length;
+    })
+    .catch(() => {});
 }
 
 function proceedFromLanding() {

@@ -867,6 +867,28 @@ def presence_list():
     )
 
 
+@app.route("/api/presence/count", methods=["GET"])
+def presence_count_public():
+    """Public — returns just the number of currently-online operators
+    (no names, no IDs, no display info — just an integer). Used by the
+    pre-auth landing page so it can show a real live count instead of a
+    hardcoded "5 operators online" placeholder. Safe to expose because
+    it's an aggregate with no PII."""
+    db = get_db()
+    cutoff = (
+        _dt.datetime.utcnow() - _dt.timedelta(seconds=PRESENCE_TTL_SECONDS)
+    ).replace(microsecond=0).isoformat() + "Z"
+    row = db.execute(
+        "SELECT COUNT(*) AS n FROM presence WHERE last_seen >= ?",
+        (cutoff,),
+    ).fetchone()
+    return jsonify({
+        "count":       (row["n"] if row else 0) or 0,
+        "ttl_seconds": PRESENCE_TTL_SECONDS,
+        "now":         _now_iso(),
+    })
+
+
 @app.route("/api/edits/recent", methods=["GET"])
 @auth_required
 def edits_recent():
