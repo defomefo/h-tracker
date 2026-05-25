@@ -1036,6 +1036,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
   opacity:0;
   animation:mc-fade-up 400ms ease-out 1700ms forwards;
 }
+.mc-mom-spark .mc-spark-demo{
+  opacity:0;
+  animation:mc-fade-up 400ms ease-out 2000ms forwards;
+}
 
 /* Pipeline bars grow from the bottom up (scaleY from 0 → 1) */
 .mc-pipe-fill{
@@ -11442,16 +11446,27 @@ function renderHomeView() {
   const liveNow          = signedActive;   // currently at signed/active stage
   const stuckOver30      = dormantHi.length;
 
-  // SVG sparkline from real data. Falls back to a flat indicator if all
-  // values are zero (don't fake a curve).
-  const _sparkSvg = (points, color, flatLabel) => {
+  // SVG sparkline. Renders the line + soft area fill; when opts.demo
+  // is set, adds a small DEMO badge in the top-right corner so the
+  // user (and any audience) knows it's an illustrative shape, not a
+  // real per-day series. Real-data cards omit the badge.
+  // For empty data (all zeros, or single value), renders a flat baseline
+  // — never fakes a curve from nothing.
+  const _sparkSvg = (points, color, opts = {}) => {
     const w = 110, h = 32;
     const max = Math.max.apply(null, points), min = Math.min.apply(null, points);
     const range = (max - min);
-    if (range === 0) {
+    const demoBadge = opts.demo
+      ? `<g class="mc-spark-demo">
+           <rect x="${w-30}" y="2" width="28" height="10" rx="2" fill="${color}" opacity=".14"/>
+           <text x="${w-16}" y="9.5" text-anchor="middle" font-size="7" fill="${color}" opacity=".82"
+                 font-family="Consolas,SF Mono,monospace" font-weight="700" letter-spacing=".5px">DEMO</text>
+         </g>`
+      : "";
+    if (range === 0 || points.length < 2) {
       return `<svg class="mc-mom-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-        <line x1="0" y1="${h - 2}" x2="${w}" y2="${h - 2}" stroke="${color}" stroke-width="1.2" opacity=".5" stroke-dasharray="3,3"/>
-        <text x="${w/2}" y="${h/2 + 3}" text-anchor="middle" font-size="9" fill="${color}" opacity=".6" font-family="Consolas,monospace">${flatLabel || "no trend data"}</text>
+        <line x1="0" y1="${h - 2}" x2="${w}" y2="${h - 2}" stroke="${color}" stroke-width="1.2" opacity=".4" stroke-dasharray="3,3"/>
+        ${demoBadge}
       </svg>`;
     }
     const step = w / (points.length - 1);
@@ -11459,17 +11474,25 @@ function renderHomeView() {
     return `<svg class="mc-mom-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       <path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
       <path d="${path} L${w},${h} L0,${h} Z" fill="${color}" opacity=".10"/>
+      ${demoBadge}
     </svg>`;
   };
 
-  // Real outreach sparkline (per-day for last 14d). Other three cards
-  // don't have per-day history yet — fall back to honest "snapshot only"
-  // dashed line. When engagement_depth_snapshots accumulates per-day
-  // history we can wire it in here without changing the layout.
-  const spark_conv   = _sparkSvg(_outreachPerDay,         "#1F6FB4", "no outreach yet");
-  const spark_ident  = _sparkSvg([inIdentification],      PRIO_COLORS["Up & Running"], "snapshot only");
-  const spark_live   = _sparkSvg([liveNow],               PRIO_COLORS["Up & Running"], "snapshot only");
-  const spark_stuck  = _sparkSvg([stuckOver30],           PRIO_COLORS["Critical"],     "snapshot only");
+  // Conversations Active uses REAL per-day outreach data (no DEMO badge).
+  // The other three cards don't have per-day history in the DB yet —
+  // they get a decorative shape (animated draw-in, same visual treatment)
+  // with a small DEMO badge so the audience sees clearly that the
+  // SPARKLINE is illustrative even though the BIG NUMBER is real.
+  // When engagement_depth_snapshots accumulates ~30 days of per-day
+  // data, we can swap these for real series and drop the DEMO badge.
+  const _decoIdent = [Math.max(1, Math.round(inIdentification*0.7)), Math.max(2, Math.round(inIdentification*0.75)), Math.max(3, Math.round(inIdentification*0.78)), Math.max(4, Math.round(inIdentification*0.82)), Math.max(5, Math.round(inIdentification*0.86)), Math.max(6, Math.round(inIdentification*0.88)), Math.max(7, Math.round(inIdentification*0.91)), Math.max(8, Math.round(inIdentification*0.94)), Math.max(9, Math.round(inIdentification*0.97)), Math.max(10, inIdentification)];
+  const _decoLive  = [Math.max(0, liveNow-4), Math.max(0, liveNow-4), Math.max(0, liveNow-3), Math.max(0, liveNow-3), Math.max(0, liveNow-2), Math.max(0, liveNow-2), Math.max(0, liveNow-1), Math.max(0, liveNow-1), liveNow, liveNow];
+  const _decoStuck = [Math.max(1, stuckOver30-7), Math.max(1, stuckOver30-6), Math.max(1, stuckOver30-5), Math.max(2, stuckOver30-4), Math.max(2, stuckOver30-3), Math.max(3, stuckOver30-3), Math.max(3, stuckOver30-2), Math.max(4, stuckOver30-1), stuckOver30, stuckOver30];
+
+  const spark_conv   = _sparkSvg(_outreachPerDay, "#1F6FB4");
+  const spark_ident  = _sparkSvg(_decoIdent,  PRIO_COLORS["Up & Running"], { demo: true });
+  const spark_live   = _sparkSvg(_decoLive,   PRIO_COLORS["Up & Running"], { demo: true });
+  const spark_stuck  = _sparkSvg(_decoStuck,  PRIO_COLORS["Critical"],     { demo: true });
 
   // Trend arrow: only render for cards where we have a real comparison.
   // For Conversations Active, compare this-week vs prev-week outreach
@@ -11558,25 +11581,25 @@ function renderHomeView() {
           <div class="mc-live-tag">Live</div>
         </div>
         <div class="mc-momentum">
-          <div class="mc-mom-card" title="Total entities currently at the 'Identified' pipeline stage. We don't capture entity-creation dates yet, so this is a snapshot not a time series.">
+          <div class="mc-mom-card" title="Big number = real (entities currently at 'Identified' stage). Sparkline = illustrative shape only; per-day entry history coming once engagement-depth snapshots accumulate.">
             <div class="mc-mom-head">In identification</div>
             <div class="mc-mom-n">${inIdentification}</div>
             <div class="mc-mom-desc">at identified stage</div>
             ${spark_ident}
           </div>
-          <div class="mc-mom-card" title="Unique entities with at least one outreach entry in the last 14 days. Sparkline shows real per-day outreach volume. Trend arrow compares this week vs the previous 7 days.">
+          <div class="mc-mom-card" title="Real per-day outreach data for the last 14 days. Trend arrow compares this week vs the previous 7 days.">
             <div class="mc-mom-head">Conversations active${_trendArrow(outreachTrend, true)}</div>
             <div class="mc-mom-n">${conversationsActive}</div>
             <div class="mc-mom-desc">touched in last 14 days</div>
             ${spark_conv}
           </div>
-          <div class="mc-mom-card" title="Entities currently at the 'signed' or 'active' pipeline stage. We don't capture signing dates yet, so this is a snapshot not a YTD series.">
+          <div class="mc-mom-card" title="Big number = real (entities at signed/active stage). Sparkline = illustrative; we don't capture signing dates yet, so per-day history isn't computable.">
             <div class="mc-mom-head">Live now</div>
             <div class="mc-mom-n">${liveNow}</div>
             <div class="mc-mom-desc">signed MoUs / partnerships</div>
             ${spark_live}
           </div>
-          <div class="mc-mom-card" title="High-priority entities (Critical or Hot) with no outreach in the last 30 days. The alarm side of the briefing — these should be cleared first.">
+          <div class="mc-mom-card" title="Big number = real (high-priority entities dormant 30+ days). Sparkline = illustrative; daily dormancy snapshots will replace this once we have enough days of history.">
             <div class="mc-mom-head">Stuck &gt; 30d</div>
             <div class="mc-mom-n">${stuckOver30}</div>
             <div class="mc-mom-desc">high-priority &amp; dormant</div>
