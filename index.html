@@ -631,6 +631,226 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .outreach-add:hover{background:var(--navy-light)}
 .outreach-empty{text-align:center;font-size:11px;color:var(--ink-soft);font-style:italic;padding:14px;background:var(--paper);border-radius:5px}
 
+/* ====================================================================
+   DETAIL PANEL — Stitch redesign (dp-*)
+   Slide-in slide-over with dark hero, 3 metric cards, NURTURE banner,
+   horizontal tabs and sticky footer. Markup populated from openDetail.
+==================================================================== */
+.detail-panel.dp{width:600px;background:var(--off-white);box-shadow:-12px 0 48px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden;padding:0}
+.detail-panel.dp .dp-body{flex:1;overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;gap:16px;background:var(--off-white)}
+
+/* HEADER */
+.dp-head{background:linear-gradient(160deg,#1A1A1A 0%,#28282E 60%,#1A1A1A 100%);color:#fff;padding:22px 26px;border-bottom:3px solid var(--hf-red);position:relative;flex-shrink:0}
+.dp-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.10);border:none;color:#fff;cursor:pointer;font-size:22px;font-family:inherit;line-height:1;transition:background .15s;display:flex;align-items:center;justify-content:center}
+.dp-close:hover{background:var(--hf-red)}
+.dp-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.dp-name{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.15;color:#fff;padding-right:40px;margin-bottom:6px}
+.dp-loc{font-size:12px;color:rgba(255,255,255,.65);display:flex;gap:8px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.dp-loc img{width:18px;height:13px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle}
+.dp-loc-id{font-family:'Consolas',monospace;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px;color:#fff;font-size:11px}
+.dp-dot{color:rgba(255,255,255,.35)}
+/* Metrics row */
+.dp-metrics{display:grid;grid-template-columns:1.1fr 1fr 1.4fr;gap:12px}
+.dp-metric{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px 14px;min-width:0;text-align:left;font-family:inherit;color:inherit;cursor:default}
+.dp-metric.interactive{cursor:pointer;transition:background .15s,border-color .15s}
+.dp-metric.interactive:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.18)}
+.dp-metric.open{background:rgba(217,83,79,.14);border-color:rgba(217,83,79,.45)}
+.dp-metric-lbl-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+.dp-metric-lbl{font-size:9px;letter-spacing:1.4px;color:rgba(255,255,255,.55);text-transform:uppercase;font-weight:800}
+.dp-metric.open .dp-metric-lbl{color:var(--hf-red)}
+.dp-metric-caret{color:rgba(255,255,255,.45);font-size:9px}
+.dp-metric.open .dp-metric-caret{color:var(--hf-red)}
+.dp-metric-val-row{display:flex;align-items:baseline;gap:4px}
+.dp-metric-val{font-size:28px;font-weight:800;line-height:1;letter-spacing:-.8px;color:#fff;font-variant-numeric:tabular-nums}
+.dp-metric-max{font-size:12px;color:rgba(255,255,255,.45);font-weight:600}
+.dp-metric-bar{margin-top:8px;height:4px;background:rgba(255,255,255,.10);border-radius:2px;overflow:hidden}
+.dp-metric-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--hf-red),var(--ur));border-radius:2px;transition:width 600ms cubic-bezier(.22,.61,.36,1)}
+.dp-metric-text{font-size:22px;font-weight:800;letter-spacing:-.4px;color:#fff}
+.dp-metric-text.tone-cold{color:#FF8A85}
+.dp-metric-text.tone-warm{color:#FFD27A}
+.dp-metric-text.tone-hot{color:#FFA38A}
+.dp-metric-text.tone-ur{color:#7FE0B0}
+.dp-metric-text.tone-ni{color:#C2C2C2}
+.dp-metric-breakdown{display:flex;gap:10px;margin-top:8px;font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.2px;flex-wrap:wrap}
+.dp-metric-breakdown b{color:rgba(255,255,255,.8);font-weight:700}
+
+/* Score breakdown expand */
+.dp-sb{background:#fff;border-bottom:1px solid var(--rule);padding:14px 22px 16px;animation:dp-sb-in 280ms cubic-bezier(.22,.61,.36,1)}
+@keyframes dp-sb-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.dp-sb-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.dp-sb-title{font-size:11px;letter-spacing:1.4px;color:var(--ink);font-weight:800;text-transform:uppercase}
+.dp-sb-collapse{background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px;padding:0}
+.dp-sb-collapse:hover{color:var(--hf-red)}
+.dp-sb-rows{display:flex;flex-direction:column}
+.dp-sb-row{display:grid;grid-template-columns:1.3fr 1.6fr 70px;gap:14px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--rule)}
+.dp-sb-row:last-child{border-bottom:none}
+.dp-sb-info{min-width:0}
+.dp-sb-label{font-size:12px;font-weight:700;color:var(--ink)}
+.dp-sb-weight{color:var(--ink-soft);font-weight:500}
+.dp-sb-sub{font-size:10px;color:var(--ink-soft);font-style:italic;margin-top:3px;line-height:1.4}
+.dp-sb-bar{height:8px;background:var(--paper);border-radius:4px;overflow:hidden}
+.dp-sb-bar>span{display:block;height:100%;border-radius:4px;transition:width 600ms cubic-bezier(.22,.61,.36,1)}
+.dp-sb-nums{text-align:right}
+.dp-sb-add{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.dp-sb-add.pos{color:var(--ink)}
+.dp-sb-add.zero{color:var(--ink-mute)}
+.dp-sb-frac{font-size:10px;color:var(--ink-mute);font-weight:700;margin-top:2px}
+.dp-sb-total{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;padding-top:12px;margin-top:4px;border-top:2px solid var(--hf-red)}
+.dp-sb-total-eq{font-size:14px;color:var(--ink-soft);font-weight:800}
+.dp-sb-total-num{font-size:24px;font-weight:800;color:var(--hf-red);letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+.dp-sb-total-dot{color:var(--ink-mute)}
+.dp-sb-total-tag{font-size:13px;color:var(--ink);font-weight:800;letter-spacing:.2px}
+
+/* NURTURE action banner */
+.dp-action{background:linear-gradient(90deg,#FBEAEA 0%,#FCE4E4 100%);border-bottom:1px solid var(--rule);padding:14px 22px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-shrink:0}
+.dp-action-left{display:flex;gap:12px;align-items:flex-start;min-width:0;flex:1}
+.dp-action-pill{background:var(--hf-red);color:#fff;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;flex-shrink:0;margin-top:1px;white-space:nowrap}
+.dp-action-text{min-width:0}
+.dp-action-head{font-size:13px;font-weight:800;color:var(--ink);line-height:1.35}
+.dp-action-body{font-size:11px;color:var(--ink-soft);line-height:1.5;margin-top:3px}
+.dp-action-body em{font-style:italic;color:var(--ink);font-weight:700;font-size:11px}
+.dp-action-cta{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.dp-action .dp-btn.xs{font-size:10px;padding:5px 10px;letter-spacing:.4px}
+
+/* TABS */
+.dp-tabs{display:flex;gap:0;padding:0 18px;background:var(--off-white);border-bottom:1px solid var(--rule);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.dp-tabs::-webkit-scrollbar{display:none}
+.dp-tab{background:none;border:none;padding:12px 10px;font-family:inherit;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;letter-spacing:.2px;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:5px;transition:color .12s;white-space:nowrap}
+.dp-tab:hover{color:var(--ink)}
+.dp-tab.on{color:var(--hf-red);border-bottom-color:var(--hf-red)}
+.dp-tab-count{background:var(--paper);color:var(--ink-soft);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:800;min-width:18px;text-align:center}
+.dp-tab.on .dp-tab-count{background:var(--hf-red);color:#fff}
+
+/* Sections inside dp-body */
+.dp-sec{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+.dp-sec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--rule);gap:10px;flex-wrap:wrap}
+.dp-sec-title{font-size:12px;letter-spacing:1.4px;color:var(--ink);font-weight:800;text-transform:uppercase}
+.dp-sec-aside{font-size:11px;color:var(--ink-soft);font-style:italic}
+.dp-sec-link{background:none;border:none;color:var(--hf-red);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px;padding:0}
+.dp-sec-link:hover{color:var(--hf-red-deep)}
+.dp-sec-actions{display:flex;gap:6px;align-items:center}
+
+/* Profile chips */
+.dp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.dp-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:4px 11px 4px 9px;border-radius:12px;letter-spacing:.2px;border:1px solid transparent;transition:filter .12s}
+.dp-chip:hover{filter:brightness(.96)}
+.dp-chip-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.dp-chip-type{background:#DCEFE3;color:#1F6E48;border-color:#B7DCC5}
+.dp-chip-region{background:#E3E4EC;color:#2D3150;border-color:#C6C9D8}
+.dp-chip-trait{background:#FCE4E4;color:#B0322E;border-color:#F2C9C9}
+.dp-chip-neutral{background:var(--paper);color:var(--ink);border-color:var(--rule)}
+
+/* 3 dropdowns */
+.dp-selects{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.dp-select{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dp-select-lbl{font-size:9px;letter-spacing:1.2px;color:var(--ink-mute);text-transform:uppercase;font-weight:800}
+.dp-select-wrap{position:relative;min-width:0}
+.dp-select-native{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-family:inherit}
+.dp-select-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--paper);border:1px solid var(--rule);border-radius:5px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);text-align:left;min-width:0;transition:border-color .12s;pointer-events:none}
+.dp-select-wrap:hover .dp-select-btn{border-color:var(--ink);background:#fff}
+.dp-select-val{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-select-caret{color:var(--ink-mute);font-size:10px;flex-shrink:0}
+.dp-select-btn.muted .dp-select-val{color:var(--ink-mute);font-style:italic;font-weight:600}
+.dp-select-btn.tone-warm{color:#7A5215;background:#FAEFD8;border-color:#EBDDB5}
+.dp-select-btn.tone-hot{color:#B0322E;background:#FCE4E4;border-color:#F2C9C9}
+.dp-select-btn.tone-critical{color:#8B1A1A;background:#FBEAEA;border-color:#F2C9C9}
+.dp-select-btn.tone-cold{color:#4A6B8A;background:#E7ECF1;border-color:#D2D8E0}
+.dp-select-btn.tone-ur{color:#1F5A40;background:#DCEFE3;border-color:#B7DCC5}
+.dp-select-btn.tone-cs{color:#4A4A55;background:#ECECF0;border-color:#D2D2DA}
+.dp-select-btn.tone-ni{color:#5A5A5A;background:#ECEAE0;border-color:#D6D2C2}
+.dp-select-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* Light editable fields */
+.dp-field{margin-bottom:12px}
+.dp-field-lbl{font-size:9px;letter-spacing:1.2px;color:var(--ink-mute);text-transform:uppercase;font-weight:800;margin-bottom:4px}
+.dp-input{background:var(--paper);border:1px solid var(--rule);border-radius:5px;padding:9px 11px;font-size:12px;color:var(--ink);line-height:1.5;min-height:38px;width:100%;font-family:inherit;display:block;resize:vertical}
+.dp-input.multiline{min-height:78px;line-height:1.6}
+.dp-input:hover{border-color:var(--ink-soft)}
+.dp-input:focus{outline:none;border-color:var(--ink);background:#fff}
+
+/* Contact row */
+.dp-contact{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:12px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin:14px 0}
+.dp-contact-item{padding:0 12px;border-right:1px solid var(--rule);min-width:0}
+.dp-contact-item:last-child{border-right:none;padding-right:0}
+.dp-contact-item:first-child{padding-left:0}
+.dp-contact-lbl{font-size:9px;letter-spacing:1.2px;color:var(--ink-mute);text-transform:uppercase;font-weight:800;margin-bottom:4px}
+.dp-contact-val{font-size:12px;color:var(--ink);font-weight:600;line-height:1.4;word-break:break-word}
+.dp-contact-val b{font-weight:700}
+.dp-contact-val.mono{font-family:'Consolas',monospace;letter-spacing:-.2px;font-size:11px}
+.dp-contact-aside{font-size:10px;color:var(--ink-mute);margin-left:6px;font-weight:600}
+.dp-contact-link{color:var(--hf-red);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--hf-red) 40%,transparent);text-underline-offset:2px;cursor:pointer}
+.dp-contact-link:hover{text-decoration-color:var(--hf-red)}
+
+/* Research/dashed button */
+.dp-research{display:block;width:100%;padding:10px 14px;background:transparent;border:1px dashed var(--rule);border-radius:5px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.2px;cursor:pointer;text-align:left;transition:all .15s;text-decoration:none}
+.dp-research:hover{border-color:var(--hf-red);color:var(--hf-red)}
+
+/* Format card */
+.dp-format-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.dp-format-pill{background:var(--ink);color:#fff;font-size:10px;padding:4px 10px;border-radius:4px;font-weight:800;letter-spacing:.8px;text-transform:uppercase}
+.dp-format-meta{font-size:11px;color:var(--ink-soft);font-weight:700}
+.dp-format-body{font-size:12px;color:var(--ink);line-height:1.5;margin-bottom:10px}
+.dp-format-ref{display:flex;gap:10px;padding-top:8px;border-top:1px dashed var(--rule)}
+.dp-ref-key{font-size:10px;letter-spacing:1px;color:var(--ink-mute);text-transform:uppercase;font-weight:800;flex-shrink:0;padding-top:1px}
+.dp-ref-val{font-size:12px;color:var(--ink);line-height:1.4;font-style:italic}
+
+/* Owner team */
+.dp-team-name{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:2px}
+.dp-team-meta{font-size:11px;color:var(--ink-soft);margin-bottom:6px}
+.dp-team-blurb{font-size:12px;color:var(--ink);line-height:1.5;padding-bottom:10px;margin-bottom:10px;border-bottom:1px dashed var(--rule)}
+.dp-team-current{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.dp-team-current select{flex:1;padding:6px 10px;border:1px solid var(--rule);border-radius:5px;font-family:inherit;font-size:12px;background:#fff;color:var(--ink);font-weight:600}
+.dp-suggest-label{font-size:10px;letter-spacing:1.2px;color:var(--ink-mute);text-transform:uppercase;font-weight:800;margin-bottom:6px}
+.dp-suggest-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dp-suggest-chip{background:var(--paper);color:var(--ink);font-size:11px;padding:3px 10px 3px 8px;border-radius:12px;border:1px solid var(--rule);display:inline-flex;align-items:center;gap:5px;font-weight:600;cursor:pointer;transition:filter .12s}
+.dp-suggest-chip:hover{filter:brightness(.96)}
+.dp-suggest-chip.primary{background:var(--brand-navy);color:#fff;border-color:var(--brand-navy)}
+.dp-suggest-star{color:var(--hf-red);font-size:11px}
+.dp-suggest-chip.primary .dp-suggest-star{color:#FFD27A}
+
+/* Programs */
+.dp-programs{display:flex;flex-direction:column;gap:12px}
+.dp-prog{padding:4px 0}
+.dp-prog-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.dp-prog-info{display:flex;align-items:flex-start;gap:8px;min-width:0}
+.dp-prog-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.dp-prog-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3}
+.dp-prog-tag{font-size:10px;color:var(--ink-soft);margin-top:2px;letter-spacing:.2px}
+.dp-prog-score{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.4px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.dp-prog-bar{height:5px;background:var(--paper);border-radius:3px;overflow:hidden}
+.dp-prog-bar>span{display:block;height:100%;border-radius:3px;transition:width 600ms cubic-bezier(.22,.61,.36,1)}
+.dp-prog-verdict{font-size:11px;color:var(--ink-soft);margin-top:5px;font-style:italic;line-height:1.5}
+
+/* Notes */
+.dp-notes{font-size:12px;color:var(--ink);line-height:1.6;background:var(--paper);padding:12px 14px;border-radius:6px;white-space:pre-wrap}
+
+/* Empty state */
+.dp-empty{background:#fff;border:1px dashed var(--rule);border-radius:10px;padding:36px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.dp-empty-icon{font-size:32px;color:var(--ink-mute);font-weight:800}
+.dp-empty-h{font-size:15px;font-weight:800;color:var(--ink)}
+.dp-empty-p{font-size:12px;color:var(--ink-soft);max-width:360px;line-height:1.5;margin-bottom:8px}
+
+/* Sticky footer */
+.dp-foot{background:#fff;border-top:1px solid var(--rule);padding:12px 22px;display:flex;gap:10px;flex-shrink:0}
+.dp-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.3px;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.dp-btn.primary{background:var(--hf-red);color:#fff;border-color:var(--hf-red)}
+.dp-btn.primary:hover{background:var(--hf-red-deep);border-color:var(--hf-red-deep)}
+.dp-btn.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
+.dp-btn.ghost:hover{border-color:var(--ink)}
+.dp-btn.block{flex:1}
+.dp-btn.xs{font-size:10px;padding:5px 10px;letter-spacing:.4px}
+.dp-btn.tone-snooze{color:var(--ink-soft)}
+.dp-btn.tone-snooze:hover{border-color:var(--cold);color:var(--cold)}
+
+/* Activity rows inside dp tab */
+.dp .eng-panel{display:none}
+.dp .eng-panel.active{display:block}
+
+@media (prefers-reduced-motion: reduce){
+  .dp-sb{animation:none}
+  .dp-metric-bar>span,.dp-sb-bar>span,.dp-prog-bar>span{transition:none}
+}
+
 /* Outreach log header bar — always-visible CTA at the top of the tracking tab */
 .outreach-actionbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,var(--gold-light) 0%,#FFF8F8 100%);border:1px solid var(--hf-red-soft);border-left:3px solid var(--hf-red);padding:10px 14px;border-radius:6px;margin-bottom:10px}
 .oab-text{display:flex;flex-direction:column;gap:1px;min-width:0}
@@ -3669,13 +3889,13 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 </div><!-- /.app-shell -->
 </div>
 
-<aside class="detail-panel" id="detail-panel">
-  <div class="detail-head">
-    <button class="detail-close" onclick="closeDetail()">&times;</button>
-    <div class="uni-name" id="d-name">&mdash;</div>
-    <div class="uni-loc" id="d-loc">&mdash;</div>
-  </div>
-  <div class="detail-body" id="detail-body"></div>
+<aside class="detail-panel dp" id="detail-panel">
+  <div class="dp-head" id="dp-head"></div>
+  <div class="dp-sb" id="dp-sb" style="display:none"></div>
+  <div class="dp-action" id="dp-action" style="display:none"></div>
+  <div class="dp-tabs" id="dp-tabs"></div>
+  <div class="dp-body" id="detail-body"></div>
+  <div class="dp-foot" id="dp-foot"></div>
 </aside>
 
 <div class="compare-modal" id="compare-modal">
@@ -8766,14 +8986,39 @@ function escape(s) {
   return String(s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 }
 
+// Which tab is currently visible inside the open detail panel. Re-applied
+// on every openDetail() refresh so background syncs that re-render the panel
+// don't drop the user back to Profile mid-edit.
+let _dpActiveTab = "profile";
+// Whether the score-breakdown card under the dark hero is currently expanded.
+// Toggled by clicking the SCORE metric in the hero.
+let _dpScoreOpen = false;
+
 function openDetail(id) {
   const u = UNIS.find(x => x.id === id);
   if (!u) return;
   STATE.detailId = id;
-  document.getElementById("d-name").textContent = u.name;
-  document.getElementById("d-loc").textContent = `${u.country || "—"} · ${u.continent}`;
-  document.getElementById("detail-body").innerHTML = detailHtml(u);
+  // Reset to Profile tab only when opening a different entity. Same entity
+  // re-render (focus sync, edit save) preserves the user's current tab.
+  if (STATE._prevDetailId !== id) {
+    _dpActiveTab = "profile";
+    _dpScoreOpen = false;
+    STATE._prevDetailId = id;
+  }
+  document.getElementById("dp-head").innerHTML = _dpHeaderHtml(u);
+  document.getElementById("dp-sb").innerHTML = _dpScoreOpen ? _dpScoreBreakdownHtml(u) : "";
+  document.getElementById("dp-sb").style.display = _dpScoreOpen ? "block" : "none";
+  document.getElementById("dp-action").innerHTML = _dpActionHtml(u);
+  document.getElementById("dp-action").style.display = "flex";
+  document.getElementById("dp-tabs").innerHTML = _dpTabsHtml(u, _dpActiveTab);
+  document.getElementById("detail-body").innerHTML = _dpTabBodyHtml(u, _dpActiveTab);
+  document.getElementById("dp-foot").innerHTML = _dpFootHtml(u);
   document.getElementById("detail-panel").classList.add("open");
+  // Auto-load the Activity tab body if it became visible (matches old behaviour
+  // which lazy-loaded /api/edits/entity/<id> on tab click).
+  if (_dpActiveTab === "activity" && typeof loadEntityActivity === "function") {
+    loadEntityActivity(u.id);
+  }
 }
 function closeDetail() {
   // Clearing STATE.detailId is essential: every sync function does
@@ -8783,49 +9028,275 @@ function closeDetail() {
   // though the user explicitly closed it.
   document.getElementById("detail-panel").classList.remove("open");
   STATE.detailId = null;
+  STATE._prevDetailId = null;
+  _dpActiveTab = "profile";
+  _dpScoreOpen = false;
   // Also nuke any lingering globe tooltip (see hideGlobeTip below).
   if (typeof hideGlobeTip === "function") hideGlobeTip();
 }
 
-function detailHtml(u) {
-  const actionRec = recommendAction(u);
-  const collab = recommendCollabFormat(u);
-  const tags = entityClassification(u);
-  const tagsHtml = tags.map(t => `<span class="profile-tag" style="background:${t.color};color:#fff">${escape(t.label)}</span>`).join(" ");
+// --- DP helpers ----------------------------------------------------------
 
-  // Sort programs by match score descending, show top 4 with reasoning, rest as bars
-  const progSorted = PROGRAMS.map(p => ({...p, score: u.program_matches[p.id] || 0}))
-    .sort((a,b) => b.score - a.score);
-  const progRows = progSorted.map((p, idx) => {
-    const reasoning = programFitReasoning(u, p.id);
-    return `<div class="program-row${idx === 0 ? ' top' : ''}">
-      <div class="pr-head">
-        <span class="pn"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;vertical-align:middle"></span>${p.name}</span>
-        <span class="ps">${p.score}</span>
+// Map u.priority -> tone class for the SCORE metric text + Priority dropdown.
+function _dpPriorityTone(priority) {
+  switch ((priority || "").toLowerCase()) {
+    case "critical": return "critical";
+    case "hot":      return "hot";
+    case "warm":     return "warm";
+    case "cold":
+    case "cold-storage": return "cold";
+    case "up & running": return "ur";
+    case "case study":   return "cs";
+    case "not interested": return "ni";
+    default: return "";
+  }
+}
+
+function _dpHeaderHtml(u) {
+  const iso = (typeof _isoForCountry === "function") ? _isoForCountry(u.country) : null;
+  const flag = iso
+    ? `<img src="https://flagcdn.com/24x18/${iso}.png" alt="${escape(u.country || "")}" loading="lazy" onerror="this.style.display='none'"/>`
+    : '';
+  const typeLabel = (ENTITY_LABELS && ENTITY_LABELS[u.type]) || u.type || "Partner";
+  const d = engagementDepth(u);
+  const depthTone = d.total >= 60 ? "tone-hot" : d.total >= 30 ? "tone-warm" : "tone-cold";
+  const prioTone = _dpPriorityTone(u.priority);
+  // SCORE metric — interactive (toggles breakdown). Visual indicator: caret.
+  const scoreCaret = _dpScoreOpen ? "▴" : "▾";
+  const scoreOpen = _dpScoreOpen ? " open" : "";
+  return `
+    <button class="dp-close" type="button" onclick="closeDetail()" aria-label="Close">&times;</button>
+    <div class="dp-eyebrow">${escape(typeLabel)}${u.strategic_tier ? ` · ${escape(u.strategic_tier)}` : ""}</div>
+    <div class="dp-name" id="d-name">${escape(u.name)}</div>
+    <div class="dp-loc" id="d-loc">
+      ${flag}
+      <span>${escape(u.country || "—")}</span>
+      <span class="dp-dot">·</span>
+      <span>${escape(u.continent || "")}</span>
+      <span class="dp-dot">·</span>
+      <span class="dp-loc-id">${escape((u.id || "").toUpperCase())}</span>
+    </div>
+    <div class="dp-metrics">
+      <button type="button" class="dp-metric interactive${scoreOpen}" onclick="dpToggleScoreBreakdown()" title="Click to see how this score is computed">
+        <div class="dp-metric-lbl-row">
+          <span class="dp-metric-lbl">Partnership Score</span>
+          <span class="dp-metric-caret">${scoreCaret}</span>
+        </div>
+        <div class="dp-metric-val-row">
+          <span class="dp-metric-val">${u.partnership_score}</span>
+          <span class="dp-metric-max">/100</span>
+        </div>
+        <div class="dp-metric-bar"><span style="width:${Math.max(2, u.partnership_score)}%"></span></div>
+      </button>
+      <div class="dp-metric">
+        <div class="dp-metric-lbl-row"><span class="dp-metric-lbl">Readiness</span></div>
+        <div class="dp-metric-text${prioTone ? ` tone-${prioTone}` : ""}">${escape(u.partnership_readiness || "—")}</div>
+        <div class="dp-metric-breakdown">
+          <span>priority <b>${escape(u.priority || "—")}</b></span>
+        </div>
       </div>
-      <div class="pt">${p.topic} &middot; ${p.age} &middot; ${p.lang}</div>
-      <div class="pbar"><div style="width:${p.score}%;background:${p.color}"></div></div>
-      ${idx < 4 ? `<div class="pr-reason">${reasoning}</div>` : ''}
+      <div class="dp-metric" title="How much we've already invested — the Z axis of the 3D strategic maps.">
+        <div class="dp-metric-lbl-row"><span class="dp-metric-lbl">Engagement Depth</span></div>
+        <div class="dp-metric-val-row">
+          <span class="dp-metric-val ${depthTone}">${d.total}</span>
+          <span class="dp-metric-max">/100</span>
+        </div>
+        <div class="dp-metric-breakdown">
+          <span>outreach <b>${d.outreach}</b></span>
+          <span>contacts <b>${d.contacts}</b></span>
+          <span>persistence <b>${d.persistence}</b></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function _dpScoreBreakdownHtml(u) {
+  const b = u.partnership_breakdown;
+  const rows = [
+    {key:"priority",     title:"Pipeline priority", weight:"40%", value:b.priority,    color:"var(--ink)"},
+    {key:"namedContact", title:"Named contact",     weight:"20%", value:b.namedContact,color:"#1F6FB4"},
+    {key:"email",        title:"Email captured",    weight:"10%", value:b.email,       color:"#2E7D5B"},
+    {key:"programFit",   title:"Top programme fit", weight:"20%", value:b.programFit,  color:"#C97A1A"},
+    {key:"recency",      title:"Recency of contact",weight:"10%", value:b.recency,     color:"#D9534F"},
+  ];
+  const rowsHtml = rows.map(r => {
+    const contrib = r.value.contrib || 0;
+    const raw = r.value.raw || 0;
+    const cls = contrib > 0 ? "pos" : "zero";
+    return `<div class="dp-sb-row">
+      <div class="dp-sb-info">
+        <div class="dp-sb-label">${escape(r.title)} <span class="dp-sb-weight">(${r.weight})</span></div>
+        <div class="dp-sb-sub">${escape(r.value.label || "")}</div>
+      </div>
+      <div class="dp-sb-bar"><span style="width:${raw}%;background:${r.color}"></span></div>
+      <div class="dp-sb-nums">
+        <div class="dp-sb-add ${cls}">+${contrib.toFixed(1)}</div>
+        <div class="dp-sb-frac">${raw}/100</div>
+      </div>
     </div>`;
   }).join("");
+  return `
+    <div class="dp-sb-head">
+      <div class="dp-sb-title">How this score is computed</div>
+      <button type="button" class="dp-sb-collapse" onclick="dpToggleScoreBreakdown()">Collapse ▴</button>
+    </div>
+    <div class="dp-sb-rows">${rowsHtml}</div>
+    <div class="dp-sb-total">
+      <span class="dp-sb-total-eq">=</span>
+      <span class="dp-sb-total-num">${u.partnership_score}</span>
+      <span class="dp-sb-total-eq">/100</span>
+      <span class="dp-sb-total-dot">·</span>
+      <span class="dp-sb-total-tag">${escape(u.partnership_readiness || "")}</span>
+    </div>`;
+}
 
-  // Score breakdown
-  const b = u.partnership_breakdown;
-  const bdRows = [
-    {key:"priority",    title:"Pipeline priority (40%)",  value:b.priority,    color:"var(--ink)"},
-    {key:"namedContact",title:"Named contact (20%)",      value:b.namedContact,color:"#1F6FB4"},
-    {key:"email",       title:"Email captured (10%)",     value:b.email,       color:"#2E7D5B"},
-    {key:"programFit",  title:"Top programme fit (20%)",  value:b.programFit,  color:"#C97A1A"},
-    {key:"recency",     title:"Recency of contact (10%)", value:b.recency,     color:"#D9534F"},
+function dpToggleScoreBreakdown() {
+  _dpScoreOpen = !_dpScoreOpen;
+  if (STATE.detailId) openDetail(STATE.detailId);
+}
+// Backward-compat alias: callers from old views still use this name.
+function toggleScoreBreakdown() { dpToggleScoreBreakdown(); }
+
+function _dpActionHtml(u) {
+  const actionRec = (typeof recommendAction === "function") ? recommendAction(u) : "";
+  const tone = _dpPriorityTone(u.priority);
+  const pillLabel = (() => {
+    switch (tone) {
+      case "critical": return "Close now";
+      case "hot":      return "Reply 48h";
+      case "warm":     return "Nurture";
+      case "ur":       return "Maintain";
+      case "cold":     return "Re-warm";
+      case "cs":       return "Showcase";
+      case "ni":       return "Parked";
+      default:         return "Classify";
+    }
+  })();
+  // recommendAction returns "<strong>Headline.</strong> body…" — split on the
+  // first </strong> so we can render the headline in the dp-action-head slot
+  // and the rest as the body. Falls back to whole-string body on failure.
+  let head = "", body = actionRec;
+  const m = actionRec.match(/^<strong>([^<]+)<\/strong>\s*(.*)$/i);
+  if (m) { head = m[1]; body = m[2]; }
+  return `
+    <div class="dp-action-left">
+      <span class="dp-action-pill">${escape(pillLabel)}</span>
+      <div class="dp-action-text">
+        ${head ? `<div class="dp-action-head">${escape(head)}</div>` : ""}
+        <div class="dp-action-body">${body}</div>
+      </div>
+    </div>
+    <div class="dp-action-cta">
+      <button type="button" class="dp-btn primary xs" onclick="showOutreachForm('${u.id}')">+ Log outreach</button>
+    </div>`;
+}
+
+function _dpTabsHtml(u, active) {
+  const tabs = [
+    {key:"profile",   label:"Profile",   count: null},
+    {key:"contacts",  label:"Contacts",  count: (u.contacts || []).filter(c => c.name || c.email).length},
+    {key:"outreach",  label:"Outreach",  count: (OUTREACH[u.id] || []).length},
+    {key:"contracts", label:"Contracts", count: (typeof CONTRACTS !== "undefined" ? (CONTRACTS || []).filter(c => c.entity_id === u.id).length : 0)},
+    {key:"followups", label:"Follow-ups",count: (typeof _followupsForEntity === "function" ? _followupsForEntity(u.id).length : 0)},
+    {key:"activity",  label:"Activity",  count: null},
   ];
-  const bdHtml = bdRows.map(r => `
-    <div class="bd-row">
-      <div class="bd-label">${r.title}</div>
-      <div class="bd-bar"><div style="width:${r.value.raw}%;background:${r.color}"></div></div>
-      <div class="bd-contrib"><b>+${r.value.contrib.toFixed(1)}</b><small>${r.value.raw}/100</small></div>
-      <div class="bd-note">${escape(r.value.label)}</div>
-    </div>`).join("");
+  return tabs.map(t => {
+    const cls = "dp-tab" + (t.key === active ? " on" : "");
+    const badge = (t.count !== null) ? `<span class="dp-tab-count">${t.count}</span>` : "";
+    return `<button type="button" class="${cls}" onclick="dpSwitchTab('${t.key}')">${escape(t.label)}${badge}</button>`;
+  }).join("");
+}
 
+function dpSwitchTab(tab) {
+  _dpActiveTab = tab;
+  if (STATE.detailId) openDetail(STATE.detailId);
+}
+
+function _dpTabBodyHtml(u, tab) {
+  switch (tab) {
+    case "profile":   return _dpProfileTabHtml(u);
+    case "contacts":  return _dpContactsTabHtml(u);
+    case "outreach":  return `<div class="eng-panel active" data-panel="tracking">${renderTrackingBody(u)}</div>`;
+    case "contracts": return `<div class="eng-panel active" data-panel="contracts">${renderEntityContractsBody(u)}</div>`;
+    case "followups": return `<div class="eng-panel active" data-panel="followups">${renderEntityFollowupsBody(u)}</div>`;
+    case "activity":  return `<div class="eng-panel active" data-panel="activity">
+        <div id="activity-list-${u.id}" class="activity-list"><div class="activity-empty">Loading…</div></div>
+      </div>`;
+  }
+  return "";
+}
+
+function _dpFootHtml(u) {
+  return `
+    <button type="button" class="dp-btn primary block" onclick="showOutreachForm('${u.id}')">+ Log outreach</button>
+    <button type="button" class="dp-btn ghost tone-snooze" onclick="dpSnoozeComingSoon()" title="Snooze this entity for 7 days (visual preview — coming soon)">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Snooze 7d
+    </button>
+    <button type="button" class="dp-btn ghost" onclick="generateBrief('${u.id}', event)" title="Generate one-page PDF brief">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Brief
+    </button>`;
+}
+
+// ---- Profile tab -----------------------------------------------------
+function _dpProfileTabHtml(u) {
+  const tags = (typeof entityClassification === "function") ? entityClassification(u) : [];
+  // Chips: derive from classification + region + key trait
+  const typeLabel = (ENTITY_LABELS && ENTITY_LABELS[u.type]) || u.type || "Partner";
+  const traitTags = tags.slice(0, 4).map(t =>
+    `<span class="dp-chip dp-chip-trait" style="background:${t.color};color:#fff;border-color:transparent">${escape(t.label)}</span>`
+  ).join("");
+  const chipsHtml = `
+    <span class="dp-chip dp-chip-type"><span class="dp-chip-dot"></span>${escape(typeLabel)}</span>
+    ${u.continent ? `<span class="dp-chip dp-chip-region"><span class="dp-chip-dot"></span>${escape(u.continent)}</span>` : ""}
+    ${traitTags}
+  `;
+
+  // Three editable selects (Priority / Strategic tier / Type)
+  const prioTone = _dpPriorityTone(u.priority);
+  const selectsHtml = `
+    <div class="dp-select">
+      <span class="dp-select-lbl">Priority</span>
+      <div class="dp-select-wrap">
+        <div class="dp-select-btn${u.priority ? ` tone-${prioTone}` : " muted"}">
+          ${u.priority ? `<span class="dp-select-dot"></span>` : ""}
+          <span class="dp-select-val">${escape(u.priority || "Unclassified")}</span>
+          <span class="dp-select-caret">▾</span>
+        </div>
+        <select class="dp-select-native" onchange="saveEntityField('${u.id}','priority',this.value)">
+          <option value="" ${!u.priority ? "selected" : ""}>— unclassified —</option>
+          ${PRIORITIES.map(p => `<option value="${escape(p)}" ${u.priority === p ? "selected" : ""}>${escape(p)}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="dp-select">
+      <span class="dp-select-lbl">Strategic tier</span>
+      <div class="dp-select-wrap">
+        <div class="dp-select-btn${u.strategic_tier ? "" : " muted"}">
+          <span class="dp-select-val">${escape(u.strategic_tier || "None")}</span>
+          <span class="dp-select-caret">▾</span>
+        </div>
+        <select class="dp-select-native" onchange="saveEntityField('${u.id}','strategic_tier',this.value)">
+          <option value="" ${!u.strategic_tier ? "selected" : ""}>— none —</option>
+          ${STRAT_TIERS.map(t => `<option value="${escape(t)}" ${u.strategic_tier === t ? "selected" : ""}>${escape(t)}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="dp-select">
+      <span class="dp-select-lbl">Type</span>
+      <div class="dp-select-wrap">
+        <div class="dp-select-btn">
+          <span class="dp-select-val">${escape(typeLabel)}</span>
+          <span class="dp-select-caret">▾</span>
+        </div>
+        <select class="dp-select-native" onchange="saveEntityField('${u.id}','type',this.value)">
+          ${ENTITY_TYPES.map(t => `<option value="${escape(t)}" ${u.type === t ? "selected" : ""}>${escape(ENTITY_LABELS[t] || t)}</option>`).join("")}
+        </select>
+      </div>
+    </div>`;
+
+  // Contact row (top contact, dormancy, website)
   const ROLE_PRIORITY = ["provost","president","dean","rector","head","director","vice president","vp","international","admission","erasmus","global","intl"];
   const sortedContacts = (u.contacts || []).filter(c => c.name || c.email).sort((a,b) => {
     const score = c => {
@@ -8835,212 +9306,215 @@ function detailHtml(u) {
     };
     return score(a) - score(b);
   });
-  const contactsHtml = sortedContacts.length
-    ? sortedContacts.map(c => `<div class="contact-row">
-        ${c.name ? `<div class="nm">${escape(c.name)}</div>` : ""}
-        ${c.role ? `<div class="ro">${escape(c.role)}</div>` : ""}
-        ${c.email ? `<div class="em"><a href="mailto:${escape(c.email)}">${escape(c.email)}</a></div>` : ""}
-      </div>`).join("")
-    : '<div style="font-size:12px;color:var(--ink-soft);font-style:italic;">No contacts on file yet.</div>';
+  const topContact = sortedContacts[0];
+  const contactRowHtml = `
+    <div class="dp-contact">
+      <div class="dp-contact-item">
+        <div class="dp-contact-lbl">Top contact</div>
+        <div class="dp-contact-val">
+          ${topContact && topContact.name ? `<b>${escape(topContact.name)}</b>` : `<span class="dp-contact-aside">No named contact</span>`}
+          ${topContact && topContact.role ? `<div class="dp-contact-aside" style="margin-left:0;margin-top:2px">${escape(topContact.role)}</div>` : ""}
+        </div>
+      </div>
+      <div class="dp-contact-item">
+        <div class="dp-contact-lbl">Last contacted</div>
+        <div class="dp-contact-val mono">${escape(u.last_contacted || "—")}</div>
+        ${(u.days_dormant !== null && u.days_dormant !== undefined) ? `<div class="dp-contact-aside" style="margin-left:0;margin-top:2px">${u.days_dormant}d ago</div>` : ""}
+      </div>
+      <div class="dp-contact-item">
+        <div class="dp-contact-lbl">Website</div>
+        <div class="dp-contact-val">
+          ${u.website ? `<a class="dp-contact-link" href="${u.website.startsWith('http') ? u.website : 'https://' + u.website.split(/\s/)[0]}" target="_blank" rel="noopener">${escape(u.website.replace(/^https?:\/\//, '').split('/')[0])}</a>` : '<span class="dp-contact-aside">—</span>'}
+        </div>
+      </div>
+    </div>`;
 
-  const dormStr = (u.days_dormant !== null && u.days_dormant !== undefined) ? `<small style="color:var(--ink-soft)">(${u.days_dormant}d ago)</small>` : '';
+  // Editable text fields
+  const fieldsHtml = `
+    <div class="dp-field">
+      <div class="dp-field-lbl">Focus areas / curriculum</div>
+      <textarea class="dp-input multiline" rows="2"
+        onchange="saveEntityField('${u.id}','focus_areas',this.value)"
+        placeholder="e.g. Computer Science, Business, Design">${escape(u.focus_areas || "")}</textarea>
+    </div>
+    <div class="dp-field">
+      <div class="dp-field-lbl">Internal notes</div>
+      <textarea class="dp-input multiline" rows="3"
+        onchange="saveEntityField('${u.id}','notes',this.value)"
+        placeholder="Internal notes — visible to anyone with access">${escape(u.notes || "")}</textarea>
+    </div>`;
 
+  // Research link as the dashed CTA
   const wsQ = encodeURIComponent(`${u.name} ${u.country || u.continent || ""}`);
   const wsLink = `https://www.google.com/search?q=${wsQ}`;
+  const researchHtml = `<a class="dp-research" href="${wsLink}" target="_blank" rel="noopener">Research this org on Google &nbsp;→</a>`;
+
+  // Recommended collab format
+  const collab = (typeof recommendCollabFormat === "function") ? recommendCollabFormat(u) : null;
+  const formatHtml = collab ? `
+    <div class="dp-sec">
+      <div class="dp-sec-head"><div class="dp-sec-title">Recommended H-FARM College format</div></div>
+      <div class="dp-format-row">
+        <span class="dp-format-pill">${escape(collab.name)}</span>
+        ${collab.duration ? `<span class="dp-format-meta">${escape(collab.duration)}</span>` : ""}
+      </div>
+      ${collab.group ? `<div class="dp-format-meta" style="margin-bottom:8px"><b>Group:</b> ${escape(collab.group)}</div>` : ""}
+      <div class="dp-format-body">${escape(collab.ideal)}</div>
+      ${collab.case ? `<div class="dp-format-ref"><span class="dp-ref-key">Ref</span><span class="dp-ref-val">${escape(collab.case)}</span></div>` : ""}
+    </div>` : "";
+
+  // Owner team
+  const recommended = (typeof recommendTeams === "function") ? recommendTeams(u) : [];
+  const current = (typeof assignedTeam === "function") ? assignedTeam(u.id) : "";
+  const head = current || (recommended[0] && recommended[0].id) || "";
+  const headTeam = (typeof TEAM_BY_ID !== "undefined") ? TEAM_BY_ID[head] : null;
+  const teamOpts = (typeof TEAMS !== "undefined" ? TEAMS : []).map(t =>
+    `<option value="${t.id}" ${head === t.id ? "selected" : ""}>${escape(t.name)}</option>`).join("");
+  const teamHtml = `
+    <div class="dp-sec">
+      <div class="dp-sec-head">
+        <div class="dp-sec-title">Owner team</div>
+        <div class="dp-sec-aside">${recommended.length ? "Suggested by AI" : ""}</div>
+      </div>
+      <div class="dp-team-current">
+        <span class="dp-suggest-label" style="margin-bottom:0">Assigned</span>
+        <select onchange="setEntityTeam('${u.id}', this.value)">
+          <option value="">— unassigned —</option>
+          ${teamOpts}
+        </select>
+      </div>
+      ${headTeam ? `
+        <div class="dp-team-name">${escape(headTeam.name)}</div>
+        <div class="dp-team-blurb">${escape(headTeam.remit || "")}</div>
+      ` : ""}
+      ${recommended.length ? `
+        <div class="dp-suggest-label">Recommended for this profile</div>
+        <div class="dp-suggest-chips">
+          ${recommended.map((t, i) => `<span class="dp-suggest-chip${i === 0 ? " primary" : ""}" onclick="setEntityTeam('${u.id}','${t.id}')" title="${i === 0 ? "Primary recommendation" : "Supporting team"}">
+            ${i === 0 ? `<span class="dp-suggest-star">★</span>` : ""}${escape(t.name)}
+          </span>`).join("")}
+        </div>` : ""}
+    </div>`;
+
+  // Top-4 programs
+  const progSorted = PROGRAMS.map(p => ({...p, score: u.program_matches[p.id] || 0}))
+    .sort((a,b) => b.score - a.score);
+  const top4 = progSorted.slice(0, 4);
+  const rest = progSorted.slice(4);
+  const progHtml = `
+    <div class="dp-sec">
+      <div class="dp-sec-head">
+        <div class="dp-sec-title">H-FARM College Summer Programs</div>
+        <div class="dp-sec-aside">scored against verified 2026 catalogue</div>
+      </div>
+      <div class="dp-programs">
+        ${top4.map(p => {
+          const reasoning = (typeof programFitReasoning === "function") ? programFitReasoning(u, p.id) : "";
+          return `<div class="dp-prog">
+            <div class="dp-prog-row">
+              <div class="dp-prog-info">
+                <span class="dp-prog-dot" style="background:${p.color}"></span>
+                <div>
+                  <div class="dp-prog-name">${escape(p.name)}</div>
+                  <div class="dp-prog-tag">${escape(p.topic)} · ${escape(p.age)} · ${escape(p.lang)}</div>
+                </div>
+              </div>
+              <div class="dp-prog-score">${p.score}</div>
+            </div>
+            <div class="dp-prog-bar"><span style="width:${p.score}%;background:${p.color}"></span></div>
+            ${reasoning ? `<div class="dp-prog-verdict">${reasoning}</div>` : ""}
+          </div>`;
+        }).join("")}
+        ${rest.length ? `
+        <details style="margin-top:6px">
+          <summary style="cursor:pointer;font-size:11px;color:var(--ink-soft);font-weight:700;letter-spacing:.3px;padding:6px 0">Show ${rest.length} more programmes</summary>
+          ${rest.map(p => `<div class="dp-prog">
+            <div class="dp-prog-row">
+              <div class="dp-prog-info">
+                <span class="dp-prog-dot" style="background:${p.color}"></span>
+                <div>
+                  <div class="dp-prog-name">${escape(p.name)}</div>
+                  <div class="dp-prog-tag">${escape(p.topic)} · ${escape(p.age)} · ${escape(p.lang)}</div>
+                </div>
+              </div>
+              <div class="dp-prog-score">${p.score}</div>
+            </div>
+            <div class="dp-prog-bar"><span style="width:${p.score}%;background:${p.color}"></span></div>
+          </div>`).join("")}
+        </details>` : ""}
+      </div>
+    </div>`;
+
+  // Profile section assembled
+  const revertBtn = (typeof ENTITY_OVERRIDES !== "undefined" && ENTITY_OVERRIDES[u.id])
+    ? `<button type="button" class="dp-sec-link" onclick="revertEntityOverrides('${u.id}')" title="Discard edits and reload from CSV">↶ Revert edits</button>`
+    : '';
 
   return `
-    <div class="score-card" onclick="toggleScoreBreakdown()" title="Click to see how this score is computed">
-      <div><div class="big">${u.partnership_score}</div>
-        <div style="font-size:11px;opacity:.8;letter-spacing:1px;text-transform:uppercase;">Partnership Score <span style="opacity:.7">▾</span></div></div>
-      <div class="label-stack">
-        <div class="top">Readiness</div><div class="bot">${u.partnership_readiness}</div></div>
+    <div class="dp-sec">
+      <div class="dp-sec-head">
+        <div class="dp-sec-title">Profile</div>
+        <div class="dp-sec-actions">${revertBtn}</div>
+      </div>
+      <div class="dp-chips">${chipsHtml}</div>
+      <div class="dp-selects">${selectsHtml}</div>
+      ${contactRowHtml}
+      ${fieldsHtml}
+      ${researchHtml}
     </div>
-
-    <div class="score-breakdown" id="score-breakdown" style="display:none">
-      <h4>How this ${u.partnership_score}/100 is computed</h4>
-      ${bdHtml}
-      <div class="bd-total">= <b>${u.partnership_score}/100</b> · ${u.partnership_readiness}</div>
-    </div>
-
-    ${(() => {
-      const d = engagementDepth(u);
-      const widthPct = Math.max(2, d.total);
-      return `<div class="depth-row" title="How much we've already invested in this relationship — the Z axis for the 3D strategic maps. High = deep history; low = unworked.">
-        <div class="depth-head">
-          <span class="depth-label">Engagement depth</span>
-          <span class="depth-score"><b>${d.total}</b><small>/100</small></span>
-        </div>
-        <div class="depth-bar"><div style="width:${widthPct}%"></div></div>
-        <div class="depth-breakdown">
-          <span>outreach <b>${d.outreach}</b><small>/40</small></span>
-          <span>contacts <b>${d.contacts}</b><small>/30</small></span>
-          <span>persistence <b>${d.persistence}</b><small>/30</small></span>
-        </div>
-      </div>`;
-    })()}
-
-    <div class="detail-section">
-      <div class="profile-head">
-        <h3>Profile</h3>
-        <div class="profile-head-actions">
-          <button type="button" class="profile-brief" onclick="generateBrief('${u.id}', event)" title="Generate a one-page typeset PDF brief for this partner">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span class="pb-label">Generate brief</span>
-          </button>
-          ${ENTITY_OVERRIDES[u.id] ? `<button type="button" class="profile-revert" onclick="revertEntityOverrides('${u.id}')" title="Discard edits and reload from CSV">↶ Revert edits</button>` : ''}
-        </div>
-      </div>
-      <div class="profile-tags">${tagsHtml}</div>
-
-      <!-- Editable form: changes save on commit (blur/change). All other readers
-           in the app re-render automatically once the override is persisted. -->
-      <div class="edit-grid" style="margin-top:12px">
-        <label class="ef">
-          <span class="ef-label">Priority</span>
-          <select class="ef-input" onchange="saveEntityField('${u.id}','priority',this.value)">
-            <option value="" ${!u.priority ? 'selected' : ''}>— unclassified —</option>
-            ${PRIORITIES.map(p => `<option value="${escape(p)}" ${u.priority === p ? 'selected' : ''}>${escape(p)}</option>`).join("")}
-          </select>
-        </label>
-        <label class="ef">
-          <span class="ef-label">Strategic tier</span>
-          <select class="ef-input" onchange="saveEntityField('${u.id}','strategic_tier',this.value)">
-            <option value="" ${!u.strategic_tier ? 'selected' : ''}>— none —</option>
-            ${STRAT_TIERS.map(t => `<option value="${escape(t)}" ${u.strategic_tier === t ? 'selected' : ''}>${escape(t)}</option>`).join("")}
-          </select>
-        </label>
-        <label class="ef">
-          <span class="ef-label">Type</span>
-          <select class="ef-input" onchange="saveEntityField('${u.id}','type',this.value)">
-            ${ENTITY_TYPES.map(t => `<option value="${escape(t)}" ${u.type === t ? 'selected' : ''}>${escape(ENTITY_LABELS[t] || t)}</option>`).join("")}
-          </select>
-        </label>
-        <label class="ef ef-full">
-          <span class="ef-label">Focus areas / curriculum</span>
-          <textarea class="ef-input ef-textarea" rows="2"
-            onchange="saveEntityField('${u.id}','focus_areas',this.value)"
-            placeholder="e.g. Computer Science, Business, Design">${escape(u.focus_areas || '')}</textarea>
-        </label>
-        <label class="ef ef-full">
-          <span class="ef-label">Notes</span>
-          <textarea class="ef-input ef-textarea" rows="3"
-            onchange="saveEntityField('${u.id}','notes',this.value)"
-            placeholder="Internal notes — visible to anyone with access">${escape(u.notes || '')}</textarea>
-        </label>
-      </div>
-
-      <!-- Read-only metadata that lives in the CSV and isn't currently editable -->
-      <div class="kv-grid" style="margin-top:14px">
-        ${u.status_legacy ? `<div class="k">Status</div><div class="v">${escape(u.status_legacy)}</div>` : ''}
-        <div class="k">Last contacted</div><div class="v">${u.last_contacted || '—'} ${dormStr}</div>
-        ${u.website ? `<div class="k">Website</div><div class="v"><a href="${u.website.startsWith('http') ? u.website : 'https://' + u.website.split(/\s/)[0]}" target="_blank" style="color:var(--navy-light)">${escape(u.website)}</a></div>` : ''}
-        ${u.phone ? `<div class="k">Phone</div><div class="v" style="font-family:Consolas,monospace;font-size:11px">${escape(u.phone)}</div>` : ''}
-        ${u.programs ? `<div class="k">Project type</div><div class="v">${escape(u.programs)}</div>` : ''}
-        ${u.final_action ? `<div class="k">Next action</div><div class="v" style="color:var(--crit);font-weight:600">${escape(u.final_action)}</div>` : ''}
-      </div>
-      <a class="research-link" href="${wsLink}" target="_blank">Research this org on Google →</a>
-    </div>
-
-    <div class="detail-section">
-      <h3>Recommended H-FARM College format</h3>
-      <div class="collab-card">
-        <div class="collab-head">
-          <span class="collab-badge">${escape(collab.name)}</span>
-          ${collab.duration ? `<span class="collab-dur">${escape(collab.duration)}</span>` : ''}
-        </div>
-        ${collab.group ? `<div class="collab-meta"><b>Group:</b> ${escape(collab.group)}</div>` : ''}
-        <div class="collab-ideal">${escape(collab.ideal)}</div>
-        ${collab.case ? `<div class="collab-case"><b>Reference:</b> ${escape(collab.case)}</div>` : ''}
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="engagement-tabs">
-        <button class="eng-tab active" data-tab="contacts" onclick="switchEngTab(event,'contacts')">
-          Contacts <span class="ct-badge">${sortedContacts.length}</span>
-        </button>
-        <button class="eng-tab" data-tab="tracking" onclick="switchEngTab(event,'tracking')">
-          Outreach log <span class="ct-badge">${(OUTREACH[u.id] || []).length}</span>
-        </button>
-        <button class="eng-tab" data-tab="contracts" onclick="switchEngTab(event,'contracts')">
-          Contracts <span class="ct-badge">${(CONTRACTS || []).filter(c => c.entity_id === u.id).length}</span>
-        </button>
-        <button class="eng-tab" data-tab="followups" onclick="switchEngTab(event,'followups')">
-          Follow-ups <span class="ct-badge">${_followupsForEntity(u.id).length}</span>
-        </button>
-        <button class="eng-tab" data-tab="activity" onclick="switchEngTab(event,'activity');loadEntityActivity('${u.id}')">
-          Activity
-        </button>
-      </div>
-      <div class="eng-panel active" data-panel="contacts">
-        ${contactsHtml}
-      </div>
-      <div class="eng-panel" data-panel="tracking">
-        ${renderTrackingBody(u)}
-      </div>
-      <div class="eng-panel" data-panel="contracts">
-        ${renderEntityContractsBody(u)}
-      </div>
-      <div class="eng-panel" data-panel="followups">
-        ${renderEntityFollowupsBody(u)}
-      </div>
-      <div class="eng-panel" data-panel="activity">
-        <div id="activity-list-${u.id}" class="activity-list"><div class="activity-empty">Loading…</div></div>
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <h3>Owner team</h3>
-      ${(() => {
-        const recommended = recommendTeams(u);
-        const current = assignedTeam(u.id);
-        const recIds = recommended.map(t => t.id);
-        const head = current || (recommended[0] && recommended[0].id) || "";
-        const headTeam = TEAM_BY_ID[head];
-        const teamOpts = TEAMS.map(t =>
-          `<option value="${t.id}" ${head === t.id ? 'selected' : ''}>${escape(t.name)}</option>`).join("");
-        return `
-          <div class="owner-card">
-            <div class="owner-row">
-              <span class="owner-label">Currently assigned</span>
-              <select class="owner-select" onchange="setEntityTeam('${u.id}', this.value)">
-                <option value="">— unassigned —</option>
-                ${teamOpts}
-              </select>
-            </div>
-            ${headTeam ? `
-              <div class="owner-detail" style="border-left-color:${headTeam.color}">
-                <div class="ow-name">${escape(headTeam.name)}</div>
-                <div class="ow-remit">${escape(headTeam.remit)}</div>
-                ${headTeam.email ? `<div class="ow-contact"><b>Email:</b> <a href="mailto:${headTeam.email}">${headTeam.email}</a></div>` : ''}
-                ${headTeam.phone ? `<div class="ow-contact"><b>Phone:</b> ${headTeam.phone}</div>` : ''}
-              </div>` : '<div style="font-size:11px;color:var(--ink-soft);font-style:italic">No team selected.</div>'}
-            ${recommended.length ? `<div class="owner-rec">
-              <span class="owner-rec-label">Recommended for this profile</span>
-              <div class="owner-rec-chips">
-                ${recommended.map((t,i) => `<span class="rec-chip" style="background:${t.color}" onclick="setEntityTeam('${u.id}','${t.id}')" title="${i===0?'Primary recommendation':'Supporting team'}">${i===0?'<span class="rec-chip-star">★</span>':''}${escape(t.name)}</span>`).join("")}
-              </div>
-            </div>` : ''}
-          </div>`;
-      })()}
-    </div>
-
-    <div class="detail-section"><h3>Action recommendation</h3><div class="action-rec">${actionRec}</div></div>
-
-    <div class="detail-section">
-      <h3>H-FARM College Summer Programs · fit analysis</h3>
-      <p style="font-size:11px;color:var(--ink-soft);margin-bottom:10px">Scored against verified H-FARM College 2026 programme keywords (primary +25, secondary +5). Top 4 include reasoning.</p>
-      ${progRows}
-    </div>
-
-    ${u.notes ? `<div class="detail-section"><h3>Notes</h3><div style="font-size:12px;line-height:1.6;background:var(--paper);padding:12px 14px;border-radius:6px;white-space:pre-wrap;">${escape(u.notes)}</div></div>` : ''}
+    ${formatHtml}
+    ${teamHtml}
+    ${progHtml}
+    ${u.notes ? `<div class="dp-sec">
+      <div class="dp-sec-head"><div class="dp-sec-title">Notes</div></div>
+      <div class="dp-notes">${escape(u.notes)}</div>
+    </div>` : ""}
   `;
 }
 
-function toggleScoreBreakdown() {
-  const el = document.getElementById("score-breakdown");
-  if (el) el.style.display = (el.style.display === "none" || !el.style.display) ? "block" : "none";
+// ---- Contacts tab ----------------------------------------------------
+function _dpContactsTabHtml(u) {
+  const ROLE_PRIORITY = ["provost","president","dean","rector","head","director","vice president","vp","international","admission","erasmus","global","intl"];
+  const sortedContacts = (u.contacts || []).filter(c => c.name || c.email).sort((a,b) => {
+    const score = c => {
+      const r = (c.role || "").toLowerCase();
+      for (let i = 0; i < ROLE_PRIORITY.length; i++) if (r.includes(ROLE_PRIORITY[i])) return i;
+      return 99;
+    };
+    return score(a) - score(b);
+  });
+  if (!sortedContacts.length) {
+    return `<div class="dp-empty">
+      <div class="dp-empty-icon">+</div>
+      <div class="dp-empty-h">No contacts on file yet</div>
+      <div class="dp-empty-p">Add a named contact via the source CSV or Sheets row so outreach can attribute to a real person.</div>
+    </div>`;
+  }
+  const rows = sortedContacts.map(c => `<div class="contact-row">
+    ${c.name ? `<div class="nm">${escape(c.name)}</div>` : ""}
+    ${c.role ? `<div class="ro">${escape(c.role)}</div>` : ""}
+    ${c.email ? `<div class="em"><a href="mailto:${escape(c.email)}">${escape(c.email)}</a></div>` : ""}
+  </div>`).join("");
+  return `<div class="dp-sec">
+    <div class="dp-sec-head">
+      <div class="dp-sec-title">Contacts on file</div>
+      <div class="dp-sec-aside">${sortedContacts.length} named</div>
+    </div>
+    ${rows}
+  </div>`;
 }
+
+// ---- Snooze (visual-only — coming soon) -----------------------------
+function dpSnoozeComingSoon() {
+  if (typeof showResetUndoToast === "function") {
+    showResetUndoToast("Snooze · coming soon — backend slot not wired yet");
+  }
+}
+
+// detailHtml() and toggleScoreBreakdown() were the old monolithic detail-panel
+// renderer. They've been replaced by the dp-* family above (openDetail builds
+// the whole panel from _dpHeaderHtml + _dpActionHtml + _dpTabsHtml + per-tab
+// renderers; toggleScoreBreakdown delegates to dpToggleScoreBreakdown).
 
 // Map a server-side edit_log row to a human-readable timeline line.
 // Resource kinds:
