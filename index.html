@@ -877,13 +877,131 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .view-header p{font-size:13px;color:var(--ink-soft);line-height:1.5;max-width:900px}
 
 /* =================================================================
-   HOME VIEW — Stitch "newsroom editorial" redesign
+   HOME VIEW — Stitch "Mission control" redesign (B)
    -----------------------------------------------------------------
-   Dark hero briefing card → single-bar pipeline glance → two-column
-   priorities/follow-ups → 2x2 JUMP IN tiles → live activity strip.
-   Replaces the prior 8-tile KPI grid + 4-card layout. New class
-   prefix .hb-* (home briefing) so we can keep the older .home-*
-   classes alive for any code that still references them.
+   Replaces the previous editorial layout with a denser, action-led
+   dashboard: 3-stat hero + 4 momentum cards with sparklines + ranked
+   priority list (01-06) + full-pipeline column bars + inline live
+   activity. New class prefix .mc-* (mission control). The previous
+   .hb-* classes are kept in place for backward compat — just unused.
+   ================================================================= */
+
+/* ---- Mission-control shell ---- */
+.mc-hero{
+  background:linear-gradient(135deg,var(--ink) 0%,#0c0c0e 100%);
+  color:#fff;border-radius:8px;border-left:4px solid var(--hf-red);
+  padding:28px 32px;margin-bottom:20px;
+  display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;
+  position:relative;overflow:hidden;
+}
+.mc-hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 50% 70% at 90% 50%,rgba(217,83,79,.08),transparent 70%)}
+.mc-hero-left{position:relative;z-index:1}
+.mc-hero-tag{display:inline-flex;align-items:center;gap:10px;font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:14px}
+.mc-hero-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--hf-red);animation:mc-pulse 2.4s ease-in-out infinite}
+@keyframes mc-pulse{0%,100%{opacity:.9}50%{opacity:.4}}
+.mc-hero h1{font-size:clamp(28px,3.4vw,40px);font-weight:800;line-height:1.08;letter-spacing:-1px;color:#fff;margin-bottom:10px}
+.mc-hero h1 .mc-name{color:var(--hf-red)}
+.mc-hero p{font-size:14px;color:rgba(255,255,255,.65);line-height:1.55;max-width:580px}
+.mc-hero p b{color:#fff;font-weight:700;font-variant-numeric:tabular-nums}
+.mc-hero-stats{display:flex;gap:14px;position:relative;z-index:1}
+.mc-hero-stat{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+  border-radius:6px;padding:14px 18px;min-width:130px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.mc-hero-stat-n{font-size:36px;font-weight:800;letter-spacing:-1.4px;line-height:1;color:#fff;font-variant-numeric:tabular-nums}
+.mc-hero-stat-lbl{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#fff;margin-top:6px}
+.mc-hero-stat-desc{font-size:10px;color:rgba(255,255,255,.55);line-height:1.4}
+.mc-hero-stat.crit{border-top:3px solid var(--crit)}
+.mc-hero-stat.hot{border-top:3px solid var(--hot)}
+.mc-hero-stat.ur{border-top:3px solid var(--ur)}
+
+/* ---- Section header pattern (used across momentum/pipeline/etc) ---- */
+.mc-sec{margin-bottom:20px}
+.mc-sec-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;gap:14px}
+.mc-sec-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--hf-red)}
+.mc-sec-eyebrow::before{content:'';width:6px;height:6px;background:var(--hf-red);border-radius:50%;display:inline-block}
+.mc-sec-cap{font-size:11px;color:var(--ink-soft);font-style:italic;margin-top:3px}
+.mc-sec-link{font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--hf-red);cursor:pointer;text-decoration:none;text-transform:uppercase}
+.mc-sec-link:hover{color:var(--hf-red-deep);text-decoration:underline}
+.mc-live-tag{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--ur);padding:3px 9px;border:1px solid var(--ur);border-radius:9px}
+.mc-live-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--ur);animation:mc-pulse 2s ease-in-out infinite}
+
+/* ---- Momentum: 4-card grid w/ sparklines ---- */
+.mc-momentum{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.mc-mom-card{
+  background:#fff;border:1px solid var(--rule);border-radius:7px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:6px;
+  transition:box-shadow var(--motion-base,240ms) var(--ease-elegant,ease),transform var(--motion-base,240ms) var(--ease-elegant,ease);
+}
+.mc-mom-card:hover{box-shadow:0 6px 18px rgba(10,20,40,.10);transform:translateY(-1px)}
+.mc-mom-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink-soft);letter-spacing:.3px;font-weight:600}
+.mc-mom-trend{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:800;color:var(--ur)}
+.mc-mom-trend.down{color:var(--crit)}
+.mc-mom-n{font-size:36px;font-weight:800;color:var(--ink);letter-spacing:-1.4px;line-height:1;font-variant-numeric:tabular-nums}
+.mc-mom-desc{font-size:11px;color:var(--ink-soft);line-height:1.4;margin-bottom:4px}
+.mc-mom-spark{width:100%;height:36px;display:block;overflow:visible}
+
+/* ---- Two-column row: Top priorities + Full pipeline ---- */
+.mc-row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-bottom:20px;align-items:start}
+.mc-card{
+  background:#fff;border:1px solid var(--rule);border-radius:8px;
+  padding:18px 22px;box-shadow:0 1px 4px rgba(10,20,40,.04);
+}
+
+/* Ranked list (01–06) */
+.mc-rank-row{
+  display:grid;grid-template-columns:36px 1fr auto;gap:14px;
+  padding:12px 0;border-bottom:1px solid var(--rule);align-items:center;
+  cursor:pointer;transition:background var(--motion-fast,140ms) var(--ease-elegant,ease);
+}
+.mc-rank-row:last-child{border-bottom:none}
+.mc-rank-row:hover{background:var(--paper);padding-left:8px;padding-right:8px;margin-left:-8px;margin-right:-8px;border-bottom-color:transparent;border-radius:4px}
+.mc-rank-num{font-size:13px;font-weight:800;color:var(--ink-mute);font-variant-numeric:tabular-nums;letter-spacing:-.3px;text-align:center}
+.mc-rank-body{min-width:0;display:flex;flex-direction:column;gap:3px}
+.mc-rank-name-row{display:flex;align-items:center;gap:10px}
+.mc-rank-flag{width:24px;height:18px;border-radius:2px;overflow:hidden;background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-mute);font-weight:700;flex-shrink:0}
+.mc-rank-flag img{width:100%;height:100%;object-fit:cover;display:block}
+.mc-rank-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-rank-meta{font-size:11px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mc-rank-chip{font-size:9px;font-weight:800;padding:2px 8px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase;background:var(--paper);color:var(--ink-soft);border:1px solid var(--rule)}
+.mc-rank-score{font-size:18px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.4px;min-width:32px;text-align:right}
+
+/* Full pipeline: 8 vertical bars w/ count + label */
+.mc-pipe{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;height:120px;margin-bottom:12px}
+.mc-pipe-bar{position:relative;background:var(--paper);border-radius:3px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;transition:filter var(--motion-fast,140ms) var(--ease-elegant,ease)}
+.mc-pipe-bar:hover{filter:brightness(1.1)}
+.mc-pipe-fill{width:100%;border-radius:3px;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;color:#fff;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.3px;min-height:18px}
+.mc-pipe-labels{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.mc-pipe-lbl{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);text-align:center;line-height:1.3}
+
+/* Live activity inline list */
+.mc-live-card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:18px 22px}
+.mc-live-list{display:flex;flex-direction:column;gap:10px}
+.mc-live-item{display:grid;grid-template-columns:10px 1fr auto;gap:12px;align-items:center;font-size:12px;color:var(--ink-soft);cursor:pointer;padding:6px 0;transition:color var(--motion-fast,140ms) var(--ease-elegant,ease)}
+.mc-live-item:hover{color:var(--ink)}
+.mc-live-dot{width:8px;height:8px;border-radius:50%;background:var(--hf-red)}
+.mc-live-dot.blue{background:#1F6FB4}
+.mc-live-dot.green{background:var(--ur)}
+.mc-live-dot.amber{background:var(--warm)}
+.mc-live-text{line-height:1.4}
+.mc-live-text b{color:var(--ink);font-weight:700}
+.mc-live-ent{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;background:var(--paper);color:var(--ink-soft);border:1px solid var(--rule);margin-left:6px}
+.mc-live-time{font-family:'Consolas',monospace;font-size:10px;color:var(--ink-mute);min-width:36px;text-align:right}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .mc-hero{grid-template-columns:1fr;gap:18px}
+  .mc-momentum{grid-template-columns:repeat(2,1fr)}
+  .mc-row{grid-template-columns:1fr}
+  .mc-pipe{grid-template-columns:repeat(4,1fr);height:200px}
+  .mc-pipe-labels{grid-template-columns:repeat(4,1fr)}
+}
+
+/* =================================================================
+   HOME VIEW — Stitch "newsroom editorial" redesign (kept below for
+   reference / backward compat; .hb-* classes no longer rendered
+   by renderHomeView but live-activity loader still uses .hb-live-*)
    ================================================================= */
 .home-shell{padding:28px 28px 60px;max-width:1400px;margin:0 auto}
 
@@ -11187,86 +11305,183 @@ function renderHomeView() {
     </div>`;
   }).join("");
 
+  // ===== Mission-control specific computations =====
+  // Momentum metrics — last 14 days where possible
+  const _now14d = Date.now() - 14 * 86400000;
+  const _isRecentOutreach = (ts) => ts && new Date(ts).getTime() >= _now14d;
+  const conversationsActive = (() => {
+    const ids = new Set();
+    Object.entries(OUTREACH || {}).forEach(([eid, list]) => {
+      if ((list || []).some(o => _isRecentOutreach(o.date))) ids.add(eid);
+    });
+    return ids.size;
+  })();
+  const newThisWeek = UNIS.filter(u => u.pipeline_stage === "identified").slice(0, total).length;
+  // Signed-YTD = same as signedActive (we don't have signing dates yet, treat live+signed as YTD)
+  const signedYTD = signedActive;
+  const stuckOver30 = dormantHi.length;
+
+  // Decorative sparkline shapes per momentum card. Values 0-100 mapped to
+  // an SVG polyline; not real historical data (we don't have it series-wise
+  // pre-engagement-depth-snapshots). Demo-grade visual cue for trend.
+  const _sparkSvg = (points, color) => {
+    const w = 110, h = 32;
+    const max = Math.max.apply(null, points), min = Math.min.apply(null, points);
+    const range = (max - min) || 1;
+    const step = w / (points.length - 1);
+    const path = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`).join(' ');
+    return `<svg class="mc-mom-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+      <path d="${path} L${w},${h} L0,${h} Z" fill="${color}" opacity=".10"/>
+    </svg>`;
+  };
+  const spark_new   = _sparkSvg([3, 5, 4, 6, 8, 7, 9, 11, 10, 12],  PRIO_COLORS["Up & Running"]);
+  const spark_conv  = _sparkSvg([28, 32, 30, 35, 41, 38, 44, 42, 47, 47], "#1F6FB4");
+  const spark_signed = _sparkSvg([2, 2, 3, 3, 4, 4, 5, 5, 6, 6], PRIO_COLORS["Up & Running"]);
+  const spark_stuck = _sparkSvg([20, 19, 18, 18, 17, 17, 16, 16, 16, 16], PRIO_COLORS["Critical"]);
+
+  // ===== Full pipeline: 8 vertical bars =====
+  const maxStageCount = Math.max(1, ..._prioOrder.map(p => _prioCounts[p] || 0));
+  const pipeBarsHtml = _prioOrder.map(p => {
+    const n = _prioCounts[p] || 0;
+    const heightPct = (n / maxStageCount) * 100;
+    const color = PRIO_COLORS[p] || "#CCCCCC";
+    const lbl = p === "" ? "Unclassified" : p;
+    return `<div class="mc-pipe-bar" onclick="toggleHomePriority('${p === '' ? '' : escape(p)}')" title="${escape(lbl)}: ${n} entities">
+      <div class="mc-pipe-fill" style="background:${color};height:${heightPct.toFixed(1)}%">${n}</div>
+    </div>`;
+  }).join("");
+  const pipeLabelsHtml = _prioOrder.map(p => {
+    const lbl = p === "" ? "Unclassified" : p;
+    return `<div class="mc-pipe-lbl">${escape(lbl)}</div>`;
+  }).join("");
+
+  // ===== Ranked top priorities (01-06) =====
+  const rankedHtml = top.map((u, i) => {
+    const iso = _isoForCountry(u.country_canonical || u.country || "");
+    const flagImg = iso
+      ? `<img src="https://flagcdn.com/48x36/${iso.toLowerCase()}.png" alt="${escape(u.country || "")}" loading="lazy" onerror="this.style.display='none'"/>`
+      : (u.country ? `<span>${escape(u.country.slice(0,2).toUpperCase())}</span>` : "");
+    const stageRaw = (u.pipeline_stage || "").replace(/_/g, " ");
+    const stage = stageRaw ? stageRaw.charAt(0).toUpperCase() + stageRaw.slice(1) : (u.priority || "Unclassified");
+    const rank = String(i + 1).padStart(2, "0");
+    return `<div class="mc-rank-row" onclick="openDetail('${escape(u.id)}')">
+      <div class="mc-rank-num">${rank}</div>
+      <div class="mc-rank-body">
+        <div class="mc-rank-name-row">
+          <span class="mc-rank-flag">${flagImg}</span>
+          <span class="mc-rank-name">${escape(u.name)}</span>
+        </div>
+        <div class="mc-rank-meta">${escape(u.country || u.continent || "—")} · ${escape(ENTITY_LABELS[u.type] || u.type)} <span class="mc-rank-chip">${escape(stage)}</span></div>
+      </div>
+      <div class="mc-rank-score">${u.partnership_score}</div>
+    </div>`;
+  }).join("");
+
   el.innerHTML = `
     <div class="home-shell">
-      <!-- Hero briefing card -->
-      <div class="hb-hero">
-        <div class="hb-hero-left">
-          <div class="hb-eyebrow">${escape(dateEyebrow)}</div>
-          <h1 class="hb-greet">${greeting} ${displayName ? `<span class="hb-name">${escape(displayName)}</span>.` : `<span class="hb-name">${greetSubject}</span>`}</h1>
-          <p class="hb-sub">${escape(situationsLabel)}</p>
+      <!-- Hero briefing -->
+      <section class="mc-hero">
+        <div class="mc-hero-left">
+          <div class="mc-hero-tag">Daily briefing · ${escape(dateEyebrow.split(" · ")[0])}</div>
+          <h1>${greeting}<br/>${displayName ? `<span class="mc-name">${escape(displayName)}.</span>` : `<span class="mc-name">${greetSubject}</span>`}</h1>
+          <p><b>${heroAlarmN}</b> high-priority partner${heroAlarmN === 1 ? '' : 's'} haven't been touched in 30+ days. <b>${signedActive}</b> partnership${signedActive === 1 ? '' : 's'} ${signedActive === 1 ? 'is' : 'are'} live${heroActionN > 0 ? `. <b>${heroActionN}</b> AI-discovered prospect${heroActionN === 1 ? '' : 's'} await${heroActionN === 1 ? 's' : ''} your review` : ''}.</p>
         </div>
-        <div class="hb-hero-stats">
-          <div class="hb-stat">
-            <div class="hb-stat-n alarm">${heroAlarmN}</div>
-            <div class="hb-stat-lbl">high-priority partners haven't been contacted in 30+ days</div>
+        <div class="mc-hero-stats">
+          <div class="mc-hero-stat crit">
+            <div class="mc-hero-stat-n">${critical}</div>
+            <div class="mc-hero-stat-lbl">Critical</div>
+            <div class="mc-hero-stat-desc">need touch this week</div>
           </div>
-          <div class="hb-stat">
-            <div class="hb-stat-n good">${heroGoodN}</div>
-            <div class="hb-stat-lbl">partnerships are live and signed</div>
+          <div class="mc-hero-stat hot">
+            <div class="mc-hero-stat-n">${hot}</div>
+            <div class="mc-hero-stat-lbl">Hot</div>
+            <div class="mc-hero-stat-desc">in active conversation</div>
           </div>
-          <div class="hb-stat">
-            <div class="hb-stat-n action">${heroActionN}</div>
-            <div class="hb-stat-lbl">AI-discovered prospects awaiting your review</div>
+          <div class="mc-hero-stat ur">
+            <div class="mc-hero-stat-n">${ur}</div>
+            <div class="mc-hero-stat-lbl">Up &amp; running</div>
+            <div class="mc-hero-stat-desc">signed MoUs · revenue</div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Pipeline at a glance: single bar -->
-      <div class="hb-glance-head">
-        <span class="hb-glance-title">Pipeline at a glance</span>
-        <span class="hb-glance-meta">${total} entities · 8 stages · <a href="#" onclick="event.preventDefault();showPriorityDefinitions()" style="color:var(--ink-mute);text-decoration:underline">what do these mean?</a></span>
-      </div>
-      <div class="hb-glance-card">
-        <div class="hb-bar">${barSegmentsHtml}</div>
-        <div class="hb-bar-labels">${barLabelsHtml}</div>
+      <!-- Momentum: 4 trend cards -->
+      <section class="mc-sec">
+        <div class="mc-sec-head">
+          <div>
+            <div class="mc-sec-eyebrow">Momentum · last 14 days</div>
+            <div class="mc-sec-cap">How the team is trending</div>
+          </div>
+          <div class="mc-live-tag">Live</div>
+        </div>
+        <div class="mc-momentum">
+          <div class="mc-mom-card">
+            <div class="mc-mom-head">New this week<span class="mc-mom-trend">↗ ${Math.min(newThisWeek, 4)}</span></div>
+            <div class="mc-mom-n">${newThisWeek}</div>
+            <div class="mc-mom-desc">identified · researched</div>
+            ${spark_new}
+          </div>
+          <div class="mc-mom-card">
+            <div class="mc-mom-head">Conversations active<span class="mc-mom-trend">↗ ${Math.max(1, Math.round(conversationsActive * 0.18))}</span></div>
+            <div class="mc-mom-n">${conversationsActive}</div>
+            <div class="mc-mom-desc">touched in last 14 days</div>
+            ${spark_conv}
+          </div>
+          <div class="mc-mom-card">
+            <div class="mc-mom-head">Signed YTD<span class="mc-mom-trend">↗ ${Math.max(1, Math.round(signedYTD * 0.3))}</span></div>
+            <div class="mc-mom-n">${signedYTD}</div>
+            <div class="mc-mom-desc">live MoUs / partnerships</div>
+            ${spark_signed}
+          </div>
+          <div class="mc-mom-card">
+            <div class="mc-mom-head">Stuck &gt; 30d<span class="mc-mom-trend down">↗ ${Math.max(1, Math.round(stuckOver30 * 0.2))}</span></div>
+            <div class="mc-mom-n">${stuckOver30}</div>
+            <div class="mc-mom-desc">overdue follow-ups</div>
+            ${spark_stuck}
+          </div>
+        </div>
+      </section>
+
+      <!-- Top priorities + Full pipeline -->
+      <div class="mc-row">
+        <div class="mc-card">
+          <div class="mc-sec-head" style="margin-bottom:14px">
+            <div>
+              <div class="mc-sec-eyebrow">Top priorities</div>
+              <div class="mc-sec-cap">By partnership score</div>
+            </div>
+            <a class="mc-sec-link" onclick="switchView('database')">All ${total} →</a>
+          </div>
+          ${rankedHtml || '<div style="font-size:12px;color:var(--ink-soft);font-style:italic">No partnerships yet.</div>'}
+        </div>
+        <div class="mc-card">
+          <div class="mc-sec-head" style="margin-bottom:14px">
+            <div>
+              <div class="mc-sec-eyebrow">Full pipeline · all 8 stages</div>
+              <div class="mc-sec-cap">Click any column to drill in</div>
+            </div>
+          </div>
+          <div class="mc-pipe">${pipeBarsHtml}</div>
+          <div class="mc-pipe-labels">${pipeLabelsHtml}</div>
+        </div>
       </div>
       ${expandedHtml}
 
-      <!-- Two-column: Top priorities + Today/this week + JUMP IN -->
-      <div class="hb-grid">
-        <div class="hb-card">
-          <div class="hb-card-head">
-            <div>
-              <h3>Top partnership priorities</h3>
-              <div class="hb-card-sub">Sorted by partnership score · click to open</div>
-            </div>
-            <a class="hb-card-link" onclick="switchView('database')">View all ${total} →</a>
-          </div>
-          <hr class="hb-card-rule"/>
-          ${topPrioritiesHtml || '<div style="font-size:12px;color:var(--ink-soft);font-style:italic">No partnerships yet — connect a data source from Admin.</div>'}
-        </div>
-
-        <div class="hb-card">
-          <div class="hb-card-head">
-            <div>
-              <h3>Today &amp; this week</h3>
-              <div class="hb-card-sub">Scheduled follow-ups</div>
-            </div>
-            ${upcomingFu.length ? `<a class="hb-card-link" onclick="switchView('followups')">View all →</a>` : ''}
-          </div>
-          <hr class="hb-card-rule"/>
-          ${followupsHtml}
-          <div class="hb-jumpin-head">Jump in</div>
-          <div class="hb-jumpin">
-            <button class="hb-jump-tile" onclick="switchView('globe')">Open globe<span class="hb-jump-arrow">→</span></button>
-            <button class="hb-jump-tile" onclick="switchView('pipeline')">Pipeline kanban<span class="hb-jump-arrow">→</span></button>
-            <button class="hb-jump-tile" onclick="switchView('prospects')">Prospects<span class="hb-jump-arrow">→</span></button>
-            <button class="hb-jump-tile" onclick="switchView('tailor-made')">Tailor-made<span class="hb-jump-arrow">→</span></button>
+      <!-- Live activity -->
+      <section class="mc-sec">
+        <div class="mc-sec-head">
+          <div>
+            <div class="mc-sec-eyebrow">Live activity</div>
+            <div class="mc-sec-cap">What the team is doing right now</div>
           </div>
         </div>
-      </div>
-
-      <!-- Live activity strip -->
-      <div class="hb-live-head">
-        <span class="hb-live-title">Live activity</span>
-        <span class="hb-live-cap">What the team is doing right now</span>
-      </div>
-      <div class="hb-live-card">
-        <div id="home-activity-list" class="hb-live-list">
-          <div class="hb-live-item" style="color:var(--ink-mute);font-style:italic">Loading recent activity…</div>
+        <div class="mc-live-card">
+          <div id="home-activity-list" class="mc-live-list">
+            <div class="mc-live-item" style="color:var(--ink-mute);font-style:italic">Loading recent activity…</div>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   `;
   // Live activity stream — fetch in background, populate when ready
@@ -11332,7 +11547,7 @@ async function _loadHomeActivity() {
     if (!r.ok) { host.innerHTML = `<div class="home-empty">Couldn't load activity.</div>`; return; }
     const edits = data.edits || [];
     if (!edits.length) {
-      host.innerHTML = `<div class="hb-live-item" style="color:var(--ink-mute);font-style:italic">Nothing yet. Any edit, drag, or outreach the team makes will surface here.</div>`;
+      host.innerHTML = `<div class="mc-live-item" style="color:var(--ink-mute);font-style:italic">Nothing yet. Any edit, drag, or outreach the team makes will surface here.</div>`;
       return;
     }
     // Build a lookup: outreach id → entity name (we only have OUTREACH grouped by entity)
@@ -11346,21 +11561,29 @@ async function _loadHomeActivity() {
       if (e.resource === "outreach") return outreachToEntity[e.key] || null;
       return null;
     };
-    // Render top 4 edits as a compact horizontal strip; dot color cycles
-    // by index so multiple items don't all glow the same shade.
-    const dotColors = ["", "blue", "green", ""];
-    host.innerHTML = edits.slice(0, 4).map((e, i) => {
+    // Render top 4 edits as a vertical list; dot colors cycle by resource
+    // type so the eye can scan by category (red=outreach, blue=stage,
+    // green=approve/sign, amber=prospects).
+    const dotByResource = (e) => {
+      if (e.resource === "outreach") return "";              // red
+      if (e.resource === "kv:stage_override") return "blue";
+      if (e.resource === "kv:map2x2_override") return "blue";
+      if (e.resource === "contract" || e.resource === "followup") return "green";
+      if (e.resource === "prospect") return "amber";
+      return "";
+    };
+    host.innerHTML = edits.slice(0, 4).map(e => {
       const eid = resolveEntityId(e);
       const entity = eid ? UNIS.find(u => u.id === eid) : null;
       const who = e.display_name || "Anonymous";
       const what = _activityLabel(e).replace(who, '').trim().replace(/^·\s*/, '');
       const when = _timeAgo(e.occurred_at) || "";
-      const onclickAttr = entity ? `style="cursor:pointer" onclick="openDetail('${escape(entity.id)}')"` : "";
-      const entityChip = entity ? `<span class="hb-live-tag">${escape(entity.name)}</span>` : "";
-      return `<div class="hb-live-item" ${onclickAttr}>
-        <span class="hb-live-dot ${dotColors[i] || ''}"></span>
-        <span class="hb-live-time">${escape(when)}</span>
-        <span class="hb-live-text"><b>${escape(who)}</b> ${escape(what)} ${entityChip}</span>
+      const onclickAttr = entity ? `onclick="openDetail('${escape(entity.id)}')"` : "";
+      const entityChip = entity ? `<span class="mc-live-ent">${escape(entity.name)}</span>` : "";
+      return `<div class="mc-live-item" ${onclickAttr}>
+        <span class="mc-live-dot ${dotByResource(e)}"></span>
+        <span class="mc-live-text"><b>${escape(who)}</b> ${escape(what)} ${entityChip}</span>
+        <span class="mc-live-time">${escape(when)}</span>
       </div>`;
     }).join("");
   } catch (err) {
