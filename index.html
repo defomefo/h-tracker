@@ -1607,6 +1607,108 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .kb-col-more:hover{background:var(--hf-red-soft);color:var(--hf-red-deep)}
 .kb-empty{padding:20px 8px;text-align:center;font-size:11px;color:var(--ink-mute);font-style:italic}
 .kb-tip{display:flex;align-items:center;gap:8px;background:var(--brand-navy-soft);border-left:3px solid var(--brand-navy);padding:10px 14px;border-radius:0 6px 6px 0;font-size:12px;color:var(--brand-navy-deep);margin-bottom:14px;line-height:1.5}
+
+/* ====================================================================
+   PIPELINE KANBAN — Claude-design simplified layout (pk-*)
+   Replaces the older kb-* visual. Cards keep both `pk-card kb-card`
+   classes so existing drag handlers (kbDragStart, kbDrop, etc) keep
+   targeting `.kb-card.dragging` / `.kb-col-body.drag-over` unchanged.
+==================================================================== */
+.pk-shell{padding:28px 32px 60px;display:flex;flex-direction:column;gap:18px;background:var(--off-white);min-height:calc(100vh - 60px)}
+.pk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.pk-head-text{min-width:0;flex:1}
+.pk-title{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--ink);margin-bottom:4px}
+.pk-sub{font-size:13px;color:var(--ink-soft);max-width:580px;line-height:1.5}
+.pk-head-actions{display:flex;gap:8px;flex-shrink:0}
+.pk-btn{background:#fff;border:1px solid var(--rule);color:var(--ink);padding:8px 14px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.2px;transition:all .12s}
+.pk-btn:hover{border-color:var(--ink)}
+.pk-btn.ghost{background:#fff}
+
+/* Calmer banner */
+.pk-banner{background:var(--brand-navy-soft);border-radius:8px;padding:12px 18px;font-size:13px;color:var(--brand-navy-deep);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;line-height:1.4}
+.pk-banner b{font-weight:800;color:var(--brand-navy-deep);font-size:14px}
+.pk-banner-meta{color:var(--ink-soft);font-size:12px}
+.pk-banner-sep{color:var(--ink-mute);padding:0 4px}
+
+/* Velocity strip */
+.pk-velocity{display:grid;grid-template-columns:repeat(8,minmax(120px,1fr));gap:8px}
+.pk-vtile{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 16px;position:relative;overflow:hidden;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;cursor:pointer;text-align:left;font-family:inherit;color:inherit}
+.pk-vtile::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--vc,var(--hf-red))}
+.pk-vtile:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(10,37,64,.06);border-color:var(--ink-mute)}
+.pk-vtile-lbl{font-size:10px;letter-spacing:1.4px;color:var(--vc,var(--hf-red));text-transform:uppercase;font-weight:800;margin-bottom:6px}
+.pk-vtile-num{font-size:32px;font-weight:800;line-height:1;letter-spacing:-1px;color:var(--ink);margin-bottom:4px;font-variant-numeric:tabular-nums}
+.pk-vtile-meta{font-size:11px;color:var(--ink-soft)}
+.pk-vtile-meta .muted{font-style:italic;color:var(--ink-mute)}
+.pk-vtile-meta .stuck-flag{color:var(--hf-red);font-weight:700}
+
+/* Board */
+.pk-board-wrap{overflow-x:auto;overflow-y:visible;padding-bottom:14px;margin:0 -32px;padding-left:32px;padding-right:32px}
+.pk-board{display:grid;grid-template-columns:repeat(8,minmax(220px,1fr));gap:12px;min-width:max-content}
+.pk-col{display:flex;flex-direction:column;min-width:0}
+.pk-col-head{padding:6px 10px 12px;margin-bottom:10px;position:relative;border-bottom:2px solid color-mix(in srgb,var(--vc,var(--ink-mute)) 35%,var(--rule))}
+.pk-col-head::before{content:'';position:absolute;left:0;top:8px;bottom:14px;width:3px;border-radius:2px;background:var(--vc,var(--ink-mute))}
+.pk-col-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
+.pk-col-name{font-size:11px;letter-spacing:1.4px;color:var(--ink);font-weight:800;text-transform:uppercase}
+.pk-col-count{color:#fff;font-size:11px;padding:2px 9px;border-radius:10px;font-weight:800;min-width:28px;text-align:center;background:var(--vc,var(--ink));letter-spacing:-.2px}
+.pk-col-desc{font-size:10px;color:var(--ink-mute);line-height:1.3;font-weight:500}
+.pk-col-body{display:flex;flex-direction:column;gap:7px;min-height:60px;padding:4px;border-radius:6px;transition:background .12s,outline .12s}
+.pk-col-body.drag-over{background:var(--hf-red-soft);outline:2px dashed var(--hf-red);outline-offset:-2px}
+
+/* Flash highlight when velocity tile clicked */
+@keyframes pk-flash{0%{box-shadow:0 0 0 0 rgba(217,83,79,0)}30%{box-shadow:0 0 0 4px rgba(217,83,79,.35)}100%{box-shadow:0 0 0 0 rgba(217,83,79,0)}}
+.pk-col.pk-flash{animation:pk-flash 1.4s cubic-bezier(.4,0,.2,1) both;border-radius:8px}
+
+/* Card */
+.pk-card{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--card-edge,color-mix(in srgb,var(--ink-mute) 30%,var(--rule)));border-radius:7px;padding:10px 12px 10px 11px;cursor:pointer;transition:border-color .12s ease,transform .12s ease,box-shadow .12s ease}
+.pk-card:hover{border-color:var(--ink);border-left-color:var(--card-edge,var(--ink));transform:translateY(-1px);box-shadow:0 4px 12px rgba(10,37,64,.07)}
+.pk-card.dragging{opacity:.4}
+/* Stuck — soft red glow ring, doesn't overpower the rest of the board */
+.pk-card.pk-stuck{box-shadow:0 0 0 1px var(--hf-red-soft),0 0 14px rgba(217,83,79,.18)}
+.pk-card.pk-stuck:hover{box-shadow:0 0 0 1px var(--hf-red-soft),0 0 14px rgba(217,83,79,.18),0 4px 12px rgba(10,37,64,.07)}
+
+.pk-card-critical{--card-edge:#8B1A1A}
+.pk-card-hot{--card-edge:#D9534F}
+.pk-card-warm{--card-edge:#E0A93B}
+.pk-card-cold{--card-edge:#4A6B8A}
+.pk-card-cs{--card-edge:#8E9AAB}
+.pk-card-ur{--card-edge:#2E7D5B}
+.pk-card-ni{--card-edge:#6E6E6E}
+
+.pk-card-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:3px}
+.pk-card-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.pk-card-score{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.6px;line-height:1;flex-shrink:0;font-variant-numeric:tabular-nums}
+.pk-card-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);margin-bottom:8px}
+.pk-iso{display:inline-flex;align-items:center;justify-content:center;font-family:'Consolas',monospace;font-size:9px;font-weight:800;letter-spacing:.4px;padding:1px 4px;border-radius:3px;background:var(--paper);color:var(--ink-soft);min-width:22px}
+.pk-card-country{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.pk-card-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;padding-top:6px;border-top:1px solid #F2EFE5}
+
+/* Priority chips — soft-tint, low visual weight */
+.pk-pri{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.2px;padding:2px 8px 2px 6px;border-radius:10px;line-height:1.2}
+.pk-pri-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.pk-pri-critical{background:#FBEAEA;color:#8B1A1A}
+.pk-pri-hot{background:#FCE4E4;color:#B0322E}
+.pk-pri-warm{background:#FAEFD8;color:#7A5215}
+.pk-pri-cold{background:#E7ECF1;color:#4A6B8A}
+.pk-pri-cs{background:#EEF0F3;color:#6E7A8A}
+.pk-pri-ur{background:#DCEFE3;color:#1F6E48}
+.pk-pri-ni{background:#ECEAE0;color:#5A5A5A}
+.pk-pri-none{background:var(--paper);color:var(--ink-mute)}
+
+/* Touch/dormancy text */
+.pk-touch{font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.2px;font-variant-numeric:tabular-nums}
+.pk-touch.muted{color:var(--ink-mute);font-style:italic;font-weight:500}
+.pk-touch.stuck{color:#B0322E;font-weight:800}
+
+/* Empty + more */
+.pk-empty{padding:16px 8px;text-align:center;font-size:11px;color:var(--ink-mute);font-style:italic}
+.pk-more{margin-top:4px;padding:8px 10px;font-size:10px;letter-spacing:.5px;color:var(--ink-soft);font-weight:700;text-align:center;text-transform:uppercase;border:1px dashed var(--rule);border-radius:5px;cursor:pointer;background:#fff}
+.pk-more:hover{border-color:var(--ink-soft);color:var(--ink)}
+
+@media (prefers-reduced-motion: reduce){
+  .pk-vtile,.pk-card{transition:none}
+  .pk-col.pk-flash{animation:none}
+}
 .kb-tip strong{color:var(--brand-navy-deep);font-weight:700}
 
 /* FUNNEL VIEW (legacy classes kept for back-compat) */
@@ -4867,11 +4969,11 @@ const ONBOARDING_STEPS = [
     view: "globe",
   },
   {
-    target: '.kb-board-wrap',
+    target: '.pk-board-wrap',
     placement: 'top',
     eyebrow: "Pipeline",
     title: "8-stage Kanban with drag-and-drop",
-    body: "Every entity sits in one of 8 stages (Identified → Active). <strong>Drag a card</strong> to move it manually — overrides save automatically. Stalled entities (30+ days dormant) get a red outline.",
+    body: "Every entity sits in one of 8 stages (Identified → Active). <strong>Drag a card</strong> to move it manually — overrides save automatically. Stalled entities (30+ days dormant) get a soft red glow and a 'stuck Nd' label.",
     view: "pipeline",
   },
   {
@@ -12361,87 +12463,112 @@ function renderPipelineView() {
     stuckCount[s.id] = byStage[s.id].filter(u => u.days_dormant === null || u.days_dormant === undefined || u.days_dormant > 30).length;
   });
 
+  // Total stuck across the 4 active mid-funnel stages (banner CTA copy)
+  const midStuck = stuckCount.engaged + stuckCount.discovery + stuckCount.proposal + stuckCount.negotiation;
+  const overrideCount = Object.keys(overrides).length;
+
   let html = "";
-  html += `<div class="kb-shell">`;
-  html += `<div class="kb-header">
-    <h1>Pipeline Kanban</h1>
-    <div class="kb-sub">8-stage partnership lifecycle. Drag a card to move an entity between stages — overrides save automatically. Stalled entities (30+ days dormant) get a red outline.</div>
-    <div class="kb-toolbar">
-      <button onclick="resetStageOverrides()">↺ Reset overrides</button>
-      <button onclick="switchView('funnel')">View funnel →</button>
+  html += `<div class="pk-shell">`;
+
+  // Head — title + sub + actions
+  html += `<div class="pk-head">
+    <div class="pk-head-text">
+      <div class="pk-title">Pipeline Kanban</div>
+      <div class="pk-sub">8-stage partnership lifecycle. Drag a card to move an entity between stages — overrides save automatically.</div>
+    </div>
+    <div class="pk-head-actions">
+      <button class="pk-btn ghost" onclick="resetStageOverrides()" title="Discard all manual stage moves and re-derive from data">↺ Reset overrides</button>
+      <button class="pk-btn" onclick="switchView('funnel')">View funnel &nbsp;→</button>
     </div>
   </div>`;
 
-  // Tip / context bar
-  const overrideCount = Object.keys(overrides).length;
-  html += `<div class="kb-tip">
-    <strong>${total} entities</strong> across 8 stages · <strong>${stuckCount.engaged + stuckCount.discovery + stuckCount.proposal + stuckCount.negotiation}</strong> stuck in active stages need follow-up · ${overrideCount ? `<strong>${overrideCount}</strong> manual stage overrides saved` : "All stages auto-derived from priority + last_contacted + notes"}
+  // Calmer stat banner
+  html += `<div class="pk-banner">
+    <b>${total}</b> entities <span class="pk-banner-meta">across 8 stages</span>
+    <span class="pk-banner-sep">·</span>
+    <b>${midStuck}</b> stuck <span class="pk-banner-meta">in active stages need follow-up</span>
+    <span class="pk-banner-sep">·</span>
+    ${overrideCount
+      ? `<b>${overrideCount}</b> manual <span class="pk-banner-meta">stage overrides saved</span>`
+      : `<span class="pk-banner-meta">All stages auto-derived from priority + last_contacted + notes</span>`}
   </div>`;
 
-  // Velocity strip
-  html += `<div class="kb-velocity">`;
+  // Velocity strip — clickable tiles scroll to that stage column
+  html += `<div class="pk-velocity">`;
   STAGES.forEach(s => {
     const n = byStage[s.id].length;
-    const pct = total ? Math.round(n/total*100) : 0;
+    const pct = total ? Math.round(n / total * 100) : 0;
     const med = stageVelocity[s.id];
-    const medText = med === null ? "no data" : (med < 30 ? `${med}d median` : med < 365 ? `${Math.round(med/30)}m median` : `${Math.round(med/365)}y median`);
+    const medText = med === null ? `<span class="muted">no data</span>`
+      : (med < 30 ? `${med}d median` : med < 365 ? `${Math.round(med/30)}m median` : `${Math.round(med/365)}y median`);
     const stk = stuckCount[s.id];
-    html += `<div class="kb-vmetric" style="--stage-color:${s.color}">
-      <div class="kb-vmetric-stage">${s.short}</div>
-      <div class="kb-vmetric-count">${n}</div>
-      <div class="kb-vmetric-meta">${pct}% · ${medText}${stk > 0 ? ` · <span class="stuck-flag">${stk} stuck</span>` : ""}</div>
-    </div>`;
+    html += `<button type="button" class="pk-vtile" onclick="pkScrollToStage('${s.id}')" style="--vc:${s.color}" title="Jump to ${escape(s.label)} column">
+      <div class="pk-vtile-lbl">${escape(s.short)}</div>
+      <div class="pk-vtile-num">${n}</div>
+      <div class="pk-vtile-meta">${pct}% · ${medText}${stk > 0 ? ` · <span class="stuck-flag">${stk} stuck</span>` : ""}</div>
+    </button>`;
   });
   html += `</div>`;
 
   // Kanban board. Each stage's column is truncated to 25 cards by default;
   // user can click "+N more" to expand it (toggle per-stage state via
   // KB_EXPANDED_STAGES Set, rendered through renderPipelineView re-runs).
-  html += `<div class="kb-board-wrap"><div class="kb-board">`;
+  // Cards keep `kb-card` class + columns keep `kb-col-body` class so existing
+  // drag handlers (kbDragStart/Over/Leave/Drop) work without modification.
+  html += `<div class="pk-board-wrap"><div class="pk-board">`;
   STAGES.forEach(s => {
     const entities = byStage[s.id];
     const expanded = KB_EXPANDED_STAGES.has(s.id);
     const visible = expanded ? entities : entities.slice(0, 25);
     const remaining = entities.length - visible.length;
-    html += `<div class="kb-col" style="--stage-color:${s.color}">
-      <div class="kb-col-head">
-        <div class="kb-col-head-row">
-          <div class="kb-col-name">${s.label}</div>
-          <div class="kb-col-count" style="background:${s.color}">${entities.length}</div>
+    html += `<div class="pk-col" data-stage-col="${s.id}" style="--vc:${s.color}">
+      <div class="pk-col-head">
+        <div class="pk-col-title">
+          <div class="pk-col-name">${escape(s.label)}</div>
+          <div class="pk-col-count">${entities.length}</div>
         </div>
-        <div class="kb-col-desc">${s.desc}</div>
-        <div class="kb-col-stripe"></div>
+        <div class="pk-col-desc">${escape(s.desc)}</div>
       </div>
-      <div class="kb-col-body" data-stage="${s.id}" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event)">`;
+      <div class="pk-col-body kb-col-body" data-stage="${s.id}" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event)">`;
     if (visible.length === 0) {
-      html += `<div class="kb-empty">No entities at this stage</div>`;
+      html += `<div class="pk-empty">No entities at this stage</div>`;
     } else {
       visible.forEach(u => {
         const isStuck = (u.days_dormant === null || u.days_dormant === undefined || u.days_dormant > 30) && (u.priority !== "Up & Running");
         const prioClass = PRIO_CLASS[u.priority] || "none";
         const prioLabel = u.priority || "Unset";
+        const cardEdgeClass = "pk-card-" + prioClass;
         const d = u.days_dormant;
-        const dormText = d === null || d === undefined ? "never contacted" : d < 30 ? `${d}d ago` : d < 365 ? `${Math.round(d/30)}m ago` : `${Math.round(d/365)}y ago`;
-        const dormClass = d === null ? "bad" : d > 180 ? "bad" : d > 60 ? "warn" : "";
-        const prioColor = u.priority ? `var(--${PRIO_CLASS[u.priority]})` : "var(--ink-mute)";
-        html += `<div class="kb-card ${isStuck ? "stuck" : ""}" draggable="true" data-id="${u.id}" ondragstart="kbDragStart(event,'${u.id}')" ondragend="kbDragEnd(event)" onclick="openDetail('${u.id}')" style="--prio-color:${prioColor}">
-          <div class="kb-card-name">${escape(u.name)}</div>
-          <div class="kb-card-meta">
-            <span class="country">${escape(u.country || "?")}</span>
-            <span class="score" title="Partnership score">${u.partnership_score}</span>
+        const dormText = d === null || d === undefined ? "never contacted"
+          : d < 30 ? `${d}d ago`
+          : d < 365 ? `${Math.round(d/30)}m ago`
+          : `${Math.round(d/365)}y ago`;
+        const touchClass = d === null || d === undefined ? "muted"
+          : (isStuck ? "stuck" : "");
+        const stuckTouch = isStuck ? `stuck ${dormText}` : dormText;
+        const iso = (typeof _isoForCountry === "function") ? _isoForCountry(u.country) : null;
+        const isoChip = iso ? `<span class="pk-iso">${iso.toUpperCase()}</span>` : "";
+        html += `<div class="pk-card kb-card ${cardEdgeClass}${isStuck ? " pk-stuck" : ""}" draggable="true" data-id="${u.id}" ondragstart="kbDragStart(event,'${u.id}')" ondragend="kbDragEnd(event)" onclick="openDetail('${u.id}')">
+          <div class="pk-card-row">
+            <div class="pk-card-name" title="${escape(u.name)}">${escape(u.name)}</div>
+            <div class="pk-card-score" title="Partnership score">${u.partnership_score}</div>
           </div>
-          <div class="kb-card-foot">
-            <span class="kb-card-prio ${prioClass}">${prioLabel}</span>
-            <span class="kb-card-dorm ${dormClass}">${dormText}</span>
+          <div class="pk-card-meta">
+            ${isoChip}
+            <span class="pk-card-country">${escape(u.country || "—")}</span>
+          </div>
+          <div class="pk-card-foot">
+            <span class="pk-pri pk-pri-${prioClass}"><span class="pk-pri-dot"></span>${escape(prioLabel)}</span>
+            <span class="pk-touch ${touchClass}">${escape(stuckTouch)}</span>
           </div>
         </div>`;
       });
     }
     html += `</div>`;
     if (remaining > 0) {
-      html += `<div class="kb-col-more" onclick="kbExpandColumn('${s.id}')">+${remaining} more · click to expand</div>`;
+      html += `<div class="pk-more" onclick="kbExpandColumn('${s.id}')">+${remaining} more · click to expand</div>`;
     } else if (expanded && entities.length > 25) {
-      html += `<div class="kb-col-more" onclick="kbExpandColumn('${s.id}')">↑ Show less</div>`;
+      html += `<div class="pk-more" onclick="kbExpandColumn('${s.id}')">↑ Show less</div>`;
     }
     html += `</div>`;
   });
@@ -12685,6 +12812,30 @@ function kbExpandColumn(stageId) {
   if (KB_EXPANDED_STAGES.has(stageId)) KB_EXPANDED_STAGES.delete(stageId);
   else                                 KB_EXPANDED_STAGES.add(stageId);
   renderPipelineView();
+}
+
+// Velocity tile click — smooth-scroll the kanban board so the matching
+// stage column sits near the left edge, then briefly flash a red ring
+// around the column header so the eye locks onto it.
+function pkScrollToStage(stageId) {
+  const col = document.querySelector(`.pk-col[data-stage-col="${stageId}"]`);
+  const wrap = document.querySelector(".pk-board-wrap");
+  if (!col || !wrap) return;
+  // Horizontal scroll inside the wrap so the column's left edge meets
+  // the wrap's left padding. scrollIntoView() would jump the whole page
+  // vertically as a side effect — manual offset math avoids that.
+  const wrapRect = wrap.getBoundingClientRect();
+  const colRect = col.getBoundingClientRect();
+  const delta = colRect.left - wrapRect.left - 8; // 8px breathing room
+  wrap.scrollBy({ left: delta, behavior: "smooth" });
+  // Flash highlight (CSS @keyframes pk-flash). Re-trigger by removing
+  // the class first so a second click flashes again.
+  col.classList.remove("pk-flash");
+  // Force reflow so the animation actually restarts.
+  // eslint-disable-next-line no-unused-expressions
+  void col.offsetWidth;
+  col.classList.add("pk-flash");
+  setTimeout(() => col.classList.remove("pk-flash"), 1500);
 }
 
 // FUNNEL — conversion funnel by pipeline stage (Phase 2 placeholder, minimal)
