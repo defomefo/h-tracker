@@ -2824,6 +2824,107 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .db-table tbody tr:hover{background:var(--paper)}
 .db-prio{font-size:9px;padding:1px 7px;border-radius:9px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
 
+/* ====================================================================
+   DATABASE — Claude-design redesign (scoped under .db-shell so the new
+   rules override the older flat-table CSS above without breaking any
+   other view that might re-use .db-table or .db-toolbar).
+==================================================================== */
+.db-shell{padding:28px 32px 36px;display:flex;flex-direction:column;gap:14px;background:var(--off-white);min-height:calc(100vh - 60px)}
+.db-shell .db-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.db-shell .db-title{font-size:28px;font-weight:800;letter-spacing:-.6px;margin-bottom:4px;color:var(--ink)}
+.db-shell .db-sub{font-size:13px;color:var(--ink-soft);max-width:600px}
+.db-shell .db-head-actions{display:flex;gap:8px;flex-shrink:0}
+.db-shell .db-btn{padding:9px 16px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.3px;cursor:pointer;border:1px solid transparent;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.db-shell .db-btn.primary{background:var(--hf-red);color:#fff;border-color:var(--hf-red)}
+.db-shell .db-btn.primary:hover{background:var(--hf-red-deep);border-color:var(--hf-red-deep)}
+.db-shell .db-btn.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
+.db-shell .db-btn.ghost:hover{border-color:var(--ink)}
+
+/* Saved-view tabs */
+.db-shell .db-views{display:flex;gap:4px;padding-bottom:10px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.db-shell .db-view{display:inline-flex;align-items:center;gap:7px;background:none;border:none;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer;border-radius:6px;letter-spacing:.2px;transition:all .12s}
+.db-shell .db-view:hover{color:var(--ink);background:var(--paper)}
+.db-shell .db-view.on{background:var(--ink);color:#fff}
+.db-shell .db-view-c{font-size:10px;padding:1px 7px;border-radius:8px;background:var(--paper);color:var(--ink-soft);font-weight:800;min-width:22px;text-align:center;font-variant-numeric:tabular-nums}
+.db-shell .db-view.on .db-view-c{background:rgba(255,255,255,.16);color:#fff}
+
+/* Toolbar */
+.db-shell .db-toolbar{display:flex;align-items:center;gap:12px;padding:0;background:none;border-bottom:none;flex-wrap:wrap}
+.db-shell .db-search{flex:1;min-width:240px;position:relative;display:flex;align-items:center;background:#fff;border:1px solid var(--rule);border-radius:8px;transition:all .12s;padding:0}
+.db-shell .db-search:focus-within{border-color:var(--hf-red);box-shadow:0 0 0 3px rgba(217,83,79,.10)}
+.db-shell .db-search-icon{padding:0 12px;color:var(--ink-mute);font-size:14px;font-weight:700;display:flex;align-items:center}
+.db-shell .db-search input{flex:1;padding:10px 0;background:transparent;border:none;font-family:inherit;font-size:13px;color:var(--ink);outline:none}
+.db-shell .db-search input::placeholder{color:var(--ink-mute)}
+.db-shell .db-search-clear{background:var(--paper);border:none;color:var(--ink-soft);width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1;margin-right:8px;display:flex;align-items:center;justify-content:center}
+.db-shell .db-search-clear:hover{background:var(--hf-red);color:#fff}
+.db-shell .db-toolbar-meta{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+.db-shell .db-toolbar-meta b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+.db-shell .db-toolbar-density{display:inline-flex;gap:0;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:2px}
+.db-shell .db-density{background:none;border:none;padding:6px 12px;border-radius:4px;font-family:inherit;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;letter-spacing:.2px}
+.db-shell .db-density:hover{color:var(--ink)}
+.db-shell .db-density.on{background:var(--ink);color:#fff}
+
+/* Table */
+.db-shell .db-table-wrap{background:#fff;border:1px solid var(--rule);border-radius:10px;overflow:auto;max-height:calc(100vh - 320px);box-shadow:0 1px 4px rgba(10,37,64,.04);padding:0;margin:0}
+.db-shell .db-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:#fff;border:none;border-radius:0}
+.db-shell .db-table thead th{position:sticky;top:0;background:var(--ink);color:#fff;padding:12px 16px;text-align:left;font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;user-select:none;white-space:nowrap;border-bottom:3px solid var(--hf-red);transition:background .12s;z-index:5}
+.db-shell .db-table thead th:hover{background:#2A2A2A}
+.db-shell .db-table thead th.right{text-align:right}
+.db-shell .db-table thead th.active{color:var(--hf-red)}
+.db-shell .db-table thead .db-sort{margin-left:6px;font-size:9px;color:var(--hf-red)}
+.db-shell .db-table tbody tr{cursor:pointer;transition:background .12s}
+.db-shell .db-table tbody tr:hover{background:var(--paper)}
+.db-shell .db-table tbody td{padding:13px 16px;border-bottom:1px solid var(--rule);vertical-align:middle;color:var(--ink)}
+.db-shell .db-table.compact tbody td{padding:7px 16px;font-size:12px}
+.db-shell .db-table tbody tr:last-child td{border-bottom:none}
+.db-shell .db-table tbody td.right{text-align:right}
+.db-shell .db-table tbody td.muted{color:var(--ink-mute)}
+
+/* Name cell with ISO chip */
+.db-shell .db-name{display:flex;align-items:center;gap:10px;min-width:0}
+.db-shell .db-iso{display:inline-flex;align-items:center;justify-content:center;width:28px;height:20px;border-radius:3px;background:var(--paper);color:var(--ink-soft);font-family:'Consolas',monospace;font-size:10px;font-weight:800;letter-spacing:.4px;flex-shrink:0;overflow:hidden}
+.db-shell .db-iso img{display:block;width:100%;height:100%;object-fit:cover}
+.db-shell .db-name b{color:var(--ink);font-weight:700}
+.db-shell .db-dash{color:var(--ink-mute)}
+
+/* Priority pills (soft-tint, matches pk-pri tones in pipeline) */
+.db-shell .db-pri{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;padding:3px 10px;border-radius:11px;letter-spacing:.3px;white-space:nowrap}
+.db-shell .db-pri-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.db-shell .db-pri-crit{background:#FBEAEA;color:#8B1A1A}
+.db-shell .db-pri-hot{background:#FCE4E4;color:#B0322E}
+.db-shell .db-pri-warm{background:#FAEFD8;color:#7A5215}
+.db-shell .db-pri-cold{background:#E7ECF1;color:#4A6B8A}
+.db-shell .db-pri-cs{background:#ECEEF1;color:#5F6B7C}
+.db-shell .db-pri-ur{background:#DCEFE3;color:#1F6E48}
+.db-shell .db-pri-ni{background:#ECEAE0;color:#5A5A5A}
+.db-shell .db-pri-none{background:var(--paper);color:var(--ink-mute)}
+
+/* Strategic tier pill — uses STRAT_COLORS via inline style */
+.db-shell .db-tier{font-size:10px;font-weight:800;padding:3px 10px;border-radius:11px;background:var(--ink);color:#fff;letter-spacing:.3px;white-space:nowrap}
+
+/* Score column: bar + number aligned right */
+.db-shell .db-score{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.db-shell .db-score-bar{width:70px;height:5px;background:var(--paper);border-radius:3px;overflow:hidden;flex-shrink:0}
+.db-shell .db-score-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--hf-red) 0%,var(--ur) 100%);border-radius:3px;transition:width 400ms cubic-bezier(.22,.61,.36,1)}
+.db-shell .db-score-num{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;min-width:24px;text-align:right;font-variant-numeric:tabular-nums}
+.db-shell .db-table.compact .db-score-num{font-size:12px}
+
+/* Dormancy color logic */
+.db-shell .db-dorm{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.db-shell .db-dorm-muted{color:var(--ink-mute)}
+.db-shell .db-dorm-ok{color:var(--ink-soft)}
+.db-shell .db-dorm-warn{color:#7A5215}
+.db-shell .db-dorm-bad{color:#B0322E}
+
+/* Owner pill — soft amber, matches table tone */
+.db-shell .db-owner{font-size:11px;padding:3px 10px;border-radius:11px;background:#FAEFD8;color:#7A5215;font-weight:700;letter-spacing:.2px;white-space:nowrap;display:inline-block}
+
+.db-shell .db-empty{padding:40px;text-align:center;color:var(--ink-mute);font-style:italic;font-size:13px}
+
+@media (prefers-reduced-motion: reduce){
+  .db-shell .db-score-bar>span,.db-shell .db-view,.db-shell .db-density{transition:none}
+}
+
 /* OUTREACH FEED VIEW */
 .outreach-feed{padding:20px 28px 60px;display:flex;flex-direction:column;gap:10px;max-width:1100px;margin:0 auto}
 .outreach-feed-row{display:grid;grid-template-columns:90px 1fr auto;gap:14px;align-items:center;padding:12px 16px;background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;cursor:pointer;transition:background .12s}
@@ -15797,11 +15898,51 @@ function stratExportPng() {
 
 // DATABASE — sortable HTML table of all entities
 let DB_SORT = { col: "score", dir: "desc" };
+// Saved-view tab + density preference — view-local UI state, not persisted.
+// Saved-view filters layer ON TOP of applyFilters(STATE.search/filters), so
+// the user's existing filters never get clobbered by switching tabs.
+let _dbSavedView = "all";
+let _dbDensity = "comfortable";
+
+// Saved-view predicates. Returning true keeps the row.
+const _DB_SAVED_VIEWS = {
+  all:      () => true,
+  hot60:    u => u.priority === "Hot" && u.partnership_score >= 60,
+  stuck30:  u => (u.priority === "Hot" || u.priority === "Critical") && (u.days_dormant === null || u.days_dormant === undefined || u.days_dormant > 30),
+  strategic: u => !!u.strategic_tier,
+  unowned:  u => !currentOwner(u),
+};
+
+// Map priority → short class code (matches pk-pri-*, db-pri-*)
+function _dbPrioShortCode(priority) {
+  return {
+    "Critical": "crit", "Hot": "hot", "Warm": "warm", "Cold": "cold",
+    "Cold-storage": "cs", "Up & Running": "ur", "Not interested": "ni",
+  }[priority] || "none";
+}
+
 function renderDatabaseView() {
   const el = document.getElementById("view-database");
-  // Filtered + sorted
-  const filtered = applyFilters(UNIS);
-  const sorted = filtered.slice().sort((a,b) => {
+  if (!el) return;
+  // Active-filter scope (search + STATE.filters) — what the user can see
+  // before they pick a saved-view tab. Saved-view counts compute within
+  // this scope so they reflect what the tap will actually return.
+  const scoped = applyFilters(UNIS);
+  // Apply the saved view as a post-filter so we don't mutate STATE.filters
+  // (which would clobber the user's explicit filter pills + persist across
+  // view switches in confusing ways).
+  const savedPred = _DB_SAVED_VIEWS[_dbSavedView] || _DB_SAVED_VIEWS.all;
+  const filtered = scoped.filter(savedPred);
+  // Pre-compute saved-view counts within current scope
+  const svCounts = {
+    all:      scoped.length,
+    hot60:    scoped.filter(_DB_SAVED_VIEWS.hot60).length,
+    stuck30:  scoped.filter(_DB_SAVED_VIEWS.stuck30).length,
+    strategic: scoped.filter(_DB_SAVED_VIEWS.strategic).length,
+    unowned:  scoped.filter(_DB_SAVED_VIEWS.unowned).length,
+  };
+  // Sort same as before — DB_SORT is the single source of truth
+  const sorted = filtered.slice().sort((a, b) => {
     const dir = DB_SORT.dir === "desc" ? -1 : 1;
     const getter = {
       name:     u => u.name.toLowerCase(),
@@ -15819,17 +15960,102 @@ function renderDatabaseView() {
     if (va > vb) return 1 * dir;
     return 0;
   });
-  let html = `<div class="view-header"><h1>Database</h1><p>Every entity in one sortable table. Click a column header to sort. Click a row to open its full detail.</p></div>`;
-  html += `<div class="db-toolbar">
-    <input type="search" id="db-search" autocomplete="off" spellcheck="false" placeholder="Search name, country, focus, priority (e.g. 'critical', 'digital pioneer')…" value="${escape(STATE.search)}"/>
-    <button class="btn outline" onclick="exportDbCsv()">⬇ Export CSV</button>
-    <div class="db-count">${sorted.length} of ${UNIS.length}</div>
-  </div>`;
-  const dbSortHead = (col, label) => {
-    const arrow = DB_SORT.col === col ? (DB_SORT.dir === "desc" ? "▼" : "▲") : "";
-    return `<th onclick="dbSort('${col}')">${label} <span class="sort-arrow">${arrow}</span></th>`;
+
+  // === Sortable header builder ===========================================
+  const dbSortHead = (col, label, opts = {}) => {
+    const isActive = DB_SORT.col === col;
+    const arrow = isActive ? (DB_SORT.dir === "desc" ? "▼" : "▲") : "";
+    const cls = (isActive ? "active" : "") + (opts.right ? " right" : "");
+    return `<th class="${cls}" onclick="dbSort('${col}')">${escape(label)}${arrow ? ` <span class="db-sort">${arrow}</span>` : ""}</th>`;
   };
-  html += `<div class="db-table-wrap"><table class="db-table">
+
+  // === Saved views ========================================================
+  const savedViews = [
+    {id:"all",      lbl:"All",            n:svCounts.all},
+    {id:"hot60",    lbl:"Hot · 60+",      n:svCounts.hot60},
+    {id:"stuck30",  lbl:"Stuck > 30d",    n:svCounts.stuck30},
+    {id:"strategic",lbl:"Strategic",      n:svCounts.strategic},
+    {id:"unowned",  lbl:"Unowned",        n:svCounts.unowned},
+  ];
+
+  // === Row renderer =======================================================
+  const renderRow = (u) => {
+    const owner = TEAM_BY_ID[currentOwner(u)];
+    const iso = (typeof _isoForCountry === "function") ? _isoForCountry(u.country) : null;
+    const isoCell = iso
+      ? `<span class="db-iso" title="${escape(u.country || '')}"><img src="https://flagcdn.com/56x42/${iso}.png" alt="${escape(u.country || '')}" loading="lazy" onerror="this.parentNode.textContent='${iso.toUpperCase()}'"/></span>`
+      : `<span class="db-iso">${escape((u.country || '??').slice(0,2).toUpperCase())}</span>`;
+    const prioClass = _dbPrioShortCode(u.priority);
+    const prioCell = u.priority
+      ? `<span class="db-pri db-pri-${prioClass}"><span class="db-pri-dot"></span>${escape(u.priority)}</span>`
+      : `<span class="db-dash">—</span>`;
+    const tierCell = u.strategic_tier
+      ? `<span class="db-tier" style="background:${STRAT_COLORS[u.strategic_tier] || 'var(--ink)'};color:#fff">${escape(u.strategic_tier)}</span>`
+      : `<span class="db-dash">—</span>`;
+    const scoreCell = `<div class="db-score">
+      <div class="db-score-bar"><span style="width:${Math.max(2, u.partnership_score)}%"></span></div>
+      <div class="db-score-num">${u.partnership_score}</div>
+    </div>`;
+    const d = u.days_dormant;
+    let dormCell;
+    if (d === null || d === undefined) {
+      dormCell = `<span class="db-dorm db-dorm-muted">—</span>`;
+    } else {
+      const dCls = d > 180 ? "db-dorm-bad" : d > 60 ? "db-dorm-warn" : "db-dorm-ok";
+      dormCell = `<span class="db-dorm ${dCls}">${d}d</span>`;
+    }
+    const lcCell = u.last_contacted
+      ? `<span class="db-dorm db-dorm-ok">${escape(u.last_contacted)}</span>`
+      : `<span class="db-dash">—</span>`;
+    const ownerCell = owner
+      ? `<span class="db-owner" style="background:${owner.color}22;color:${owner.color}">${escape(owner.name)}</span>`
+      : `<span class="db-dash">—</span>`;
+    const countryDisplay = (u.country_canonical || u.country || '').split(/[,\n]/)[0] || '—';
+    return `<tr onclick="openDetail('${u.id}')">
+      <td><div class="db-name">${isoCell}<b>${escape(u.name)}</b></div></td>
+      <td>${escape(ENTITY_LABELS[u.type] || u.type)}</td>
+      <td>${escape(countryDisplay)}</td>
+      <td class="muted">${escape(u.continent || '—')}</td>
+      <td>${prioCell}</td>
+      <td>${tierCell}</td>
+      <td class="right">${scoreCell}</td>
+      <td class="right">${dormCell}</td>
+      <td class="right">${lcCell}</td>
+      <td>${ownerCell}</td>
+    </tr>`;
+  };
+
+  // === Assemble ===========================================================
+  const headerHtml = `
+    <div class="db-head">
+      <div>
+        <div class="db-title">Database</div>
+        <div class="db-sub">Every entity in one sortable table. Click a row to open its full detail.</div>
+      </div>
+      <div class="db-head-actions">
+        <button type="button" class="db-btn ghost" onclick="exportDbCsv()" title="Download the full UNIS table as CSV">↧ Export CSV</button>
+        <button type="button" class="db-btn primary" onclick="dbNewEntityComingSoon()" title="Create a new entity (coming soon)">+ New entity</button>
+      </div>
+    </div>`;
+
+  const viewsHtml = `<div class="db-views">
+    ${savedViews.map(v => `<button type="button" class="db-view${v.id === _dbSavedView ? ' on' : ''}" onclick="_dbSetSavedView('${v.id}')">${escape(v.lbl)} <span class="db-view-c">${v.n}</span></button>`).join("")}
+  </div>`;
+
+  const toolbarHtml = `<div class="db-toolbar">
+    <div class="db-search">
+      <span class="db-search-icon">⌕</span>
+      <input type="search" id="db-search" autocomplete="off" spellcheck="false" placeholder="Search name, country, focus, priority (e.g. 'critical')…" value="${escape(STATE.search)}"/>
+      ${STATE.search ? `<button type="button" class="db-search-clear" onclick="_dbClearSearch()" title="Clear">×</button>` : ''}
+    </div>
+    <div class="db-toolbar-meta"><b>${sorted.length}</b> of <b>${UNIS.length}</b> match</div>
+    <div class="db-toolbar-density">
+      <button type="button" class="db-density${_dbDensity === 'comfortable' ? ' on' : ''}" onclick="_dbSetDensity('comfortable')">Comfortable</button>
+      <button type="button" class="db-density${_dbDensity === 'compact' ? ' on' : ''}" onclick="_dbSetDensity('compact')">Compact</button>
+    </div>
+  </div>`;
+
+  const tableHtml = `<div class="db-table-wrap"><table class="db-table${_dbDensity === 'compact' ? ' compact' : ''}">
     <thead><tr>
       ${dbSortHead("name", "Name")}
       ${dbSortHead("type", "Type")}
@@ -15837,36 +16063,25 @@ function renderDatabaseView() {
       ${dbSortHead("continent", "Region")}
       ${dbSortHead("priority", "Priority")}
       ${dbSortHead("strategic", "Strategic")}
-      ${dbSortHead("score", "Score")}
-      ${dbSortHead("dormant", "Dormant")}
-      ${dbSortHead("lc", "Last contacted")}
+      ${dbSortHead("score", "Score", { right: true })}
+      ${dbSortHead("dormant", "Dormant", { right: true })}
+      ${dbSortHead("lc", "Last contacted", { right: true })}
       <th>Owner</th>
     </tr></thead>
     <tbody>
-      ${sorted.map(u => {
-        const owner = TEAM_BY_ID[currentOwner(u)];
-        return `<tr onclick="openDetail('${u.id}')">
-          <td><b>${escape(u.name)}</b></td>
-          <td>${escape(ENTITY_LABELS[u.type])}</td>
-          <td>${escape((u.country_canonical || u.country || '').split(/[,\\n]/)[0])}</td>
-          <td>${escape(u.continent)}</td>
-          <td>${u.priority ? `<span class="db-prio" style="background:${PRIO_COLORS[u.priority]};color:#fff">${escape(u.priority)}</span>` : '<span style="color:var(--rule)">—</span>'}</td>
-          <td>${u.strategic_tier ? `<span class="db-prio" style="background:${STRAT_COLORS[u.strategic_tier]};color:#fff">${escape(u.strategic_tier)}</span>` : '<span style="color:var(--rule)">—</span>'}</td>
-          <td><b>${u.partnership_score}</b></td>
-          <td>${u.days_dormant !== null && u.days_dormant !== undefined ? u.days_dormant + 'd' : '—'}</td>
-          <td>${u.last_contacted || '—'}</td>
-          <td>${owner ? `<span class="db-prio" style="background:${owner.color};color:#fff">${escape(owner.name)}</span>` : '—'}</td>
-        </tr>`;
-      }).join("")}
+      ${sorted.length
+        ? sorted.map(renderRow).join("")
+        : `<tr><td colspan="10" class="db-empty">No entities match your current scope. Clear filters or try a different saved view.</td></tr>`}
     </tbody></table></div>`;
-  el.innerHTML = html;
+
+  el.innerHTML = `<div class="db-shell">${headerHtml}${viewsHtml}${toolbarHtml}${tableHtml}</div>`;
+
+  // Wire search input (debounced focus restore — same pattern as before).
   const s = document.getElementById("db-search");
   if (s) {
     s.addEventListener("input", e => {
       STATE.search = e.target.value;
       renderDatabaseView();
-      // After re-render the DOM element is replaced — restore focus + caret so
-      // the user can keep typing without re-clicking the field after each key.
       const fresh = document.getElementById("db-search");
       if (fresh) {
         fresh.focus();
@@ -15874,6 +16089,15 @@ function renderDatabaseView() {
         try { fresh.setSelectionRange(pos, pos); } catch {}
       }
     });
+  }
+}
+
+function _dbSetSavedView(v) { _dbSavedView = v; renderDatabaseView(); }
+function _dbSetDensity(d)  { _dbDensity = d;   renderDatabaseView(); }
+function _dbClearSearch()  { STATE.search = ""; renderDatabaseView(); }
+function dbNewEntityComingSoon() {
+  if (typeof showResetUndoToast === "function") {
+    showResetUndoToast("New entity creation · coming soon — entities currently sync from CSV / Sheets");
   }
 }
 function dbSort(col) {
