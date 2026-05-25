@@ -688,9 +688,13 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .kb-section h4{font-size:11px;letter-spacing:1.5px;font-weight:800;color:var(--navy);text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--gold);margin-bottom:12px}
 .kb-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .kb-team{background:var(--paper);border-left:4px solid var(--navy);border-radius:4px;padding:8px 12px}
-.kb-team-name{font-size:12px;font-weight:800;margin-bottom:3px}
+.kb-team-name{font-size:12px;font-weight:800;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .kb-team-remit{font-size:11px;color:var(--ink);line-height:1.4;margin-bottom:4px}
 .kb-team-contact{font-size:10px;color:var(--ink-soft);font-family:'Consolas',monospace}
+.kb-team-count{background:rgba(10,20,40,.10);color:var(--ink);font-size:10px;font-weight:800;padding:2px 9px;border-radius:11px;letter-spacing:0;flex-shrink:0}
+.kb-team-clickable{cursor:pointer;transition:transform var(--motion-base) var(--ease-elegant),box-shadow var(--motion-base) var(--ease-elegant)}
+.kb-team-clickable:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(10,20,40,.12)}
+.kb-team-clickable:active{transform:translateY(0);transition-duration:80ms}
 .kb-sub{margin-bottom:8px}
 .kb-sub-h{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);font-weight:700;display:block;margin-bottom:4px}
 .kb-sub ul,.kb-section > ul{margin:0;padding-left:22px}
@@ -2714,11 +2718,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v10"/></svg>
         <span class="nav-label">Pipeline</span>
       </button>
-      <button class="nav-item" data-view="funnel" onclick="switchView('funnel')" title="90-day signing forecast (Monte Carlo) · bottleneck diagnosis · conversion benchmarks by tier">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        <span class="nav-label">Funnel</span>
-      </button>
-      <button class="nav-item" data-view="strategy" onclick="switchView('strategy')" title="3 strategic 2×2 maps — Effort × Fit, Reach × Readiness, Cost × ROI">
+      <button class="nav-item" data-view="strategy" onclick="switchView('strategy')" title="Strategic 2×2 maps (Effort × Fit, Reach × Readiness, Cost × ROI) + Funnel & 90-day signing forecast — all under one tab strip">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
         <span class="nav-label">Strategic Maps</span>
       </button>
@@ -2751,10 +2751,6 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
       <button class="nav-item" data-view="sponsors" onclick="switchView('sponsors')" title="Career Day annual sponsorship records — financial + contract per company per year">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         <span class="nav-label">Sponsors</span>
-      </button>
-      <button class="nav-item" data-view="teams" onclick="switchView('teams')" title="Workload by team — who owns what, primary vs supporting">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span class="nav-label">Teams</span>
       </button>
       <button class="nav-item" data-view="tailor-made" onclick="switchView('tailor-made')" title="Tailor-made flexibility map — mid-meeting reference for 'can you flex on X?' partner questions">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
@@ -9688,14 +9684,17 @@ function showHfarmInfo() {
   const kb = HFARM_KB;
   let html = `
     <div class="kb-section">
-      <h4>Internal teams (${TEAMS.length})</h4>
-      <div class="kb-teams">${TEAMS.map(t => `
-        <div class="kb-team" style="border-left-color:${t.color}">
-          <div class="kb-team-name" style="color:${t.color}">${escape(t.name)}</div>
+      <h4>Internal teams (${TEAMS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any card to filter the Database by that team →</span></h4>
+      <div class="kb-teams">${TEAMS.map(t => {
+        const count = UNIS.filter(u => currentOwner(u) === t.id).length;
+        return `
+        <div class="kb-team kb-team-clickable" style="border-left-color:${t.color}" onclick="closeHfarmInfo();STATE.filters.owner.clear();STATE.filters.owner.add('${t.id}');switchView('database')" title="Show ${count} partner${count === 1 ? '' : 's'} owned by ${escape(t.name)} in the Database">
+          <div class="kb-team-name" style="color:${t.color}">${escape(t.name)} <span class="kb-team-count">${count}</span></div>
           <div class="kb-team-remit">${escape(t.remit)}</div>
           ${t.email ? `<div class="kb-team-contact"><b>Email:</b> ${escape(t.email)}</div>` : ''}
           ${t.phone ? `<div class="kb-team-contact"><b>Phone:</b> ${escape(t.phone)}</div>` : ''}
-        </div>`).join("")}</div>
+        </div>`;
+      }).join("")}</div>
     </div>
     <div class="kb-section">
       <h4>Bachelor's degrees</h4>
@@ -11141,6 +11140,10 @@ function renderFunnelView() {
   const engagedCount = ["engaged","discovery","proposal","negotiation","signed","active"].reduce((a,s)=>a+stageCounts[s],0);
   const activeCount = stageCounts.active;
   let html = `<div class="view-header"><h1>Funnel & Conversion — diagnostic</h1><p>Where partnerships die in the pipeline, why, and what to do about it. McKinsey-style structured diagnosis, live from your CSV.</p></div>`;
+  // Same unified tab strip as Strategic Maps — Funnel is now a sister
+  // tab under the Strategy umbrella, not a standalone sidebar item.
+  // Clicking an axis tab here jumps back to Strategic Maps view.
+  html += `<div class="sm-shell" style="margin-bottom:14px">${_renderUnifiedStrategyTabs("funnel")}</div>`;
   html += `<div class="fd-shell">`;
 
   // ===== Banner =====
@@ -11807,13 +11810,9 @@ function renderStrategicView() {
 
   html += `<div class="sm-shell">`;
 
-  // Tab strip
-  html += `<div class="sm-tabs">`;
-  Object.entries(STRAT_AXES).forEach(([k, a]) => {
-    const ov = Object.keys(STRAT_STATE.overrides[k] || {}).length;
-    html += `<button class="sm-tab ${k === axisKey ? 'active' : ''}" onclick="stratSwitchAxis('${k}')">${escape(a.label)}${ov ? ` <span style="background:rgba(255,255,255,.25);padding:1px 6px;border-radius:8px;font-size:9px">${ov}</span>` : ''}</button>`;
-  });
-  html += `</div>`;
+  // Unified tab strip — shows 3 axis tabs + Funnel tab. See
+  // _renderUnifiedStrategyTabs comment for the consolidation rationale.
+  html += _renderUnifiedStrategyTabs(axisKey);
 
   // Tip banner
   html += `<div class="sm-banner"><b>Reading the chart:</b> top-left & top-right are the high-value quadrants; bottom-right is where to deprioritise. Bubble size = partnership score, color = priority. <b>${escape(ax.xLabel)}</b> goes left→right (low to high); <b>${escape(ax.yLabel)}</b> goes bottom→top.</div>`;
@@ -12095,7 +12094,28 @@ function renderStrategicView() {
 
 function stratSwitchAxis(key) {
   STRAT_STATE.axisKey = key;
+  // If user clicked an axis tab while in Funnel view, jump back to
+  // Strategic Maps view so the map actually renders.
+  if (STATE && STATE.view !== "strategy") {
+    if (typeof switchView === "function") { switchView("strategy"); return; }
+  }
   renderStrategicView();
+}
+
+// Unified tab strip rendered at the top of BOTH the Strategic Maps view
+// AND the Funnel view, so the two feel like one umbrella ("Strategy")
+// with 4 sub-tabs. The first 3 tabs are the 2x2 axes; the 4th routes to
+// the Funnel view. Funnel was previously its own sidebar item but the
+// consolidation (Strategic + Funnel) reduces sidebar bloat without
+// losing functionality. `activeKey` is one of the STRAT_AXES keys OR
+// the literal "funnel" when called from inside the funnel view.
+function _renderUnifiedStrategyTabs(activeKey) {
+  const axisTabs = Object.entries(STRAT_AXES).map(([k, a]) => {
+    const ov = Object.keys((STRAT_STATE && STRAT_STATE.overrides && STRAT_STATE.overrides[k]) || {}).length;
+    return `<button class="sm-tab ${k === activeKey ? 'active' : ''}" onclick="stratSwitchAxis('${k}')">${escape(a.label)}${ov ? ` <span style="background:rgba(255,255,255,.25);padding:1px 6px;border-radius:8px;font-size:9px">${ov}</span>` : ''}</button>`;
+  }).join("");
+  const funnelTab = `<button class="sm-tab ${activeKey === 'funnel' ? 'active' : ''}" onclick="switchView('funnel')" title="Conversion funnel · Monte Carlo signing forecast · stage-bottleneck diagnosis">📈 Funnel &amp; forecast</button>`;
+  return `<div class="sm-tabs">${axisTabs}${funnelTab}</div>`;
 }
 function stratToggleShowAll() {
   STRAT_STATE.showAll = !STRAT_STATE.showAll;
@@ -15206,7 +15226,17 @@ function renderAboutView() {
   // Reuse the KB structure (copy from showHfarmInfo)
   const kb = HFARM_KB;
   html += `<div id="hfarm-info-body" style="padding:24px 28px 32px">`;
-  html += `<div class="kb-section"><h4>Internal teams (${TEAMS.length})</h4><div class="kb-teams">${TEAMS.map(t => `<div class="kb-team" style="border-left-color:${t.color}"><div class="kb-team-name" style="color:${t.color}">${escape(t.name)}</div><div class="kb-team-remit">${escape(t.remit)}</div>${t.email ? `<div class="kb-team-contact"><b>Email:</b> ${escape(t.email)}</div>` : ''}${t.phone ? `<div class="kb-team-contact"><b>Phone:</b> ${escape(t.phone)}</div>` : ''}</div>`).join("")}</div></div>`;
+  // Team cards now show workload count + click-to-filter so the at-a-glance
+  // workload overview from the (removed) standalone Teams view survives here.
+  html += `<div class="kb-section"><h4>Internal teams (${TEAMS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any card to filter the Database by that team →</span></h4><div class="kb-teams">${TEAMS.map(t => {
+    const count = UNIS.filter(u => currentOwner(u) === t.id).length;
+    return `<div class="kb-team kb-team-clickable" style="border-left-color:${t.color}" onclick="STATE.filters.owner.clear();STATE.filters.owner.add('${t.id}');switchView('database')" title="Show ${count} partner${count === 1 ? '' : 's'} owned by ${escape(t.name)} in the Database">
+      <div class="kb-team-name" style="color:${t.color}">${escape(t.name)} <span class="kb-team-count">${count}</span></div>
+      <div class="kb-team-remit">${escape(t.remit)}</div>
+      ${t.email ? `<div class="kb-team-contact"><b>Email:</b> ${escape(t.email)}</div>` : ''}
+      ${t.phone ? `<div class="kb-team-contact"><b>Phone:</b> ${escape(t.phone)}</div>` : ''}
+    </div>`;
+  }).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>Bachelor's degrees</h4>${Object.entries(kb.bachelors).map(([k,v]) => `<div class="kb-sub"><span class="kb-sub-h">${escape(k)}</span><ul>${v.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`).join("")}</div>`;
   html += `<div class="kb-section"><h4>Master's degrees</h4><ul>${kb.masters.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`;
   html += `<div class="kb-section"><h4>Summer Programs 2026 (${PROGRAMS.length})</h4><div class="kb-progs">${PROGRAMS.map(p => `<div class="kb-prog" data-prog-id="${p.id}" style="border-top:3px solid ${p.color}"><div class="kb-prog-name">${escape(p.name)}</div><div class="kb-prog-meta">${escape(p.age)} · ${escape(p.lang)}</div><div class="kb-prog-topic">${escape(p.topic)}</div><div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div></div>`).join("")}</div></div>`;
