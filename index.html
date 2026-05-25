@@ -12163,9 +12163,20 @@ function renderStrategicView() {
     // axes are projected, so dragging would be ambiguous; click still
     // opens the detail panel, hover still shows the tooltip.
     // ============================================================
-    html += `<div class="sm-chart-wrap sm-chart-wrap-3d ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg sm-chart-svg-3d" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">${_stratSvgDefs()}`;
+    // 3D-only viewBox + plot dims. Wider viewBox (960 vs shared 760) gives
+    // the right-edge floor labels (DON'T BOTHER / STRATEGIC BETS / ACTIVE
+    // TARGETS / WAKE-UP CALLS) room to extend out without clipping at the
+    // SVG boundary. Tighter top/bottom padding (15/35 vs shared 50/70) lets
+    // the axonometric chart actually fill its vertical real estate — was
+    // sitting low + small because the projection rangeY was filling a
+    // smaller scale than rangeX, leaving big top whitespace.
+    const padL_3d = 90, padR_3d = 150, padT_3d = 15, padB_3d = 35;
+    const vbW_3d = 960, vbH_3d = 700;
+    const plotW_3d = vbW_3d - padL_3d - padR_3d;   // 720
+    const plotH_3d = vbH_3d - padT_3d - padB_3d;   // 650
+    html += `<div class="sm-chart-wrap sm-chart-wrap-3d ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg sm-chart-svg-3d" id="sm-chart" viewBox="0 0 ${vbW_3d} ${vbH_3d}" preserveAspectRatio="xMidYMid meet">${_stratSvgDefs()}`;
 
-    const project = _strat3DBuildProjector(plotL, plotT, plotW, plotH);
+    const project = _strat3DBuildProjector(padL_3d, padT_3d, plotW_3d, plotH_3d);
 
     // Floor corners — the parallelogram representing the X-Z plane at Y=0.
     const f00 = project(0,   0, 0);
