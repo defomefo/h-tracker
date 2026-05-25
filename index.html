@@ -801,9 +801,11 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .tm-meta{font-size:10px;color:var(--ink-mute);padding-top:10px;border-top:1px solid var(--rule);margin-top:8px}
 .tm-meta code{font-family:'Consolas',monospace;background:var(--paper);padding:1px 5px;border-radius:3px}
 
-/* Dedicated Tailor-made view (full-width sidebar surface) */
-.tm-view-shell{padding:0 4px}
-.tm-view-controls{display:flex;align-items:center;gap:14px;margin:8px 0 14px}
+/* Dedicated Tailor-made view (full-width sidebar surface) — header
+   keeps its own .view-header padding; content area gets a matching
+   28px gutter on its own wrapper so cards/search don't kiss the sidebar. */
+.tm-view-body{padding:18px 28px 32px}
+.tm-view-controls{display:flex;align-items:center;gap:14px;margin:8px 0 18px}
 .tm-search{flex:1;max-width:480px;padding:10px 14px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:inherit;background:var(--paper);color:var(--ink)}
 .tm-search:focus{outline:none;border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(217,83,79,.10)}
 .tm-draft-counter{font-size:11px;color:#7a5a10;background:#fff8e7;border:1px solid #e8c870;padding:5px 11px;border-radius:14px;font-weight:700;letter-spacing:.3px}
@@ -10099,7 +10101,9 @@ function renderTailorMadeView() {
     <input type="search" id="tm-search-input" class="tm-search" placeholder='Search "ECTS", "scholarship", "duration"…' value="${escapeAttr(_tailorMadeSearch)}" oninput="_tailorMadeSearchInput(this.value)" autocomplete="off" spellcheck="false"/>
     ${draftCount > 0 ? `<span class="tm-draft-counter">${draftCount} of ${items.length} unverified</span>` : ''}
   </div>`;
-  el.innerHTML = `<div class="tm-view-shell">${header}${searchBar}${_renderTailorMadeSection()}</div>`;
+  // header lives at view-edge (its own padding); body wrapper gets its
+  // own padded gutter so cards don't kiss the sidebar.
+  el.innerHTML = `${header}<div class="tm-view-body">${searchBar}${_renderTailorMadeSection()}</div>`;
 }
 
 function openTailorMadeDetail(itemId) {
@@ -15201,7 +15205,7 @@ function renderAboutView() {
   let html = `<div class="view-header"><h1>About H-FARM College</h1><p>The full knowledge base embedded in this platform — what we offer and which team owns what.</p></div>`;
   // Reuse the KB structure (copy from showHfarmInfo)
   const kb = HFARM_KB;
-  html += `<div id="hfarm-info-body" style="padding:0 24px 28px">`;
+  html += `<div id="hfarm-info-body" style="padding:24px 28px 32px">`;
   html += `<div class="kb-section"><h4>Internal teams (${TEAMS.length})</h4><div class="kb-teams">${TEAMS.map(t => `<div class="kb-team" style="border-left-color:${t.color}"><div class="kb-team-name" style="color:${t.color}">${escape(t.name)}</div><div class="kb-team-remit">${escape(t.remit)}</div>${t.email ? `<div class="kb-team-contact"><b>Email:</b> ${escape(t.email)}</div>` : ''}${t.phone ? `<div class="kb-team-contact"><b>Phone:</b> ${escape(t.phone)}</div>` : ''}</div>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>Bachelor's degrees</h4>${Object.entries(kb.bachelors).map(([k,v]) => `<div class="kb-sub"><span class="kb-sub-h">${escape(k)}</span><ul>${v.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`).join("")}</div>`;
   html += `<div class="kb-section"><h4>Master's degrees</h4><ul>${kb.masters.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`;
