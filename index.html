@@ -744,6 +744,51 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .pd-priochip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:14px;letter-spacing:.3px}
 .pd-priochip b{background:rgba(255,255,255,.25);padding:1px 7px;border-radius:9px;font-size:10px}
 
+/* ========= Tailor-made flexibility map ========= */
+.tm-draft-banner{background:#fff8e7;border:1px solid #f0d670;border-left:3px solid var(--warm);padding:9px 14px;border-radius:0 5px 5px 0;font-size:12px;color:var(--ink);margin:8px 0 14px;line-height:1.5}
+.tm-pills{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.tm-pill{background:#fff;border:1px solid var(--rule);font-family:inherit;font-size:11px;font-weight:600;padding:6px 12px;border-radius:14px;cursor:pointer;color:var(--ink-soft);letter-spacing:.2px;display:inline-flex;align-items:center;gap:7px;transition:all var(--motion-fast,140ms) var(--ease-standard,ease)}
+.tm-pill:hover{border-color:var(--navy);color:var(--navy)}
+.tm-pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tm-pill-n{background:var(--paper);color:var(--navy);font-size:10px;padding:1px 7px;border-radius:9px;font-weight:700}
+.tm-pill.active .tm-pill-n{background:rgba(255,255,255,.25);color:#fff}
+.tm-cat-head{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:6px}
+.tm-cat-count{background:var(--paper);color:var(--ink-soft);font-size:10px;padding:1px 7px;border-radius:9px;font-weight:700;letter-spacing:0;text-transform:none;margin-left:auto}
+.tm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-bottom:14px}
+.tm-card{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--navy);border-radius:5px;padding:12px 14px;cursor:pointer;transition:box-shadow var(--motion-base,240ms) var(--ease-elegant,ease),transform var(--motion-base,240ms) var(--ease-elegant,ease)}
+.tm-card:hover{box-shadow:0 6px 16px rgba(10,37,64,.12);transform:translateY(-2px)}
+.tm-card:active{transform:translateY(0);transition-duration:80ms}
+.tm-card-head{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px}
+.tm-card-cat{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.tm-card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px;line-height:1.25}
+.tm-card-q{font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.45;margin-bottom:6px}
+.tm-card-ans{font-size:12px;color:var(--ink);font-weight:600;line-height:1.4}
+.tm-card-ans b{color:var(--hf-red);margin-right:4px}
+.tm-draft-badge{background:#fff8e7;color:#7a5a10;border:1px solid #e8c870;font-size:9px;font-weight:800;letter-spacing:.6px;padding:2px 6px;border-radius:3px}
+
+/* Detail modal */
+.tm-draft-detail-banner{background:#fff8e7;border:1px solid #f0d670;border-left:3px solid var(--warm);padding:11px 14px;border-radius:0 5px 5px 0;font-size:12px;color:var(--ink);margin-bottom:18px;line-height:1.5}
+.tm-detail-hero{padding:18px 22px;border-radius:6px;margin-bottom:18px}
+.tm-detail-cat{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
+.tm-detail-title{font-size:20px;font-weight:800;color:var(--navy);line-height:1.2}
+.tm-section{margin-bottom:18px}
+.tm-label{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+.tm-label-answer{color:#1f7a35}
+.tm-label-warn{color:#a4332b}
+.tm-label-ask{color:#1F6FB4}
+.tm-q-block{font-size:13px;color:var(--ink);font-style:italic;padding:10px 14px;background:var(--paper);border-radius:5px;line-height:1.5}
+.tm-ans-block{font-size:14px;color:var(--ink);font-weight:600;padding:10px 14px;background:#f0f7f1;border-left:3px solid #2E7D5B;border-radius:0 5px 5px 0;line-height:1.5}
+.tm-detail-text{font-size:13px;color:var(--ink);line-height:1.6}
+.tm-constraints{background:#fef5f5;border-left:3px solid #a4332b;padding:10px 14px;border-radius:0 5px 5px 0}
+.tm-applies-list{display:flex;flex-wrap:wrap;gap:6px}
+.tm-applies-chip{font-size:11px;font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--rule);border-left:3px solid var(--navy);padding:4px 10px;border-radius:0 3px 3px 0}
+.tm-applies-chip.tm-applies-all{background:var(--navy);color:#fff;border:none;font-weight:800;letter-spacing:.4px}
+.tm-applies-note{font-size:11px;color:var(--ink-soft);font-style:italic;margin-top:6px}
+.tm-ask-block{font-size:13px;color:var(--ink);font-style:italic;padding:10px 14px;background:#eef4f9;border-left:3px solid #1F6FB4;border-radius:0 5px 5px 0;line-height:1.5}
+.tm-ask-note{font-size:10px;color:var(--ink-mute);margin-top:5px;font-style:italic}
+.tm-meta{font-size:10px;color:var(--ink-mute);padding-top:10px;border-top:1px solid var(--rule);margin-top:8px}
+.tm-meta code{font-family:'Consolas',monospace;background:var(--paper);padding:1px 5px;border-radius:3px}
+
 /* Program-row override: now with reasoning text under each program */
 .program-row{display:block;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px}
 .program-row:last-child{border-bottom:none}
@@ -2911,6 +2956,17 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
   </div>
 </div>
 
+<!-- Tailor-made flex item detail modal -->
+<div class="compare-modal" id="tailor-made-modal" style="z-index:428">
+  <div class="compare-box" style="max-width:720px">
+    <div class="compare-head" id="tailor-made-head">
+      <h2 id="tailor-made-title">Tailor-made flex item</h2>
+      <button class="compare-close" onclick="closeTailorMadeDetail()">&times;</button>
+    </div>
+    <div class="compare-body" id="tailor-made-body"></div>
+  </div>
+</div>
+
 <!-- Sponsor new/edit modal -->
 <div class="compare-modal" id="sponsor-modal" style="z-index:422">
   <div class="compare-box" style="max-width:720px">
@@ -3157,6 +3213,13 @@ let PROG_BY_ID = {};
 // Collaboration formats — loaded from data/collab_formats.json at boot.
 let COLLAB_FORMATS = [];
 
+// Tailor-made flexibility map — loaded from data/tailor_made.json at boot.
+// Items are reference answers to common "can you flex on X?" partner
+// questions (ECTS, duration, cohort size, cost, etc.). Every item carries
+// `draft:true` until the team has verified the content matches actual
+// H-FARM College policy — the UI badges these visibly.
+let TAILOR_MADE = [];
+
 // Brochures — loaded from data/brochures.json at boot.
 let BROCHURES = [];
 
@@ -3219,6 +3282,25 @@ const KB_SCHEMA = {
       {key:"group",    label:"Group size", type:"text"},
       {key:"ideal",    label:"Ideal partner", type:"textarea"},
       {key:"case",     label:"Reference case", type:"textarea"},
+    ],
+  },
+  tailorMade: {
+    title: "Tailor-made flexibility map",
+    file: "data/tailor_made.json",
+    lsKey: "hfarm_kb_tailormade_draft",
+    keyField: "id",
+    fields: [
+      {key:"id",                label:"ID",                 type:"text", required:true, hint:"Stable identifier."},
+      {key:"category",          label:"Category",           type:"text", required:true, hint:"academic | logistics | commercial | content | wraparound | partnership"},
+      {key:"title",             label:"Title",              type:"text", required:true},
+      {key:"question",          label:"Partner's question", type:"textarea", hint:"Phrased the way a partner naturally asks it"},
+      {key:"short_answer",      label:"Short answer",       type:"text", hint:"One-line yes/no/conditional"},
+      {key:"details",           label:"Details",            type:"textarea"},
+      {key:"applies_to_label",  label:"Applies to (label)", type:"text", hint:"Human-readable scope (e.g. 'All assessed summer programs')"},
+      {key:"applies_to",        label:"Applies to (ids)",   type:"tags", hint:"Program ids, or ['all']"},
+      {key:"constraints",       label:"Constraints / caveats", type:"textarea"},
+      {key:"ask_partner",       label:"Follow-up to ask partner", type:"textarea"},
+      {key:"draft",             label:"DRAFT (unverified)", type:"text", hint:"true while content needs verification before quoting to partners"},
     ],
   },
   brochures: {
@@ -3398,7 +3480,7 @@ async function fetchJson(path) {
 async function loadKnowledgeBase() {
   // Files + server drafts in parallel. If the server is unreachable we
   // gracefully degrade to localStorage cache → bundled files.
-  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, tpls, users, serverDrafts] = await Promise.all([
+  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, tpls, users, tailorMade, serverDrafts] = await Promise.all([
     fetchJson(KB_SCHEMA.programs.file),
     fetchJson(KB_SCHEMA.teams.file),
     fetchJson(KB_SCHEMA.collab.file),
@@ -3412,6 +3494,7 @@ async function loadKnowledgeBase() {
     fetchJson(KB_SCHEMA.talentHub.file),
     fetchJson(KB_SCHEMA.templates.file).catch(() => []),   // templates added later; tolerate missing file
     fetchJson(KB_SCHEMA.users.file).catch(() => []),       // users added later; tolerate missing file
+    fetchJson(KB_SCHEMA.tailorMade.file).catch(() => []),  // tailor-made added later; tolerate missing file
     kvStore.fetchAll("kb_draft").catch(() => null),
   ]);
   // One-shot migrate localStorage → server, then refresh draft map
@@ -3445,6 +3528,7 @@ async function loadKnowledgeBase() {
   HFARM_KB.talentHub    = resolve("talentHub",     talentHub);
   OUTREACH_TEMPLATES    = resolve("templates",     tpls) || [];
   OPERATORS             = resolve("users",         users) || [];
+  TAILOR_MADE           = resolve("tailorMade",    tailorMade) || [];
   PROG_BY_ID = Object.fromEntries(PROGRAMS.map(p => [p.id, p]));
   TEAM_BY_ID = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 }
@@ -3508,7 +3592,7 @@ function kbGetRaw(schemaKey) {
     talentHub:     HFARM_KB.talentHub,
   };
   if (schemaKey in fromKB) return fromKB[schemaKey];
-  return ({ programs: PROGRAMS, teams: TEAMS, collab: COLLAB_FORMATS, brochures: BROCHURES, templates: OUTREACH_TEMPLATES, users: OPERATORS }[schemaKey]) || [];
+  return ({ programs: PROGRAMS, teams: TEAMS, collab: COLLAB_FORMATS, brochures: BROCHURES, templates: OUTREACH_TEMPLATES, users: OPERATORS, tailorMade: TAILOR_MADE }[schemaKey]) || [];
 }
 function kbGet(schemaKey) {
   return shapeToArray(schemaKey, kbGetRaw(schemaKey));
@@ -3526,6 +3610,7 @@ function kbApply(schemaKey, raw) {
   else if (schemaKey === "talentHub")    { HFARM_KB.talentHub = raw; }
   else if (schemaKey === "templates")    { OUTREACH_TEMPLATES = raw || []; }
   else if (schemaKey === "users")        { OPERATORS = raw || []; }
+  else if (schemaKey === "tailorMade")   { TAILOR_MADE = raw || []; }
 }
 function kbSet(schemaKey, arr) {
   const raw = shapeFromArray(schemaKey, arr);
@@ -9603,6 +9688,7 @@ function showHfarmInfo() {
           <div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div>
         </div>`).join("")}</div>
     </div>
+    ${_renderTailorMadeSection()}
     <div class="kb-section">
       <h4>Exchange-only programs (HFC students)</h4>
       <ul>${kb.exchangeOnly.map(p => `<li>${escape(p)}</li>`).join("")}</ul>
@@ -9845,6 +9931,171 @@ function _collabFormatColor(formatId) {
     "exchange":  "#6B4C7D",   // Exchange Program — established / academic purple
     "jterm":     "#8B6914",   // J-Term — January gold / olive
   })[formatId] || "#5A5A5A";
+}
+
+
+// =====================================================================
+// TAILOR-MADE FLEXIBILITY MAP — partner-FAQ reference
+//   Renders a categorised grid of "can you flex on X?" items in the
+//   About H-FARM College view + KB modal. Each card opens a detail
+//   modal with the full answer + applies-to programs + constraints +
+//   follow-up question to ask the partner.
+//   All content is currently `draft:true` until the team verifies it
+//   against actual H-FARM College policy — the UI badges every card
+//   and the modal with a prominent "VERIFY" warning.
+// =====================================================================
+const TAILOR_MADE_CATEGORIES = {
+  academic:    { label: "Academic recognition",     icon: "🎓", color: "#1F6FB4" },
+  logistics:   { label: "Logistics & format",       icon: "📅", color: "#2E7D5B" },
+  commercial:  { label: "Commercial flex",          icon: "💰", color: "#C97A1A" },
+  content:     { label: "Content tailoring",        icon: "🎯", color: "#6B4C7D" },
+  wraparound:  { label: "Wraparound",               icon: "📚", color: "#8B6914" },
+  partnership: { label: "Partnership structure",    icon: "🤝", color: "#D9534F" },
+};
+
+let _tailorMadeFilter = "all";   // category filter (sticky across re-renders)
+
+function _renderTailorMadeSection() {
+  const items = TAILOR_MADE || [];
+  if (!items.length) return "";
+
+  // Category counts for the filter pills
+  const counts = { all: items.length };
+  items.forEach(i => { counts[i.category] = (counts[i.category] || 0) + 1; });
+
+  const draftCount = items.filter(i => i.draft).length;
+  const draftBanner = draftCount > 0
+    ? `<div class="tm-draft-banner">⚠ <b>${draftCount} of ${items.length}</b> items are unverified drafts — confirm with the H-FARM College team before quoting these in partner meetings. Edit content in <b>Admin → Tailor-made flexibility map</b>.</div>`
+    : "";
+
+  const pillBtn = (k, label, n) => `<button class="tm-pill ${_tailorMadeFilter === k ? 'active' : ''}" onclick="_setTailorMadeFilter('${k}')">${label}<span class="tm-pill-n">${n || 0}</span></button>`;
+
+  const filtered = _tailorMadeFilter === "all"
+    ? items
+    : items.filter(i => i.category === _tailorMadeFilter);
+
+  // Group filtered items by category (so within "all" view they cluster
+  // visually; within a single-category view this becomes one section).
+  const byCat = {};
+  filtered.forEach(i => { (byCat[i.category] = byCat[i.category] || []).push(i); });
+
+  let cardsHtml = "";
+  Object.entries(TAILOR_MADE_CATEGORIES).forEach(([catId, catMeta]) => {
+    const arr = byCat[catId] || [];
+    if (!arr.length) return;
+    if (_tailorMadeFilter === "all") {
+      cardsHtml += `<div class="tm-cat-head" style="color:${catMeta.color}">${catMeta.icon} ${catMeta.label} <span class="tm-cat-count">${arr.length}</span></div>`;
+    }
+    cardsHtml += `<div class="tm-grid">${arr.map(item => _tailorMadeCardHtml(item)).join("")}</div>`;
+  });
+
+  return `<div class="kb-section">
+    <h4>Tailor-made flexibility map (${items.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any item for the full answer + follow-up to ask the partner →</span></h4>
+    ${draftBanner}
+    <div class="tm-pills">
+      ${pillBtn("all", "All", counts.all)}
+      ${Object.entries(TAILOR_MADE_CATEGORIES).map(([k, v]) => pillBtn(k, v.icon + " " + v.label, counts[k])).join("")}
+    </div>
+    ${cardsHtml || '<div style="font-size:12px;color:var(--ink-soft);font-style:italic;padding:14px">No items in this category yet.</div>'}
+  </div>`;
+}
+
+function _tailorMadeCardHtml(item) {
+  const catMeta = TAILOR_MADE_CATEGORIES[item.category] || { color: "#999", icon: "•", label: item.category };
+  const draftBadge = item.draft ? `<span class="tm-draft-badge" title="Content is a draft and needs team verification">DRAFT</span>` : "";
+  return `<div class="tm-card" style="border-left-color:${catMeta.color}" onclick="openTailorMadeDetail('${escapeAttr(item.id)}')">
+    <div class="tm-card-head">
+      <span class="tm-card-cat" style="color:${catMeta.color}">${catMeta.icon} ${escape(catMeta.label)}</span>
+      ${draftBadge}
+    </div>
+    <div class="tm-card-title">${escape(item.title || "")}</div>
+    <div class="tm-card-q">"${escape(item.question || "")}"</div>
+    ${item.short_answer ? `<div class="tm-card-ans"><b>→</b> ${escape(item.short_answer)}</div>` : ""}
+  </div>`;
+}
+
+function _setTailorMadeFilter(cat) {
+  _tailorMadeFilter = cat;
+  // Re-render whichever surface is showing the section
+  if (STATE && STATE.view === "about" && typeof renderAboutView === "function") renderAboutView();
+  // If the KB modal is open, re-call showHfarmInfo to refresh its body
+  const modal = document.getElementById("hfarm-info-modal");
+  if (modal && modal.classList.contains("open") && typeof showHfarmInfo === "function") showHfarmInfo();
+}
+
+function openTailorMadeDetail(itemId) {
+  const item = (TAILOR_MADE || []).find(i => i.id === itemId);
+  if (!item) { console.warn("Unknown tailor-made id:", itemId); return; }
+  const catMeta = TAILOR_MADE_CATEGORIES[item.category] || { color: "#999", icon: "•", label: item.category };
+
+  // Map applies_to program ids to display names where possible
+  const appliesIds = item.applies_to || [];
+  const appliesChips = appliesIds.length
+    ? appliesIds.map(pid => {
+        if (pid === "all") return `<span class="tm-applies-chip tm-applies-all">ALL programs</span>`;
+        const prog = PROG_BY_ID[pid];
+        const fmt = (COLLAB_FORMATS || []).find(f => f.id === pid);
+        const label = (prog && prog.name) || (fmt && fmt.name) || pid;
+        const color = (prog && prog.color) || (fmt && _collabFormatColor(fmt.id)) || "#888";
+        return `<span class="tm-applies-chip" style="border-left:3px solid ${color}">${escape(label)}</span>`;
+      }).join("")
+    : `<span class="tm-applies-chip" style="color:var(--ink-mute);font-style:italic">unspecified</span>`;
+
+  const draftBanner = item.draft
+    ? `<div class="tm-draft-detail-banner">⚠ <b>DRAFT — verify before quoting to a partner.</b> This content is a placeholder generated to scaffold the flexibility map. Confirm against actual H-FARM College policy + your team's experience before using it in a real meeting. Edit in Admin → Tailor-made flexibility map.</div>`
+    : "";
+
+  const body = `
+    ${draftBanner}
+    <div class="tm-detail-hero" style="background:linear-gradient(135deg, ${catMeta.color}15 0%, ${catMeta.color}05 100%);border-left:4px solid ${catMeta.color}">
+      <div class="tm-detail-cat" style="color:${catMeta.color}">${catMeta.icon} ${escape(catMeta.label)}</div>
+      <div class="tm-detail-title">${escape(item.title || "")}</div>
+    </div>
+
+    <div class="tm-section">
+      <div class="tm-label">❓ Partner asks</div>
+      <div class="tm-q-block">"${escape(item.question || "—")}"</div>
+    </div>
+
+    <div class="tm-section">
+      <div class="tm-label tm-label-answer">✅ Short answer</div>
+      <div class="tm-ans-block" style="border-left-color:${catMeta.color}">${escape(item.short_answer || "—")}</div>
+    </div>
+
+    ${item.details ? `<div class="tm-section">
+      <div class="tm-label">📖 Details</div>
+      <div class="tm-detail-text">${escape(item.details)}</div>
+    </div>` : ""}
+
+    <div class="tm-section">
+      <div class="tm-label">📋 Applies to</div>
+      <div class="tm-applies-list">${appliesChips}</div>
+      ${item.applies_to_label ? `<div class="tm-applies-note">${escape(item.applies_to_label)}</div>` : ""}
+    </div>
+
+    ${item.constraints ? `<div class="tm-section">
+      <div class="tm-label tm-label-warn">⚠ Constraints / caveats</div>
+      <div class="tm-detail-text tm-constraints">${escape(item.constraints)}</div>
+    </div>` : ""}
+
+    ${item.ask_partner ? `<div class="tm-section">
+      <div class="tm-label tm-label-ask">💬 Ask the partner</div>
+      <div class="tm-ask-block">"${escape(item.ask_partner)}"</div>
+      <div class="tm-ask-note">Use this in the meeting to surface the partner's specific need behind the question.</div>
+    </div>` : ""}
+
+    <div class="tm-meta">
+      ID: <code>${escape(item.id || "")}</code>${item.draft ? ' · <span style="color:var(--hf-red);font-weight:700">DRAFT</span>' : ''}
+    </div>
+  `;
+
+  document.getElementById("tailor-made-title").innerHTML = `<span style="font-size:14px;color:${catMeta.color};font-weight:700;letter-spacing:1px">${catMeta.icon} TAILOR-MADE FLEX ITEM</span>`;
+  document.getElementById("tailor-made-body").innerHTML = body;
+  document.getElementById("tailor-made-modal").classList.add("open");
+}
+
+function closeTailorMadeDetail() {
+  document.getElementById("tailor-made-modal").classList.remove("open");
 }
 
 function showCollabFormatDashboard(formatId) {
@@ -14876,6 +15127,7 @@ function renderAboutView() {
   html += `<div class="kb-section"><h4>Bachelor's degrees</h4>${Object.entries(kb.bachelors).map(([k,v]) => `<div class="kb-sub"><span class="kb-sub-h">${escape(k)}</span><ul>${v.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`).join("")}</div>`;
   html += `<div class="kb-section"><h4>Master's degrees</h4><ul>${kb.masters.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`;
   html += `<div class="kb-section"><h4>Summer Programs 2026 (${PROGRAMS.length})</h4><div class="kb-progs">${PROGRAMS.map(p => `<div class="kb-prog" data-prog-id="${p.id}" style="border-top:3px solid ${p.color}"><div class="kb-prog-name">${escape(p.name)}</div><div class="kb-prog-meta">${escape(p.age)} · ${escape(p.lang)}</div><div class="kb-prog-topic">${escape(p.topic)}</div><div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div></div>`).join("")}</div></div>`;
+  html += _renderTailorMadeSection();
   html += `<div class="kb-section"><h4>University collaboration formats (${COLLAB_FORMATS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any tile to open its dashboard →</span></h4><div class="kb-progs">${COLLAB_FORMATS.map(f => `<div class="kb-prog" data-format-id="${f.id}" style="border-top:3px solid ${_collabFormatColor(f.id)}"><div class="kb-prog-name">${escape(f.name)}</div><div class="kb-prog-meta">${escape(f.duration)} · ${escape(f.group)}</div><div class="kb-prog-topic">${escape(f.ideal)}</div>${f.case ? `<div class="kb-prog-pitch"><b>Case:</b> ${escape(f.case)}</div>` : ''}</div>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>Talent H-UB formats (for companies)</h4><div class="kb-flex">${kb.talentHub.formats.map(f => `<span class="kb-pill">${escape(f)}</span>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>H-FARM College Experience touchpoints</h4><div class="kb-flex">${kb.experiences.map(e => `<span class="kb-pill-soft">${escape(e)}</span>`).join("")}</div></div>`;
