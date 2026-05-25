@@ -1314,6 +1314,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .mc-mom-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink-soft);letter-spacing:.3px;font-weight:600}
 .mc-mom-trend{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:800;color:var(--ur)}
 .mc-mom-trend.down{color:var(--crit)}
+/* DEMO chip — small monospace pill that sits next to the card title for
+   cards whose sparkline shape is illustrative (real big number, decorative
+   per-day line). Reads cleanly against the white card background. */
+.mc-mom-demo{display:inline-flex;align-items:center;font-family:'Consolas','SF Mono',monospace;font-size:8px;font-weight:800;letter-spacing:1.2px;padding:2px 6px;border-radius:3px;background:var(--paper);color:var(--ink-mute);border:1px solid var(--rule);cursor:help;line-height:1}
 .mc-mom-n{font-size:36px;font-weight:800;color:var(--ink);letter-spacing:-1.4px;line-height:1;font-variant-numeric:tabular-nums}
 .mc-mom-desc{font-size:11px;color:var(--ink-soft);line-height:1.4;margin-bottom:4px}
 .mc-mom-spark{width:100%;height:36px;display:block;overflow:visible}
@@ -1412,11 +1416,6 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
   opacity:0;
   animation:mc-fade-up 400ms ease-out 1700ms forwards;
 }
-.mc-mom-spark .mc-spark-demo{
-  opacity:0;
-  animation:mc-fade-up 400ms ease-out 2000ms forwards;
-}
-
 /* Pipeline bars grow from the bottom up (scaleY from 0 → 1) */
 .mc-pipe-fill{
   transform-origin:bottom;
@@ -12613,27 +12612,19 @@ function renderHomeView() {
   const liveNow          = signedActive;   // currently at signed/active stage
   const stuckOver30      = dormantHi.length;
 
-  // SVG sparkline. Renders the line + soft area fill; when opts.demo
-  // is set, adds a small DEMO badge in the top-right corner so the
-  // user (and any audience) knows it's an illustrative shape, not a
-  // real per-day series. Real-data cards omit the badge.
+  // SVG sparkline. Pure visual — no in-SVG DEMO watermark anymore (the
+  // faded version of that was unreadable behind the area fill and people
+  // asked "what's that text?"). For decorative-data cards, the title
+  // gets a separate .mc-mom-demo chip in HTML instead.
   // For empty data (all zeros, or single value), renders a flat baseline
   // — never fakes a curve from nothing.
-  const _sparkSvg = (points, color, opts = {}) => {
+  const _sparkSvg = (points, color) => {
     const w = 110, h = 32;
     const max = Math.max.apply(null, points), min = Math.min.apply(null, points);
     const range = (max - min);
-    const demoBadge = opts.demo
-      ? `<g class="mc-spark-demo">
-           <rect x="${w-30}" y="2" width="28" height="10" rx="2" fill="${color}" opacity=".14"/>
-           <text x="${w-16}" y="9.5" text-anchor="middle" font-size="7" fill="${color}" opacity=".82"
-                 font-family="Consolas,SF Mono,monospace" font-weight="700" letter-spacing=".5px">DEMO</text>
-         </g>`
-      : "";
     if (range === 0 || points.length < 2) {
       return `<svg class="mc-mom-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
         <line x1="0" y1="${h - 2}" x2="${w}" y2="${h - 2}" stroke="${color}" stroke-width="1.2" opacity=".4" stroke-dasharray="3,3"/>
-        ${demoBadge}
       </svg>`;
     }
     const step = w / (points.length - 1);
@@ -12641,7 +12632,6 @@ function renderHomeView() {
     return `<svg class="mc-mom-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       <path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
       <path d="${path} L${w},${h} L0,${h} Z" fill="${color}" opacity=".10"/>
-      ${demoBadge}
     </svg>`;
   };
 
@@ -12657,9 +12647,14 @@ function renderHomeView() {
   const _decoStuck = [Math.max(1, stuckOver30-7), Math.max(1, stuckOver30-6), Math.max(1, stuckOver30-5), Math.max(2, stuckOver30-4), Math.max(2, stuckOver30-3), Math.max(3, stuckOver30-3), Math.max(3, stuckOver30-2), Math.max(4, stuckOver30-1), stuckOver30, stuckOver30];
 
   const spark_conv   = _sparkSvg(_outreachPerDay, "#1F6FB4");
-  const spark_ident  = _sparkSvg(_decoIdent,  PRIO_COLORS["Up & Running"], { demo: true });
-  const spark_live   = _sparkSvg(_decoLive,   PRIO_COLORS["Up & Running"], { demo: true });
-  const spark_stuck  = _sparkSvg(_decoStuck,  PRIO_COLORS["Critical"],     { demo: true });
+  const spark_ident  = _sparkSvg(_decoIdent,  PRIO_COLORS["Up & Running"]);
+  const spark_live   = _sparkSvg(_decoLive,   PRIO_COLORS["Up & Running"]);
+  const spark_stuck  = _sparkSvg(_decoStuck,  PRIO_COLORS["Critical"]);
+  // DEMO chip — readable HTML label that sits next to the card title
+  // for cards whose sparkline is illustrative (not real per-day data).
+  // Real-data cards omit it. Way more honest than the unreadable in-SVG
+  // watermark we had before.
+  const _demoChip = `<span class="mc-mom-demo" title="Sparkline shape is illustrative — the big number is real, but per-day history isn't in the DB yet">DEMO</span>`;
 
   // Trend arrow: only render for cards where we have a real comparison.
   // For Conversations Active, compare this-week vs prev-week outreach
@@ -12749,7 +12744,7 @@ function renderHomeView() {
         </div>
         <div class="mc-momentum">
           <div class="mc-mom-card" title="Big number = real (entities currently at 'Identified' stage). Sparkline = illustrative shape only; per-day entry history coming once engagement-depth snapshots accumulate.">
-            <div class="mc-mom-head">In identification</div>
+            <div class="mc-mom-head">In identification${_demoChip}</div>
             <div class="mc-mom-n">${inIdentification}</div>
             <div class="mc-mom-desc">at identified stage</div>
             ${spark_ident}
@@ -12761,13 +12756,13 @@ function renderHomeView() {
             ${spark_conv}
           </div>
           <div class="mc-mom-card" title="Big number = real (entities at signed/active stage). Sparkline = illustrative; we don't capture signing dates yet, so per-day history isn't computable.">
-            <div class="mc-mom-head">Live now</div>
+            <div class="mc-mom-head">Live now${_demoChip}</div>
             <div class="mc-mom-n">${liveNow}</div>
             <div class="mc-mom-desc">signed MoUs / partnerships</div>
             ${spark_live}
           </div>
           <div class="mc-mom-card" title="Big number = real (high-priority entities dormant 30+ days). Sparkline = illustrative; daily dormancy snapshots will replace this once we have enough days of history.">
-            <div class="mc-mom-head">Stuck &gt; 30d</div>
+            <div class="mc-mom-head">Stuck &gt; 30d${_demoChip}</div>
             <div class="mc-mom-n">${stuckOver30}</div>
             <div class="mc-mom-desc">high-priority &amp; dormant</div>
             ${spark_stuck}
