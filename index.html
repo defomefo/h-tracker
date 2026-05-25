@@ -998,6 +998,85 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
   .mc-pipe-labels{grid-template-columns:repeat(4,1fr)}
 }
 
+/* ============================================================
+   Animations — staggered fade-up on render + bar growth +
+   sparkline draw-in. Single-shot on each render (no looping
+   except the pulse dots in the hero/live tags).
+============================================================ */
+@keyframes mc-fade-up{
+  from{opacity:0;transform:translateY(14px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+@keyframes mc-bar-grow{
+  from{transform:scaleY(0)}
+  to  {transform:scaleY(1)}
+}
+@keyframes mc-spark-draw{
+  to{stroke-dashoffset:0}
+}
+
+/* Hero + sections fade up in sequence */
+.mc-hero      {animation:mc-fade-up 600ms cubic-bezier(.16,1,.3,1) both}
+.mc-sec       {animation:mc-fade-up 600ms cubic-bezier(.16,1,.3,1) 120ms both}
+.mc-row       {animation:mc-fade-up 600ms cubic-bezier(.16,1,.3,1) 220ms both}
+
+/* Momentum cards stagger in */
+.mc-mom-card:nth-child(1){animation:mc-fade-up 500ms cubic-bezier(.16,1,.3,1) 220ms both}
+.mc-mom-card:nth-child(2){animation:mc-fade-up 500ms cubic-bezier(.16,1,.3,1) 320ms both}
+.mc-mom-card:nth-child(3){animation:mc-fade-up 500ms cubic-bezier(.16,1,.3,1) 420ms both}
+.mc-mom-card:nth-child(4){animation:mc-fade-up 500ms cubic-bezier(.16,1,.3,1) 520ms both}
+
+/* Sparkline lines draw in (left → right) using stroke-dashoffset */
+.mc-mom-spark path:first-of-type{
+  stroke-dasharray:300;
+  stroke-dashoffset:300;
+  animation:mc-spark-draw 1300ms cubic-bezier(.16,1,.3,1) 700ms forwards;
+}
+.mc-mom-spark path:nth-of-type(2){
+  opacity:0;
+  animation:mc-fade-up 400ms ease-out 1700ms forwards;
+}
+
+/* Pipeline bars grow from the bottom up (scaleY from 0 → 1) */
+.mc-pipe-fill{
+  transform-origin:bottom;
+  animation:mc-bar-grow 700ms cubic-bezier(.34,1.3,.45,1) 400ms both;
+}
+.mc-pipe-bar:nth-child(1) .mc-pipe-fill{animation-delay:380ms}
+.mc-pipe-bar:nth-child(2) .mc-pipe-fill{animation-delay:440ms}
+.mc-pipe-bar:nth-child(3) .mc-pipe-fill{animation-delay:500ms}
+.mc-pipe-bar:nth-child(4) .mc-pipe-fill{animation-delay:560ms}
+.mc-pipe-bar:nth-child(5) .mc-pipe-fill{animation-delay:620ms}
+.mc-pipe-bar:nth-child(6) .mc-pipe-fill{animation-delay:680ms}
+.mc-pipe-bar:nth-child(7) .mc-pipe-fill{animation-delay:740ms}
+.mc-pipe-bar:nth-child(8) .mc-pipe-fill{animation-delay:800ms}
+
+/* Ranked priority rows fade up in sequence */
+.mc-rank-row:nth-child(1){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 380ms both}
+.mc-rank-row:nth-child(2){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 440ms both}
+.mc-rank-row:nth-child(3){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 500ms both}
+.mc-rank-row:nth-child(4){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 560ms both}
+.mc-rank-row:nth-child(5){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 620ms both}
+.mc-rank-row:nth-child(6){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 680ms both}
+
+/* Live activity items fade up sequentially */
+.mc-live-item:nth-child(1){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 760ms both}
+.mc-live-item:nth-child(2){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 820ms both}
+.mc-live-item:nth-child(3){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 880ms both}
+.mc-live-item:nth-child(4){animation:mc-fade-up 400ms cubic-bezier(.16,1,.3,1) 940ms both}
+
+/* Respect users' OS-level reduce-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .mc-hero, .mc-sec, .mc-row,
+  .mc-mom-card, .mc-mom-spark path, .mc-pipe-fill,
+  .mc-rank-row, .mc-live-item {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
 /* =================================================================
    HOME VIEW — Stitch "newsroom editorial" redesign (kept below for
    reference / backward compat; .hb-* classes no longer rendered
@@ -11103,8 +11182,20 @@ function hidePriorityDefinitions() {
 let _homeExpandedPriority = null;
 
 function toggleHomePriority(priority) {
-  _homeExpandedPriority = (_homeExpandedPriority === priority) ? null : priority;
+  const wasOpen = (_homeExpandedPriority === priority);
+  _homeExpandedPriority = wasOpen ? null : priority;
   renderHomeView();
+  // After the DOM re-renders (next tick), smooth-scroll the expanded
+  // list into view so clicking a pipeline column actually shows the
+  // user the entities that appeared below. No-op when collapsing.
+  if (!wasOpen && _homeExpandedPriority !== null) {
+    requestAnimationFrame(() => {
+      const expanded = document.querySelector(".home-kpi-expand");
+      if (expanded && typeof expanded.scrollIntoView === "function") {
+        expanded.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+  }
 }
 
 function renderHomeView() {
