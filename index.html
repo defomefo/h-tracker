@@ -2730,16 +2730,16 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
         <span class="nav-label">Pipeline</span>
       </button>
       <div class="nav-group" id="nav-group-strategy">
-        <button class="nav-item nav-item-parent" data-view="strategy" onclick="toggleNavDropdown('strategy', true, event)" title="Strategic 2×2 maps + Funnel & forecast — click to open dropdown and jump to view">
+        <button class="nav-item nav-item-parent" data-view="strategy" onclick="toggleNavDropdown('strategy', true, event)" title="Strategy umbrella — 2×2 maps (Effort×Fit, Reach×Readiness, Cost×ROI) + Funnel & forecast. Click to open and jump to view.">
           <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-          <span class="nav-label">Strategic Maps</span>
+          <span class="nav-label">Strategy</span>
           <svg class="nav-chev" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="nav-sub">
           <button class="nav-subitem" data-sub="effortFit" onclick="navStrategyAxis('effortFit', event)" title="Effort × Fit — Quick Wins vs Strategic Bets vs Easy Passes vs Don't Bother">Effort × Fit</button>
           <button class="nav-subitem" data-sub="reachReadiness" onclick="navStrategyAxis('reachReadiness', event)" title="Reach × Readiness — how far the partner is from us vs how ready they are to engage">Reach × Readiness</button>
           <button class="nav-subitem" data-sub="costRoi" onclick="navStrategyAxis('costRoi', event)" title="Cost × ROI — cost to land vs payoff if landed">Cost × ROI</button>
-          <button class="nav-subitem nav-subitem-divider" data-sub="funnel" onclick="navStrategyFunnel(event)" title="Pipeline conversion funnel + Monte Carlo 90-day signing forecast">📈 Funnel &amp; forecast</button>
+          <button class="nav-subitem nav-subitem-divider" data-sub="funnel" onclick="navStrategyFunnel(event)" title="Pipeline conversion funnel + Monte Carlo 90-day signing forecast">Funnel &amp; forecast</button>
         </div>
       </div>
       <button class="nav-item" data-view="database" onclick="switchView('database')" title="Full sortable table — search by name, country, priority, tier, focus">
