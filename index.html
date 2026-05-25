@@ -789,6 +789,17 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .tm-meta{font-size:10px;color:var(--ink-mute);padding-top:10px;border-top:1px solid var(--rule);margin-top:8px}
 .tm-meta code{font-family:'Consolas',monospace;background:var(--paper);padding:1px 5px;border-radius:3px}
 
+/* Dedicated Tailor-made view (full-width sidebar surface) */
+.tm-view-shell{padding:0 4px}
+.tm-view-controls{display:flex;align-items:center;gap:14px;margin:8px 0 14px}
+.tm-search{flex:1;max-width:480px;padding:10px 14px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:inherit;background:var(--paper);color:var(--ink)}
+.tm-search:focus{outline:none;border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(217,83,79,.10)}
+.tm-draft-counter{font-size:11px;color:#7a5a10;background:#fff8e7;border:1px solid #e8c870;padding:5px 11px;border-radius:14px;font-weight:700;letter-spacing:.3px}
+/* In the dedicated view, the kb-section wrapper used to nest under About;
+   we tone it down so it sits flat at the view level without a heading box. */
+#view-tailor-made .kb-section{background:none;border:none;padding:0;margin:0}
+#view-tailor-made .kb-section > h4{display:none}    /* view-header replaces it */
+
 /* Program-row override: now with reasoning text under each program */
 .program-row{display:block;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px}
 .program-row:last-child{border-bottom:none}
@@ -2731,6 +2742,10 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span class="nav-label">Teams</span>
       </button>
+      <button class="nav-item" data-view="tailor-made" onclick="switchView('tailor-made')" title="Tailor-made flexibility map — mid-meeting reference for 'can you flex on X?' partner questions">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <span class="nav-label">Tailor-made</span>
+      </button>
       <button class="nav-item" data-view="about" onclick="switchView('about')" title="H-FARM College programmes, formats, team roster — internal reference">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <span class="nav-label">About H-FARM College</span>
@@ -2865,6 +2880,7 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
     <section id="view-teams" class="view hidden"></section>
 
     <!-- ABOUT H-FARM College VIEW -->
+    <section id="view-tailor-made" class="view hidden"></section>
     <section id="view-about" class="view hidden"></section>
 
     <!-- ADMIN VIEW -->
@@ -6444,6 +6460,7 @@ function renderCurrentView() {
   if (viewId === "contracts") renderContractsView();
   if (viewId === "sponsors")  renderSponsorsView();
   if (viewId === "teams")     renderTeamsView();
+  if (viewId === "tailor-made") renderTailorMadeView();
   if (viewId === "about")     renderAboutView();
   if (viewId === "admin")     renderAdminView();
 }
@@ -9688,7 +9705,6 @@ function showHfarmInfo() {
           <div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div>
         </div>`).join("")}</div>
     </div>
-    ${_renderTailorMadeSection()}
     <div class="kb-section">
       <h4>Exchange-only programs (HFC students)</h4>
       <ul>${kb.exchangeOnly.map(p => `<li>${escape(p)}</li>`).join("")}</ul>
@@ -9954,6 +9970,7 @@ const TAILOR_MADE_CATEGORIES = {
 };
 
 let _tailorMadeFilter = "all";   // category filter (sticky across re-renders)
+let _tailorMadeSearch = "";      // free-text search (sticky across re-renders)
 
 function _renderTailorMadeSection() {
   const items = TAILOR_MADE || [];
@@ -9970,9 +9987,22 @@ function _renderTailorMadeSection() {
 
   const pillBtn = (k, label, n) => `<button class="tm-pill ${_tailorMadeFilter === k ? 'active' : ''}" onclick="_setTailorMadeFilter('${k}')">${label}<span class="tm-pill-n">${n || 0}</span></button>`;
 
-  const filtered = _tailorMadeFilter === "all"
+  // Apply category filter, then free-text search across title / question /
+  // short_answer / details — partner asks via natural language ("ects",
+  // "credit", "scholarship") so we hit several fields.
+  let filtered = _tailorMadeFilter === "all"
     ? items
     : items.filter(i => i.category === _tailorMadeFilter);
+  const sq = (_tailorMadeSearch || "").toLowerCase().trim();
+  if (sq) {
+    filtered = filtered.filter(i =>
+      (i.title || "").toLowerCase().includes(sq) ||
+      (i.question || "").toLowerCase().includes(sq) ||
+      (i.short_answer || "").toLowerCase().includes(sq) ||
+      (i.details || "").toLowerCase().includes(sq) ||
+      (i.constraints || "").toLowerCase().includes(sq)
+    );
+  }
 
   // Group filtered items by category (so within "all" view they cluster
   // visually; within a single-category view this becomes one section).
@@ -10016,11 +10046,48 @@ function _tailorMadeCardHtml(item) {
 
 function _setTailorMadeFilter(cat) {
   _tailorMadeFilter = cat;
-  // Re-render whichever surface is showing the section
-  if (STATE && STATE.view === "about" && typeof renderAboutView === "function") renderAboutView();
-  // If the KB modal is open, re-call showHfarmInfo to refresh its body
-  const modal = document.getElementById("hfarm-info-modal");
-  if (modal && modal.classList.contains("open") && typeof showHfarmInfo === "function") showHfarmInfo();
+  // Re-render the dedicated view (primary surface)
+  if (STATE && STATE.view === "tailor-made" && typeof renderTailorMadeView === "function") renderTailorMadeView();
+}
+
+// Debounced search handler — re-renders the view with focus restored on
+// the input so typing stays uninterrupted (same pattern as Sponsors /
+// Follow-ups views per CLAUDE.md "Debounced + focus-restoring search
+// inputs" convention).
+let _tailorMadeSearchTimer = null;
+function _tailorMadeSearchInput(value) {
+  _tailorMadeSearch = value;
+  clearTimeout(_tailorMadeSearchTimer);
+  _tailorMadeSearchTimer = setTimeout(() => {
+    if (STATE && STATE.view === "tailor-made") {
+      renderTailorMadeView();
+      // Restore focus + caret-to-end after re-render
+      const input = document.getElementById("tm-search-input");
+      if (input) {
+        input.focus();
+        const len = input.value.length;
+        try { input.setSelectionRange(len, len); } catch {}
+      }
+    }
+  }, 220);
+}
+
+// Dedicated full-width view — promoted from the embedded About section
+// so it's a one-click sidebar reach during partner meetings.
+function renderTailorMadeView() {
+  const el = document.getElementById("view-tailor-made");
+  if (!el) return;
+  const items = TAILOR_MADE || [];
+  const draftCount = items.filter(i => i.draft).length;
+  const header = `<div class="view-header">
+    <h1>Tailor-made flexibility</h1>
+    <p>Mid-meeting reference for "can you flex on X?" partner questions. Categorised + searchable answers with constraints + a follow-up question to surface what the partner actually needs.</p>
+  </div>`;
+  const searchBar = `<div class="tm-view-controls">
+    <input type="search" id="tm-search-input" class="tm-search" placeholder='Search "ECTS", "scholarship", "duration"…' value="${escapeAttr(_tailorMadeSearch)}" oninput="_tailorMadeSearchInput(this.value)" autocomplete="off" spellcheck="false"/>
+    ${draftCount > 0 ? `<span class="tm-draft-counter">${draftCount} of ${items.length} unverified</span>` : ''}
+  </div>`;
+  el.innerHTML = `<div class="tm-view-shell">${header}${searchBar}${_renderTailorMadeSection()}</div>`;
 }
 
 function openTailorMadeDetail(itemId) {
@@ -15127,8 +15194,9 @@ function renderAboutView() {
   html += `<div class="kb-section"><h4>Bachelor's degrees</h4>${Object.entries(kb.bachelors).map(([k,v]) => `<div class="kb-sub"><span class="kb-sub-h">${escape(k)}</span><ul>${v.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`).join("")}</div>`;
   html += `<div class="kb-section"><h4>Master's degrees</h4><ul>${kb.masters.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`;
   html += `<div class="kb-section"><h4>Summer Programs 2026 (${PROGRAMS.length})</h4><div class="kb-progs">${PROGRAMS.map(p => `<div class="kb-prog" data-prog-id="${p.id}" style="border-top:3px solid ${p.color}"><div class="kb-prog-name">${escape(p.name)}</div><div class="kb-prog-meta">${escape(p.age)} · ${escape(p.lang)}</div><div class="kb-prog-topic">${escape(p.topic)}</div><div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div></div>`).join("")}</div></div>`;
-  html += _renderTailorMadeSection();
   html += `<div class="kb-section"><h4>University collaboration formats (${COLLAB_FORMATS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any tile to open its dashboard →</span></h4><div class="kb-progs">${COLLAB_FORMATS.map(f => `<div class="kb-prog" data-format-id="${f.id}" style="border-top:3px solid ${_collabFormatColor(f.id)}"><div class="kb-prog-name">${escape(f.name)}</div><div class="kb-prog-meta">${escape(f.duration)} · ${escape(f.group)}</div><div class="kb-prog-topic">${escape(f.ideal)}</div>${f.case ? `<div class="kb-prog-pitch"><b>Case:</b> ${escape(f.case)}</div>` : ''}</div>`).join("")}</div></div>`;
+  // Note: Tailor-made flexibility map promoted to its own sidebar view
+  // (Tailor-made nav item) — no longer embedded here. See renderTailorMadeView.
   html += `<div class="kb-section"><h4>Talent H-UB formats (for companies)</h4><div class="kb-flex">${kb.talentHub.formats.map(f => `<span class="kb-pill">${escape(f)}</span>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>H-FARM College Experience touchpoints</h4><div class="kb-flex">${kb.experiences.map(e => `<span class="kb-pill-soft">${escape(e)}</span>`).join("")}</div></div>`;
   html += `<div class="kb-section" style="text-align:center;border-top:1px solid var(--rule);padding-top:14px"><a href="${kb.organization.website}" target="_blank" style="font-size:11px;color:var(--navy-light);text-decoration:none">${kb.organization.website} →</a></div>`;
