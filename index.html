@@ -460,7 +460,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .score-bar>div{height:100%;background:linear-gradient(90deg,var(--gold) 0%,var(--ur) 100%)}
 .top-prog{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#fff}
 
-.detail-panel{position:fixed;top:0;right:0;width:560px;max-width:95vw;height:100vh;background:#fff;box-shadow:-12px 0 48px rgba(10,20,40,.18);z-index:200;transform:translateX(100%);transition:transform var(--motion-slow) var(--ease-elegant),box-shadow var(--motion-slow) var(--ease-elegant);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;will-change:transform}
+.detail-panel{position:fixed;top:0;right:0;width:640px;max-width:95vw;height:100vh;background:#fff;box-shadow:-12px 0 48px rgba(10,20,40,.18);z-index:200;transform:translateX(100%);transition:transform var(--motion-slow) var(--ease-elegant),box-shadow var(--motion-slow) var(--ease-elegant);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;will-change:transform}
 /* Long unbreakable strings (typically source URLs pasted into a provenance
    block by Prospect-Discovery approval) used to push the whole panel into
    horizontal scroll, hiding the left ~50px of content. Wrap them. */
@@ -471,12 +471,12 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .detail-panel.open .detail-body{animation-delay:80ms}
 @keyframes detailContentIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .detail-panel.open{transform:translateX(0)}
-.detail-head{background:var(--navy);color:#fff;padding:18px 22px 14px;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:5}
+.detail-head{background:var(--navy);color:#fff;padding:20px 28px 16px;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:5}
 .detail-head .uni-name{font-size:20px;font-weight:700;line-height:1.2;padding-right:32px;margin-bottom:6px}
 .detail-head .uni-loc{font-size:12px;opacity:.8;letter-spacing:1px}
 .detail-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
 .detail-close:hover{background:var(--gold);color:var(--navy)}
-.detail-body{padding:20px 22px 30px;flex:1}
+.detail-body{padding:22px 28px 36px;flex:1}
 .detail-section{margin-bottom:22px}
 .detail-section h3{font-size:11px;font-weight:800;color:var(--navy);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid var(--rule);padding-bottom:5px}
 .score-card{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);color:#fff;padding:16px 20px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
@@ -2757,7 +2757,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
         <span class="nav-label">Teams</span>
       </button>
       <button class="nav-item" data-view="tailor-made" onclick="switchView('tailor-made')" title="Tailor-made flexibility map — mid-meeting reference for 'can you flex on X?' partner questions">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
         <span class="nav-label">Tailor-made</span>
       </button>
       <button class="nav-item" data-view="about" onclick="switchView('about')" title="H-FARM College programmes, formats, team roster — internal reference">
@@ -15801,6 +15801,74 @@ window.addEventListener("keydown", (e) => {
     e.stopPropagation();
   }
 });
+
+// =============================================================================
+// CLICK-OUTSIDE-TO-CLOSE — for compare-modal backdrops AND the right-side
+// detail panel. User expectation everywhere: click the dim area around an
+// open dialog to dismiss it. Previously only the × button worked.
+//
+// For modals (.compare-modal): the modal itself IS the dim backdrop with
+// the box-shadowed content (.compare-box) sitting inside it. We listen on
+// the modal for mousedown events whose target === modal (= clicked the
+// backdrop, not the box) and toggle the .open class off + clear inline
+// display (covers the few modals that force display:flex).
+//
+// For the detail-panel (right slide-out): there's no backdrop overlay,
+// so we listen at document level. If the panel is open AND the click
+// target isn't inside the panel AND isn't on an element that re-opens
+// the panel (entity card / row), close it.
+//
+// mousedown (not click) so we react before the click bubbles, avoiding
+// races with re-rendered elements losing their click handler mid-event.
+// =============================================================================
+window.addEventListener("DOMContentLoaded", () => {
+  // Per-modal backdrop click handlers
+  document.querySelectorAll(".compare-modal").forEach(modal => {
+    modal.addEventListener("mousedown", e => {
+      if (e.target !== modal) return;   // click on box content, ignore
+      // Mark mousedown so the matching click event can fire the close
+      // (avoids closing on accidental drag from inside the box to outside)
+      modal.dataset._backdropDownAt = String(Date.now());
+    });
+    modal.addEventListener("click", e => {
+      if (e.target !== modal) return;
+      const dt = parseInt(modal.dataset._backdropDownAt || "0", 10);
+      delete modal.dataset._backdropDownAt;
+      if (!dt || (Date.now() - dt) > 600) return;   // not a click on backdrop
+      _closeModalGeneric(modal);
+    });
+  });
+
+  // Detail panel: outside-click closes
+  document.addEventListener("mousedown", e => {
+    const panel = document.getElementById("detail-panel");
+    if (!panel || !panel.classList.contains("open")) return;
+    if (panel.contains(e.target)) return;            // clicked inside panel
+    // Don't close on entity-switch clicks (a card / row that calls
+    // openDetail(...)) — let the re-open happen naturally without flicker.
+    const trigger = e.target.closest && e.target.closest("[onclick*='openDetail']");
+    if (trigger) return;
+    // Also skip clicks on the sidebar nav (switching views auto-closes via
+    // its own handler in switchView when needed; don't double-close)
+    if (e.target.closest(".nav-item")) return;
+    if (typeof closeDetail === "function") closeDetail();
+  }, true);   // capture phase — beat any stopPropagation on inner handlers
+});
+
+// Generic compare-modal close — covers all .compare-modal instances.
+// Modals with their own dedicated close functions (state cleanup beyond
+// just removing the class) handle that cleanup inside their own X handler;
+// the backdrop close is intentionally minimal. If a specific modal needs
+// state reset on backdrop close too, add a case here.
+function _closeModalGeneric(modal) {
+  modal.classList.remove("open");
+  modal.style.display = "";
+  // Modal-specific cleanup that mirrors what the X button does
+  if (modal.id === "prospect-detail-modal" && typeof PROSPECTS_STATE !== "undefined") {
+    PROSPECTS_STATE.detailId = null;
+  }
+  // Program / contract / etc. don't carry sticky state needing reset
+}
 
 // Re-sync when the tab regains focus — picks up changes made by other users.
 // Throttle to once per 30s so a quick tab-flicker doesn't fire a burst of
