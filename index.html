@@ -11305,10 +11305,18 @@ function renderHomeView() {
     </div>`;
   }).join("");
 
-  // ===== Mission-control specific computations =====
-  // Momentum metrics — last 14 days where possible
-  const _now14d = Date.now() - 14 * 86400000;
+  // ===== Mission-control momentum metrics — all REAL, no fake trends =====
+  // We honestly compute what we can from OUTREACH + UNIS and label cards
+  // by what they ACTUALLY measure (not aspirational labels we can't back
+  // up). Fake trend arrows and decorative sparklines were removed —
+  // sparklines now show real per-day data for outreach-driven metrics
+  // and a flat indicator for snapshot metrics where per-day history
+  // doesn't exist yet.
+  const _DAY_MS = 86400000;
+  const _now14d = Date.now() - 14 * _DAY_MS;
   const _isRecentOutreach = (ts) => ts && new Date(ts).getTime() >= _now14d;
+
+  // Conversations active: unique entities with any outreach in last 14d
   const conversationsActive = (() => {
     const ids = new Set();
     Object.entries(OUTREACH || {}).forEach(([eid, list]) => {
@@ -11316,18 +11324,45 @@ function renderHomeView() {
     });
     return ids.size;
   })();
-  const newThisWeek = UNIS.filter(u => u.pipeline_stage === "identified").slice(0, total).length;
-  // Signed-YTD = same as signedActive (we don't have signing dates yet, treat live+signed as YTD)
-  const signedYTD = signedActive;
-  const stuckOver30 = dormantHi.length;
 
-  // Decorative sparkline shapes per momentum card. Values 0-100 mapped to
-  // an SVG polyline; not real historical data (we don't have it series-wise
-  // pre-engagement-depth-snapshots). Demo-grade visual cue for trend.
-  const _sparkSvg = (points, color) => {
+  // REAL 14-day per-day outreach count for the Conversations sparkline.
+  // Each bucket = entities touched on that calendar day. Buckets are
+  // anchored to today's local midnight so the chart reads "now back 14
+  // days" intuitively.
+  const _outreachPerDay = (() => {
+    const buckets = new Array(14).fill(0);
+    const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+    Object.values(OUTREACH || {}).forEach(list => {
+      (list || []).forEach(o => {
+        if (!o.date) return;
+        const d = new Date(o.date); if (isNaN(d)) return;
+        const dayDiff = Math.floor((todayMid - d) / _DAY_MS);
+        if (dayDiff >= 0 && dayDiff < 14) buckets[13 - dayDiff]++;
+      });
+    });
+    return buckets;
+  })();
+  const outreachPrevWeek = _outreachPerDay.slice(0, 7).reduce((a, b) => a + b, 0);
+  const outreachThisWeek = _outreachPerDay.slice(7).reduce((a, b) => a + b, 0);
+  const outreachTrend = outreachThisWeek - outreachPrevWeek;   // can be negative
+
+  // Honestly-named snapshot metrics — what they ACTUALLY measure right now
+  const inIdentification = UNIS.filter(u => u.pipeline_stage === "identified").length;
+  const liveNow          = signedActive;   // currently at signed/active stage
+  const stuckOver30      = dormantHi.length;
+
+  // SVG sparkline from real data. Falls back to a flat indicator if all
+  // values are zero (don't fake a curve).
+  const _sparkSvg = (points, color, flatLabel) => {
     const w = 110, h = 32;
     const max = Math.max.apply(null, points), min = Math.min.apply(null, points);
-    const range = (max - min) || 1;
+    const range = (max - min);
+    if (range === 0) {
+      return `<svg class="mc-mom-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <line x1="0" y1="${h - 2}" x2="${w}" y2="${h - 2}" stroke="${color}" stroke-width="1.2" opacity=".5" stroke-dasharray="3,3"/>
+        <text x="${w/2}" y="${h/2 + 3}" text-anchor="middle" font-size="9" fill="${color}" opacity=".6" font-family="Consolas,monospace">${flatLabel || "no trend data"}</text>
+      </svg>`;
+    }
     const step = w / (points.length - 1);
     const path = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`).join(' ');
     return `<svg class="mc-mom-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
@@ -11335,10 +11370,26 @@ function renderHomeView() {
       <path d="${path} L${w},${h} L0,${h} Z" fill="${color}" opacity=".10"/>
     </svg>`;
   };
-  const spark_new   = _sparkSvg([3, 5, 4, 6, 8, 7, 9, 11, 10, 12],  PRIO_COLORS["Up & Running"]);
-  const spark_conv  = _sparkSvg([28, 32, 30, 35, 41, 38, 44, 42, 47, 47], "#1F6FB4");
-  const spark_signed = _sparkSvg([2, 2, 3, 3, 4, 4, 5, 5, 6, 6], PRIO_COLORS["Up & Running"]);
-  const spark_stuck = _sparkSvg([20, 19, 18, 18, 17, 17, 16, 16, 16, 16], PRIO_COLORS["Critical"]);
+
+  // Real outreach sparkline (per-day for last 14d). Other three cards
+  // don't have per-day history yet — fall back to honest "snapshot only"
+  // dashed line. When engagement_depth_snapshots accumulates per-day
+  // history we can wire it in here without changing the layout.
+  const spark_conv   = _sparkSvg(_outreachPerDay,         "#1F6FB4", "no outreach yet");
+  const spark_ident  = _sparkSvg([inIdentification],      PRIO_COLORS["Up & Running"], "snapshot only");
+  const spark_live   = _sparkSvg([liveNow],               PRIO_COLORS["Up & Running"], "snapshot only");
+  const spark_stuck  = _sparkSvg([stuckOver30],           PRIO_COLORS["Critical"],     "snapshot only");
+
+  // Trend arrow: only render for cards where we have a real comparison.
+  // For Conversations Active, compare this-week vs prev-week outreach
+  // volume. Arrow direction + value reflects the actual delta.
+  const _trendArrow = (delta, isGoodDirection) => {
+    if (delta === 0) return `<span class="mc-mom-trend" style="color:var(--ink-mute)">→ 0</span>`;
+    const dirUp = delta > 0;
+    const goodTrend = (dirUp && isGoodDirection) || (!dirUp && !isGoodDirection);
+    const colorCls = goodTrend ? "" : "down";
+    return `<span class="mc-mom-trend ${colorCls}">${dirUp ? '↗' : '↘'} ${Math.abs(delta)}</span>`;
+  };
 
   // ===== Full pipeline: 8 vertical bars =====
   const maxStageCount = Math.max(1, ..._prioOrder.map(p => _prioCounts[p] || 0));
@@ -11416,28 +11467,28 @@ function renderHomeView() {
           <div class="mc-live-tag">Live</div>
         </div>
         <div class="mc-momentum">
-          <div class="mc-mom-card">
-            <div class="mc-mom-head">New this week<span class="mc-mom-trend">↗ ${Math.min(newThisWeek, 4)}</span></div>
-            <div class="mc-mom-n">${newThisWeek}</div>
-            <div class="mc-mom-desc">identified · researched</div>
-            ${spark_new}
+          <div class="mc-mom-card" title="Total entities currently at the 'Identified' pipeline stage. We don't capture entity-creation dates yet, so this is a snapshot not a time series.">
+            <div class="mc-mom-head">In identification</div>
+            <div class="mc-mom-n">${inIdentification}</div>
+            <div class="mc-mom-desc">at identified stage</div>
+            ${spark_ident}
           </div>
-          <div class="mc-mom-card">
-            <div class="mc-mom-head">Conversations active<span class="mc-mom-trend">↗ ${Math.max(1, Math.round(conversationsActive * 0.18))}</span></div>
+          <div class="mc-mom-card" title="Unique entities with at least one outreach entry in the last 14 days. Sparkline shows real per-day outreach volume. Trend arrow compares this week vs the previous 7 days.">
+            <div class="mc-mom-head">Conversations active${_trendArrow(outreachTrend, true)}</div>
             <div class="mc-mom-n">${conversationsActive}</div>
             <div class="mc-mom-desc">touched in last 14 days</div>
             ${spark_conv}
           </div>
-          <div class="mc-mom-card">
-            <div class="mc-mom-head">Signed YTD<span class="mc-mom-trend">↗ ${Math.max(1, Math.round(signedYTD * 0.3))}</span></div>
-            <div class="mc-mom-n">${signedYTD}</div>
-            <div class="mc-mom-desc">live MoUs / partnerships</div>
-            ${spark_signed}
+          <div class="mc-mom-card" title="Entities currently at the 'signed' or 'active' pipeline stage. We don't capture signing dates yet, so this is a snapshot not a YTD series.">
+            <div class="mc-mom-head">Live now</div>
+            <div class="mc-mom-n">${liveNow}</div>
+            <div class="mc-mom-desc">signed MoUs / partnerships</div>
+            ${spark_live}
           </div>
-          <div class="mc-mom-card">
-            <div class="mc-mom-head">Stuck &gt; 30d<span class="mc-mom-trend down">↗ ${Math.max(1, Math.round(stuckOver30 * 0.2))}</span></div>
+          <div class="mc-mom-card" title="High-priority entities (Critical or Hot) with no outreach in the last 30 days. The alarm side of the briefing — these should be cleared first.">
+            <div class="mc-mom-head">Stuck &gt; 30d</div>
             <div class="mc-mom-n">${stuckOver30}</div>
-            <div class="mc-mom-desc">overdue follow-ups</div>
+            <div class="mc-mom-desc">high-priority &amp; dormant</div>
             ${spark_stuck}
           </div>
         </div>
