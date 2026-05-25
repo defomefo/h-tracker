@@ -1105,6 +1105,132 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .kb-prog::after{content:"View dashboard →";position:absolute;bottom:6px;right:8px;font-size:9px;letter-spacing:.5px;font-weight:700;color:var(--gold);opacity:0;transition:opacity .15s;text-transform:uppercase}
 .kb-prog:hover::after{opacity:1}
 
+/* ====================================================================
+   ABOUT H-FARM — Claude-design redesign (ab-*)
+   Replaces the flat kb-section stack with a dark hero + KPI strip,
+   audience filter, sparkline-rich team grid, B/M tabs, summer filter
+   chips, collab grid, bottom dark band. All click handlers + data
+   sources unchanged (TEAMS, PROGRAMS, COLLAB_FORMATS, HFARM_KB).
+==================================================================== */
+@keyframes ab-fade-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ab-line-draw{from{stroke-dasharray:1 200;stroke-dashoffset:200}to{stroke-dasharray:200 0;stroke-dashoffset:0}}
+
+.ab-shell{padding:28px 32px 60px;display:flex;flex-direction:column;gap:22px;background:var(--off-white);min-height:calc(100vh - 60px)}
+
+/* Hero */
+.ab-hero{background:linear-gradient(120deg,var(--ink) 0%,#2A2A30 60%,#1A1A20 100%);color:#fff;padding:28px 36px;border-radius:14px;border-bottom:3px solid var(--hf-red);display:grid;grid-template-columns:1.4fr 1fr;gap:36px;align-items:center;position:relative;overflow:hidden;animation:ab-fade-up 600ms cubic-bezier(.22,.61,.36,1)}
+.ab-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 95% 30%,rgba(217,83,79,.14),transparent 70%);pointer-events:none}
+.ab-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;display:inline-flex;align-items:center;gap:12px;margin-bottom:12px}
+.ab-eyebrow::before{content:'';width:24px;height:1px;background:var(--hf-red);display:inline-block}
+.ab-title{font-size:36px;font-weight:800;letter-spacing:-1.1px;line-height:1.05;color:#fff;margin-bottom:14px}
+.ab-lede{font-size:14px;color:rgba(255,255,255,.7);line-height:1.6;max-width:520px}
+.ab-hero-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;position:relative;z-index:1}
+.ab-kpi{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:8px;padding:12px 10px;text-align:center}
+.ab-kpi-num{font-size:26px;font-weight:800;line-height:1;letter-spacing:-.8px;color:#fff;font-variant-numeric:tabular-nums}
+.ab-kpi-lbl{font-size:9px;letter-spacing:1.4px;color:rgba(255,255,255,.55);text-transform:uppercase;font-weight:800;margin-top:6px;line-height:1.4}
+
+/* Audience filter strip */
+.ab-aud{display:flex;align-items:center;gap:14px;padding:12px 18px;background:#fff;border:1px solid var(--rule);border-radius:10px;box-shadow:0 1px 4px rgba(10,37,64,.04);animation:ab-fade-up 600ms 80ms cubic-bezier(.22,.61,.36,1) backwards;flex-wrap:wrap}
+.ab-aud-label{font-size:10px;letter-spacing:1.4px;color:var(--ink);text-transform:uppercase;font-weight:800;flex-shrink:0}
+.ab-aud-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ab-aud-chip{background:var(--paper);border:1px solid var(--rule);padding:5px 12px;border-radius:14px;font-family:inherit;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;letter-spacing:.2px;transition:all .12s}
+.ab-aud-chip:hover{border-color:var(--ink);color:var(--ink)}
+.ab-aud-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* Section header */
+.ab-sec{animation:ab-fade-up 600ms cubic-bezier(.22,.61,.36,1) backwards;animation-delay:140ms;display:flex;flex-direction:column;gap:14px}
+.ab-sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding-bottom:12px;border-bottom:1px solid var(--rule)}
+.ab-sec-eyebrow{font-size:10px;letter-spacing:1.8px;color:var(--hf-red);text-transform:uppercase;font-weight:800;display:inline-flex;align-items:center;gap:10px}
+.ab-sec-eyebrow::before{content:'';width:18px;height:1px;background:var(--hf-red);display:inline-block}
+.ab-sec-title{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-top:6px}
+.ab-sec-hint{font-size:13px;color:var(--ink-soft);font-weight:400;font-style:italic;margin-left:8px}
+
+/* Teams grid */
+.ab-team-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.ab-team{position:relative;background:#fff;border:1px solid var(--rule);border-left:4px solid var(--tc,var(--ink));border-radius:8px;padding:14px 16px 12px;text-align:left;font-family:inherit;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s,opacity .2s;animation:ab-fade-up 500ms cubic-bezier(.22,.61,.36,1) backwards;display:flex;flex-direction:column;gap:6px;min-height:160px}
+.ab-team:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(10,37,64,.08)}
+.ab-team.ab-dim{opacity:.35;transform:none}
+.ab-team-head{display:flex;align-items:center;gap:8px}
+.ab-team-short{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:var(--tc,var(--ink));color:#fff;font-family:'Consolas',monospace;font-size:10px;font-weight:800;letter-spacing:.4px;flex-shrink:0}
+.ab-team-name{font-size:13px;font-weight:800;color:var(--tc,var(--ink));letter-spacing:-.2px;flex:1;min-width:0;line-height:1.25}
+.ab-team-count{background:var(--paper);color:var(--ink);font-size:11px;font-weight:800;padding:1px 8px;border-radius:10px;border:1px solid var(--rule);min-width:32px;text-align:center;font-variant-numeric:tabular-nums}
+.ab-team-desc{font-size:11px;color:var(--ink-soft);line-height:1.45}
+.ab-team-meta{font-size:10px;color:var(--ink-mute);font-style:italic}
+.ab-team-mono{font-family:'Consolas',monospace;font-size:10px;color:var(--ink-soft);letter-spacing:-.2px;word-break:break-all}
+.ab-team-spark{margin-top:auto;padding-top:8px;border-top:1px dashed var(--rule);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ab-team-trend{font-size:9px;letter-spacing:1.2px;color:var(--ink-mute);text-transform:uppercase;font-weight:700}
+.ab-spark{width:100px;height:24px;display:block}
+.ab-spark path{stroke-dasharray:200;stroke-dashoffset:200;animation:ab-line-draw 1200ms cubic-bezier(.22,.61,.36,1) forwards}
+.ab-spark-empty{font-size:11px;color:var(--ink-mute);font-weight:700;opacity:.5;letter-spacing:.3px}
+
+/* Degree tabs + grid */
+.ab-tabs{display:inline-flex;gap:4px;background:var(--paper);border:1px solid var(--rule);border-radius:18px;padding:3px}
+.ab-tab{background:none;border:none;padding:6px 14px;border-radius:16px;font-family:inherit;font-size:12px;font-weight:800;color:var(--ink-soft);cursor:pointer;letter-spacing:.2px;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+.ab-tab:hover{color:var(--ink)}
+.ab-tab.on{background:var(--ink);color:#fff}
+.ab-tab-c{background:rgba(255,255,255,.18);color:inherit;font-size:10px;padding:1px 6px;border-radius:8px;min-width:18px;text-align:center;font-variant-numeric:tabular-nums}
+.ab-tab:not(.on) .ab-tab-c{background:var(--rule);color:var(--ink-soft)}
+
+.ab-degree-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.ab-degree-cat{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:18px 20px;animation:ab-fade-up 500ms backwards cubic-bezier(.22,.61,.36,1)}
+.ab-degree-cat-head{display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:8px;border-bottom:1px solid var(--rule)}
+.ab-degree-bar{width:4px;height:18px;background:var(--tc,var(--hf-red));border-radius:2px}
+.ab-degree-cat-name{flex:1;font-size:12px;font-weight:800;color:var(--tc,var(--ink));letter-spacing:1.4px;text-transform:uppercase}
+.ab-degree-cat-count{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;background:var(--paper);padding:2px 10px;border-radius:10px;font-variant-numeric:tabular-nums}
+.ab-degree-list{display:flex;flex-direction:column;gap:6px}
+.ab-degree-prog{background:var(--paper);border:1px solid var(--rule);border-radius:7px;padding:10px 14px;font-family:inherit;cursor:default;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:all .15s ease}
+.ab-degree-prog-name{font-size:13px;font-weight:700;color:var(--ink)}
+.ab-degree-prog-arrow{color:var(--ink-mute);font-weight:800}
+
+/* Summer programs grid */
+.ab-filter-chips{display:inline-flex;gap:4px;background:var(--paper);border:1px solid var(--rule);border-radius:18px;padding:3px}
+.ab-fc{background:none;border:none;padding:6px 12px;border-radius:16px;font-family:inherit;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;letter-spacing:.2px;transition:all .12s}
+.ab-fc:hover{color:var(--ink)}
+.ab-fc.on{background:var(--ink);color:#fff}
+.ab-summer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ab-summer{background:#fff;border:1px solid var(--rule);border-top:4px solid var(--tc,var(--hf-red));border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;transition:all .2s ease,opacity .3s ease;animation:ab-fade-up 500ms backwards cubic-bezier(.22,.61,.36,1);cursor:pointer}
+.ab-summer:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(10,37,64,.10)}
+.ab-summer.ab-dim{opacity:.25;transform:none;box-shadow:none}
+.ab-summer-tag{display:flex;align-items:center;gap:5px;font-size:10px;letter-spacing:1.4px;font-weight:800;text-transform:uppercase;color:var(--tc,var(--hf-red))}
+.ab-summer-dot{color:var(--ink-mute)}
+.ab-summer-lang{color:var(--ink-soft)}
+.ab-summer-name{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.3}
+.ab-summer-theme{font-size:12px;color:var(--ink);line-height:1.5}
+.ab-summer-foot{margin-top:4px;padding-top:10px;border-top:1px dashed var(--rule)}
+.ab-summer-bestlbl{font-size:9px;letter-spacing:1.2px;color:var(--tc,var(--hf-red));text-transform:uppercase;font-weight:800;margin-bottom:4px}
+.ab-summer-bestval{font-size:11px;color:var(--ink-soft);line-height:1.5}
+.ab-summer-cta{margin-top:6px;align-self:flex-start;background:transparent;border:none;padding:6px 0;color:var(--tc,var(--hf-red));font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;cursor:pointer;transition:transform .15s}
+.ab-summer-cta:hover{transform:translateX(3px)}
+
+/* Collaboration formats grid */
+.ab-collab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ab-collab{background:#fff;border:1px solid var(--rule);border-left:4px solid var(--tc,var(--hf-red));border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;transition:all .15s ease;animation:ab-fade-up 500ms backwards cubic-bezier(.22,.61,.36,1);cursor:pointer}
+.ab-collab:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(10,37,64,.08)}
+.ab-collab-name{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.3}
+.ab-collab-meta{display:flex;gap:6px;flex-wrap:wrap}
+.ab-collab-pill{font-size:9px;padding:3px 9px;background:var(--paper);border:1px solid var(--rule);border-radius:4px;font-family:'Consolas',monospace;font-weight:800;color:var(--ink-soft);letter-spacing:.5px;text-transform:uppercase}
+.ab-collab-desc{font-size:12px;color:var(--ink-soft);line-height:1.5;flex:1}
+.ab-collab-ref{padding-top:8px;border-top:1px dashed var(--rule)}
+.ab-collab-ref-lbl{font-size:9px;letter-spacing:1.2px;color:var(--tc,var(--hf-red));text-transform:uppercase;font-weight:800;display:block;margin-bottom:3px}
+.ab-collab-ref-val{font-size:11px;color:var(--ink);font-style:italic;line-height:1.4}
+
+/* Bottom dark band */
+.ab-bottom{background:var(--ink);color:#fff;border-radius:14px;border-bottom:3px solid var(--hf-red);padding:26px 32px;display:grid;grid-template-columns:1fr 1fr;gap:32px;animation:ab-fade-up 600ms backwards cubic-bezier(.22,.61,.36,1)}
+.ab-bottom-block{display:flex;flex-direction:column;gap:12px}
+.ab-bottom-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;display:inline-flex;align-items:center;gap:12px}
+.ab-bottom-eyebrow::before{content:'';width:18px;height:1px;background:var(--hf-red);display:inline-block}
+.ab-bottom-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ab-bc{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.16);font-size:12px;font-weight:700;padding:6px 14px;border-radius:18px;letter-spacing:.2px;cursor:default;transition:all .12s}
+.ab-bc.soft{background:rgba(217,83,79,.18);border-color:rgba(217,83,79,.30)}
+.ab-bottom-foot{grid-column:1/-1;display:flex;justify-content:center;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);margin-top:6px}
+.ab-bottom-link{font-family:'Consolas',monospace;font-size:12px;color:rgba(255,255,255,.55);text-decoration:none;letter-spacing:.2px}
+.ab-bottom-link:hover{color:var(--hf-red)}
+
+@media (prefers-reduced-motion: reduce){
+  .ab-hero,.ab-aud,.ab-sec,.ab-team,.ab-degree-cat,.ab-summer,.ab-collab,.ab-bottom{animation:none}
+  .ab-spark path{animation:none;stroke-dasharray:none}
+}
+
 /* Programme dashboard layout */
 #program-modal-body{padding:0}
 .pd-hero{padding:22px 28px 18px;border-bottom:1px solid var(--rule)}
@@ -17710,55 +17836,325 @@ function renderTeamsView() {
 }
 
 // ABOUT — the KB content as a dedicated view
+// Audience filter — selects which team `handles` tags + summer-program ages
+// are "in scope". Defaults to "all" so nothing dims; switching to a specific
+// audience dims teams that don't handle it (and for high-schools/student-orgs,
+// dims summer programs outside the relevant age band).
+let _abAudience = "all";
+let _abDegreeTab = "bachelors";
+let _abSummerFilter = "all";
+
+// Compute per-team outreach count per day for the last 14 days — real data
+// from OUTREACH log. Returns an array of 14 ints (oldest → newest). Empty
+// arr = team has no outreach in window (sparkline renders flat).
+function _abTeamOutreachPerDay(teamId) {
+  const buckets = new Array(14).fill(0);
+  const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+  Object.values(OUTREACH || {}).forEach(list => {
+    (list || []).forEach(o => {
+      if (!o.date || o.senderTeamId !== teamId) return;
+      const d = new Date(o.date); if (isNaN(d)) return;
+      const dayDiff = Math.floor((todayMid - d) / 86400000);
+      if (dayDiff >= 0 && dayDiff < 14) buckets[13 - dayDiff]++;
+    });
+  });
+  return buckets;
+}
+
+// Tiny SVG sparkline — same visual treatment as the home momentum cards
+// but smaller. All-zeros → empty state (renders flat dashed line instead).
+function _abSparklineSvg(points, color) {
+  const w = 100, h = 24;
+  const max = Math.max.apply(null, points);
+  if (max === 0) return `<svg class="ab-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line x1="0" y1="${h-1}" x2="${w}" y2="${h-1}" stroke="${color}" stroke-width="1" opacity=".3" stroke-dasharray="3,3"/></svg>`;
+  const step = w / (points.length - 1);
+  const path = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`).join(' ');
+  return `<svg class="ab-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+  </svg>`;
+}
+
+// Team short code: 2-letter monogram from team name (first letter of first
+// 1-2 significant words). E.g. "Admissions" → AD; "International & Corporate" → IC.
+function _abTeamShortCode(name) {
+  if (!name) return "??";
+  const words = name.replace(/&|·/g, " ").split(/\s+/).filter(w => w.length > 1);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function _abAudienceMatchesTeam(audience, team) {
+  if (audience === "all") return true;
+  // Audience → team.handles match. Companies aren't in handles by default,
+  // so we surface ICR + Career Service + Startup Center for "companies".
+  const handles = team.handles || [];
+  if (audience === "universities")  return handles.includes("university");
+  if (audience === "highschools")   return handles.includes("school");
+  if (audience === "agencies")      return handles.includes("agency");
+  if (audience === "studentorgs")   return handles.includes("org");
+  if (audience === "companies")     return ["intl", "career", "startupctr", "marketing"].includes(team.id);
+  return true;
+}
+function _abAudienceMatchesProgram(audience, prog) {
+  if (audience === "all") return true;
+  // Age band match. PROGRAMS.age is a string like "16-18" or "18-25".
+  if (audience === "highschools") return (prog.age || "").includes("16");
+  if (audience === "universities" || audience === "studentorgs" || audience === "companies" || audience === "agencies")
+    return (prog.age || "").includes("18");
+  return true;
+}
+
 function renderAboutView() {
   const el = document.getElementById("view-about");
-  let html = `<div class="view-header"><h1>About H-FARM College</h1><p>The full knowledge base embedded in this platform — what we offer and which team owns what.</p></div>`;
-  // Reuse the KB structure (copy from showHfarmInfo)
+  if (!el) return;
   const kb = HFARM_KB;
-  html += `<div id="hfarm-info-body" style="padding:24px 28px 32px">`;
-  // Team cards now show workload count + click-to-filter so the at-a-glance
-  // workload overview from the (removed) standalone Teams view survives here.
-  html += `<div class="kb-section"><h4>Internal teams (${TEAMS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any card to filter the Database by that team →</span></h4><div class="kb-teams">${TEAMS.map(t => {
-    const count = UNIS.filter(u => currentOwner(u) === t.id).length;
-    return `<div class="kb-team kb-team-clickable" style="border-left-color:${t.color}" onclick="STATE.filters.owner.clear();STATE.filters.owner.add('${t.id}');switchView('database')" title="Show ${count} partner${count === 1 ? '' : 's'} owned by ${escape(t.name)} in the Database">
-      <div class="kb-team-name" style="color:${t.color}">${escape(t.name)} <span class="kb-team-count">${count}</span></div>
-      <div class="kb-team-remit">${escape(t.remit)}</div>
-      ${t.email ? `<div class="kb-team-contact"><b>Email:</b> ${escape(t.email)}</div>` : ''}
-      ${t.phone ? `<div class="kb-team-contact"><b>Phone:</b> ${escape(t.phone)}</div>` : ''}
+  const bachCatCount = Object.keys(kb.bachelors || {}).length;
+  const bachTotal = Object.values(kb.bachelors || {}).reduce((s, v) => s + v.length, 0);
+  const masterTotal = (kb.masters || []).length;
+
+  // Color rotation for degree category bars (so each category gets a tone)
+  const degreeColors = ["#D9534F", "#1F6FB4", "#C97A1A", "#2E7D5B", "#6B4C7D", "#8B1A1A"];
+
+  // ===== HERO =====
+  const heroHtml = `
+    <div class="ab-hero">
+      <div>
+        <div class="ab-eyebrow">Knowledge base · What we offer</div>
+        <div class="ab-title">About H-FARM College</div>
+        <div class="ab-lede">The full catalogue embedded in this platform — every team, every programme, every collaboration format. Use this to pitch the right thing to the right partner.</div>
+      </div>
+      <div class="ab-hero-kpis">
+        <div class="ab-kpi"><div class="ab-kpi-num">${TEAMS.length}</div><div class="ab-kpi-lbl">Internal Teams</div></div>
+        <div class="ab-kpi"><div class="ab-kpi-num">${bachTotal}</div><div class="ab-kpi-lbl">Bachelor Programmes</div></div>
+        <div class="ab-kpi"><div class="ab-kpi-num">${masterTotal}</div><div class="ab-kpi-lbl">Master Programmes</div></div>
+        <div class="ab-kpi"><div class="ab-kpi-num">${PROGRAMS.length}</div><div class="ab-kpi-lbl">Summer 2026</div></div>
+        <div class="ab-kpi"><div class="ab-kpi-num">${COLLAB_FORMATS.length}</div><div class="ab-kpi-lbl">Collab Formats</div></div>
+      </div>
     </div>`;
-  }).join("")}</div></div>`;
-  html += `<div class="kb-section"><h4>Bachelor's degrees</h4>${Object.entries(kb.bachelors).map(([k,v]) => `<div class="kb-sub"><span class="kb-sub-h">${escape(k)}</span><ul>${v.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`).join("")}</div>`;
-  html += `<div class="kb-section"><h4>Master's degrees</h4><ul>${kb.masters.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`;
-  html += `<div class="kb-section"><h4>Summer Programs 2026 (${PROGRAMS.length})</h4><div class="kb-progs">${PROGRAMS.map(p => `<div class="kb-prog" data-prog-id="${p.id}" style="border-top:3px solid ${p.color}"><div class="kb-prog-name">${escape(p.name)}</div><div class="kb-prog-meta">${escape(p.age)} · ${escape(p.lang)}</div><div class="kb-prog-topic">${escape(p.topic)}</div><div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div></div>`).join("")}</div></div>`;
-  html += `<div class="kb-section"><h4>University collaboration formats (${COLLAB_FORMATS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any tile to open its dashboard →</span></h4><div class="kb-progs">${COLLAB_FORMATS.map(f => `<div class="kb-prog" data-format-id="${f.id}" style="border-top:3px solid ${_collabFormatColor(f.id)}"><div class="kb-prog-name">${escape(f.name)}</div><div class="kb-prog-meta">${escape(f.duration)} · ${escape(f.group)}</div><div class="kb-prog-topic">${escape(f.ideal)}</div>${f.case ? `<div class="kb-prog-pitch"><b>Case:</b> ${escape(f.case)}</div>` : ''}</div>`).join("")}</div></div>`;
-  // Note: Tailor-made flexibility map promoted to its own sidebar view
-  // (Tailor-made nav item) — no longer embedded here. See renderTailorMadeView.
-  html += `<div class="kb-section"><h4>Talent H-UB formats (for companies)</h4><div class="kb-flex">${kb.talentHub.formats.map(f => `<span class="kb-pill">${escape(f)}</span>`).join("")}</div></div>`;
-  html += `<div class="kb-section"><h4>H-FARM College Experience touchpoints</h4><div class="kb-flex">${kb.experiences.map(e => `<span class="kb-pill-soft">${escape(e)}</span>`).join("")}</div></div>`;
-  html += `<div class="kb-section" style="text-align:center;border-top:1px solid var(--rule);padding-top:14px"><a href="${kb.organization.website}" target="_blank" style="font-size:11px;color:var(--navy-light);text-decoration:none">${kb.organization.website} →</a></div>`;
-  html += `</div>`;
-  el.innerHTML = html;
-  // Wire program-tile clicks via JS (mirror of showHfarmInfo)
-  el.querySelectorAll(".kb-prog[data-prog-id]").forEach(tile => {
+
+  // ===== AUDIENCE FILTER =====
+  const audOpts = [
+    {id:"all", lbl:"All audiences"},
+    {id:"universities", lbl:"Universities"},
+    {id:"highschools", lbl:"High schools"},
+    {id:"agencies", lbl:"Agencies"},
+    {id:"studentorgs", lbl:"Student orgs"},
+    {id:"companies", lbl:"Companies"},
+  ];
+  const audHtml = `
+    <div class="ab-aud">
+      <span class="ab-aud-label">Scope by audience</span>
+      <div class="ab-aud-chips">
+        ${audOpts.map(a => `<button type="button" class="ab-aud-chip${a.id === _abAudience ? ' on' : ''}" onclick="_abSetAudience('${a.id}')">${escape(a.lbl)}</button>`).join("")}
+      </div>
+    </div>`;
+
+  // ===== TEAMS GRID =====
+  const teamsHtml = `
+    <section class="ab-sec">
+      <div class="ab-sec-head">
+        <div>
+          <div class="ab-sec-eyebrow">Internal teams (${TEAMS.length})</div>
+          <div class="ab-sec-title">Who owns what <span class="ab-sec-hint">— click any card to filter the Database by that team</span></div>
+        </div>
+      </div>
+      <div class="ab-team-grid">
+        ${TEAMS.map(t => {
+          const count = UNIS.filter(u => currentOwner(u) === t.id).length;
+          const dim = !_abAudienceMatchesTeam(_abAudience, t);
+          const points = _abTeamOutreachPerDay(t.id);
+          const total14 = points.reduce((s,n) => s+n, 0);
+          const sparkSvg = _abSparklineSvg(points, t.color || "#1A1A1A");
+          const short = _abTeamShortCode(t.name);
+          // Pull a "headed by" line out of the remit if present (e.g.
+          // "...Headed by Silvia Dell'Acqua") so the card surfaces that
+          // structurally instead of burying it in the remit text.
+          const remitMatch = t.remit ? t.remit.match(/Headed by ([^.]+)\.?/i) : null;
+          const headedBy = remitMatch ? remitMatch[1].trim() : "";
+          const descClean = t.remit ? t.remit.replace(/\s*Headed by [^.]+\.?\s*/i, "").trim() : "";
+          return `<button type="button" class="ab-team${dim ? ' ab-dim' : ''}" style="--tc:${t.color}" onclick="STATE.filters.owner.clear();STATE.filters.owner.add('${t.id}');switchView('database')" title="Show ${count} partner${count === 1 ? '' : 's'} owned by ${escape(t.name)} in the Database">
+            <div class="ab-team-head">
+              <span class="ab-team-short">${short}</span>
+              <span class="ab-team-name">${escape(t.name)}</span>
+              <span class="ab-team-count">${count}</span>
+            </div>
+            <div class="ab-team-desc">${escape(descClean || t.remit || "")}</div>
+            ${headedBy ? `<div class="ab-team-meta">Headed by ${escape(headedBy)}</div>` : ""}
+            ${t.email ? `<div class="ab-team-mono">${escape(t.email)}</div>` : ""}
+            ${t.phone ? `<div class="ab-team-mono">${escape(t.phone)}</div>` : ""}
+            <div class="ab-team-spark">
+              ${sparkSvg}
+              <span class="ab-team-trend">14d${total14 ? ` · ${total14}` : ''}</span>
+            </div>
+          </button>`;
+        }).join("")}
+      </div>
+    </section>`;
+
+  // ===== DEGREES =====
+  const bachEntries = Object.entries(kb.bachelors || {});
+  const mastersList = kb.masters || [];
+  const degreesHtml = `
+    <section class="ab-sec">
+      <div class="ab-sec-head">
+        <div>
+          <div class="ab-sec-eyebrow">Degree programmes</div>
+          <div class="ab-sec-title">Bachelor's &amp; Master's</div>
+        </div>
+        <div class="ab-tabs" role="tablist">
+          <button type="button" class="ab-tab${_abDegreeTab === 'bachelors' ? ' on' : ''}" onclick="_abSetDegreeTab('bachelors')">Bachelor's <span class="ab-tab-c">${bachTotal}</span></button>
+          <button type="button" class="ab-tab${_abDegreeTab === 'masters' ? ' on' : ''}" onclick="_abSetDegreeTab('masters')">Master's <span class="ab-tab-c">${masterTotal}</span></button>
+        </div>
+      </div>
+      ${_abDegreeTab === 'bachelors' ? `
+        <div class="ab-degree-grid">
+          ${bachEntries.map(([cat, list], i) => {
+            const color = degreeColors[i % degreeColors.length];
+            return `<div class="ab-degree-cat" style="--tc:${color}">
+              <div class="ab-degree-cat-head">
+                <span class="ab-degree-bar"></span>
+                <span class="ab-degree-cat-name">${escape(cat)}</span>
+                <span class="ab-degree-cat-count">${list.length}</span>
+              </div>
+              <div class="ab-degree-list">
+                ${list.map(p => `<div class="ab-degree-prog"><span class="ab-degree-prog-name">${escape(p)}</span><span class="ab-degree-prog-arrow">→</span></div>`).join("")}
+              </div>
+            </div>`;
+          }).join("")}
+        </div>` : `
+        <div class="ab-degree-grid">
+          <div class="ab-degree-cat" style="--tc:#1F6FB4;grid-column:1 / -1">
+            <div class="ab-degree-cat-head">
+              <span class="ab-degree-bar"></span>
+              <span class="ab-degree-cat-name">Master's programmes</span>
+              <span class="ab-degree-cat-count">${mastersList.length}</span>
+            </div>
+            <div class="ab-degree-list">
+              ${mastersList.map(p => `<div class="ab-degree-prog"><span class="ab-degree-prog-name">${escape(p)}</span><span class="ab-degree-prog-arrow">→</span></div>`).join("")}
+            </div>
+          </div>
+        </div>`}
+    </section>`;
+
+  // ===== SUMMER PROGRAMS =====
+  const summerFilters = [
+    {id:"all", lbl:`All ${PROGRAMS.length}`},
+    {id:"16-18", lbl:"16-18"},
+    {id:"18-25", lbl:"18-25"},
+    {id:"English", lbl:"English"},
+    {id:"Italian", lbl:"Italian"},
+  ];
+  const matchesSummerFilter = (p) => {
+    if (_abSummerFilter === "all") return true;
+    if (_abSummerFilter === "English" || _abSummerFilter === "Italian") return (p.lang || "").toLowerCase() === _abSummerFilter.toLowerCase();
+    return (p.age || "").includes(_abSummerFilter);
+  };
+  const summerHtml = `
+    <section class="ab-sec">
+      <div class="ab-sec-head">
+        <div>
+          <div class="ab-sec-eyebrow">Summer programs 2026 (${PROGRAMS.length})</div>
+          <div class="ab-sec-title">Catalogue <span class="ab-sec-hint">· click any card for the programme dashboard</span></div>
+        </div>
+        <div class="ab-filter-chips">
+          ${summerFilters.map(f => `<button type="button" class="ab-fc${f.id === _abSummerFilter ? ' on' : ''}" onclick="_abSetSummerFilter('${f.id}')">${escape(f.lbl)}</button>`).join("")}
+        </div>
+      </div>
+      <div class="ab-summer-grid">
+        ${PROGRAMS.map(p => {
+          const passes = matchesSummerFilter(p) && _abAudienceMatchesProgram(_abAudience, p);
+          return `<button type="button" class="ab-summer${passes ? '' : ' ab-dim'}" data-prog-id="${p.id}" style="--tc:${p.color}">
+            <div class="ab-summer-tag">
+              <span>${escape(p.age || "")}</span>
+              <span class="ab-summer-dot">·</span>
+              <span class="ab-summer-lang">${escape(p.lang || "")}</span>
+            </div>
+            <div class="ab-summer-name">${escape(p.name)}</div>
+            <div class="ab-summer-theme">${escape(p.topic || "")}</div>
+            <div class="ab-summer-foot">
+              <div class="ab-summer-bestlbl">Best for</div>
+              <div class="ab-summer-bestval">${escape(p.pitch_to || "")}</div>
+            </div>
+            <span class="ab-summer-cta">View dashboard →</span>
+          </button>`;
+        }).join("")}
+      </div>
+    </section>`;
+
+  // ===== COLLAB FORMATS =====
+  const collabHtml = `
+    <section class="ab-sec">
+      <div class="ab-sec-head">
+        <div>
+          <div class="ab-sec-eyebrow">University collaboration formats (${COLLAB_FORMATS.length})</div>
+          <div class="ab-sec-title">How partnerships actually run <span class="ab-sec-hint">— click any tile to open its dashboard</span></div>
+        </div>
+      </div>
+      <div class="ab-collab-grid">
+        ${COLLAB_FORMATS.map(f => {
+          const color = _collabFormatColor(f.id);
+          return `<button type="button" class="ab-collab" data-format-id="${f.id}" style="--tc:${color}">
+            <div class="ab-collab-name">${escape(f.name)}</div>
+            <div class="ab-collab-meta">
+              ${f.duration ? `<span class="ab-collab-pill">${escape(f.duration)}</span>` : ""}
+              ${f.group ? `<span class="ab-collab-pill">${escape(f.group)}</span>` : ""}
+            </div>
+            <div class="ab-collab-desc">${escape(f.ideal || "")}</div>
+            ${f.case ? `<div class="ab-collab-ref">
+              <span class="ab-collab-ref-lbl">Reference</span>
+              <span class="ab-collab-ref-val">${escape(f.case)}</span>
+            </div>` : ""}
+          </button>`;
+        }).join("")}
+      </div>
+    </section>`;
+
+  // ===== BOTTOM BAND =====
+  const talentFormats = (kb.talentHub && kb.talentHub.formats) || [];
+  const experiences   = kb.experiences || [];
+  const bottomHtml = `
+    <div class="ab-bottom">
+      <div class="ab-bottom-block">
+        <div class="ab-bottom-eyebrow">Talent H-UB · for companies</div>
+        <div class="ab-bottom-chips">
+          ${talentFormats.map(f => `<span class="ab-bc">${escape(f)}</span>`).join("")}
+        </div>
+      </div>
+      <div class="ab-bottom-block">
+        <div class="ab-bottom-eyebrow">H-FARM College Experience</div>
+        <div class="ab-bottom-chips">
+          ${experiences.map(e => `<span class="ab-bc soft">${escape(e)}</span>`).join("")}
+        </div>
+      </div>
+      <div class="ab-bottom-foot">
+        <a class="ab-bottom-link" href="${kb.organization && kb.organization.website || "#"}" target="_blank" rel="noopener">${escape((kb.organization && kb.organization.website) || "")} →</a>
+      </div>
+    </div>`;
+
+  el.innerHTML = `<div class="ab-shell">${heroHtml}${audHtml}${teamsHtml}${degreesHtml}${summerHtml}${collabHtml}${bottomHtml}</div>`;
+
+  // Wire program-tile clicks via JS (mirror of showHfarmInfo). Use data-prog-id
+  // on .ab-summer buttons now instead of .kb-prog.
+  el.querySelectorAll(".ab-summer[data-prog-id]").forEach(tile => {
     tile.addEventListener("click", function(ev) {
       ev.stopPropagation();
       const pid = tile.getAttribute("data-prog-id");
-      console.log("[about-view program click]", pid);
       showProgramDashboard(pid);
     });
   });
-  // Wire collab-format-tile clicks — parallel to programs, opens a
-  // dashboard scoped to that format showing pipeline coverage,
-  // recommended-vs-pitched buckets, and top untapped targets.
-  el.querySelectorAll(".kb-prog[data-format-id]").forEach(tile => {
+  // Wire collab-format-tile clicks
+  el.querySelectorAll(".ab-collab[data-format-id]").forEach(tile => {
     tile.addEventListener("click", function(ev) {
       ev.stopPropagation();
       const fid = tile.getAttribute("data-format-id");
-      console.log("[about-view format click]", fid);
       showCollabFormatDashboard(fid);
     });
   });
 }
+
+function _abSetAudience(aud) { _abAudience = aud; renderAboutView(); }
+function _abSetDegreeTab(tab) { _abDegreeTab = tab; renderAboutView(); }
+function _abSetSummerFilter(f) { _abSummerFilter = f; renderAboutView(); }
 
 function recommendAction(u) {
   const p = u.priority || "";
