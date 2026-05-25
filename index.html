@@ -2421,6 +2421,97 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .team-prios{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .team-pill{font-size:9px;padding:2px 7px;border-radius:9px;font-weight:700;letter-spacing:.3px}
 
+/* ===========================================================================
+   LANDING SCREEN — editorial-institutional pre-auth gate
+   ---------------------------------------------------------------------------
+   First impression for demo audiences (H-FARM College leadership). Paper-tone
+   background, heavy typographic hierarchy, single thin red rule under the
+   headline, restrained motion. Hidden by default; .visible from JS when
+   the server confirms unauth state. Exits via .exiting (fade + lift) before
+   the login overlay takes over.
+   =========================================================================== */
+.landing-screen{
+  position:fixed;inset:0;background:var(--off-white);z-index:10000;
+  display:none;flex-direction:column;
+  font-family:inherit;color:var(--ink);
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;
+  transition:opacity var(--motion-slow,380ms) var(--ease-elegant,cubic-bezier(.16,1,.3,1));
+}
+.landing-screen.visible{display:flex;opacity:1}
+.landing-screen.exiting{opacity:0;transform:translateY(-8px);transition:opacity 280ms ease-out,transform 280ms ease-out}
+
+/* --- Top bar: brand wordmark + alt Sign-in link --- */
+.landing-top{display:flex;justify-content:space-between;align-items:center;padding:26px 40px;border-bottom:1px solid var(--rule)}
+.landing-mark{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.landing-wordmark{font-size:13px;font-weight:800;letter-spacing:2.2px;color:var(--ink);text-transform:uppercase}
+.landing-signin-link{background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;padding:6px 10px;border-radius:4px;transition:color var(--motion-fast,140ms) var(--ease-standard)}
+.landing-signin-link:hover{color:var(--hf-red)}
+.landing-arrow-sm{display:inline-block;margin-left:4px;transition:transform var(--motion-fast,140ms) var(--ease-standard)}
+.landing-signin-link:hover .landing-arrow-sm{transform:translateX(3px)}
+
+/* --- Hero: eyebrow → headline → red rule → subhead → CTA --- */
+.landing-hero{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:80px 80px 60px;max-width:1200px;width:100%;margin:0 auto}
+.landing-eyebrow{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--hf-red);margin-bottom:24px}
+.landing-title{font-size:clamp(40px,6.5vw,84px);font-weight:800;line-height:1.05;letter-spacing:-1.4px;color:var(--ink);margin-bottom:0;max-width:14em}
+.landing-rule{margin:32px 0 28px;border:none;border-top:2px solid var(--hf-red);width:56px}
+.landing-sub{font-size:clamp(15px,1.4vw,18px);line-height:1.6;color:var(--ink-soft);max-width:620px;margin-bottom:40px;font-weight:400}
+.landing-cta{
+  background:var(--ink);color:#fff;border:none;
+  padding:16px 32px;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  border-radius:3px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:10px;
+  transition:background var(--motion-base,240ms) var(--ease-elegant),transform var(--motion-base,240ms) var(--ease-elegant),box-shadow var(--motion-base,240ms) var(--ease-elegant);
+  box-shadow:0 6px 20px rgba(10,20,40,.18);
+}
+.landing-cta:hover{background:var(--hf-red);transform:translateY(-2px);box-shadow:0 10px 28px rgba(217,83,79,.32)}
+.landing-cta:active{transform:translateY(0);transition-duration:80ms}
+.landing-arrow{display:inline-block;transition:transform var(--motion-base,240ms) var(--ease-elegant)}
+.landing-cta:hover .landing-arrow{transform:translateX(4px)}
+
+/* --- Numbers strip: light divider + 4 stat cells --- */
+.landing-numbers{padding:32px 80px 40px;max-width:1200px;width:100%;margin:0 auto;border-top:1px solid var(--rule)}
+.landing-numbers-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink-mute);margin-bottom:18px}
+.landing-numbers-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.landing-num{display:flex;flex-direction:column;gap:4px;padding-right:14px;border-right:1px solid var(--rule)}
+.landing-num:last-child{border-right:none}
+.landing-num strong{font-size:38px;font-weight:800;color:var(--ink);letter-spacing:-1px;line-height:1}
+.landing-num span{font-size:12px;color:var(--ink-soft);letter-spacing:.3px}
+
+/* --- Footer attribution --- */
+.landing-foot{padding:22px 40px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-mute);letter-spacing:.4px;text-align:center}
+
+/* --- Staggered fade-in for hero elements (only on first show) --- */
+.landing-screen.visible .landing-eyebrow,
+.landing-screen.visible .landing-title,
+.landing-screen.visible .landing-rule,
+.landing-screen.visible .landing-sub,
+.landing-screen.visible .landing-cta,
+.landing-screen.visible .landing-num{
+  animation:landingFadeUp 600ms var(--ease-elegant,cubic-bezier(.16,1,.3,1)) both;
+}
+.landing-screen.visible .landing-eyebrow{animation-delay:80ms}
+.landing-screen.visible .landing-title  {animation-delay:160ms}
+.landing-screen.visible .landing-rule   {animation-delay:300ms}
+.landing-screen.visible .landing-sub    {animation-delay:360ms}
+.landing-screen.visible .landing-cta    {animation-delay:480ms}
+.landing-screen.visible .landing-num:nth-child(1){animation-delay:620ms}
+.landing-screen.visible .landing-num:nth-child(2){animation-delay:680ms}
+.landing-screen.visible .landing-num:nth-child(3){animation-delay:740ms}
+.landing-screen.visible .landing-num:nth-child(4){animation-delay:800ms}
+@keyframes landingFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* --- Mobile (narrow viewport) --- */
+@media (max-width: 780px){
+  .landing-hero{padding:48px 24px 36px}
+  .landing-numbers{padding:24px;display:flex;flex-direction:column}
+  .landing-numbers-grid{grid-template-columns:repeat(2,1fr);gap:18px}
+  .landing-num{border-right:none;border-bottom:1px solid var(--rule);padding-bottom:14px}
+  .landing-num:nth-last-child(-n+2){border-bottom:none}
+  .landing-top{padding:18px 24px}
+  .landing-foot{padding:18px 24px}
+}
+
 /* LOGIN OVERLAY — full-page gate when HFARM_APP_PASSWORD is set */
 .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#08243d 100%);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;font-family:inherit}
 .login-overlay.open{display:flex}
@@ -2613,6 +2704,53 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 <!-- Login overlay — shown by JS when /api/auth/status reports the server
      requires a password. Sits above everything (z-index 9999). Hidden by
      default; revealed via .open class. -->
+<!--
+  Landing page — first thing demo audiences (H-FARM College leadership) see.
+  Editorial-institutional tone: paper-tone bg, restrained typography, single
+  thin red rule under the headline, "in numbers" stat strip for credibility,
+  one primary CTA. Sits in front of the auth flow: visitor sees landing,
+  clicks "Enter platform", landing dismisses and the existing login overlay
+  takes its place.
+-->
+<div id="landing-screen" class="landing-screen" aria-hidden="true">
+  <header class="landing-top">
+    <a class="landing-mark" href="https://college.h-farm.com/en/" target="_blank" title="H-FARM College website">
+      <span class="landing-wordmark">H-FARM College</span>
+    </a>
+    <button class="landing-signin-link" onclick="proceedFromLanding()" title="Continue to sign-in">
+      Sign in <span class="landing-arrow-sm">→</span>
+    </button>
+  </header>
+
+  <main class="landing-hero">
+    <span class="landing-eyebrow">Global Partnerships · Intelligence Platform</span>
+    <h1 class="landing-title">Where every partnership&nbsp;lives.</h1>
+    <hr class="landing-rule" />
+    <p class="landing-sub">
+      A single source of truth for sourcing, tracking, and scaling H-FARM College's
+      academic partnerships across 17 countries. AI-assisted discovery, live pipeline
+      intelligence, and partnership briefings ready to send.
+    </p>
+    <button class="landing-cta" onclick="proceedFromLanding()">
+      Enter platform <span class="landing-arrow">→</span>
+    </button>
+  </main>
+
+  <section class="landing-numbers">
+    <div class="landing-numbers-label">In numbers</div>
+    <div class="landing-numbers-grid">
+      <div class="landing-num"><strong>287</strong><span>active partnerships</span></div>
+      <div class="landing-num"><strong>51</strong><span>corporate sponsors</span></div>
+      <div class="landing-num"><strong>10</strong><span>internal teams</span></div>
+      <div class="landing-num"><strong>6</strong><span>program formats</span></div>
+    </div>
+  </section>
+
+  <footer class="landing-foot">
+    <span>Built by the Global Partnerships team · H-FARM College · Roncade · Treviso</span>
+  </footer>
+</div>
+
 <div id="login-overlay" class="login-overlay" aria-hidden="true">
   <form class="login-card" id="login-form" onsubmit="event.preventDefault();submitLogin()">
     <img class="login-logo" src="Logo/logo-h-farm-college-white.png" alt="H-FARM College" />
@@ -15866,11 +16004,44 @@ async function checkAuthAndBoot() {
     return;
   }
   if (status.auth_required && !status.authed) {
-    showLoginOverlay();
-    // bootApp() runs after a successful submitLogin()
+    // Show landing first (editorial brand presence), THEN login on click.
+    // For automated tests or anyone who skipped landing previously this
+    // session, jump straight to the login overlay.
+    if (sessionStorage.getItem("_landingSeen") === "1") {
+      showLoginOverlay();
+    } else {
+      showLanding();
+    }
     return;
   }
   bootApp();
+}
+
+// =====================================================================
+// LANDING SCREEN — pre-auth brand presence
+// =====================================================================
+function showLanding() {
+  const el = document.getElementById("landing-screen");
+  if (!el) { showLoginOverlay(); return; }
+  el.classList.add("visible");
+  el.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function proceedFromLanding() {
+  const el = document.getElementById("landing-screen");
+  if (!el) { showLoginOverlay(); return; }
+  // Remember within this tab session so a refresh after landing skips
+  // straight to login (avoids re-showing the marketing surface every reload).
+  sessionStorage.setItem("_landingSeen", "1");
+  el.classList.add("exiting");
+  setTimeout(() => {
+    el.classList.remove("visible");
+    el.classList.remove("exiting");
+    el.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    showLoginOverlay();
+  }, 300);
 }
 
 async function bootApp(opts = {}) {
