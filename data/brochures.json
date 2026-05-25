@@ -13,9 +13,58 @@
   },
   {
     "tag": "SUMMER",
-    "title": "Summer Programs 2026",
-    "desc": "All 9 catalogue programmes.",
+    "title": "Summer Programs 2026 — full catalogue",
+    "desc": "All 9 programmes on the live H-FARM College site.",
     "url": "https://college.h-farm.com/en/summer-programs-2026"
+  },
+  {
+    "tag": "OVERVIEW",
+    "title": "Summer Programs · Venice + Miami 2026",
+    "desc": "Cross-campus overview brochure for the Venice & Miami summer cohort.",
+    "url": "https://drive.google.com/file/d/10kKK2fajPm8_AiTciVWgIXC3kbNSZ9OI/view?usp=drive_link",
+    "campus": "venice-miami"
+  },
+  {
+    "tag": "OVERVIEW",
+    "title": "Summer Programs · Venice + NY 2026",
+    "desc": "Cross-campus overview brochure for the Venice & New York summer cohort.",
+    "url": "https://drive.google.com/file/d/1UQkCsxMOGmmaF1ne2RhMgzRUyuEt09gp/view?usp=drive_link",
+    "campus": "venice-ny"
+  },
+  {
+    "tag": "SUMMER",
+    "title": "Out of the Box — Discover Yourself 2026",
+    "desc": "Career orientation & self-discovery (16–18). Full programme brochure.",
+    "url": "https://drive.google.com/file/d/1cdAMbO5RxZfXOjGODFaZ8dLTsTwmRJk6/view?usp=drive_link",
+    "program_id": "ootb"
+  },
+  {
+    "tag": "SUMMER",
+    "title": "Startup Summer (AD)Venture 2026",
+    "desc": "Entrepreneurship & innovation with AI (16–17 / 18–25). Full programme brochure.",
+    "url": "https://drive.google.com/file/d/1pOZH7YEPMH6HA7OLTr1tzfSiu4r5K0DC/view?usp=drive_link",
+    "program_id": "startup"
+  },
+  {
+    "tag": "SUMMER",
+    "title": "Designing Connected Futures (IoT & AI) 2026",
+    "desc": "IoT, sensors, AI hardware, smart systems (16–17 / 18–25). Full programme brochure.",
+    "url": "https://drive.google.com/file/d/1zu3DTUHDp7Ecz2mye5H4ZVcp3cTWa_RL/view?usp=drive_link",
+    "program_id": "iot"
+  },
+  {
+    "tag": "SUMMER",
+    "title": "Defending Digital Worlds (Cybersecurity & AI) 2026",
+    "desc": "Cybersecurity, AI security, networks (16–17 / 18–25). Full programme brochure.",
+    "url": "https://drive.google.com/file/d/10MoOYO-yqUfctCtJ6FG2gf2aWlafRaJ4/view?usp=drive_link",
+    "program_id": "cyber"
+  },
+  {
+    "tag": "SUMMER",
+    "title": "AI Fashion Lab 2026",
+    "desc": "AI + fashion + creative industry (18–25). Full programme brochure.",
+    "url": "https://drive.google.com/file/d/13d-qwKvn4xolN2RNs6GEXuX7N5JFg3uu/view?usp=drive_link",
+    "program_id": "fashion"
   },
   {
     "tag": "UNIVERSITY",

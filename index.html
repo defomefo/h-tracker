@@ -1202,6 +1202,32 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ab-summer-cta{margin-top:6px;align-self:flex-start;background:transparent;border:none;padding:6px 0;color:var(--tc,var(--hf-red));font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;cursor:pointer;transition:transform .15s}
 .ab-summer-cta:hover{transform:translateX(3px)}
 
+/* Brochure inline toggle on a summer card. Click the chip → reveals an
+   iframe preview of the Drive PDF directly inside the card body. */
+.ab-broc-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.ab-broc-chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--rule);color:var(--ink);font-family:inherit;font-size:11px;font-weight:700;padding:5px 11px 5px 9px;border-radius:14px;cursor:pointer;letter-spacing:.2px;transition:all .12s}
+.ab-broc-chip:hover{border-color:var(--tc,var(--hf-red));color:var(--tc,var(--hf-red))}
+.ab-broc-chip.on{background:var(--tc,var(--hf-red));border-color:var(--tc,var(--hf-red));color:#fff}
+.ab-broc-chip-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.ab-broc-chip-caret{font-size:9px;line-height:1;margin-left:2px;opacity:.7}
+.ab-broc-panel{margin-top:10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);overflow:hidden;animation:ab-fade-up 250ms cubic-bezier(.22,.61,.36,1)}
+.ab-broc-iframe{display:block;width:100%;height:520px;border:none;background:#fff}
+.ab-broc-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-soft)}
+.ab-broc-foot b{color:var(--ink);font-weight:700}
+.ab-broc-actions{display:flex;gap:6px}
+.ab-broc-link{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--rule);color:var(--ink);font-family:inherit;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;text-decoration:none;letter-spacing:.2px;transition:all .12s}
+.ab-broc-link:hover{border-color:var(--ink);color:var(--ink)}
+.ab-broc-link.primary{background:var(--tc,var(--hf-red));border-color:var(--tc,var(--hf-red));color:#fff}
+.ab-broc-link.primary:hover{opacity:.9}
+
+/* Campus overview row — 2 wide cards above the Summer Programs section
+   so the Venice+Miami / Venice+NY multi-program PDFs have a home. */
+.ab-campus-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ab-campus{background:#fff;border:1px solid var(--rule);border-top:4px solid var(--tc,var(--hf-red));border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;animation:ab-fade-up 500ms backwards cubic-bezier(.22,.61,.36,1)}
+.ab-campus-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:1.4px;font-weight:800;text-transform:uppercase;color:var(--tc,var(--hf-red))}
+.ab-campus-name{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.3}
+.ab-campus-desc{font-size:12px;color:var(--ink-soft);line-height:1.5;flex:1}
+
 /* Collaboration formats grid */
 .ab-collab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .ab-collab{background:#fff;border:1px solid var(--rule);border-left:4px solid var(--tc,var(--hf-red));border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;transition:all .15s ease;animation:ab-fade-up 500ms backwards cubic-bezier(.22,.61,.36,1);cursor:pointer}
@@ -18067,6 +18093,71 @@ function renderTeamsView() {
 let _abAudience = "all";
 let _abDegreeTab = "bachelors";
 let _abSummerFilter = "all";
+// Per-card brochure expand state. Key = "prog:<id>" for summer programmes,
+// "campus:<key>" for overview brochures. Single-open at a time keeps the
+// page from turning into a wall of iframes.
+let _abOpenBrochure = null;
+
+// Convert a Drive /view URL to a /preview URL suitable for iframe embedding.
+// Returns null if it can't extract a file ID (defensive — caller falls back
+// to the original URL as a plain link).
+function _abDrivePreviewUrl(url) {
+  if (!url) return null;
+  const m = url.match(/\/file\/d\/([^/]+)/);
+  if (!m) return null;
+  return `https://drive.google.com/file/d/${m[1]}/preview`;
+}
+function _abDriveDownloadUrl(url) {
+  if (!url) return null;
+  const m = url.match(/\/file\/d\/([^/]+)/);
+  if (!m) return null;
+  return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+}
+
+// Lookup helper — find the brochure entry tied to a program id, OR all
+// campus overview brochures.
+function _abBrochuresForProgram(progId) {
+  return (BROCHURES || []).filter(b => b.program_id === progId && b.url);
+}
+function _abCampusBrochures() {
+  return (BROCHURES || []).filter(b => b.tag === "OVERVIEW" && b.url);
+}
+
+// Toggle brochure expand. Pass null to close all.
+function _abToggleBrochure(key) {
+  _abOpenBrochure = (_abOpenBrochure === key) ? null : key;
+  renderAboutView();
+  // Scroll the expanded panel into view (after render so the DOM exists).
+  if (_abOpenBrochure) {
+    requestAnimationFrame(() => {
+      const panel = document.querySelector(`.ab-broc-panel[data-broc-key="${key}"]`);
+      if (panel && typeof panel.scrollIntoView === "function") {
+        panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+  }
+}
+
+// Brochure panel + chip (reusable across summer cards + campus overview)
+function _abBrochurePanelHtml(key, title) {
+  const broc = (BROCHURES || []).find(b =>
+    (key.startsWith("prog:") && b.program_id === key.slice(5)) ||
+    (key.startsWith("campus:") && b.campus === key.slice(7))
+  );
+  if (!broc || !broc.url) return "";
+  const preview = _abDrivePreviewUrl(broc.url);
+  const download = _abDriveDownloadUrl(broc.url);
+  return `<div class="ab-broc-panel" data-broc-key="${escape(key)}">
+    ${preview ? `<iframe class="ab-broc-iframe" src="${preview}" allow="autoplay" title="${escape(broc.title || title || 'Brochure')}"></iframe>` : ""}
+    <div class="ab-broc-foot">
+      <span><b>${escape(broc.title || title || 'Brochure')}</b> &middot; embedded via Drive</span>
+      <span class="ab-broc-actions">
+        <a class="ab-broc-link" href="${escape(broc.url)}" target="_blank" rel="noopener">Open ↗</a>
+        ${download ? `<a class="ab-broc-link primary" href="${escape(download)}" target="_blank" rel="noopener">Download</a>` : ""}
+      </span>
+    </div>
+  </div>`;
+}
 
 // Compute per-team outreach count per day for the last 14 days — real data
 // from OUTREACH log. Returns an array of 14 ints (oldest → newest). Empty
@@ -18287,23 +18378,64 @@ function renderAboutView() {
       <div class="ab-summer-grid">
         ${PROGRAMS.map(p => {
           const passes = matchesSummerFilter(p) && _abAudienceMatchesProgram(_abAudience, p);
-          return `<button type="button" class="ab-summer${passes ? '' : ' ab-dim'}" data-prog-id="${p.id}" style="--tc:${p.color}">
-            <div class="ab-summer-tag">
+          const brocList = _abBrochuresForProgram(p.id);
+          const key = `prog:${p.id}`;
+          const open = _abOpenBrochure === key;
+          const hasBroc = brocList.length > 0;
+          return `<div class="ab-summer${passes ? '' : ' ab-dim'}" style="--tc:${p.color};cursor:default">
+            <div class="ab-summer-tag" onclick="event.stopPropagation();showProgramDashboard('${p.id}')" style="cursor:pointer">
               <span>${escape(p.age || "")}</span>
               <span class="ab-summer-dot">·</span>
               <span class="ab-summer-lang">${escape(p.lang || "")}</span>
             </div>
-            <div class="ab-summer-name">${escape(p.name)}</div>
+            <div class="ab-summer-name" onclick="event.stopPropagation();showProgramDashboard('${p.id}')" style="cursor:pointer">${escape(p.name)}</div>
             <div class="ab-summer-theme">${escape(p.topic || "")}</div>
             <div class="ab-summer-foot">
               <div class="ab-summer-bestlbl">Best for</div>
               <div class="ab-summer-bestval">${escape(p.pitch_to || "")}</div>
             </div>
-            <span class="ab-summer-cta">View dashboard →</span>
-          </button>`;
+            <div class="ab-broc-row">
+              <button type="button" class="ab-summer-cta" onclick="event.stopPropagation();showProgramDashboard('${p.id}')" style="cursor:pointer">View dashboard →</button>
+              ${hasBroc ? `<button type="button" class="ab-broc-chip${open ? ' on' : ''}" onclick="event.stopPropagation();_abToggleBrochure('${key}')">
+                <span class="ab-broc-chip-dot"></span>Brochure<span class="ab-broc-chip-caret">${open ? '▴' : '▾'}</span>
+              </button>` : ""}
+            </div>
+            ${open && hasBroc ? _abBrochurePanelHtml(key, p.name) : ""}
+          </div>`;
         }).join("")}
       </div>
     </section>`;
+
+  // ===== CAMPUS OVERVIEW (above Summer Programs) =====
+  const campusBrochures = _abCampusBrochures();
+  const campusHtml = campusBrochures.length ? `
+    <section class="ab-sec">
+      <div class="ab-sec-head">
+        <div>
+          <div class="ab-sec-eyebrow">Campus overview brochures</div>
+          <div class="ab-sec-title">Cross-programme PDFs <span class="ab-sec-hint">— multi-programme catalogues per campus cohort</span></div>
+        </div>
+      </div>
+      <div class="ab-campus-row">
+        ${campusBrochures.map(b => {
+          const key = `campus:${b.campus}`;
+          const open = _abOpenBrochure === key;
+          const tone = b.campus === "venice-miami" ? "#1F6FB4" : "#6B4C7D";
+          return `<div class="ab-campus" style="--tc:${tone}">
+            <div class="ab-campus-tag"><span class="ab-broc-chip-dot"></span>Campus overview</div>
+            <div class="ab-campus-name">${escape(b.title || "Brochure")}</div>
+            <div class="ab-campus-desc">${escape(b.desc || "")}</div>
+            <div class="ab-broc-row">
+              <button type="button" class="ab-broc-chip${open ? ' on' : ''}" onclick="_abToggleBrochure('${key}')">
+                <span class="ab-broc-chip-dot"></span>Open brochure<span class="ab-broc-chip-caret">${open ? '▴' : '▾'}</span>
+              </button>
+              <a class="ab-broc-link" href="${escape(b.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open in Drive ↗</a>
+            </div>
+            ${open ? _abBrochurePanelHtml(key, b.title) : ""}
+          </div>`;
+        }).join("")}
+      </div>
+    </section>` : "";
 
   // ===== COLLAB FORMATS =====
   const collabHtml = `
@@ -18355,10 +18487,12 @@ function renderAboutView() {
       </div>
     </div>`;
 
-  el.innerHTML = `<div class="ab-shell">${heroHtml}${audHtml}${teamsHtml}${degreesHtml}${summerHtml}${collabHtml}${bottomHtml}</div>`;
+  el.innerHTML = `<div class="ab-shell">${heroHtml}${audHtml}${teamsHtml}${degreesHtml}${campusHtml}${summerHtml}${collabHtml}${bottomHtml}</div>`;
 
-  // Wire program-tile clicks via JS (mirror of showHfarmInfo). Use data-prog-id
-  // on .ab-summer buttons now instead of .kb-prog.
+  // Note: Summer card click → showProgramDashboard is now wired inline on the
+  // tag + name + CTA spans rather than the whole card (so the Brochure ▾
+  // toggle inside the card doesn't also open the dashboard). The querySelector
+  // wiring below is kept for any legacy data-prog-id elements.
   el.querySelectorAll(".ab-summer[data-prog-id]").forEach(tile => {
     tile.addEventListener("click", function(ev) {
       ev.stopPropagation();
