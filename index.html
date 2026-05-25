@@ -739,6 +739,10 @@ html,body{font-family:'Helvetica Neue','Segoe UI',-apple-system,sans-serif;backg
 .pd-untapped-row .arrow{color:var(--gold);font-size:14px;text-align:right}
 .pd-pitch-cta{margin-top:8px;background:var(--gold);color:var(--ink);border:none;padding:8px 14px;border-radius:5px;cursor:pointer;font-weight:700;letter-spacing:.5px;font-size:11px;font-family:inherit}
 .pd-pitch-cta:hover{background:var(--navy);color:#fff}
+/* Priority breakdown chips inside the format dashboard */
+.pd-priochips{display:flex;flex-wrap:wrap;gap:6px}
+.pd-priochip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:14px;letter-spacing:.3px}
+.pd-priochip b{background:rgba(255,255,255,.25);padding:1px 7px;border-radius:9px;font-size:10px}
 
 /* Program-row override: now with reasoning text under each program */
 .program-row{display:block;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px}
@@ -9608,9 +9612,9 @@ function showHfarmInfo() {
       <ul>${kb.preparatory.map(p => `<li>${escape(p)}</li>`).join("")}</ul>
     </div>
     <div class="kb-section">
-      <h4>University collaboration formats (${COLLAB_FORMATS.length})</h4>
+      <h4>University collaboration formats (${COLLAB_FORMATS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any tile to open its dashboard →</span></h4>
       <div class="kb-progs">${COLLAB_FORMATS.map(f => `
-        <div class="kb-prog">
+        <div class="kb-prog" data-format-id="${f.id}" style="border-top:3px solid ${_collabFormatColor(f.id)}">
           <div class="kb-prog-name">${escape(f.name)}</div>
           <div class="kb-prog-meta">${escape(f.duration)} · ${escape(f.group)}</div>
           <div class="kb-prog-topic">${escape(f.ideal)}</div>
@@ -9638,6 +9642,15 @@ function showHfarmInfo() {
   `;
   body.innerHTML = html;
   document.getElementById("hfarm-info-modal").classList.add("open");
+  // Wire collab-format-tile clicks (parallel to programs) — opens a
+  // dashboard scoped to that format. See showCollabFormatDashboard.
+  body.querySelectorAll(".kb-prog[data-format-id]").forEach(el => {
+    el.addEventListener("click", () => {
+      const fid = el.getAttribute("data-format-id");
+      console.log("[format click]", fid);
+      showCollabFormatDashboard(fid);
+    });
+  });
   // Wire program-tile clicks via JS (more reliable than inline onclick)
   body.querySelectorAll(".kb-prog[data-prog-id]").forEach(el => {
     el.addEventListener("click", function(ev) {
@@ -9811,6 +9824,207 @@ function closeProgramModal() {
   if (!m) return;
   m.classList.remove("open");
   m.style.display = "";    // clear forced display so .compare-modal CSS (display:none) kicks back in
+}
+
+
+// =====================================================================
+// COLLABORATION-FORMAT DASHBOARD — per-format pipeline analytics
+//   Recommended = entities where recommendCollabFormat() picks this format
+//   Pitched     = entities recommended for this format AND have any outreach log entry
+//   Untapped    = recommended for this format with NO outreach log entry
+// =====================================================================
+// Format brand colors — deterministic per format id so each format has a
+// stable visual identity across views. Keeps the dashboard consistent
+// with the small color stripes shown on the tiles.
+function _collabFormatColor(formatId) {
+  return ({
+    "som-foc":   "#1F6FB4",   // Start Online · Finish On Campus — corporate blue
+    "week-week": "#D9534F",   // One Week H-FARM · One Week Home — H-FARM red (signature)
+    "bootcamp":  "#C97A1A",   // Startup Bootcamp — burnt orange (intensity)
+    "global-e":  "#2E7D5B",   // Global Entrepreneurship Program — flagship green
+    "exchange":  "#6B4C7D",   // Exchange Program — established / academic purple
+    "jterm":     "#8B6914",   // J-Term — January gold / olive
+  })[formatId] || "#5A5A5A";
+}
+
+function showCollabFormatDashboard(formatId) {
+  try {
+    const fmt = (COLLAB_FORMATS || []).find(f => f.id === formatId);
+    if (!fmt) { console.warn("Unknown collab format id:", formatId); return; }
+    const color = _collabFormatColor(formatId);
+
+    // Bucket every entity by whether this format is its recommendation.
+    // Using recommendCollabFormat() — already used in detail panel — keeps
+    // the dashboard in sync with what users see at the entity level.
+    const recommended = [], otherFormat = [];
+    UNIS.forEach(u => {
+      const rec = recommendCollabFormat(u);
+      if (rec && rec.id === formatId) recommended.push(u);
+      else otherFormat.push(u);
+    });
+
+    // Which entities have ANY outreach log entries — proxy for "we've
+    // engaged this partner already". Outreach log doesn't carry a
+    // format id (only program ids), so we can't directly track "pitched
+    // THIS format" — but a recommended entity with outreach history
+    // is the best signal we have. Refine later if formats are wired
+    // into the outreach schema.
+    const hasOutreachIds = new Set();
+    Object.entries(OUTREACH || {}).forEach(([eid, arr]) => {
+      if (Array.isArray(arr) && arr.length) hasOutreachIds.add(eid);
+    });
+    const pitched = recommended.filter(u => hasOutreachIds.has(u.id));
+    const untapped = recommended.filter(u => !hasOutreachIds.has(u.id));
+
+    // Priority breakdown within the recommended set — surfaces "of all
+    // partners this format fits, how many are Critical/Hot/Warm?"
+    const priorityBreakdown = {};
+    recommended.forEach(u => {
+      const p = u.priority || "Unclassified";
+      priorityBreakdown[p] = (priorityBreakdown[p] || 0) + 1;
+    });
+
+    // Country coverage — for each country, how many entities recommended,
+    // pitched, untapped, and what's the highest-priority untapped target
+    const byCountry = {};
+    recommended.forEach(u => {
+      const c = u.country_canonical || u.country || "Unknown";
+      if (!byCountry[c]) byCountry[c] = { total: 0, pitched: 0, untapped: 0, topUntapped: null };
+      byCountry[c].total++;
+      if (hasOutreachIds.has(u.id)) byCountry[c].pitched++;
+      else {
+        byCountry[c].untapped++;
+        // Rank by priority weight to pick the best "next target" per country
+        const prioWeight = ({"Critical":5,"Hot":4,"Warm":3,"Up & Running":2,"Cold":1}[u.priority] || 0);
+        const currentWeight = byCountry[c].topUntapped
+          ? ({"Critical":5,"Hot":4,"Warm":3,"Up & Running":2,"Cold":1}[byCountry[c].topUntapped.priority] || 0)
+          : -1;
+        if (prioWeight > currentWeight) byCountry[c].topUntapped = u;
+      }
+    });
+    const countryRows = Object.entries(byCountry)
+      .sort((a, b) => (b[1].untapped + b[1].pitched) - (a[1].untapped + a[1].pitched))
+      .slice(0, 20);
+
+    // Pie segments — pipeline view: of ALL entities, what slice fits
+    // this format vs what fits another format
+    const pieSegs = [
+      { label: "Pitched (recommended + outreach)",  value: pitched.length,  color: "var(--hf-red)" },
+      { label: "Untapped (recommended, no outreach)", value: untapped.length, color: color },
+      { label: "Other format recommended",          value: otherFormat.length, color: "var(--rule)" },
+    ];
+
+    // Top untapped — sort recommended-but-no-outreach by priority weight
+    // then partnership_score, take top 8 for the action list
+    const top8 = [...untapped].sort((a, b) => {
+      const aw = ({"Critical":5,"Hot":4,"Warm":3,"Up & Running":2,"Cold":1}[a.priority] || 0);
+      const bw = ({"Critical":5,"Hot":4,"Warm":3,"Up & Running":2,"Cold":1}[b.priority] || 0);
+      if (bw !== aw) return bw - aw;
+      return (b.partnership_score || 0) - (a.partnership_score || 0);
+    }).slice(0, 8);
+
+    const tableRows = countryRows.map(([c, v]) => {
+      const top = v.topUntapped;
+      const pen = v.total ? (v.pitched / v.total) * 100 : 0;
+      return `<tr class="clickable" onclick="programOpenCountry('${escape(c).replace(/'/g, "\\'")}')">
+        <td><b>${escape(c)}</b></td>
+        <td class="num">${v.total}</td>
+        <td class="num"><b style="color:${v.pitched ? 'var(--gold)' : 'var(--ink-soft)'}">${v.pitched}</b></td>
+        <td class="num">${v.untapped}</td>
+        <td>${top ? `<span class="pd-coverage-bar"><div style="width:${pen}%;background:${color}"></div></span><span style="color:var(--ink-soft);font-size:10px">${escape(top.name.slice(0, 40))} <b style="color:var(--navy)">${escape(top.priority || "—")}</b></span>` : `<span style="color:var(--ink-mute);font-size:10px;font-style:italic">all pitched</span>`}</td>
+      </tr>`;
+    }).join("");
+
+    const untappedHtml = top8.length ? top8.map((u, i) => `
+      <div class="pd-untapped-row" style="border-left-color:${color}" onclick="closeProgramModal();openDetail('${u.id}')">
+        <span class="rank">${i + 1}</span>
+        <div>
+          <div class="name">${escape(u.name)}</div>
+          <div class="country-tag">${escape(u.country_canonical || u.country || "—")} · ${ENTITY_LABELS[u.type] || u.type}</div>
+        </div>
+        <div class="country-tag" style="text-align:right">${escape(u.priority || "Unclassified")}</div>
+        <div class="score-tag">${u.partnership_score || 0}/100</div>
+        <div class="arrow">→</div>
+      </div>`).join("") : '<div style="font-size:11px;color:var(--ink-soft);font-style:italic;padding:14px;background:var(--paper);border-radius:5px;text-align:center">No untapped recommended targets — either every fit is already in outreach, or no partner currently fits this format. Try shifting priorities or expanding the pipeline.</div>';
+
+    // Priority breakdown chips — visual at-a-glance of the recommended cohort
+    const prioOrder = ["Critical", "Hot", "Warm", "Up & Running", "Cold", "Unclassified"];
+    const prioChips = prioOrder
+      .filter(p => priorityBreakdown[p])
+      .map(p => `<span class="pd-priochip" style="background:${PRIO_COLORS[p] || '#999'};color:${(p === 'Warm' || p === 'Up & Running') ? '#1A1A1A' : '#fff'}">${escape(p)} <b>${priorityBreakdown[p]}</b></span>`)
+      .join("");
+
+    const body = `
+      <div class="pd-hero">
+        <div class="pd-name">${escape(fmt.name)}</div>
+        <div class="pd-meta">${escape(fmt.duration)} &middot; ${escape(fmt.group)}</div>
+        <div class="pd-color-band" style="background:${color}"></div>
+      </div>
+
+      <div class="pd-stats">
+        <div class="pd-stat pitched">
+          <div class="num">${recommended.length}</div>
+          <div class="lbl">Recommended for this format</div>
+        </div>
+        <div class="pd-stat potential">
+          <div class="num">${untapped.length}</div>
+          <div class="lbl">Untapped (no outreach yet)</div>
+        </div>
+        <div class="pd-stat">
+          <div class="num">${pitched.length}</div>
+          <div class="lbl">In outreach pipeline</div>
+        </div>
+        <div class="pd-stat">
+          <div class="num">${recommended.length ? Math.round((pitched.length / recommended.length) * 100) : 0}<span style="font-size:14px">%</span></div>
+          <div class="lbl">Pipeline coverage</div>
+        </div>
+      </div>
+
+      <div class="pd-pie">
+        <div class="pie-svg-box">${makePieSvg(pieSegs.filter(s => s.value > 0), 200)}</div>
+        <div class="pie-legend">
+          ${pieSegs.filter(s => s.value > 0).map(s => `<span class="ple"><i style="background:${s.color}"></i>${s.label} <b>${s.value}</b></span>`).join("")}
+        </div>
+      </div>
+
+      <div class="pd-section">
+        <h3>Ideal partner profile <span class="pd-hint">From the format's KB definition</span></h3>
+        <div style="background:var(--paper);border-left:3px solid ${color};padding:12px 16px;border-radius:0 5px 5px 0;font-size:13px;line-height:1.55;color:var(--ink)">
+          ${escape(fmt.ideal)}
+          ${fmt.case ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);font-size:12px"><b style="color:var(--hf-red)">Reference case:</b> ${escape(fmt.case)}</div>` : ''}
+        </div>
+      </div>
+
+      ${prioChips ? `<div class="pd-section">
+        <h3>Recommended-cohort priority breakdown <span class="pd-hint">Of the ${recommended.length} partners this format fits, how are they prioritised?</span></h3>
+        <div class="pd-priochips">${prioChips}</div>
+      </div>` : ''}
+
+      <div class="pd-section">
+        <h3>Top untapped targets <span class="pd-hint">Recommended for ${escape(fmt.name)} but no outreach yet · ranked by priority then score · click to open detail</span></h3>
+        <div class="pd-untapped">${untappedHtml}</div>
+      </div>
+
+      <div class="pd-section">
+        <h3>Coverage by country <span class="pd-hint">Of partners recommended for this format · click a row to filter the platform</span></h3>
+        <table class="pd-table">
+          <thead><tr><th>Country</th><th class="num">Recommended</th><th class="num">Pitched</th><th class="num">Untapped</th><th>Top untapped target · priority</th></tr></thead>
+          <tbody>${tableRows || '<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--ink-soft);font-style:italic">No partners currently recommended for this format. As you grow the pipeline, partners matching this format will surface here.</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+
+    const modal = document.getElementById("program-modal");
+    if (!modal) { console.error("program-modal element missing"); return; }
+    document.getElementById("program-modal-title").innerHTML = `<span style="font-size:14px;color:${color};font-weight:700;letter-spacing:1px">COLLABORATION FORMAT DASHBOARD</span>`;
+    document.getElementById("program-modal-body").innerHTML = body;
+    modal.classList.add("open");
+    modal.style.display = "flex";
+    modal.style.zIndex = "501";
+  } catch (err) {
+    console.error("showCollabFormatDashboard failed:", err);
+    alert("Couldn't open dashboard: " + err.message);
+  }
 }
 
 // Filter the platform to a specific country and close any open modals
@@ -14662,7 +14876,7 @@ function renderAboutView() {
   html += `<div class="kb-section"><h4>Bachelor's degrees</h4>${Object.entries(kb.bachelors).map(([k,v]) => `<div class="kb-sub"><span class="kb-sub-h">${escape(k)}</span><ul>${v.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`).join("")}</div>`;
   html += `<div class="kb-section"><h4>Master's degrees</h4><ul>${kb.masters.map(p => `<li>${escape(p)}</li>`).join("")}</ul></div>`;
   html += `<div class="kb-section"><h4>Summer Programs 2026 (${PROGRAMS.length})</h4><div class="kb-progs">${PROGRAMS.map(p => `<div class="kb-prog" data-prog-id="${p.id}" style="border-top:3px solid ${p.color}"><div class="kb-prog-name">${escape(p.name)}</div><div class="kb-prog-meta">${escape(p.age)} · ${escape(p.lang)}</div><div class="kb-prog-topic">${escape(p.topic)}</div><div class="kb-prog-pitch"><b>Best for:</b> ${escape(p.pitch_to)}</div></div>`).join("")}</div></div>`;
-  html += `<div class="kb-section"><h4>University collaboration formats (${COLLAB_FORMATS.length})</h4><div class="kb-progs">${COLLAB_FORMATS.map(f => `<div class="kb-prog"><div class="kb-prog-name">${escape(f.name)}</div><div class="kb-prog-meta">${escape(f.duration)} · ${escape(f.group)}</div><div class="kb-prog-topic">${escape(f.ideal)}</div>${f.case ? `<div class="kb-prog-pitch"><b>Case:</b> ${escape(f.case)}</div>` : ''}</div>`).join("")}</div></div>`;
+  html += `<div class="kb-section"><h4>University collaboration formats (${COLLAB_FORMATS.length}) <span style="font-size:10px;color:var(--ink-soft);font-weight:600;letter-spacing:.4px;text-transform:none;margin-left:8px">click any tile to open its dashboard →</span></h4><div class="kb-progs">${COLLAB_FORMATS.map(f => `<div class="kb-prog" data-format-id="${f.id}" style="border-top:3px solid ${_collabFormatColor(f.id)}"><div class="kb-prog-name">${escape(f.name)}</div><div class="kb-prog-meta">${escape(f.duration)} · ${escape(f.group)}</div><div class="kb-prog-topic">${escape(f.ideal)}</div>${f.case ? `<div class="kb-prog-pitch"><b>Case:</b> ${escape(f.case)}</div>` : ''}</div>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>Talent H-UB formats (for companies)</h4><div class="kb-flex">${kb.talentHub.formats.map(f => `<span class="kb-pill">${escape(f)}</span>`).join("")}</div></div>`;
   html += `<div class="kb-section"><h4>H-FARM College Experience touchpoints</h4><div class="kb-flex">${kb.experiences.map(e => `<span class="kb-pill-soft">${escape(e)}</span>`).join("")}</div></div>`;
   html += `<div class="kb-section" style="text-align:center;border-top:1px solid var(--rule);padding-top:14px"><a href="${kb.organization.website}" target="_blank" style="font-size:11px;color:var(--navy-light);text-decoration:none">${kb.organization.website} →</a></div>`;
@@ -14675,6 +14889,17 @@ function renderAboutView() {
       const pid = tile.getAttribute("data-prog-id");
       console.log("[about-view program click]", pid);
       showProgramDashboard(pid);
+    });
+  });
+  // Wire collab-format-tile clicks — parallel to programs, opens a
+  // dashboard scoped to that format showing pipeline coverage,
+  // recommended-vs-pitched buckets, and top untapped targets.
+  el.querySelectorAll(".kb-prog[data-format-id]").forEach(tile => {
+    tile.addEventListener("click", function(ev) {
+      ev.stopPropagation();
+      const fid = tile.getAttribute("data-format-id");
+      console.log("[about-view format click]", fid);
+      showCollabFormatDashboard(fid);
     });
   });
 }
