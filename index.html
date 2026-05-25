@@ -869,9 +869,143 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .pitched-summary{font-size:11px;color:var(--ink);background:var(--gold-light);padding:8px 12px;border-radius:5px;margin-bottom:10px;line-height:1.5}
 .pitched-summary b{color:var(--navy)}
 
-/* Outreach form modal */
-.outreach-modal{position:fixed;inset:0;background:rgba(10,37,64,.5);z-index:400;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+/* Outreach form modal — overlay + shell (centred). Inner uses lo-* layout. */
+.outreach-modal{position:fixed;inset:0;background:linear-gradient(135deg,rgba(10,10,18,.50),rgba(10,10,18,.72));z-index:400;display:none;align-items:flex-start;justify-content:center;padding:30px 20px;overflow-y:auto}
 .outreach-modal.open{display:flex}
+
+/* ====================================================================
+   OUTREACH MODAL — Claude-design (lo-*) full-screen 2-col composer
+==================================================================== */
+.lo-modal{width:100%;max-width:1080px;max-height:calc(100vh - 60px);background:var(--off-white);border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.lo-head{background:var(--ink);color:#fff;padding:18px 24px;border-bottom:3px solid var(--hf-red);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-shrink:0}
+.lo-head-left{min-width:0;flex:1}
+.lo-eyebrow{font-size:9px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:7px}
+.lo-entity{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.lo-iso{display:inline-flex;width:32px;height:32px;border-radius:5px;background:var(--ink-mute);color:#fff;align-items:center;justify-content:center;font-family:'Consolas',monospace;font-weight:800;font-size:11px;letter-spacing:.5px;flex-shrink:0;overflow:hidden}
+.lo-iso img{width:100%;height:100%;object-fit:cover}
+.lo-iso-critical{background:#8B1A1A}
+.lo-iso-hot{background:#D9534F}
+.lo-iso-warm{background:#E0A93B;color:var(--ink)}
+.lo-iso-cold{background:#4A6B8A}
+.lo-iso-ur{background:#2E7D5B}
+.lo-iso-cs{background:#8E9AAB}
+.lo-iso-ni{background:#6E6E6E}
+.lo-name{font-size:18px;font-weight:800;letter-spacing:-.3px;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lo-pri{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:3px 9px;border-radius:10px;text-transform:uppercase}
+.lo-pri-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.lo-pri-critical{background:rgba(217,83,79,.18);color:#FF8A85}
+.lo-pri-hot{background:rgba(217,83,79,.18);color:#FF8A85}
+.lo-pri-warm{background:rgba(224,169,59,.22);color:#FFD27A}
+.lo-pri-cold{background:rgba(74,107,138,.22);color:#9DBBDB}
+.lo-pri-ur{background:rgba(46,125,91,.22);color:#7FE0B0}
+.lo-pri-cs{background:rgba(142,154,171,.22);color:#C5CDD8}
+.lo-pri-ni{background:rgba(110,110,110,.22);color:#C2C2C2}
+.lo-score{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.2px}
+.lo-score b{color:#fff;font-weight:800;font-size:14px;margin-left:3px}
+.lo-close{width:36px;height:36px;background:rgba(255,255,255,.08);border:none;color:#fff;border-radius:50%;font-size:22px;cursor:pointer;line-height:1;flex-shrink:0;transition:background .15s;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.lo-close:hover{background:var(--hf-red)}
+
+/* Channel tabs */
+.lo-channels{display:flex;gap:4px;padding:12px 24px 0;background:var(--off-white);border-bottom:1px solid var(--rule);flex-shrink:0}
+.lo-ch{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:none;border:none;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.2px;transition:color .12s}
+.lo-ch:hover{color:var(--ink)}
+.lo-ch.on{color:var(--hf-red);border-bottom-color:var(--hf-red)}
+.lo-ch.disabled{color:var(--ink-mute);cursor:not-allowed}
+.lo-ch.disabled:hover{color:var(--ink-mute)}
+.lo-ch svg{color:inherit;width:15px;height:15px}
+
+/* Body — 2 col grid */
+.lo-body{flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:1fr 320px}
+.lo-compose{padding:22px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;min-width:0}
+.lo-meta{padding:20px 22px;overflow-y:auto;background:var(--paper);border-left:1px solid var(--rule);display:flex;flex-direction:column;gap:22px;min-width:0}
+
+/* AI banner */
+.lo-ai{display:flex;align-items:center;gap:14px;padding:12px 16px;background:linear-gradient(90deg,#FBEAEA 0%,#FCE4E4 100%);border-radius:8px;border:1px solid #F2C9C9}
+.lo-ai-icon{width:32px;height:32px;border-radius:8px;background:var(--ink);color:var(--hf-red);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+.lo-ai-text{flex:1;min-width:0}
+.lo-ai-h{font-size:13px;font-weight:800;color:var(--ink)}
+.lo-ai-p{font-size:11px;color:var(--ink-soft);line-height:1.45;margin-top:2px}
+.lo-ai-p b{color:var(--ink);font-weight:700}
+.lo-ai-btn{flex-shrink:0;background:var(--hf-red);color:#fff;border:1px solid var(--hf-red);padding:9px 16px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:background .12s}
+.lo-ai-btn:hover{background:var(--hf-red-deep);border-color:var(--hf-red-deep)}
+.lo-ai-btn:disabled{opacity:.5;cursor:not-allowed}
+.lo-ai-btn.loading{opacity:.7;cursor:wait}
+
+/* Fields */
+.lo-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lo-field.small{gap:5px}
+.lo-lbl-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.lo-lbl{font-size:10px;letter-spacing:1.4px;color:var(--ink);text-transform:uppercase;font-weight:800}
+.lo-lbl-hint{font-size:10px;color:var(--ink-soft);font-style:italic;letter-spacing:.2px}
+.lo-field.small .lo-lbl{font-size:9px;letter-spacing:1.2px;color:var(--ink-mute)}
+.lo-row{display:grid;gap:12px}
+.lo-row.two{grid-template-columns:1fr 1fr}
+.lo-input{width:100%;padding:9px 12px;background:#fff;border:1px solid var(--rule);border-radius:6px;font-family:inherit;font-size:13px;color:var(--ink);transition:border-color .12s,box-shadow .12s}
+.lo-input:hover{border-color:var(--ink-soft)}
+.lo-input:focus{outline:none;border-color:var(--hf-red);box-shadow:0 0 0 3px rgba(217,83,79,.10)}
+.lo-textarea{line-height:1.55;resize:vertical;min-height:180px;font-family:inherit}
+.lo-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238A8A8A' stroke-width='2.5'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 12px center;background-size:12px;padding-right:32px;cursor:pointer}
+
+/* Chip multi-select */
+.lo-chips-wrap{display:flex;flex-direction:column;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--rule);border-radius:7px;max-height:240px;overflow-y:auto}
+.lo-chips-group{display:flex;flex-direction:column;gap:6px}
+.lo-chips-cat{font-size:9px;letter-spacing:1.4px;color:var(--hf-red);text-transform:uppercase;font-weight:800}
+.lo-chips{display:flex;flex-wrap:wrap;gap:5px}
+.lo-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;font-family:inherit;font-size:11px;font-weight:600;color:var(--ink);cursor:pointer;letter-spacing:.1px;transition:all .12s}
+.lo-chip:hover{border-color:var(--ink);background:#fff}
+.lo-chip.on{background:var(--ink);color:#fff;border-color:var(--ink);padding-left:8px}
+.lo-chip-tick{font-size:10px;font-weight:800;color:var(--hf-red);display:none}
+.lo-chip.on .lo-chip-tick{display:inline;color:#FF8A85}
+
+/* Meta sidebar sections */
+.lo-meta-sec{display:flex;flex-direction:column;gap:10px}
+.lo-meta-title{font-size:9px;letter-spacing:1.8px;color:var(--hf-red);text-transform:uppercase;font-weight:800;padding-bottom:8px;border-bottom:2px solid var(--hf-red);margin-bottom:4px}
+
+/* Recommended card */
+.lo-rec{background:#fff;border:1px solid var(--rule);border-radius:7px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.lo-rec-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;background:var(--ink);color:#fff;border-radius:4px;font-size:11px;font-weight:800;letter-spacing:.2px;align-self:flex-start;max-width:100%;line-height:1.3}
+.lo-rec-star{color:#FFD27A;flex-shrink:0;font-size:11px}
+.lo-rec-p{font-size:11px;color:var(--ink-soft);line-height:1.5}
+.lo-rec-cta{background:var(--hf-red-soft);color:var(--hf-red-deep);border:none;padding:7px 12px;border-radius:5px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.2px;cursor:pointer;text-align:left;transition:background .12s}
+.lo-rec-cta:hover{background:var(--hf-red);color:#fff}
+
+/* Quick attach */
+.lo-quick-list{display:flex;flex-direction:column;gap:5px}
+.lo-quick{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid var(--rule);border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .12s;width:100%;text-align:left}
+.lo-quick:hover{border-color:var(--hf-red);background:var(--hf-red-soft)}
+.lo-quick:disabled{opacity:.55;cursor:not-allowed}
+.lo-quick:disabled:hover{border-color:var(--rule);background:#fff}
+.lo-quick-tag{font-family:'Consolas',monospace;font-size:9px;font-weight:800;padding:2px 6px;background:var(--paper);color:var(--ink-soft);border-radius:3px;letter-spacing:.5px}
+.lo-quick-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;color:var(--ink);font-weight:600}
+.lo-quick-arrow{color:var(--ink-mute);font-weight:800;font-size:16px}
+.lo-quick:hover:not(:disabled) .lo-quick-arrow{color:var(--hf-red)}
+
+/* Sender warning (no identity claimed) */
+.lo-sender-warn{padding:9px 12px;background:#FAEFD8;border:1px solid #EBDDB5;border-radius:6px;font-size:11px;color:#7A5215;line-height:1.5}
+.lo-sender-warn b{font-weight:800}
+.lo-sender-warn button{background:none;border:none;color:var(--hf-red);font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;text-decoration:underline;padding:0;margin-left:4px}
+
+/* Footer */
+.lo-foot{background:#fff;border-top:1px solid var(--rule);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-shrink:0;flex-wrap:wrap}
+.lo-foot-meta{font-size:11px;color:var(--ink-soft);min-width:0;flex:1}
+.lo-foot-meta b{color:var(--ink);font-weight:700}
+.lo-foot-dot{color:var(--ink-mute);padding:0 4px}
+.lo-foot-mono{font-family:'Consolas',monospace;color:var(--ink-soft);letter-spacing:-.2px}
+.lo-foot-actions{display:flex;gap:8px;flex-wrap:wrap}
+.lo-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.3px;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.lo-btn.primary{background:var(--hf-red);color:#fff;border-color:var(--hf-red)}
+.lo-btn.primary:hover{background:var(--hf-red-deep);border-color:var(--hf-red-deep)}
+.lo-btn.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
+.lo-btn.ghost:hover{border-color:var(--ink)}
+.lo-btn.ink{background:var(--ink);color:#fff;border-color:var(--ink)}
+.lo-btn.ink:hover{background:#000;border-color:#000}
+
+@media (prefers-reduced-motion: reduce){
+  .lo-ai-btn,.lo-btn,.lo-quick,.lo-chip,.lo-input,.lo-rec-cta{transition:none}
+}
+
+/* Legacy outreach-form rules kept below for any other place that still
+   uses them (nothing else does, but harmless). */
 .outreach-box{background:#fff;border-radius:10px;width:100%;max-width:720px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
 .outreach-head-modal{background:var(--navy);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold)}
 .outreach-head-modal h2{font-size:15px;font-weight:700;letter-spacing:.5px}
@@ -3713,12 +3847,14 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 
 <!-- Outreach log form modal -->
 <div class="outreach-modal" id="outreach-modal">
-  <div class="outreach-box">
-    <div class="outreach-head-modal">
-      <h2 id="outreach-modal-title">Log outreach</h2>
-      <button onclick="closeOutreachForm()">&times;</button>
+  <div class="lo-modal" id="outreach-box">
+    <div class="lo-head" id="lo-head"></div>
+    <div class="lo-channels" id="lo-channels"></div>
+    <div class="lo-body">
+      <div class="lo-compose" id="lo-compose"></div>
+      <div class="lo-meta" id="lo-meta"></div>
     </div>
-    <div class="outreach-form" id="outreach-form-body"></div>
+    <div class="lo-foot" id="lo-foot"></div>
   </div>
 </div>
 
@@ -10307,6 +10443,12 @@ function renderOutreachLog(entity) {
 }
 
 // ---- Outreach form (new / edit) -------------------------------------
+// Renders the Claude-design lo-* full-screen composer into 4 slots:
+//   #lo-head    — dark hero with entity name + priority chip + score
+//   #lo-channels — single-select channel tabs (Email/Call/Meeting/Event)
+//   #lo-compose — left column: AI banner, template, subject, body, programs
+//   #lo-meta    — right sidebar: logging fields, recommended format, attach
+//   #lo-foot    — sticky footer with Cancel / Save draft / Save + open / Log
 function showOutreachForm(entityId, entryId) {
   const entity = UNIS.find(u => u.id === entityId);
   if (!entity) return;
@@ -10325,44 +10467,68 @@ function showOutreachForm(entityId, entryId) {
     programs: [],
   };
 
-  document.getElementById("outreach-modal-title").textContent = (existing ? "Edit" : "Log new") + " outreach · " + entity.name;
+  // Resolve active channel: legacy entries may use `channels: ["email","call"]`
+  // — collapse to a single value (first one) since the new UI is single-select.
+  let activeChan = e.channel || (Array.isArray(e.channels) && e.channels[0]) || "email";
 
-  // Contacts dropdown
+  // === HEAD ============================================================
+  const prioTone = _dpPriorityTone(entity.priority);
+  const iso = (typeof _isoForCountry === "function") ? _isoForCountry(entity.country) : null;
+  const isoChip = iso
+    ? `<span class="lo-iso${prioTone ? ` lo-iso-${prioTone}` : ""}"><img src="https://flagcdn.com/40x30/${iso}.png" alt="${escape(entity.country || "")}" loading="lazy" onerror="this.parentNode.textContent='${iso.toUpperCase()}'"/></span>`
+    : `<span class="lo-iso${prioTone ? ` lo-iso-${prioTone}` : ""}">${escape((entity.country || "??").slice(0,2).toUpperCase())}</span>`;
+  const prioChip = entity.priority
+    ? `<span class="lo-pri lo-pri-${prioTone}"><span class="lo-pri-dot"></span>${escape(entity.priority)}</span>`
+    : "";
+  document.getElementById("lo-head").innerHTML = `
+    <div class="lo-head-left">
+      <div class="lo-eyebrow">${existing ? "Edit outreach" : "Log new outreach"}</div>
+      <div class="lo-entity">
+        ${isoChip}
+        <div class="lo-name" title="${escape(entity.name)}">${escape(entity.name)}</div>
+        ${prioChip}
+        <div class="lo-score">Score<b>${entity.partnership_score}</b></div>
+      </div>
+    </div>
+    <button type="button" class="lo-close" onclick="closeOutreachForm()" aria-label="Close">&times;</button>`;
+
+  // === CHANNEL TABS ====================================================
+  const channels = [
+    { id: "email",   label: "Email",   svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>' },
+    { id: "call",    label: "Call",    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.71 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.71A2 2 0 0 1 22 16.92z"/></svg>' },
+    { id: "meeting", label: "Meeting", svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
+    { id: "event",   label: "Event",   svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>' },
+  ];
+  document.getElementById("lo-channels").innerHTML = channels.map(c =>
+    `<button type="button" class="lo-ch${c.id === activeChan ? " on" : ""}" data-ch="${c.id}" onclick="loSwitchChannel('${c.id}')">${c.svg}${c.label}</button>`
+  ).join("");
+
+  // === COMPOSE (left column) ===========================================
+  const offerings = allOfferings();
+  const chipsGrid = Object.entries(offerings).map(([group, list]) => `
+    <div class="lo-chips-group">
+      <div class="lo-chips-cat">${escape(group)}</div>
+      <div class="lo-chips">
+        ${list.map(o => `<button type="button" class="lo-chip${e.programs.includes(o.id) ? " on" : ""}" data-prog="${escape(o.id)}" onclick="loToggleProgChip('${escape(o.id)}', this)">${escape(o.label)}<span class="lo-chip-tick">✓</span></button>`).join("")}
+      </div>
+    </div>`).join("");
+
+  // Contact dropdown — recipient picker
   const contactOpts = (entity.contacts || []).map((c,i) => {
     const v = c.name || c.email || "Contact " + (i+1);
     const selected = (e.recipientName === c.name && e.recipientEmail === c.email) ? "selected" : "";
-    return `<option value="${i}" ${selected}>${escape(v)} ${c.email ? '<'+escape(c.email)+'>' : ''}</option>`;
+    return `<option value="${i}" ${selected}>${escape(v)}${c.email ? ' — ' + escape(c.email) : ''}</option>`;
   }).join("");
 
-  // Teams dropdown
-  const teamOpts = TEAMS.map(t => `<option value="${t.id}" ${e.senderTeamId === t.id ? 'selected' : ''}>${escape(t.name)}</option>`).join("");
-
-  // Programs multi-select grouped
-  const offerings = allOfferings();
-  const progGrid = Object.entries(offerings).map(([group, list]) => `
-    <div class="program-grid-group">
-      <h5>${escape(group)}</h5>
-      ${list.map(o => `<label class="cb"><input type="checkbox" data-prog="${o.id}" ${e.programs.includes(o.id) ? 'checked' : ''}/>${escape(o.label)}</label>`).join("")}
-    </div>`).join("");
-
-  document.getElementById("outreach-form-body").innerHTML = `
-    <input type="hidden" id="ol-id" value="${e.id}"/>
-    <input type="hidden" id="ol-entity" value="${entityId}"/>
-    <div class="ai-draft-row${AI_ENABLED ? '' : ' ai-pending'}">
-      <button type="button" class="btn-ai-draft" id="ai-draft-btn" onclick="aiDraftOutreach('${entityId}')">
-        <span class="ai-spark">✨</span> <span class="ai-draft-label">Draft with AI</span>
-        ${AI_ENABLED ? '' : '<span class="ai-soon-badge">SOON</span>'}
-      </button>
-      <span class="ai-draft-hint">${AI_ENABLED
-        ? `Fills <b>Subject</b> + <b>Email body</b> below with a tailored intro email, using ${escape(entity.name)}'s profile + the recommended H-FARM College offering.`
-        : `<b>Coming soon</b> — generates a tailored intro email from this partner's profile. Awaiting admin to configure the AI integration.`}</span>
-    </div>
-    ${OUTREACH_TEMPLATES.length ? `<div class="template-row">
-      <label class="template-label">Start from template</label>
-      <select id="ol-template" class="template-select" onchange="applyOutreachTemplate('${entityId}', this.value)">
-        <option value="">— no template —</option>
+  const templateDropdown = OUTREACH_TEMPLATES.length ? `
+    <div class="lo-field">
+      <div class="lo-lbl-row">
+        <span class="lo-lbl">Start from template</span>
+        <span class="lo-lbl-hint">Variables like {{entity.name}} auto-filled</span>
+      </div>
+      <select id="ol-template" class="lo-input lo-select" onchange="applyOutreachTemplate('${entityId}', this.value)">
+        <option value="">— No template —</option>
         ${(() => {
-          // Group templates by category for a tidier dropdown
           const byCat = {};
           OUTREACH_TEMPLATES.forEach(t => (byCat[t.category || "Other"] = byCat[t.category || "Other"] || []).push(t));
           return Object.entries(byCat).map(([cat, list]) =>
@@ -10370,96 +10536,254 @@ function showOutreachForm(entityId, entryId) {
           ).join("");
         })()}
       </select>
-      <span class="template-hint">Loads subject + body. Variables like <code>{{entity.name}}</code> are auto-filled. You can edit before saving.</span>
-    </div>` : ''}
-    <div class="form-row">
-      <label>Date <input type="date" id="ol-date" value="${e.date}"/></label>
-      <label>Channels (multi-select)
-        <div class="channel-checks" id="ol-channels-group">
-          ${(() => {
-            const cur = Array.isArray(e.channels) ? e.channels : (e.channel ? [e.channel] : []);
-            const opts = [
-              {v:"email",   t:"📧 Email"},
-              {v:"call",    t:"📞 Call"},
-              {v:"meeting", t:"🤝 Meeting"},
-              {v:"event",   t:"🎪 Event"},
-            ];
-            return opts.map(o => `<label class="cb-chip"><input type="checkbox" data-channel="${o.v}" ${cur.includes(o.v)?'checked':''}/>${o.t}</label>`).join("");
-          })()}
+    </div>` : '';
+
+  document.getElementById("lo-compose").innerHTML = `
+    <input type="hidden" id="ol-id" value="${e.id}"/>
+    <input type="hidden" id="ol-entity" value="${entityId}"/>
+    <input type="hidden" id="ol-channel" value="${activeChan}"/>
+
+    <div class="lo-ai">
+      <div class="lo-ai-icon">✦</div>
+      <div class="lo-ai-text">
+        <div class="lo-ai-h">Draft with AI</div>
+        <div class="lo-ai-p">${AI_ENABLED
+          ? `Fill <b>Subject</b> + <b>Body</b> using <b>${escape(entity.name)}</b>'s profile + the recommended H-FARM College offering.`
+          : `<b>Coming soon</b> — awaiting admin to configure the Gemini key.`}</div>
+      </div>
+      <button type="button" class="lo-ai-btn" id="ai-draft-btn" onclick="aiDraftOutreach('${entityId}')" ${AI_ENABLED ? '' : 'disabled'}>${AI_ENABLED ? 'Generate draft' : 'Soon'}</button>
+    </div>
+
+    <div class="lo-row two">
+      ${templateDropdown || '<div></div>'}
+      <div class="lo-field">
+        <div class="lo-lbl-row">
+          <span class="lo-lbl">Recipient</span>
+          <span class="lo-lbl-hint" id="lo-recipient-hint">From contacts on file</span>
         </div>
-      </label>
-    </div>
-    <div class="form-row">
-      <label>Status
-        <select id="ol-status">
-          <option value="draft" ${e.status==="draft"?"selected":""}>Draft</option>
-          <option value="sent" ${e.status==="sent"?"selected":""}>Sent</option>
-          <option value="replied" ${e.status==="replied"?"selected":""}>Replied</option>
-          <option value="bounced" ${e.status==="bounced"?"selected":""}>Bounced</option>
-        </select>
-      </label>
-      <label>Sender team
-        <select id="ol-team">${teamOpts}</select>
-      </label>
-    </div>
-    <div class="form-row single">
-      <label>Subject <input type="text" id="ol-subject" value="${escape(e.subject)}" placeholder="H-FARM College × ${escape(entity.name)} — partnership opportunity"/></label>
-    </div>
-    <div class="form-row">
-      <label>Recipient (from contact list)
-        <select id="ol-contact">
-          <option value="">— custom —</option>
+        <select id="ol-contact" class="lo-input lo-select">
+          <option value="">— Custom —</option>
           ${contactOpts}
         </select>
-      </label>
-      <label>Or type name <input type="text" id="ol-recipient-name" value="${escape(e.recipientName)}" placeholder="Provost / Dean / etc."/></label>
+      </div>
     </div>
-    <div class="form-row single">
-      <label>Recipient email <input type="email" id="ol-recipient-email" value="${escape(e.recipientEmail)}" placeholder="name@university.edu"/></label>
+
+    <div class="lo-field">
+      <span class="lo-lbl">Subject</span>
+      <input type="text" id="ol-subject" class="lo-input" value="${escape(e.subject)}" placeholder="H-FARM College × ${escape(entity.name)} — partnership opportunity"/>
     </div>
-    <div class="form-row single">
-      <label>Programs mentioned (multi-select)
-        <div class="program-grid" id="ol-programs">${progGrid}</div>
-      </label>
+
+    <div class="lo-field">
+      <div class="lo-lbl-row">
+        <span class="lo-lbl">Body</span>
+        <span class="lo-lbl-hint" id="lo-sender-line">${(() => {
+          const senderName = getDisplayName();
+          const senderEmail = getUserEmail();
+          return senderName || senderEmail
+            ? `Sending as <b style="color:var(--ink)">${escape(senderName || "—")}</b>${senderEmail ? ` · <span class="lo-foot-mono">${escape(senderEmail)}</span>` : ""}`
+            : `<b style="color:var(--hf-red)">No identity claimed</b> — edits log as Anonymous`;
+        })()}</span>
+      </div>
+      <textarea id="ol-body" class="lo-input lo-textarea" placeholder="Dear [Name],&#10;&#10;We are reaching out from H-FARM College, based at our innovation campus near Treviso, Italy…">${escape(e.body)}</textarea>
     </div>
-    <div class="form-row single">
-      <label>Email body / notes
-        <textarea id="ol-body" placeholder="Dear [Name],\n\nWe are reaching out from H-FARM College, based at our innovation campus near Treviso, Italy...">${escape(e.body)}</textarea>
-      </label>
-    </div>
-    ${(() => {
-      const senderName = getDisplayName();
-      const senderEmail = getUserEmail();
-      if (!senderName && !senderEmail) {
-        return `<div class="sender-line sender-warn">
-          You haven't claimed an identity yet — edits will log as Anonymous.
-          <button type="button" class="sender-link" onclick="showIdentityPicker()">Pick from roster →</button>
-        </div>`;
-      }
-      return `<div class="sender-line">
-        <span class="sender-tag">Sending as</span>
-        <b>${escape(senderName || "Anonymous")}</b>${senderEmail ? ` <span class="sender-email">⟨${escape(senderEmail)}⟩</span>` : ""}
-      </div>`;
-    })()}
-    <div class="form-foot">
-      <button class="cancel" type="button" onclick="closeOutreachForm()">Cancel</button>
-      <button class="save secondary" type="button" onclick="submitOutreachFormAndMailto()" title="Save the log entry AND open your mail client with the subject + body + recipient pre-filled">📧 Save + open in mail client</button>
-      <button class="save"   type="button" onclick="submitOutreachForm()">${existing ? 'Save changes' : 'Log outreach'}</button>
+
+    <!-- Hidden recipient name + email — pre-filled when contact is picked,
+         submitted with the entry. Hidden because the design surfaces
+         "Recipient" via a single dropdown above. Plain inputs would
+         duplicate that affordance. -->
+    <input type="hidden" id="ol-recipient-name" value="${escape(e.recipientName)}"/>
+    <input type="hidden" id="ol-recipient-email" value="${escape(e.recipientEmail)}"/>
+
+    <div class="lo-field">
+      <div class="lo-lbl-row">
+        <span class="lo-lbl">Programmes mentioned</span>
+        <span class="lo-lbl-hint" id="lo-prog-count">${e.programs.length} selected</span>
+      </div>
+      <div class="lo-chips-wrap">${chipsGrid}</div>
     </div>
   `;
 
-  // Wire contact dropdown to autofill name+email
-  document.getElementById("ol-contact").addEventListener("change", function(){
+  // === META SIDEBAR ====================================================
+  const teamOpts = TEAMS.map(t => `<option value="${t.id}" ${e.senderTeamId === t.id ? 'selected' : ''}>${escape(t.name)}</option>`).join("");
+  const collab = recommendCollabFormat(entity);
+  const topProg = PROG_BY_ID[entity.top_program_id];
+  const recName = topProg ? topProg.name : (collab && collab.name) || "—";
+  const recBody = (collab && collab.ideal) || "Closest fit for this partner profile.";
+
+  // Quick attach — first 3 BROCHURES with a URL
+  const brochuresWithUrl = (BROCHURES || []).filter(b => b.url);
+  const quickAttachList = brochuresWithUrl.slice(0, 4).map(b => {
+    const safeTitle = escape(b.title || "Brochure");
+    const tagShort = (b.tag || "PDF").slice(0, 4);
+    return `<button type="button" class="lo-quick" onclick="loAttachBrochure('${escape(b.title || "")}', '${escape(b.url)}')" title="Insert link into body">
+      <span class="lo-quick-tag">${escape(tagShort)}</span>
+      <span class="lo-quick-name">${safeTitle}</span>
+      <span class="lo-quick-arrow">+</span>
+    </button>`;
+  }).join("");
+
+  document.getElementById("lo-meta").innerHTML = `
+    <div class="lo-meta-sec">
+      <div class="lo-meta-title">Logging</div>
+      <div class="lo-field small">
+        <span class="lo-lbl">Date</span>
+        <input type="date" id="ol-date" class="lo-input" value="${e.date}"/>
+      </div>
+      <div class="lo-field small">
+        <span class="lo-lbl">Status</span>
+        <select id="ol-status" class="lo-input lo-select">
+          <option value="draft"   ${e.status==="draft"  ?"selected":""}>Draft</option>
+          <option value="sent"    ${e.status==="sent"   ?"selected":""}>Sent</option>
+          <option value="replied" ${e.status==="replied"?"selected":""}>Replied</option>
+          <option value="bounced" ${e.status==="bounced"?"selected":""}>Bounced</option>
+        </select>
+      </div>
+      <div class="lo-field small">
+        <span class="lo-lbl">Sender team</span>
+        <select id="ol-team" class="lo-input lo-select">${teamOpts}</select>
+      </div>
+    </div>
+
+    <div class="lo-meta-sec">
+      <div class="lo-meta-title">Recommended format</div>
+      <div class="lo-rec">
+        <div class="lo-rec-pill"><span class="lo-rec-star">★</span>${escape(recName)}</div>
+        <div class="lo-rec-p">${escape(recBody)}</div>
+        <button type="button" class="lo-rec-cta" onclick="loMentionInBody()">+ Mention in body</button>
+      </div>
+    </div>
+
+    ${brochuresWithUrl.length ? `<div class="lo-meta-sec">
+      <div class="lo-meta-title">Quick attach</div>
+      <div class="lo-quick-list">${quickAttachList}</div>
+    </div>` : ''}
+  `;
+
+  // === FOOTER ==========================================================
+  const senderNameF = getDisplayName();
+  const senderEmailF = getUserEmail();
+  const footMeta = (senderNameF || senderEmailF)
+    ? `Sending as <b>${escape(senderNameF || "Anonymous")}</b>${senderEmailF ? ` <span class="lo-foot-dot">·</span> <span class="lo-foot-mono">${escape(senderEmailF)}</span>` : ""}`
+    : `<span class="lo-sender-warn" style="padding:0;background:none;border:none;color:var(--hf-red);font-size:11px"><b>No identity claimed</b> — edits log as Anonymous <button type="button" onclick="showIdentityPicker()">Pick from roster →</button></span>`;
+  document.getElementById("lo-foot").innerHTML = `
+    <div class="lo-foot-meta">${footMeta}</div>
+    <div class="lo-foot-actions">
+      <button type="button" class="lo-btn ghost" onclick="closeOutreachForm()">Cancel</button>
+      <button type="button" class="lo-btn ghost" onclick="(function(){var s=document.getElementById('ol-status');if(s)s.value='draft';submitOutreachForm();})()">Save draft</button>
+      <button type="button" class="lo-btn ink" onclick="submitOutreachFormAndMailto()" title="Save the log entry AND open your mail client with the subject + body + recipient pre-filled">Save + open mail</button>
+      <button type="button" class="lo-btn primary" onclick="submitOutreachForm()">${existing ? 'Save changes' : 'Log outreach'}</button>
+    </div>`;
+
+  // Wire contact dropdown: pick → fill hidden recipient fields + label hint
+  document.getElementById("ol-contact").addEventListener("change", function() {
     const idx = this.value;
-    if (idx === "") return;
+    const hintEl = document.getElementById("lo-recipient-hint");
+    if (idx === "") {
+      // custom — leave existing values, hint shows "type below"
+      if (hintEl) hintEl.textContent = "Type recipient name + email below";
+      return;
+    }
     const c = entity.contacts[parseInt(idx, 10)];
     if (c) {
-      document.getElementById("ol-recipient-name").value  = c.name || "";
+      document.getElementById("ol-recipient-name").value  = c.name  || "";
       document.getElementById("ol-recipient-email").value = c.email || "";
+      if (hintEl) hintEl.innerHTML = c.email ? `<span class="lo-foot-mono">${escape(c.email)}</span>` : "—";
     }
   });
+  // Initial hint reflects pre-selected contact
+  (function() {
+    const sel = document.getElementById("ol-contact");
+    const hintEl = document.getElementById("lo-recipient-hint");
+    if (sel && hintEl && sel.value !== "") {
+      const c = entity.contacts[parseInt(sel.value, 10)];
+      if (c && c.email) hintEl.innerHTML = `<span class="lo-foot-mono">${escape(c.email)}</span>`;
+    }
+  })();
 
   document.getElementById("outreach-modal").classList.add("open");
+}
+
+// --- LO modal helpers ----------------------------------------------------
+
+// Single-select channel: flip the active tab styling + update hidden input.
+function loSwitchChannel(ch) {
+  const valid = ["email", "call", "meeting", "event"];
+  if (!valid.includes(ch)) return;
+  document.querySelectorAll(".lo-ch").forEach(b => {
+    b.classList.toggle("on", b.dataset.ch === ch);
+  });
+  const hidden = document.getElementById("ol-channel");
+  if (hidden) hidden.value = ch;
+}
+
+// Toggle a program chip + keep the "N selected" hint in sync.
+function loToggleProgChip(progId, btn) {
+  btn.classList.toggle("on");
+  const n = document.querySelectorAll(".lo-chip.on").length;
+  const hint = document.getElementById("lo-prog-count");
+  if (hint) hint.textContent = `${n} selected`;
+}
+
+// "Mention in body" — append a sentence about the recommended format
+// just before the sign-off, or to the end if no sign-off pattern matches.
+function loMentionInBody() {
+  const entityId = document.getElementById("ol-entity").value;
+  const entity = UNIS.find(u => u.id === entityId);
+  if (!entity) return;
+  const topProg = PROG_BY_ID[entity.top_program_id];
+  const collab  = recommendCollabFormat(entity);
+  const recName = topProg ? topProg.name : (collab && collab.name) || "";
+  if (!recName) return;
+  const sentence = `In particular, our ${recName} programme looks like a strong fit for ${entity.name}.`;
+  const ta = document.getElementById("ol-body");
+  if (!ta) return;
+  let body = ta.value || "";
+  // Try to slip it in before a "Best regards" / "Kind regards" / "Sincerely"
+  // line so the email stays grammatically coherent.
+  const signoffRe = /\n\s*(Best regards|Kind regards|Sincerely|Best,|Cheers,|Regards,)/i;
+  if (signoffRe.test(body)) {
+    body = body.replace(signoffRe, `\n\n${sentence}$&`);
+  } else if (body.trim().length) {
+    body = body.trimEnd() + "\n\n" + sentence + "\n";
+  } else {
+    body = sentence + "\n";
+  }
+  ta.value = body;
+  ta.focus();
+  // Cursor at the inserted sentence
+  const idx = body.indexOf(sentence);
+  if (idx >= 0) ta.setSelectionRange(idx + sentence.length, idx + sentence.length);
+  // Auto-toggle the matching program chip so it gets logged with the entry
+  if (topProg) {
+    const chip = document.querySelector(`.lo-chip[data-prog="${topProg.id}"]`);
+    if (chip && !chip.classList.contains("on")) loToggleProgChip(topProg.id, chip);
+  }
+}
+
+// "Quick attach" — append a brochure title + link as a markdown-ish line
+// inside the body. No backend attachment column needed — the recipient
+// can click the link in their email client.
+function loAttachBrochure(title, url) {
+  const ta = document.getElementById("ol-body");
+  if (!ta || !url) return;
+  const line = `📎 ${title}: ${url}`;
+  let body = ta.value || "";
+  // De-dupe: don't add the same line twice
+  if (body.includes(url)) {
+    ta.focus();
+    return;
+  }
+  // Slip in before the sign-off, same logic as mention-in-body
+  const signoffRe = /\n\s*(Best regards|Kind regards|Sincerely|Best,|Cheers,|Regards,)/i;
+  if (signoffRe.test(body)) {
+    body = body.replace(signoffRe, `\n\n${line}$&`);
+  } else if (body.trim().length) {
+    body = body.trimEnd() + "\n\n" + line + "\n";
+  } else {
+    body = line + "\n";
+  }
+  ta.value = body;
+  ta.focus();
 }
 
 function closeOutreachForm() {
@@ -10916,13 +11240,23 @@ async function aiDraftOutreach(entityId) {
 function _collectOutreachEntry() {
   const id        = document.getElementById("ol-id").value;
   const entityId  = document.getElementById("ol-entity").value;
-  const programs  = [...document.querySelectorAll("#ol-programs input[type=checkbox]:checked")].map(i => i.dataset.prog);
-  const channels = [...document.querySelectorAll("#ol-channels-group input[type=checkbox]:checked")].map(i => i.dataset.channel);
+  // Programs come from the lo-chip toggle buttons (new layout). Fall back to
+  // the legacy #ol-programs checkbox grid if a third party still calls this
+  // before the new render finishes.
+  let programs    = [...document.querySelectorAll(".lo-chip.on[data-prog]")].map(b => b.dataset.prog);
+  if (!programs.length) {
+    programs = [...document.querySelectorAll("#ol-programs input[type=checkbox]:checked")].map(i => i.dataset.prog);
+  }
+  // Channel is single-select in the redesigned UI — hidden input mirrors the
+  // active tab. We still write `channels: [val]` so downstream readers
+  // (PDF export, sheets writeback) see the same array shape they always have.
+  const chanEl = document.getElementById("ol-channel");
+  const activeChan = chanEl ? chanEl.value : "email";
   return {
     id, entityId,
     date:           document.getElementById("ol-date").value,
-    channels:       channels,
-    channel:        channels[0] || "email",   // legacy single-channel field kept for backward compat
+    channels:       activeChan ? [activeChan] : ["email"],
+    channel:        activeChan || "email",   // legacy single-channel field kept for backward compat
     status:         document.getElementById("ol-status").value,
     senderTeamId:   document.getElementById("ol-team").value,
     senderName:     getDisplayName() || "",
