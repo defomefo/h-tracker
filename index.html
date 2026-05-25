@@ -71,7 +71,9 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .nav-group.open .nav-item-parent .nav-chev{transform:rotate(180deg)}
 .nav-sub{max-height:0;overflow:hidden;transition:max-height var(--motion-base,240ms) var(--ease-elegant,ease);background:rgba(0,0,0,.18)}
 .nav-group.open .nav-sub{max-height:240px}
-.nav-subitem{display:flex;align-items:center;padding:7px 22px 7px 53px;background:none;border:none;color:rgba(255,255,255,.7);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:left;letter-spacing:.2px;transition:background .12s,color .12s;width:100%;border-left:3px solid transparent}
+.nav-subitem{display:flex;align-items:center;gap:9px;padding:7px 22px 7px 53px;background:none;border:none;color:rgba(255,255,255,.7);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:left;letter-spacing:.2px;transition:background .12s,color .12s;width:100%;border-left:3px solid transparent}
+.nav-subitem-with-icon{padding-left:32px}    /* less indent when icon present, so icon sits below the parent icon column */
+.nav-sub-icon{width:14px;height:14px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;opacity:.78}
 .nav-subitem:hover{background:rgba(255,255,255,.08);color:#fff}
 .nav-subitem.active{background:rgba(217,83,79,.16);color:var(--gold);border-left-color:var(--gold);font-weight:700}
 .nav-subitem-divider{border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:9px}
@@ -1037,8 +1039,11 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .funnel-bar{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding:0 12px;color:#fff;font-weight:800;font-size:14px;min-width:40px;box-shadow:0 1px 3px rgba(0,0,0,.1);transition:width .4s}
 
 /* FUNNEL DIAGNOSTIC VIEW (new) */
-.fd-shell{padding:24px 28px 60px;max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-.fd-banner{background:var(--brand-navy);color:#fff;padding:18px 24px;border-radius:8px;margin-bottom:6px;border-bottom:3px solid var(--hf-red)}
+.fd-shell{padding:0 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+/* The navy banner sits flush with the unified-tab strip's underline above
+   it. Square top corners (no top radius) so the join reads as one
+   continuous surface. */
+.fd-banner{background:var(--brand-navy);color:#fff;padding:20px 28px;border-radius:0 0 8px 8px;margin-bottom:6px;border-bottom:3px solid var(--hf-red)}
 .fd-banner-tag{font-size:10px;letter-spacing:1.5px;color:var(--hf-red);font-weight:700;margin-bottom:4px;text-transform:uppercase}
 .fd-banner-h{font-size:20px;font-weight:600;letter-spacing:-.2px;line-height:1.3}
 .fd-banner-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:6px;font-style:italic}
@@ -1130,10 +1135,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .sm-chart-svg{display:block;width:100%;height:auto;max-width:760px;margin:0 auto;font-family:inherit}
 .sm-chart-svg .sm-axis-line{stroke:var(--ink);stroke-width:1.5;stroke-linecap:square}
 .sm-chart-svg .sm-mid-line{stroke:var(--rule);stroke-width:1;stroke-dasharray:4,4}
-.sm-chart-svg .sm-axis-label{font-size:11px;font-weight:700;letter-spacing:1.2px;fill:var(--navy);text-transform:uppercase}
-.sm-chart-svg .sm-axis-end{font-size:10px;fill:var(--ink-soft);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
-.sm-chart-svg .sm-quad-label{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;fill:var(--ink-soft)}
-.sm-chart-svg .sm-quad-label.hero{fill:var(--hf-red)}
+.sm-chart-svg .sm-axis-label{font-size:11px;font-weight:700;letter-spacing:1.2px;fill:var(--navy);text-transform:uppercase;paint-order:stroke;stroke:#FAFAF5;stroke-width:3px;stroke-linejoin:round}
+.sm-chart-svg .sm-axis-end{font-size:10px;fill:var(--ink-soft);font-weight:600;letter-spacing:.3px;text-transform:uppercase;paint-order:stroke;stroke:#FAFAF5;stroke-width:3px;stroke-linejoin:round}
+.sm-chart-svg .sm-quad-label{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;fill:var(--ink-soft);paint-order:stroke;stroke:#FAFAF5;stroke-width:3.5px;stroke-linejoin:round}
+.sm-chart-svg .sm-quad-label.hero{fill:var(--hf-red);stroke-width:4px}
 .sm-chart-svg .sm-quad-bg{opacity:.5}
 .sm-chart-svg .sm-bubble{cursor:grab;transition:r .12s ease, stroke-width .12s ease}
 .sm-chart-svg .sm-bubble:hover{stroke:var(--ink);stroke-width:2}
@@ -1170,7 +1175,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .sm-chart-svg-3d .sm-3d-axis-x{stroke:var(--ink)}
 .sm-chart-svg-3d .sm-3d-axis-z{stroke:var(--hf-red);stroke-width:2}
 .sm-chart-svg-3d .sm-3d-axis-y{stroke:var(--ink);stroke-width:1.6;stroke-dasharray:2,3}
-.sm-chart-svg-3d .sm-3d-axis-label{font-size:11px;font-weight:700;fill:var(--ink-soft);letter-spacing:.4px;text-transform:uppercase}
+.sm-chart-svg-3d .sm-3d-axis-label{font-size:11px;font-weight:700;fill:var(--ink-soft);letter-spacing:.4px;text-transform:uppercase;paint-order:stroke;stroke:#FAFAF5;stroke-width:3px;stroke-linejoin:round}
 .sm-chart-svg-3d .sm-3d-axis-label-z{fill:var(--hf-red);font-weight:800}
 .sm-chart-svg-3d .sm-3d-axis-label-y{fill:var(--ink)}
 .sm-chart-svg-3d .sm-3d-floor-label{
@@ -2739,7 +2744,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
           <button class="nav-subitem" data-sub="effortFit" onclick="navStrategyAxis('effortFit', event)" title="Effort × Fit — Quick Wins vs Strategic Bets vs Easy Passes vs Don't Bother">Effort × Fit</button>
           <button class="nav-subitem" data-sub="reachReadiness" onclick="navStrategyAxis('reachReadiness', event)" title="Reach × Readiness — how far the partner is from us vs how ready they are to engage">Reach × Readiness</button>
           <button class="nav-subitem" data-sub="costRoi" onclick="navStrategyAxis('costRoi', event)" title="Cost × ROI — cost to land vs payoff if landed">Cost × ROI</button>
-          <button class="nav-subitem nav-subitem-divider" data-sub="funnel" onclick="navStrategyFunnel(event)" title="Pipeline conversion funnel + Monte Carlo 90-day signing forecast">Funnel &amp; forecast</button>
+          <button class="nav-subitem nav-subitem-divider nav-subitem-with-icon" data-sub="funnel" onclick="navStrategyFunnel(event)" title="Pipeline conversion funnel + Monte Carlo 90-day signing forecast"><svg class="nav-sub-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Funnel &amp; forecast</button>
         </div>
       </div>
       <button class="nav-item" data-view="database" onclick="switchView('database')" title="Full sortable table — search by name, country, priority, tier, focus">
@@ -11222,7 +11227,9 @@ function renderFunnelView() {
   // Same unified tab strip as Strategic Maps — Funnel is now a sister
   // tab under the Strategy umbrella, not a standalone sidebar item.
   // Clicking an axis tab here jumps back to Strategic Maps view.
-  html += `<div class="sm-shell" style="margin-bottom:14px">${_renderUnifiedStrategyTabs("funnel")}</div>`;
+  // No margin between tabs and the navy banner — banner sits flush with
+  // the tab-strip underline (square top corners on .fd-banner do the join).
+  html += `<div class="sm-shell" style="margin-bottom:0;padding-bottom:0">${_renderUnifiedStrategyTabs("funnel")}</div>`;
   html += `<div class="fd-shell">`;
 
   // ===== Banner =====
@@ -12048,10 +12055,17 @@ function renderStrategicView() {
     html += `<line class="sm-3d-axis sm-3d-axis-z" x1="${axisZ1.sx.toFixed(1)}" y1="${axisZ1.sy.toFixed(1)}" x2="${axisZ2.sx.toFixed(1)}" y2="${axisZ2.sy.toFixed(1)}"/>`;
     html += `<line class="sm-3d-axis sm-3d-axis-y" x1="${axisY1.sx.toFixed(1)}" y1="${axisY1.sy.toFixed(1)}" x2="${axisY2.sx.toFixed(1)}" y2="${axisY2.sy.toFixed(1)}"/>`;
 
-    // Axis labels
-    html += `<text class="sm-3d-axis-label" x="${axisX2.sx + 6}" y="${axisX2.sy + 16}">${escape(ax.xLabel)} →</text>`;
-    html += `<text class="sm-3d-axis-label sm-3d-axis-label-z" x="${axisZ2.sx - 4}" y="${axisZ2.sy - 6}" text-anchor="end">${escape("Engagement depth →")}</text>`;
-    html += `<text class="sm-3d-axis-label sm-3d-axis-label-y" x="${axisY2.sx - 8}" y="${axisY2.sy - 4}" text-anchor="end">↑ ${escape(ax.yLabel)}</text>`;
+    // Axis labels — placed at the MIDPOINT of each axis (not at the end
+    // corners) so they don't collide with the corner quadrant labels.
+    // Previously "Engagement depth" and "QUICK WINS" both ended up
+    // anchored at the back-left corner → unreadable overlap; same with
+    // "Effort to land →" and "DON'T BOTHER" at the front-right corner.
+    const axisXMid = project(50, 0, 0);
+    const axisZMid = project(0,  0, 50);
+    const axisYMid = project(0, 50, 0);
+    html += `<text class="sm-3d-axis-label" x="${axisXMid.sx.toFixed(1)}" y="${(axisXMid.sy + 30).toFixed(1)}" text-anchor="middle">${escape(ax.xLabel)} →</text>`;
+    html += `<text class="sm-3d-axis-label sm-3d-axis-label-z" x="${(axisZMid.sx - 16).toFixed(1)}" y="${(axisZMid.sy + 4).toFixed(1)}" text-anchor="end">${escape("Engagement depth →")}</text>`;
+    html += `<text class="sm-3d-axis-label sm-3d-axis-label-y" transform="translate(${(axisYMid.sx - 18).toFixed(1)},${axisYMid.sy.toFixed(1)}) rotate(-90)" text-anchor="middle">↑ ${escape(ax.yLabel)}</text>`;
 
     // Quadrant labels — anchored just OUTSIDE each floor corner so they don't
     // collide with the tower bases sitting on the floor. The 15-units-inward
