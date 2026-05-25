@@ -881,15 +881,20 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .lo-head-left{min-width:0;flex:1}
 .lo-eyebrow{font-size:9px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:7px}
 .lo-entity{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.lo-iso{display:inline-flex;width:32px;height:32px;border-radius:5px;background:var(--ink-mute);color:#fff;align-items:center;justify-content:center;font-family:'Consolas',monospace;font-weight:800;font-size:11px;letter-spacing:.5px;flex-shrink:0;overflow:hidden}
-.lo-iso img{width:100%;height:100%;object-fit:cover}
-.lo-iso-critical{background:#8B1A1A}
-.lo-iso-hot{background:#D9534F}
-.lo-iso-warm{background:#E0A93B;color:var(--ink)}
-.lo-iso-cold{background:#4A6B8A}
-.lo-iso-ur{background:#2E7D5B}
-.lo-iso-cs{background:#8E9AAB}
-.lo-iso-ni{background:#6E6E6E}
+/* ISO/flag chip — rectangular (matches flagcdn 4:3 aspect) so flags don't
+   get cropped weirdly. When a flag image is present we lose the
+   priority-tint background (the flag IS the visual); for plain text ISO
+   the background stays dark with the priority tint as a colored frame. */
+.lo-iso{display:inline-flex;width:36px;height:26px;border-radius:4px;background:var(--ink-mute);color:#fff;align-items:center;justify-content:center;font-family:'Consolas',monospace;font-weight:800;font-size:10px;letter-spacing:.4px;flex-shrink:0;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}
+.lo-iso img{display:block;width:100%;height:100%;object-fit:cover}
+.lo-iso.lo-iso-flag{background:#000;padding:0}
+.lo-iso-critical:not(.lo-iso-flag){background:#8B1A1A}
+.lo-iso-hot:not(.lo-iso-flag){background:#D9534F}
+.lo-iso-warm:not(.lo-iso-flag){background:#E0A93B;color:var(--ink)}
+.lo-iso-cold:not(.lo-iso-flag){background:#4A6B8A}
+.lo-iso-ur:not(.lo-iso-flag){background:#2E7D5B}
+.lo-iso-cs:not(.lo-iso-flag){background:#8E9AAB}
+.lo-iso-ni:not(.lo-iso-flag){background:#6E6E6E}
 .lo-name{font-size:18px;font-weight:800;letter-spacing:-.3px;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .lo-pri{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:3px 9px;border-radius:10px;text-transform:uppercase}
 .lo-pri-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
@@ -913,6 +918,20 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .lo-ch.disabled{color:var(--ink-mute);cursor:not-allowed}
 .lo-ch.disabled:hover{color:var(--ink-mute)}
 .lo-ch svg{color:inherit;width:15px;height:15px}
+
+/* Per-channel show/hide. Driven by data-channel on .lo-modal — single
+   source of truth flipped by loSwitchChannel(). Default everything is
+   visible; mark an element with `lo-not-X` for every channel where it
+   should be hidden. AI banner = lo-not-call lo-not-meeting lo-not-event */
+.lo-modal[data-channel="email"]   .lo-not-email,
+.lo-modal[data-channel="call"]    .lo-not-call,
+.lo-modal[data-channel="meeting"] .lo-not-meeting,
+.lo-modal[data-channel="event"]   .lo-not-event{display:none !important}
+
+/* Error / status banner inside AI section (replaces the old .ai-draft-error
+   div the original handler inserted dynamically) */
+.lo-ai-status{padding:8px 12px;background:#FBEAEA;border:1px solid #F2C9C9;border-radius:6px;font-size:11px;color:#B0322E;line-height:1.5;margin-top:8px;display:none}
+.lo-ai-status.show{display:block}
 
 /* Body — 2 col grid */
 .lo-body{flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:1fr 320px}
@@ -10476,11 +10495,18 @@ function showOutreachForm(entityId, entryId) {
   // — collapse to a single value (first one) since the new UI is single-select.
   let activeChan = e.channel || (Array.isArray(e.channels) && e.channels[0]) || "email";
 
+  // Set data-channel on the modal shell so per-channel CSS gating activates.
+  const modalShell = document.getElementById("outreach-box");
+  if (modalShell) modalShell.setAttribute("data-channel", activeChan);
+
   // === HEAD ============================================================
   const prioTone = _dpPriorityTone(entity.priority);
   const iso = (typeof _isoForCountry === "function") ? _isoForCountry(entity.country) : null;
+  // When a flag URL resolves, the chip becomes a rectangular flag frame
+  // (no priority tint — flag IS the visual). For unknown countries we
+  // fall back to a 2-letter ISO text on the priority-tinted background.
   const isoChip = iso
-    ? `<span class="lo-iso${prioTone ? ` lo-iso-${prioTone}` : ""}"><img src="https://flagcdn.com/40x30/${iso}.png" alt="${escape(entity.country || "")}" loading="lazy" onerror="this.parentNode.textContent='${iso.toUpperCase()}'"/></span>`
+    ? `<span class="lo-iso lo-iso-flag"><img src="https://flagcdn.com/72x54/${iso}.png" alt="${escape(entity.country || "")}" loading="lazy" onerror="this.parentNode.classList.remove('lo-iso-flag');this.parentNode.textContent='${iso.toUpperCase()}'"/></span>`
     : `<span class="lo-iso${prioTone ? ` lo-iso-${prioTone}` : ""}">${escape((entity.country || "??").slice(0,2).toUpperCase())}</span>`;
   const prioChip = entity.priority
     ? `<span class="lo-pri lo-pri-${prioTone}"><span class="lo-pri-dot"></span>${escape(entity.priority)}</span>`
@@ -10543,27 +10569,40 @@ function showOutreachForm(entityId, entryId) {
       </select>
     </div>` : '';
 
+  // Body placeholder per channel (Email: full template; Call/Meeting/Event:
+  // bullet-y notes). Choose at render time based on the currently active tab.
+  const bodyPlaceholders = {
+    email:   "Dear [Name],&#10;&#10;We are reaching out from H-FARM College, based at our innovation campus near Treviso, Italy…",
+    call:    "Quick summary of what was discussed&#10;• Key takeaways&#10;• Action items&#10;• Next call scheduled?",
+    meeting: "Attendees, agenda, key decisions&#10;• Decisions made&#10;• Action items + owners&#10;• Follow-up date",
+    event:   "What happened at the event&#10;• Who attended from their side&#10;• Topics discussed&#10;• Follow-up plan",
+  };
+
   document.getElementById("lo-compose").innerHTML = `
     <input type="hidden" id="ol-id" value="${e.id}"/>
     <input type="hidden" id="ol-entity" value="${entityId}"/>
     <input type="hidden" id="ol-channel" value="${activeChan}"/>
 
-    <div class="lo-ai">
+    <!-- AI Draft banner — email-only (drafts emails, not call notes) -->
+    <div class="lo-ai lo-not-call lo-not-meeting lo-not-event">
       <div class="lo-ai-icon">✦</div>
       <div class="lo-ai-text">
         <div class="lo-ai-h">Draft with AI</div>
         <div class="lo-ai-p">${AI_ENABLED
           ? `Fill <b>Subject</b> + <b>Body</b> using <b>${escape(entity.name)}</b>'s profile + the recommended H-FARM College offering.`
           : `<b>Coming soon</b> — awaiting admin to configure the Gemini key.`}</div>
+        <div class="lo-ai-status" id="lo-ai-status"></div>
       </div>
       <button type="button" class="lo-ai-btn" id="ai-draft-btn" onclick="aiDraftOutreach('${entityId}')" ${AI_ENABLED ? '' : 'disabled'}>${AI_ENABLED ? 'Generate draft' : 'Soon'}</button>
     </div>
 
     <div class="lo-row two">
-      ${templateDropdown || '<div></div>'}
+      ${templateDropdown
+        ? `<div class="lo-not-call lo-not-meeting lo-not-event">${templateDropdown.replace('<div class="lo-field">', '<div class="lo-field">')}</div>`
+        : '<div></div>'}
       <div class="lo-field">
         <div class="lo-lbl-row">
-          <span class="lo-lbl">Recipient</span>
+          <span class="lo-lbl" id="lo-recipient-lbl">Recipient</span>
           <span class="lo-lbl-hint" id="lo-recipient-hint">From contacts on file</span>
         </div>
         <select id="ol-contact" class="lo-input lo-select">
@@ -10573,14 +10612,36 @@ function showOutreachForm(entityId, entryId) {
       </div>
     </div>
 
+    <!-- Call outcome — call tab only -->
+    <div class="lo-field lo-not-email lo-not-meeting lo-not-event">
+      <span class="lo-lbl">Call outcome</span>
+      <select id="ol-call-outcome" class="lo-input lo-select">
+        <option value="connected">Connected — full conversation</option>
+        <option value="voicemail">Voicemail left</option>
+        <option value="no-answer">No answer</option>
+        <option value="callback">Callback scheduled</option>
+      </select>
+    </div>
+
+    <!-- Meeting type — meeting tab only -->
+    <div class="lo-field lo-not-email lo-not-call lo-not-event">
+      <span class="lo-lbl">Meeting type</span>
+      <select id="ol-meeting-type" class="lo-input lo-select">
+        <option value="in-person">In-person</option>
+        <option value="video">Video call</option>
+        <option value="phone-conf">Phone conference</option>
+        <option value="campus-visit">Campus visit</option>
+      </select>
+    </div>
+
     <div class="lo-field">
-      <span class="lo-lbl">Subject</span>
+      <span class="lo-lbl" id="lo-subject-lbl">Subject</span>
       <input type="text" id="ol-subject" class="lo-input" value="${escape(e.subject)}" placeholder="H-FARM College × ${escape(entity.name)} — partnership opportunity"/>
     </div>
 
     <div class="lo-field">
       <div class="lo-lbl-row">
-        <span class="lo-lbl">Body</span>
+        <span class="lo-lbl" id="lo-body-lbl">Body</span>
         <span class="lo-lbl-hint" id="lo-sender-line">${(() => {
           const senderName = getDisplayName();
           const senderEmail = getUserEmail();
@@ -10589,7 +10650,7 @@ function showOutreachForm(entityId, entryId) {
             : `<b style="color:var(--hf-red)">No identity claimed</b> — edits log as Anonymous`;
         })()}</span>
       </div>
-      <textarea id="ol-body" class="lo-input lo-textarea" placeholder="Dear [Name],&#10;&#10;We are reaching out from H-FARM College, based at our innovation campus near Treviso, Italy…">${escape(e.body)}</textarea>
+      <textarea id="ol-body" class="lo-input lo-textarea" placeholder="${bodyPlaceholders[activeChan] || bodyPlaceholders.email}">${escape(e.body)}</textarea>
     </div>
 
     <!-- Hidden recipient name + email — pre-filled when contact is picked,
@@ -10649,7 +10710,7 @@ function showOutreachForm(entityId, entryId) {
       </div>
     </div>
 
-    <div class="lo-meta-sec">
+    <div class="lo-meta-sec lo-not-call lo-not-meeting lo-not-event">
       <div class="lo-meta-title">Recommended format</div>
       <div class="lo-rec">
         <div class="lo-rec-pill"><span class="lo-rec-star">★</span>${escape(recName)}</div>
@@ -10658,10 +10719,18 @@ function showOutreachForm(entityId, entryId) {
       </div>
     </div>
 
-    ${brochuresWithUrl.length ? `<div class="lo-meta-sec">
+    ${brochuresWithUrl.length ? `<div class="lo-meta-sec lo-not-call lo-not-meeting lo-not-event">
       <div class="lo-meta-title">Quick attach</div>
       <div class="lo-quick-list">${quickAttachList}</div>
     </div>` : ''}
+
+    <!-- Channel-specific hint shown ONLY for non-email tabs -->
+    <div class="lo-meta-sec lo-not-email">
+      <div class="lo-meta-title">Logging tip</div>
+      <div class="lo-rec">
+        <div class="lo-rec-p"><b style="color:var(--ink)" id="lo-tip-h">Capture every detail.</b><br><span id="lo-tip-body">A clean note now is what the next teammate reading this entity's timeline 6 months from now will rely on.</span></div>
+      </div>
+    </div>
   `;
 
   // === FOOTER ==========================================================
@@ -10705,12 +10774,20 @@ function showOutreachForm(entityId, entryId) {
     }
   })();
 
+  // Apply labels / placeholders / footer for the active channel so the
+  // initial render of a non-email entry doesn't show "Subject" + "Body"
+  // before the user touches the tabs.
+  loSwitchChannel(activeChan);
+
   document.getElementById("outreach-modal").classList.add("open");
 }
 
 // --- LO modal helpers ----------------------------------------------------
 
-// Single-select channel: flip the active tab styling + update hidden input.
+// Single-select channel: flip the active tab styling, the data-channel
+// attribute on .lo-modal (drives the lo-not-* CSS gating), the hidden
+// channel input, AND the contextual field labels + body placeholder so
+// each tab reads like a purpose-built form, not a relabelled email shell.
 function loSwitchChannel(ch) {
   const valid = ["email", "call", "meeting", "event"];
   if (!valid.includes(ch)) return;
@@ -10719,6 +10796,55 @@ function loSwitchChannel(ch) {
   });
   const hidden = document.getElementById("ol-channel");
   if (hidden) hidden.value = ch;
+  const shell = document.getElementById("outreach-box");
+  if (shell) shell.setAttribute("data-channel", ch);
+  // Per-channel labels
+  const subjLabels = { email: "Subject", call: "Call topic", meeting: "Meeting topic", event: "Event name" };
+  const bodyLabels = { email: "Body",    call: "Call notes", meeting: "Meeting notes", event: "Event notes" };
+  const recipLabels = { email: "Recipient", call: "Person called", meeting: "Primary attendee", event: "Primary contact at event" };
+  const setText = (id, v) => { const el = document.getElementById(id); if (el && v) el.textContent = v; };
+  setText("lo-subject-lbl", subjLabels[ch]);
+  setText("lo-body-lbl",    bodyLabels[ch]);
+  setText("lo-recipient-lbl", recipLabels[ch]);
+  // Body placeholder
+  const bodyPlaceholders = {
+    email:   "Dear [Name],\n\nWe are reaching out from H-FARM College, based at our innovation campus near Treviso, Italy…",
+    call:    "Quick summary of what was discussed\n• Key takeaways\n• Action items\n• Next call scheduled?",
+    meeting: "Attendees, agenda, key decisions\n• Decisions made\n• Action items + owners\n• Follow-up date",
+    event:   "What happened at the event\n• Who attended from their side\n• Topics discussed\n• Follow-up plan",
+  };
+  const bodyEl = document.getElementById("ol-body");
+  if (bodyEl) bodyEl.placeholder = bodyPlaceholders[ch];
+  // Subject placeholder
+  const subjPlaceholders = {
+    email:   "H-FARM College × {entity} — partnership opportunity",
+    call:    "Re: Next steps on partnership discussion",
+    meeting: "Q1 roadmap review · H-FARM College × {entity}",
+    event:   "Conference / fair / open day name",
+  };
+  const subjEl = document.getElementById("ol-subject");
+  if (subjEl) {
+    const ent = (document.querySelector(".lo-name") || {}).textContent || "—";
+    subjEl.placeholder = subjPlaceholders[ch].replace("{entity}", ent);
+  }
+  // Footer primary action button label — "Log outreach" for email,
+  // "Log call" / "Log meeting" / "Log event" for the rest
+  const footPrimary = document.querySelector(".lo-foot-actions .lo-btn.primary");
+  if (footPrimary && /^(Log|Save)/.test(footPrimary.textContent)) {
+    const isEdit = footPrimary.textContent.startsWith("Save");
+    if (!isEdit) footPrimary.textContent = ch === "email" ? "Log outreach" : `Log ${ch}`;
+  }
+  // "Save + open mail" is only meaningful for email — hide it otherwise
+  const mailBtn = document.querySelector(".lo-foot-actions .lo-btn.ink");
+  if (mailBtn) mailBtn.style.display = (ch === "email") ? "" : "none";
+  // Channel-specific logging tip body (right sidebar)
+  const tipBody = document.getElementById("lo-tip-body");
+  const tipMessages = {
+    call:    "A clean call log now is what the next teammate reading this entity's timeline 6 months from now will rely on. Capture decisions, action items, and the next-call commitment.",
+    meeting: "Use bullets for decisions and action items. Tag owners so follow-ups land in someone's queue, not the void.",
+    event:   "Note who was actually present and any verbal commitments. Conference floors are where Maybes turn into a path forward.",
+  };
+  if (tipBody && tipMessages[ch]) tipBody.textContent = tipMessages[ch];
 }
 
 // Toggle a program chip + keep the "N selected" hint in sync.
@@ -11165,12 +11291,19 @@ async function aiDraftOutreach(entityId) {
     return;
   }
   const btn = document.getElementById("ai-draft-btn");
-  const label = btn.querySelector(".ai-draft-label");
-  const hintEl = btn.parentElement.querySelector(".ai-draft-hint");
+  if (!btn) return;
+  // The button used to wrap an inner .ai-draft-label span (old form). The new
+  // lo-* design uses a plain text button — fall back to the button itself if
+  // the inner span isn't there. Same for the description/error host.
+  const label = btn.querySelector(".ai-draft-label") || btn;
+  const hintEl = document.querySelector(".lo-ai .lo-ai-p")
+              || (btn.parentElement && btn.parentElement.querySelector(".ai-draft-hint"));
+  // Clear any prior error (both old and new shells)
+  document.querySelectorAll(".ai-draft-error, .lo-ai-status").forEach(el => {
+    if (el.classList.contains("lo-ai-status")) el.classList.remove("show");
+    else el.remove();
+  });
   const origLabel = label.textContent;
-  // Clear any prior error
-  const oldErr = btn.parentElement.parentElement.querySelector(".ai-draft-error");
-  if (oldErr) oldErr.remove();
 
   btn.disabled = true;
   btn.classList.add("loading");
@@ -11228,14 +11361,23 @@ async function aiDraftOutreach(entityId) {
 
     document.getElementById("ol-subject").value = data.subject || "";
     document.getElementById("ol-body").value    = data.body    || "";
-    label.textContent = "✨ Re-draft";
-    hintEl.innerHTML = `Drafted with <b>${escape(data.model || "Claude")}</b> · ${data.usage ? (data.usage.input_tokens + data.usage.output_tokens) + " tokens" : ""}. Edit freely before saving.`;
+    label.textContent = "Re-draft";
+    if (hintEl) hintEl.innerHTML = `Drafted with <b>${escape(data.model || "Gemini")}</b> · ${data.usage ? (data.usage.input_tokens + data.usage.output_tokens) + " tokens" : ""}. Edit freely before saving.`;
   } catch (err) {
     label.textContent = origLabel;
-    const errEl = document.createElement("div");
-    errEl.className = "ai-draft-error";
-    errEl.textContent = "AI drafting failed: " + (err.message || err);
-    btn.parentElement.parentElement.insertBefore(errEl, btn.parentElement.nextSibling);
+    // Prefer the new lo-* error banner if present; fall back to old inline div.
+    const statusEl = document.getElementById("lo-ai-status");
+    if (statusEl) {
+      statusEl.textContent = "AI drafting failed: " + (err.message || err);
+      statusEl.classList.add("show");
+    } else {
+      const errEl = document.createElement("div");
+      errEl.className = "ai-draft-error";
+      errEl.textContent = "AI drafting failed: " + (err.message || err);
+      if (btn.parentElement && btn.parentElement.parentElement) {
+        btn.parentElement.parentElement.insertBefore(errEl, btn.parentElement.nextSibling);
+      }
+    }
   } finally {
     btn.disabled = false;
     btn.classList.remove("loading");
@@ -11257,6 +11399,24 @@ function _collectOutreachEntry() {
   // (PDF export, sheets writeback) see the same array shape they always have.
   const chanEl = document.getElementById("ol-channel");
   const activeChan = chanEl ? chanEl.value : "email";
+  // Channel-specific extras — append to body as a small structured prefix
+  // so they survive to PDF / Sheets / timeline without needing a new DB
+  // column. If the user types over the prefix, that's fine — it just stays
+  // a normal note.
+  let body = document.getElementById("ol-body").value;
+  if (activeChan === "call") {
+    const outEl = document.getElementById("ol-call-outcome");
+    const outcome = outEl ? outEl.value : "";
+    const outcomeLabel = { connected: "Connected", voicemail: "Voicemail", "no-answer": "No answer", callback: "Callback scheduled" }[outcome] || "";
+    if (outcomeLabel && !body.startsWith("[")) body = `[Call · ${outcomeLabel}]\n\n${body}`;
+  } else if (activeChan === "meeting") {
+    const typeEl = document.getElementById("ol-meeting-type");
+    const mtype = typeEl ? typeEl.value : "";
+    const mtypeLabel = { "in-person": "In-person", video: "Video call", "phone-conf": "Phone conference", "campus-visit": "Campus visit" }[mtype] || "";
+    if (mtypeLabel && !body.startsWith("[")) body = `[Meeting · ${mtypeLabel}]\n\n${body}`;
+  } else if (activeChan === "event") {
+    if (body && !body.startsWith("[")) body = `[Event]\n\n${body}`;
+  }
   return {
     id, entityId,
     date:           document.getElementById("ol-date").value,
@@ -11269,7 +11429,7 @@ function _collectOutreachEntry() {
     subject:        document.getElementById("ol-subject").value.trim(),
     recipientName:  document.getElementById("ol-recipient-name").value.trim(),
     recipientEmail: document.getElementById("ol-recipient-email").value.trim(),
-    body:           document.getElementById("ol-body").value,
+    body:           body,
     programs:       programs,
     updatedAt:      new Date().toISOString(),
   };
