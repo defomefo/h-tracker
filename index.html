@@ -4214,9 +4214,9 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span class="nav-label">Home</span>
       </button>
-      <button class="nav-item" data-view="globe" onclick="switchView('globe')" title="Interactive globe with country filters + action queue + cards grid">
+      <button class="nav-item" data-view="globe" onclick="switchView('globe')" title="Interactive world map with country filters + action queue + entity cards grid">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-        <span class="nav-label">Globe view</span>
+        <span class="nav-label">Geography</span>
       </button>
       <button class="nav-item" data-view="pipeline" onclick="switchView('pipeline')" title="8-stage kanban — drag entities between stages, daily operational view">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v10"/></svg>
@@ -5385,7 +5385,7 @@ const ONBOARDING_STEPS = [
   {
     target: '.globe-wrap',
     placement: 'left',
-    eyebrow: "Globe view",
+    eyebrow: "Geography",
     title: "Where your partners live",
     body: "3D globe with a dot per entity. <strong>Drag</strong> to rotate, <strong>scroll</strong> to zoom, <strong>click a country</strong> to filter. The pivot table on the right cross-cuts Region × Priority.",
     view: "globe",
@@ -12587,7 +12587,7 @@ function showPriorityDefinitions() {
         <h2>Priority levels</h2>
         <button type="button" class="priority-defs-close" onclick="hidePriorityDefinitions()" aria-label="Close">×</button>
       </div>
-      <p class="priority-defs-sub">What each band means in practice. Click any row to filter the globe view to that priority.</p>
+      <p class="priority-defs-sub">What each band means in practice. Click any row to filter Geography to that priority.</p>
       <div class="priority-defs-list">
         ${Object.entries(PRIORITY_DEFINITIONS).map(([name, desc]) => `
           <button class="priority-defs-row" type="button" onclick="hidePriorityDefinitions();goToGlobeWithPriority(${name === 'Unclassified' ? "''" : "'" + name + "'"})">
@@ -12725,7 +12725,7 @@ function renderHomeView() {
               </div>`;
             }).join("")}</div>`}
         ${remaining > 0 ? `<div class="hke-foot">
-          <button type="button" class="hke-seeall" onclick="goToGlobeWithPriority('${expanded === "" ? "" : escape(expanded)}')">See all ${list.length} in Globe view →</button>
+          <button type="button" class="hke-seeall" onclick="goToGlobeWithPriority('${expanded === "" ? "" : escape(expanded)}')">See all ${list.length} in Geography →</button>
         </div>` : ''}
       </div>`;
   }
