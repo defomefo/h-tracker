@@ -1124,6 +1124,8 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .sm-tab:hover{color:var(--navy);background:var(--paper);border-color:var(--navy)}
 .sm-tab.active{background:var(--hf-red);color:#fff;border-color:var(--hf-red);box-shadow:0 1px 4px rgba(217,83,79,.35)}
 .sm-tab.active:hover{background:var(--hf-red-deep);color:#fff;border-color:var(--hf-red-deep)}
+.sm-tab-icon{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.sm-tab.active .sm-tab-icon{opacity:1}
 .sm-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap}
 .sm-toolbar-info{font-size:11px;color:var(--ink-soft)}
 .sm-toolbar-info b{color:var(--navy);font-weight:700}
@@ -12208,7 +12210,9 @@ function _renderUnifiedStrategyTabs(activeKey) {
     const ov = Object.keys((STRAT_STATE && STRAT_STATE.overrides && STRAT_STATE.overrides[k]) || {}).length;
     return `<button class="sm-tab ${k === activeKey ? 'active' : ''}" onclick="stratSwitchAxis('${k}')">${escape(a.label)}${ov ? ` <span style="background:rgba(255,255,255,.25);padding:1px 6px;border-radius:8px;font-size:9px">${ov}</span>` : ''}</button>`;
   }).join("");
-  const funnelTab = `<button class="sm-tab ${activeKey === 'funnel' ? 'active' : ''}" onclick="switchView('funnel')" title="Conversion funnel · Monte Carlo signing forecast · stage-bottleneck diagnosis">📈 Funnel &amp; forecast</button>`;
+  // Inline funnel SVG icon — same one the sidebar sub-item uses, kept
+  // consistent with the rest of the monoline icon language (no emoji).
+  const funnelTab = `<button class="sm-tab sm-tab-with-icon ${activeKey === 'funnel' ? 'active' : ''}" onclick="switchView('funnel')" title="Conversion funnel · Monte Carlo signing forecast · stage-bottleneck diagnosis"><svg class="sm-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Funnel &amp; forecast</button>`;
   return `<div class="sm-tabs">${axisTabs}${funnelTab}</div>`;
 }
 function stratToggleShowAll() {
