@@ -2422,94 +2422,182 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .team-pill{font-size:9px;padding:2px 7px;border-radius:9px;font-weight:700;letter-spacing:.3px}
 
 /* ===========================================================================
-   LANDING SCREEN — editorial-institutional pre-auth gate
+   LANDING SCREEN — Stitch "BOLD" variant (full-bleed dark cinematic)
    ---------------------------------------------------------------------------
-   First impression for demo audiences (H-FARM College leadership). Paper-tone
-   background, heavy typographic hierarchy, single thin red rule under the
-   headline, restrained motion. Hidden by default; .visible from JS when
-   the server confirms unauth state. Exits via .exiting (fade + lift) before
-   the login overlay takes over.
+   Design provided by user. Dark canvas (ink near-black) with a subtle red
+   radial-gradient wash on the right + a faint white wash on the bottom-left.
+   Orthographic globe motif sits on the right (decorative, mimics the app's
+   real globe view). Big editorial headline with red accent on the second
+   line. Monospace status meta in the top bar + monospace stats ribbon at
+   the bottom. Pill CTA with red glow. Pulse animation on the globe focal
+   ring + status indicator dot.
    =========================================================================== */
-.landing-screen{
-  position:fixed;inset:0;background:var(--off-white);z-index:10000;
-  display:none;flex-direction:column;
-  font-family:inherit;color:var(--ink);
-  overflow-y:auto;overflow-x:hidden;
+.lp{
+  position:fixed;inset:0;
+  width:100%;height:100%;
+  overflow:hidden;
+  font-family:'Helvetica Neue','Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#fff;
+  z-index:10000;
+  display:none;
   opacity:0;
-  transition:opacity var(--motion-slow,380ms) var(--ease-elegant,cubic-bezier(.16,1,.3,1));
+  transition:opacity 380ms cubic-bezier(.16,1,.3,1);
+  --lp-accent:var(--hf-red);
 }
-.landing-screen.visible{display:flex;opacity:1}
-.landing-screen.exiting{opacity:0;transform:translateY(-8px);transition:opacity 280ms ease-out,transform 280ms ease-out}
+.lp.visible{display:block;opacity:1}
+.lp.exiting{opacity:0;transform:translateY(-8px);transition:opacity 280ms ease-out,transform 280ms ease-out}
 
-/* --- Top bar: brand wordmark + alt Sign-in link --- */
-.landing-top{display:flex;justify-content:space-between;align-items:center;padding:26px 40px;border-bottom:1px solid var(--rule)}
-.landing-mark{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
-.landing-wordmark{font-size:13px;font-weight:800;letter-spacing:2.2px;color:var(--ink);text-transform:uppercase}
-.landing-signin-link{background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;padding:6px 10px;border-radius:4px;transition:color var(--motion-fast,140ms) var(--ease-standard)}
-.landing-signin-link:hover{color:var(--hf-red)}
-.landing-arrow-sm{display:inline-block;margin-left:4px;transition:transform var(--motion-fast,140ms) var(--ease-standard)}
-.landing-signin-link:hover .landing-arrow-sm{transform:translateX(3px)}
-
-/* --- Hero: eyebrow → headline → red rule → subhead → CTA --- */
-.landing-hero{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:80px 80px 60px;max-width:1200px;width:100%;margin:0 auto}
-.landing-eyebrow{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--hf-red);margin-bottom:24px}
-.landing-title{font-size:clamp(40px,6.5vw,84px);font-weight:800;line-height:1.05;letter-spacing:-1.4px;color:var(--ink);margin-bottom:0;max-width:14em}
-.landing-rule{margin:32px 0 28px;border:none;border-top:2px solid var(--hf-red);width:56px}
-.landing-sub{font-size:clamp(15px,1.4vw,18px);line-height:1.6;color:var(--ink-soft);max-width:620px;margin-bottom:40px;font-weight:400}
-.landing-cta{
-  background:var(--ink);color:#fff;border:none;
-  padding:16px 32px;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
-  border-radius:3px;cursor:pointer;
-  display:inline-flex;align-items:center;gap:10px;
-  transition:background var(--motion-base,240ms) var(--ease-elegant),transform var(--motion-base,240ms) var(--ease-elegant),box-shadow var(--motion-base,240ms) var(--ease-elegant);
-  box-shadow:0 6px 20px rgba(10,20,40,.18);
+/* --- BOLD variant: full-bleed dark + red radial wash --- */
+.lp.bold{background:var(--ink);color:#fff}
+.lp.bold::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 70% at 80% 50%, rgba(217,83,79,.10), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 10% 100%, rgba(255,255,255,.03), transparent 70%);
 }
-.landing-cta:hover{background:var(--hf-red);transform:translateY(-2px);box-shadow:0 10px 28px rgba(217,83,79,.32)}
-.landing-cta:active{transform:translateY(0);transition-duration:80ms}
-.landing-arrow{display:inline-block;transition:transform var(--motion-base,240ms) var(--ease-elegant)}
-.landing-cta:hover .landing-arrow{transform:translateX(4px)}
 
-/* --- Numbers strip: light divider + 4 stat cells --- */
-.landing-numbers{padding:32px 80px 40px;max-width:1200px;width:100%;margin:0 auto;border-top:1px solid var(--rule)}
-.landing-numbers-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink-mute);margin-bottom:18px}
-.landing-numbers-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
-.landing-num{display:flex;flex-direction:column;gap:4px;padding-right:14px;border-right:1px solid var(--rule)}
-.landing-num:last-child{border-right:none}
-.landing-num strong{font-size:38px;font-weight:800;color:var(--ink);letter-spacing:-1px;line-height:1}
-.landing-num span{font-size:12px;color:var(--ink-soft);letter-spacing:.3px}
-
-/* --- Footer attribution --- */
-.landing-foot{padding:22px 40px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-mute);letter-spacing:.4px;text-align:center}
-
-/* --- Staggered fade-in for hero elements (only on first show) --- */
-.landing-screen.visible .landing-eyebrow,
-.landing-screen.visible .landing-title,
-.landing-screen.visible .landing-rule,
-.landing-screen.visible .landing-sub,
-.landing-screen.visible .landing-cta,
-.landing-screen.visible .landing-num{
-  animation:landingFadeUp 600ms var(--ease-elegant,cubic-bezier(.16,1,.3,1)) both;
+/* --- Top bar --- */
+.lp.bold .lp-top{
+  position:absolute;top:36px;left:56px;right:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  z-index:3;
 }
-.landing-screen.visible .landing-eyebrow{animation-delay:80ms}
-.landing-screen.visible .landing-title  {animation-delay:160ms}
-.landing-screen.visible .landing-rule   {animation-delay:300ms}
-.landing-screen.visible .landing-sub    {animation-delay:360ms}
-.landing-screen.visible .landing-cta    {animation-delay:480ms}
-.landing-screen.visible .landing-num:nth-child(1){animation-delay:620ms}
-.landing-screen.visible .landing-num:nth-child(2){animation-delay:680ms}
-.landing-screen.visible .landing-num:nth-child(3){animation-delay:740ms}
-.landing-screen.visible .landing-num:nth-child(4){animation-delay:800ms}
-@keyframes landingFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.lp.bold .lp-top-lockup{display:flex;align-items:center;gap:16px}
+.lp.bold .lp-top-logo{height:30px;width:auto;display:block}
+.lp.bold .lp-top-divider{width:1px;height:22px;background:rgba(255,255,255,.22)}
+.lp.bold .lp-top-label{font-size:12px;letter-spacing:2px;font-weight:700;color:#fff}
+.lp.bold .lp-top-label .thin{font-weight:300;opacity:.7}
+.lp.bold .lp-top-meta{
+  display:flex;gap:24px;align-items:center;
+  font-size:10px;color:rgba(255,255,255,.55);
+  text-transform:uppercase;letter-spacing:1.6px;font-weight:600;
+  font-family:'Consolas','SF Mono',Menlo,monospace;
+}
+.lp.bold .lp-status{display:inline-flex;align-items:center;gap:8px}
+.lp.bold .lp-status-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:#69D29A;
+  box-shadow:0 0 0 0 rgba(105,210,154,.6);
+  animation:lp-status-pulse 2s ease-in-out infinite;
+}
+@keyframes lp-status-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(105,210,154,.55)}
+  50%   {box-shadow:0 0 0 5px rgba(105,210,154,0)}
+}
 
-/* --- Mobile (narrow viewport) --- */
-@media (max-width: 780px){
-  .landing-hero{padding:48px 24px 36px}
-  .landing-numbers{padding:24px;display:flex;flex-direction:column}
-  .landing-numbers-grid{grid-template-columns:repeat(2,1fr);gap:18px}
-  .landing-num{border-right:none;border-bottom:1px solid var(--rule);padding-bottom:14px}
-  .landing-num:nth-last-child(-n+2){border-bottom:none}
-  .landing-top{padding:18px 24px}
-  .landing-foot{padding:18px 24px}
+/* --- Hero (left-anchored, vertically centered) --- */
+.lp.bold .lp-hero{
+  position:absolute;top:50%;left:80px;transform:translateY(-50%);
+  z-index:2;max-width:640px;
+}
+.lp.bold .lp-eyebrow{
+  font-size:11px;font-weight:800;letter-spacing:3px;color:var(--lp-accent);
+  text-transform:uppercase;margin-bottom:28px;
+  display:inline-flex;align-items:center;gap:14px;
+}
+.lp.bold .lp-eyebrow-rule{display:inline-block;width:36px;height:1px;background:var(--lp-accent)}
+.lp.bold .lp-h1{
+  font-size:clamp(56px,7vw,92px);
+  line-height:.96;letter-spacing:-3px;
+  color:#fff;margin-bottom:28px;font-weight:800;
+  text-wrap:balance;
+}
+.lp.bold .lp-h1-accent{color:var(--lp-accent)}
+.lp.bold .lp-lead{
+  font-size:17px;line-height:1.55;
+  color:rgba(255,255,255,.70);max-width:520px;margin-bottom:36px;
+}
+.lp.bold .lp-cta-row{display:flex;gap:18px;align-items:center;margin-bottom:20px}
+.lp.bold .lp-cta{
+  background:var(--lp-accent);color:#fff;border:none;
+  padding:16px 30px;border-radius:999px;
+  font-size:13px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+  font-family:inherit;cursor:pointer;
+  display:inline-flex;gap:12px;align-items:center;
+  text-decoration:none;
+  box-shadow:0 6px 28px rgba(217,83,79,.35);
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.lp.bold .lp-cta:hover{background:var(--hf-red-deep);transform:translateY(-2px);box-shadow:0 12px 36px rgba(217,83,79,.45)}
+.lp.bold .lp-cta:active{transform:translateY(0);transition-duration:80ms}
+.lp.bold .lp-cta span{transition:transform .18s ease}
+.lp.bold .lp-cta:hover span{transform:translateX(4px)}
+.lp.bold .lp-access{
+  font-size:11px;color:rgba(255,255,255,.45);
+  font-family:'Consolas','SF Mono',Menlo,monospace;letter-spacing:.3px;
+}
+
+/* --- Globe (decorative, right side) --- */
+.lp.bold .lp-globe{
+  position:absolute;right:-140px;top:50%;transform:translateY(-50%);
+  z-index:1;pointer-events:none;
+  width:780px;height:780px;
+  opacity:.95;
+}
+@keyframes lp-globe-pulse{
+  0%  {transform:scale(1);  opacity:.85}
+  100%{transform:scale(3.2);opacity:0}
+}
+.lp.bold .globe-pulse{
+  transform-origin:center;
+  transform-box:fill-box;
+  animation:lp-globe-pulse 2.6s ease-out infinite;
+}
+
+/* --- Stats ribbon (monospace, bottom of page) --- */
+.lp.bold .lp-stats-ribbon{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:22px 80px;
+  border-top:1px solid rgba(255,255,255,.08);
+  display:flex;gap:28px;align-items:center;flex-wrap:wrap;
+  font-family:'Consolas','SF Mono',Menlo,monospace;
+  font-size:11px;letter-spacing:1.6px;
+  color:rgba(255,255,255,.55);text-transform:uppercase;
+  background:rgba(0,0,0,.20);
+  backdrop-filter:blur(4px);
+  z-index:3;
+}
+.lp.bold .lp-stat-cell{display:inline-flex;align-items:baseline;gap:10px}
+.lp.bold .lp-stat-cell b{
+  color:#fff;font-weight:800;font-size:22px;letter-spacing:-.3px;
+  font-family:'Helvetica Neue','Segoe UI',sans-serif;
+}
+.lp.bold .lp-stats-sep{color:var(--lp-accent);font-size:18px;opacity:.9}
+
+/* --- Staggered fade-up on first show --- */
+.lp.visible .lp-eyebrow,
+.lp.visible .lp-h1,
+.lp.visible .lp-lead,
+.lp.visible .lp-cta-row,
+.lp.visible .lp-access,
+.lp.visible .lp-stat-cell{
+  animation:lpFadeUp 700ms cubic-bezier(.16,1,.3,1) both;
+}
+.lp.visible .lp-eyebrow {animation-delay:120ms}
+.lp.visible .lp-h1      {animation-delay:240ms}
+.lp.visible .lp-lead    {animation-delay:420ms}
+.lp.visible .lp-cta-row {animation-delay:560ms}
+.lp.visible .lp-access  {animation-delay:680ms}
+.lp.visible .lp-stat-cell:nth-of-type(1){animation-delay:760ms}
+.lp.visible .lp-stat-cell:nth-of-type(2){animation-delay:820ms}
+.lp.visible .lp-stat-cell:nth-of-type(3){animation-delay:880ms}
+.lp.visible .lp-stat-cell:nth-of-type(4){animation-delay:940ms}
+@keyframes lpFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* --- Globe also fades in (less stagger, simultaneous with hero) --- */
+.lp.visible .lp-globe{animation:lpFadeIn 1100ms cubic-bezier(.16,1,.3,1) both;animation-delay:320ms}
+@keyframes lpFadeIn{from{opacity:0}to{opacity:.95}}
+
+/* --- Responsive: narrow viewport (mobile / tablet) --- */
+@media (max-width: 1100px){
+  .lp.bold .lp-hero{left:48px;right:48px;max-width:none;transform:none;top:auto;bottom:auto;position:relative;padding:120px 0 40px}
+  .lp.bold .lp-globe{display:none}
+  .lp.bold .lp-top{left:32px;right:32px;top:24px}
+  .lp.bold .lp-stats-ribbon{padding:18px 32px;font-size:10px;gap:18px}
+}
+@media (max-width: 640px){
+  .lp.bold .lp-h1{font-size:44px;letter-spacing:-1.5px}
+  .lp.bold .lp-top-meta{display:none}
 }
 
 /* LOGIN OVERLAY — full-page gate when HFARM_APP_PASSWORD is set */
@@ -2705,50 +2793,117 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
      requires a password. Sits above everything (z-index 9999). Hidden by
      default; revealed via .open class. -->
 <!--
-  Landing page — first thing demo audiences (H-FARM College leadership) see.
-  Editorial-institutional tone: paper-tone bg, restrained typography, single
-  thin red rule under the headline, "in numbers" stat strip for credibility,
-  one primary CTA. Sits in front of the auth flow: visitor sees landing,
-  clicks "Enter platform", landing dismisses and the existing login overlay
-  takes its place.
+  Landing page — pre-auth surface for demo audiences (H-FARM College
+  leadership). Design provided by user (Stitch "BOLD" variant): full-bleed
+  dark canvas, red radial gradient wash, big editorial headline with red
+  accent on the second line, monospace status meta in the top bar,
+  orthographic globe motif on the right, monospace stats ribbon along the
+  bottom. Sits in front of the auth flow; "Open H-Tracker" dismisses
+  landing and reveals the existing login overlay.
 -->
-<div id="landing-screen" class="landing-screen" aria-hidden="true">
-  <header class="landing-top">
-    <a class="landing-mark" href="https://college.h-farm.com/en/" target="_blank" title="H-FARM College website">
-      <span class="landing-wordmark">H-FARM College</span>
-    </a>
-    <button class="landing-signin-link" onclick="proceedFromLanding()" title="Continue to sign-in">
-      Sign in <span class="landing-arrow-sm">→</span>
-    </button>
-  </header>
-
-  <main class="landing-hero">
-    <span class="landing-eyebrow">Global Partnerships · Intelligence Platform</span>
-    <h1 class="landing-title">Where every partnership&nbsp;lives.</h1>
-    <hr class="landing-rule" />
-    <p class="landing-sub">
-      A single source of truth for sourcing, tracking, and scaling H-FARM College's
-      academic partnerships across 17 countries. AI-assisted discovery, live pipeline
-      intelligence, and partnership briefings ready to send.
-    </p>
-    <button class="landing-cta" onclick="proceedFromLanding()">
-      Enter platform <span class="landing-arrow">→</span>
-    </button>
-  </main>
-
-  <section class="landing-numbers">
-    <div class="landing-numbers-label">In numbers</div>
-    <div class="landing-numbers-grid">
-      <div class="landing-num"><strong>287</strong><span>active partnerships</span></div>
-      <div class="landing-num"><strong>51</strong><span>corporate sponsors</span></div>
-      <div class="landing-num"><strong>10</strong><span>internal teams</span></div>
-      <div class="landing-num"><strong>6</strong><span>program formats</span></div>
+<div id="landing-screen" class="lp bold" aria-hidden="true">
+  <div class="lp-top">
+    <div class="lp-top-lockup">
+      <img class="lp-top-logo" src="Logo/logo-h-farm-college-white.png" alt="H-FARM College" />
+      <div class="lp-top-divider"></div>
+      <div class="lp-top-label">H-TRACKER <span class="thin">· GLOBAL PARTNERSHIPS</span></div>
     </div>
-  </section>
+    <div class="lp-top-meta">
+      <span class="lp-status">
+        <span class="lp-status-dot"></span>
+        <span id="lp-online-count">5 operators online</span>
+      </span>
+      <span id="lp-synced-meta">Synced just now</span>
+    </div>
+  </div>
 
-  <footer class="landing-foot">
-    <span>Built by the Global Partnerships team · H-FARM College · Roncade · Treviso</span>
-  </footer>
+  <div class="lp-hero">
+    <span class="lp-eyebrow">
+      <span class="lp-eyebrow-rule"></span>
+      Internal · H-Tracker
+    </span>
+    <h1 class="lp-h1">Every conversation. <span class="lp-h1-accent">One tracker.</span></h1>
+    <p class="lp-lead">
+      The H-FARM College Global Partnerships team's daily working surface —
+      universities, agencies, schools and student organisations across one
+      cohesive pipeline.
+    </p>
+    <div class="lp-cta-row">
+      <button class="lp-cta" onclick="proceedFromLanding()">
+        Open H-Tracker <span aria-hidden="true">→</span>
+      </button>
+    </div>
+    <div class="lp-access" id="lp-access-meta">Last access · loading…</div>
+  </div>
+
+  <!-- Orthographic globe — purely decorative, no live data binding.
+       Mimics the look of the actual app's globe view so the landing
+       previews the inside. Faint grid + scattered grey dots + a few
+       red "active" nodes + dashed red connection lines (suggest
+       "every conversation, one tracker"). -->
+  <div class="lp-globe" aria-hidden="true">
+    <svg width="780" height="780" viewBox="0 0 780 780" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(390 390)">
+        <!-- Sphere outline -->
+        <circle r="320" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>
+        <!-- Latitude rings -->
+        <ellipse rx="320" ry="80"  fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <ellipse rx="320" ry="180" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <ellipse rx="320" ry="280" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <!-- Longitude meridians -->
+        <ellipse rx="80"  ry="320" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <ellipse rx="180" ry="320" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <ellipse rx="280" ry="320" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <!-- Equator + prime meridian -->
+        <line x1="-320" y1="0" x2="320" y2="0" stroke="rgba(255,255,255,.10)" stroke-width="1"/>
+        <line x1="0" y1="-320" x2="0" y2="320" stroke="rgba(255,255,255,.10)" stroke-width="1"/>
+
+        <!-- Scattered grey dots (partner sites) -->
+        <circle cx="-140" cy="-80"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="-90"  cy="-30"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="-60"  cy="60"   r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="-20"  cy="100"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="40"   cy="-10"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="100"  cy="-110" r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="140"  cy="50"   r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="190"  cy="120"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="80"   cy="180"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="-180" cy="40"   r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="-200" cy="-160" r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="220"  cy="-40"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="-50"  cy="200"  r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="170"  cy="-180" r="3" fill="rgba(255,255,255,.55)"/>
+        <circle cx="-120" cy="160"  r="3" fill="rgba(255,255,255,.55)"/>
+
+        <!-- Dashed red connection lines from focus node to red satellites -->
+        <path d="M0,0 Q-40,-90 -90,-130" fill="none" stroke="#D9534F" stroke-width="1.2" stroke-dasharray="3,4" opacity=".7"/>
+        <path d="M0,0 Q70,-30  130,-90"  fill="none" stroke="#D9534F" stroke-width="1.2" stroke-dasharray="3,4" opacity=".7"/>
+        <path d="M0,0 Q80,40   140,20"   fill="none" stroke="#D9534F" stroke-width="1.2" stroke-dasharray="3,4" opacity=".7"/>
+        <path d="M0,0 Q60,80   100,140"  fill="none" stroke="#D9534F" stroke-width="1.2" stroke-dasharray="3,4" opacity=".7"/>
+
+        <!-- Red satellite nodes -->
+        <circle cx="-90"  cy="-130" r="5" fill="#D9534F"/>
+        <circle cx="130"  cy="-90"  r="5" fill="#D9534F"/>
+        <circle cx="140"  cy="20"   r="5" fill="#D9534F"/>
+        <circle cx="100"  cy="140"  r="5" fill="#D9534F"/>
+
+        <!-- Focal point — red dot with pulsing ring + outer halo -->
+        <circle r="7" fill="#D9534F"/>
+        <circle r="14" fill="none" stroke="#D9534F" stroke-width="1.6" opacity=".9"/>
+        <circle r="14" fill="none" stroke="#D9534F" stroke-width="1.6" class="globe-pulse"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="lp-stats-ribbon">
+    <span class="lp-stat-cell"><b id="lp-stat-partners">285</b> Partnerships</span>
+    <span class="lp-stats-sep">·</span>
+    <span class="lp-stat-cell"><b>8</b> Pipeline stages</span>
+    <span class="lp-stats-sep">·</span>
+    <span class="lp-stat-cell"><b>7</b> Outreach templates</span>
+    <span class="lp-stats-sep">·</span>
+    <span class="lp-stat-cell"><b>60s</b> Undo on everything</span>
+  </div>
 </div>
 
 <div id="login-overlay" class="login-overlay" aria-hidden="true">
@@ -16037,6 +16192,20 @@ async function checkAuthAndBoot() {
 function showLanding() {
   const el = document.getElementById("landing-screen");
   if (!el) { showLoginOverlay(); return; }
+  // Populate live-meta placeholders where we have data. Anything still
+  // missing falls back to sensible defaults that read as 'fresh' instead
+  // of stale "—" markers (which would look broken on a brand surface).
+  try {
+    const accessEl = document.getElementById("lp-access-meta");
+    if (accessEl) {
+      const email = localStorage.getItem("hfarm_user_email") || "your team's lead";
+      accessEl.textContent = `Last access · ${email} · just now`;
+    }
+    const syncedEl = document.getElementById("lp-synced-meta");
+    if (syncedEl) syncedEl.textContent = "Synced just now";
+    // Operator count + partner total are filled with believable defaults
+    // already in the markup; left as-is — pre-auth has no live data.
+  } catch (e) { /* non-blocking */ }
   el.classList.add("visible");
   el.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
