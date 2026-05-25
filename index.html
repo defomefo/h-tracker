@@ -876,8 +876,166 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .view-header h1{font-size:24px;font-weight:800;color:var(--navy);letter-spacing:-0.3px;margin-bottom:4px}
 .view-header p{font-size:13px;color:var(--ink-soft);line-height:1.5;max-width:900px}
 
-/* HOME VIEW */
+/* =================================================================
+   HOME VIEW — Stitch "newsroom editorial" redesign
+   -----------------------------------------------------------------
+   Dark hero briefing card → single-bar pipeline glance → two-column
+   priorities/follow-ups → 2x2 JUMP IN tiles → live activity strip.
+   Replaces the prior 8-tile KPI grid + 4-card layout. New class
+   prefix .hb-* (home briefing) so we can keep the older .home-*
+   classes alive for any code that still references them.
+   ================================================================= */
 .home-shell{padding:28px 28px 60px;max-width:1400px;margin:0 auto}
+
+/* ---- Hero briefing card (dark, full-width) ---- */
+.hb-hero{
+  background:var(--ink);color:#fff;border-radius:8px;
+  border-left:4px solid var(--hf-red);
+  padding:28px 32px;
+  display:grid;grid-template-columns:1fr auto;gap:32px;
+  align-items:center;
+  margin-bottom:30px;
+  position:relative;overflow:hidden;
+}
+.hb-hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 50% 60% at 90% 50%, rgba(217,83,79,.08), transparent 70%);
+}
+.hb-hero-left{position:relative;z-index:1}
+.hb-eyebrow{
+  font-size:11px;font-weight:800;letter-spacing:2.5px;color:var(--hf-red);
+  text-transform:uppercase;margin-bottom:10px;display:inline-block;
+}
+.hb-greet{
+  font-size:clamp(28px,3.4vw,42px);font-weight:800;color:#fff;
+  line-height:1.1;letter-spacing:-1px;margin-bottom:6px;
+}
+.hb-greet .hb-name{color:var(--hf-red)}
+.hb-sub{font-size:13px;color:rgba(255,255,255,.65);line-height:1.5}
+.hb-sub b{color:rgba(255,255,255,.9);font-weight:700}
+.hb-hero-stats{
+  display:flex;gap:32px;position:relative;z-index:1;
+}
+.hb-stat{
+  padding-left:18px;border-left:1px solid rgba(255,255,255,.18);
+  min-width:140px;
+}
+.hb-stat-n{
+  font-size:48px;font-weight:800;letter-spacing:-1.8px;line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.hb-stat-n.alarm{color:var(--hf-red)}
+.hb-stat-n.good{color:#69D29A}
+.hb-stat-n.action{color:var(--warm)}
+.hb-stat-lbl{font-size:12px;color:rgba(255,255,255,.65);line-height:1.4;margin-top:6px;max-width:200px}
+
+/* ---- Pipeline at a glance: single proportional bar ---- */
+.hb-glance-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.hb-glance-title{font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--hf-red)}
+.hb-glance-meta{font-size:11px;color:var(--ink-mute);font-style:italic}
+.hb-glance-card{
+  background:#fff;border:1px solid var(--rule);border-radius:8px;
+  padding:18px 20px;margin-bottom:28px;
+}
+.hb-bar{display:flex;width:100%;height:42px;border-radius:5px;overflow:hidden;background:var(--paper)}
+.hb-bar-seg{
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:16px;font-weight:800;letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;
+  cursor:pointer;transition:filter var(--motion-fast,140ms) var(--ease-elegant,ease);
+  min-width:18px;
+}
+.hb-bar-seg:hover{filter:brightness(1.15)}
+.hb-bar-labels{display:flex;width:100%;margin-top:8px;padding:0 2px}
+.hb-bar-lbl{
+  font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--ink-soft);text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;
+}
+
+/* ---- Two-column grid: Priorities + Today/This week ---- */
+.hb-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start;margin-bottom:24px}
+.hb-card{
+  background:#fff;border:1px solid var(--rule);border-radius:8px;
+  padding:20px 24px;box-shadow:0 1px 4px rgba(10,20,40,.04);
+}
+.hb-card-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.hb-card h3{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.25}
+.hb-card-sub{font-size:12px;color:var(--ink-soft);font-style:italic;margin-bottom:14px}
+.hb-card-link{font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--hf-red);cursor:pointer;text-decoration:none;text-transform:uppercase}
+.hb-card-link:hover{color:var(--hf-red-deep);text-decoration:underline}
+.hb-card-rule{height:2px;background:var(--hf-red);width:48px;border:none;margin:0 0 10px}
+
+/* Priority rows (left card) */
+.hb-prio-row{
+  display:grid;grid-template-columns:32px 1fr auto auto;gap:14px;align-items:center;
+  padding:12px 0;border-bottom:1px solid var(--rule);
+  cursor:pointer;transition:background var(--motion-fast,140ms) var(--ease-elegant,ease);
+}
+.hb-prio-row:last-child{border-bottom:none}
+.hb-prio-row:hover{background:var(--paper);border-radius:4px;padding-left:8px;padding-right:8px;margin-left:-8px;margin-right:-8px;border-bottom-color:transparent}
+.hb-flag{width:28px;height:21px;border-radius:3px;overflow:hidden;background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-mute);font-weight:700;flex-shrink:0}
+.hb-flag img{width:100%;height:100%;object-fit:cover;display:block}
+.hb-prio-main{min-width:0}
+.hb-prio-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3}
+.hb-prio-meta{font-size:11px;color:var(--ink-soft);display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px}
+.hb-prio-chip{font-size:9px;font-weight:800;padding:2px 8px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase;background:var(--paper);color:var(--ink-soft);border:1px solid var(--rule)}
+.hb-prio-touch{font-size:10px;color:var(--ink-mute);text-align:right;font-variant-numeric:tabular-nums;line-height:1.3}
+.hb-prio-touch small{display:block;font-size:9px}
+.hb-prio-score{display:flex;align-items:center;gap:8px;min-width:120px;justify-content:flex-end}
+.hb-prio-bar{display:inline-block;width:60px;height:5px;background:var(--paper);border-radius:3px;overflow:hidden;position:relative}
+.hb-prio-bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--hf-red) 0%,var(--ur) 100%)}
+.hb-prio-n{font-size:14px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;min-width:24px;text-align:right}
+.hb-prio-arrow{width:28px;height:28px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;color:var(--hf-red);font-size:14px;flex-shrink:0;transition:background var(--motion-fast,140ms) var(--ease-elegant,ease)}
+.hb-prio-row:hover .hb-prio-arrow{background:var(--hf-red);color:#fff}
+
+/* Today & this week (right card) */
+.hb-followup{padding:14px 0;border-bottom:1px solid var(--rule)}
+.hb-followup:last-of-type{border-bottom:none}
+.hb-fu-when{font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
+.hb-fu-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;cursor:pointer}
+.hb-fu-name:hover{color:var(--hf-red)}
+.hb-fu-action{font-size:12px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
+
+/* JUMP IN tile grid (inside right card) */
+.hb-jumpin-head{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--hf-red);margin:18px 0 10px;padding-top:14px;border-top:1px solid var(--rule)}
+.hb-jumpin{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hb-jump-tile{
+  background:var(--paper);border:1px solid var(--rule);border-radius:5px;
+  padding:11px 14px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);
+  text-align:left;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:center;
+  transition:all var(--motion-base,240ms) var(--ease-elegant,ease);
+}
+.hb-jump-tile:hover{background:var(--ink);color:#fff;transform:translateY(-2px);box-shadow:0 6px 16px rgba(10,20,40,.16)}
+.hb-jump-arrow{color:var(--hf-red);font-size:14px;font-weight:400;transition:transform var(--motion-base,240ms) var(--ease-elegant,ease)}
+.hb-jump-tile:hover .hb-jump-arrow{color:#fff;transform:translateX(4px)}
+
+/* Live activity strip (bottom) */
+.hb-live-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.hb-live-title{font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--hf-red)}
+.hb-live-cap{font-size:11px;color:var(--ink-mute);font-style:italic}
+.hb-live-card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 20px}
+.hb-live-list{display:flex;flex-wrap:wrap;gap:24px 32px}
+.hb-live-item{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-soft);flex:1;min-width:280px}
+.hb-live-dot{width:8px;height:8px;border-radius:50%;background:var(--hf-red);flex-shrink:0}
+.hb-live-dot.blue{background:#1F6FB4}
+.hb-live-dot.green{background:var(--ur)}
+.hb-live-time{font-family:'Consolas',monospace;font-size:10px;color:var(--ink-mute);min-width:36px}
+.hb-live-text{flex:1;line-height:1.4}
+.hb-live-text b{color:var(--ink);font-weight:700}
+.hb-live-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;background:var(--paper);color:var(--ink-soft);border:1px solid var(--rule);margin-left:6px}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .hb-hero{grid-template-columns:1fr;gap:20px}
+  .hb-hero-stats{flex-wrap:wrap}
+  .hb-grid{grid-template-columns:1fr;gap:18px}
+  .hb-prio-row{grid-template-columns:32px 1fr auto;gap:10px}
+  .hb-prio-touch{display:none}
+}
+
+/* Old .home-* styles kept below for backward compat with any callers */
 .home-welcome h1{font-size:30px;font-weight:800;color:var(--navy);margin-bottom:6px;letter-spacing:-0.5px}
 .home-welcome p{font-size:13px;color:var(--ink-soft);line-height:1.6;max-width:780px}
 .home-kpis{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin:22px 0 28px}
@@ -10936,79 +11094,228 @@ function renderHomeView() {
       </div>`;
   }
 
+  // ===== Dynamic hero stats (3 cells: alarm / good / action) =====
+  const heroAlarmN  = dormantHi.length;
+  const heroGoodN   = signedActive;
+  const heroActionN = (typeof PROSPECTS !== "undefined" && Array.isArray(PROSPECTS))
+    ? PROSPECTS.filter(p => p && p.status === "pending").length : 0;
+
+  // ===== "X situations need your attention" — sum of real alarm sources =====
+  const situationsN = (fBuckets.overdue.length || 0)
+                    + (cAlarms.expired ? cAlarms.expired.length : 0)
+                    + heroAlarmN
+                    + (cAlarms.stuck ? cAlarms.stuck.length : 0);
+  const situationsLabel = situationsN === 0
+    ? "Everything is on track today. Nice work."
+    : `${situationsN === 1 ? "One situation needs" : situationsN + " situations need"} your attention today.`;
+
+  // ===== Date eyebrow: MONDAY 25 MAY · DAILY BRIEFING =====
+  const _dowNames = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
+  const _monNames = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const dateEyebrow = `${_dowNames[now.getDay()]} ${now.getDate()} ${_monNames[now.getMonth()]} · DAILY BRIEFING`;
+
+  // ===== Pipeline at-a-glance: single-bar priority segments =====
+  const _prioOrder = ["Critical","Hot","Warm","Cold","Cold-storage","Up & Running","Not interested",""];
+  const _prioCounts = { "Critical":critical, "Hot":hot, "Warm":warm, "Cold":cold,
+                        "Cold-storage":cs, "Up & Running":ur, "Not interested":ni, "":unclass };
+  const totalForBar = total || 1;
+  const barSegmentsHtml = _prioOrder.map(p => {
+    const n = _prioCounts[p] || 0;
+    if (!n) return "";
+    const widthPct = (n / totalForBar) * 100;
+    const color = PRIO_COLORS[p] || "#CCCCCC";
+    const lbl = p === "" ? "Unclassified" : p;
+    return `<div class="hb-bar-seg" style="background:${color};flex:0 0 ${widthPct.toFixed(3)}%" onclick="toggleHomePriority('${p === '' ? '' : escape(p)}')" title="${escape(lbl)} — ${n} entities">${n}</div>`;
+  }).join("");
+  const barLabelsHtml = _prioOrder.map(p => {
+    const n = _prioCounts[p] || 0;
+    if (!n) return "";
+    const widthPct = (n / totalForBar) * 100;
+    const lbl = p === "" ? "Unclassified" : p;
+    return `<div class="hb-bar-lbl" style="flex:0 0 ${widthPct.toFixed(3)}%">${escape(lbl)}</div>`;
+  }).join("");
+
+  // ===== Today & this week: upcoming follow-ups grouped by day =====
+  const _whenLabel = (iso) => {
+    if (!iso) return "NO DATE";
+    const d = new Date(iso);
+    const dayDiff = Math.round((d - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+    if (dayDiff === 0)  return "TODAY";
+    if (dayDiff === 1)  return "TOMORROW";
+    if (dayDiff < 0)    return "OVERDUE";
+    if (dayDiff <= 6)   return _dowNames[d.getDay()].slice(0, 3);
+    return _monNames[d.getMonth()] + " " + d.getDate();
+  };
+  const upcomingFu = (typeof FOLLOWUPS !== "undefined" && Array.isArray(FOLLOWUPS))
+    ? FOLLOWUPS.filter(f => f && f.status !== "done" && f.due_date)
+        .slice().sort((a, b) => (a.due_date || "").localeCompare(b.due_date || ""))
+        .slice(0, 4)
+    : [];
+  const followupsHtml = upcomingFu.length
+    ? upcomingFu.map(f => {
+        const ent = UNIS.find(u => u.id === f.entity_id);
+        const name = ent ? ent.name : (f.entity_name || "—");
+        return `<div class="hb-followup">
+          <div class="hb-fu-when">${_whenLabel(f.due_date)}</div>
+          <div class="hb-fu-name" ${ent ? `onclick="openDetail('${escape(ent.id)}')"` : ''}>${escape(name)}</div>
+          <div class="hb-fu-action">${escape(f.title || "Follow up")}</div>
+        </div>`;
+      }).join("")
+    : `<div style="font-size:12px;color:var(--ink-soft);font-style:italic;padding:10px 0">No upcoming follow-ups. Open any entity → <b>Follow-ups</b> tab to schedule one.</div>`;
+
+  // ===== Top partnership priorities (left card) =====
+  const topPrioritiesHtml = top.map(u => {
+    const iso = _isoForCountry(u.country_canonical || u.country || "");
+    const flagImg = iso
+      ? `<img src="https://flagcdn.com/56x42/${iso.toLowerCase()}.png" alt="${escape(u.country || "")}" loading="lazy" onerror="this.style.display='none'"/>`
+      : (u.country ? `<span>${escape(u.country.slice(0,2).toUpperCase())}</span>` : "");
+    const dormDays = (u.days_dormant === null || u.days_dormant === undefined) ? null : u.days_dormant;
+    const touchLabel = dormDays === null ? "never" : (dormDays < 30 ? `${dormDays}d` : dormDays < 365 ? `${Math.round(dormDays/30)}m` : `${Math.round(dormDays/365)}y`);
+    const stageRaw = (u.pipeline_stage || "").replace(/_/g, " ");
+    const stage = stageRaw ? stageRaw.charAt(0).toUpperCase() + stageRaw.slice(1) : (u.priority || "Unclassified");
+    return `<div class="hb-prio-row" onclick="openDetail('${escape(u.id)}')">
+      <div class="hb-flag">${flagImg}</div>
+      <div class="hb-prio-main">
+        <div class="hb-prio-name">${escape(u.name)}</div>
+        <div class="hb-prio-meta">${escape(u.country || u.continent || "—")} · ${escape(ENTITY_LABELS[u.type] || u.type)} · <span class="hb-prio-chip">${escape(stage)}</span></div>
+      </div>
+      <div class="hb-prio-touch">last touch<small>${touchLabel}</small></div>
+      <div class="hb-prio-score">
+        <span class="hb-prio-bar"><span style="width:${u.partnership_score}%"></span></span>
+        <span class="hb-prio-n">${u.partnership_score}</span>
+      </div>
+    </div>`;
+  }).join("");
+
   el.innerHTML = `
     <div class="home-shell">
-      <div class="home-briefing">
-        <div class="briefing-greet">${greeting} ${greetSubject}${displayName ? "." : ""}</div>
-        <div class="briefing-stats">${insightsHtml}</div>
+      <!-- Hero briefing card -->
+      <div class="hb-hero">
+        <div class="hb-hero-left">
+          <div class="hb-eyebrow">${escape(dateEyebrow)}</div>
+          <h1 class="hb-greet">${greeting} ${displayName ? `<span class="hb-name">${escape(displayName)}</span>.` : `<span class="hb-name">${greetSubject}</span>`}</h1>
+          <p class="hb-sub">${escape(situationsLabel)}</p>
+        </div>
+        <div class="hb-hero-stats">
+          <div class="hb-stat">
+            <div class="hb-stat-n alarm">${heroAlarmN}</div>
+            <div class="hb-stat-lbl">high-priority partners haven't been contacted in 30+ days</div>
+          </div>
+          <div class="hb-stat">
+            <div class="hb-stat-n good">${heroGoodN}</div>
+            <div class="hb-stat-lbl">partnerships are live and signed</div>
+          </div>
+          <div class="hb-stat">
+            <div class="hb-stat-n action">${heroActionN}</div>
+            <div class="hb-stat-lbl">AI-discovered prospects awaiting your review</div>
+          </div>
+        </div>
       </div>
 
-      <div class="home-kpis-head">
-        <span class="home-kpis-title">Pipeline at a glance</span>
-        <button type="button" class="kpi-info-btn" onclick="showPriorityDefinitions()" title="What does each priority mean?">? what do these mean</button>
+      <!-- Pipeline at a glance: single bar -->
+      <div class="hb-glance-head">
+        <span class="hb-glance-title">Pipeline at a glance</span>
+        <span class="hb-glance-meta">${total} entities · 8 stages · <a href="#" onclick="event.preventDefault();showPriorityDefinitions()" style="color:var(--ink-mute);text-decoration:underline">what do these mean?</a></span>
       </div>
-      <div class="home-kpis">
-        <div class="hk crit ${expanded === 'Critical' ? 'open' : ''}" onclick="toggleHomePriority('Critical')"       title="${escape(PRIORITY_DEFINITIONS['Critical'])}"><div class="num">${critical}</div><div class="lbl">Critical</div></div>
-        <div class="hk hot  ${expanded === 'Hot' ? 'open' : ''}"      onclick="toggleHomePriority('Hot')"            title="${escape(PRIORITY_DEFINITIONS['Hot'])}"     ><div class="num">${hot}</div><div class="lbl">Hot</div></div>
-        <div class="hk warm ${expanded === 'Warm' ? 'open' : ''}"     onclick="toggleHomePriority('Warm')"           title="${escape(PRIORITY_DEFINITIONS['Warm'])}"    ><div class="num">${warm}</div><div class="lbl">Warm</div></div>
-        <div class="hk      ${expanded === 'Cold' ? 'open' : ''}"     onclick="toggleHomePriority('Cold')"           title="${escape(PRIORITY_DEFINITIONS['Cold'])}"    ><div class="num">${cold}</div><div class="lbl">Cold</div></div>
-        <div class="hk      ${expanded === 'Cold-storage' ? 'open' : ''}" onclick="toggleHomePriority('Cold-storage')"   title="${escape(PRIORITY_DEFINITIONS['Cold-storage'])}"><div class="num">${cs}</div><div class="lbl">Cold-storage</div></div>
-        <div class="hk ur   ${expanded === 'Up & Running' ? 'open' : ''}" onclick="toggleHomePriority('Up & Running')"   title="${escape(PRIORITY_DEFINITIONS['Up & Running'])}"><div class="num">${ur}</div><div class="lbl">Up &amp; Running</div></div>
-        <div class="hk      ${expanded === 'Not interested' ? 'open' : ''}" onclick="toggleHomePriority('Not interested')" title="${escape(PRIORITY_DEFINITIONS['Not interested'])}"><div class="num">${ni}</div><div class="lbl">Not interested</div></div>
-        <div class="hk      ${expanded === '' ? 'open' : ''}"         onclick="toggleHomePriority('')"               title="${escape(PRIORITY_DEFINITIONS['Unclassified'])}"><div class="num">${unclass}</div><div class="lbl">Unclassified</div></div>
+      <div class="hb-glance-card">
+        <div class="hb-bar">${barSegmentsHtml}</div>
+        <div class="hb-bar-labels">${barLabelsHtml}</div>
       </div>
       ${expandedHtml}
 
-      <div class="home-grid">
-        <div class="home-card">
-          <h3>Top partnership priorities</h3>
-          <p class="sub">Sorted by partnership score</p>
-          ${top.map(u => `<div class="home-row" onclick="openDetail('${u.id}')">
-            <div class="hr-name">${escape(u.name)}</div>
-            <div class="hr-meta">${escape(u.continent)} · ${escape(ENTITY_LABELS[u.type])} · ${escape(u.priority || 'Unclassified')}</div>
-            <div class="hr-score"><span class="hr-bar"><span style="width:${u.partnership_score}%"></span></span><span>${u.partnership_score}</span></div>
-          </div>`).join("")}
+      <!-- Two-column: Top priorities + Today/this week + JUMP IN -->
+      <div class="hb-grid">
+        <div class="hb-card">
+          <div class="hb-card-head">
+            <div>
+              <h3>Top partnership priorities</h3>
+              <div class="hb-card-sub">Sorted by partnership score · click to open</div>
+            </div>
+            <a class="hb-card-link" onclick="switchView('database')">View all ${total} →</a>
+          </div>
+          <hr class="hb-card-rule"/>
+          ${topPrioritiesHtml || '<div style="font-size:12px;color:var(--ink-soft);font-style:italic">No partnerships yet — connect a data source from Admin.</div>'}
         </div>
 
-        <div class="home-card">
-          <h3>Live activity</h3>
-          <p class="sub">What the team is doing right now</p>
-          <div id="home-activity-list" class="home-activity-list">
-            <div class="home-empty">Loading recent activity…</div>
+        <div class="hb-card">
+          <div class="hb-card-head">
+            <div>
+              <h3>Today &amp; this week</h3>
+              <div class="hb-card-sub">Scheduled follow-ups</div>
+            </div>
+            ${upcomingFu.length ? `<a class="hb-card-link" onclick="switchView('followups')">View all →</a>` : ''}
+          </div>
+          <hr class="hb-card-rule"/>
+          ${followupsHtml}
+          <div class="hb-jumpin-head">Jump in</div>
+          <div class="hb-jumpin">
+            <button class="hb-jump-tile" onclick="switchView('globe')">Open globe<span class="hb-jump-arrow">→</span></button>
+            <button class="hb-jump-tile" onclick="switchView('pipeline')">Pipeline kanban<span class="hb-jump-arrow">→</span></button>
+            <button class="hb-jump-tile" onclick="switchView('prospects')">Prospects<span class="hb-jump-arrow">→</span></button>
+            <button class="hb-jump-tile" onclick="switchView('tailor-made')">Tailor-made<span class="hb-jump-arrow">→</span></button>
           </div>
         </div>
+      </div>
 
-        <div class="home-card">
-          <h3>Recent outreach</h3>
-          <p class="sub">Last 5 logged across all entities</p>
-          ${recentOutreach.length ? recentOutreach.map(o => {
-            const ent = UNIS.find(u => u.id === o.entityId);
-            if (!ent) return "";
-            return `<div class="home-row" onclick="openDetail('${ent.id}')">
-              <div class="hr-name">${escape(ent.name)}</div>
-              <div class="hr-meta">${escape(o.date || '')} · ${escape(o.channel || '')} · ${escape(o.status || '')}</div>
-              <div class="hr-score" style="color:var(--ink-soft);font-size:11px">${escape((o.subject || '').slice(0,40))}${(o.subject||'').length>40?'…':''}</div>
-            </div>`;
-          }).join("") : '<div class="home-empty">No outreach logged yet. Open any entity → "+ Log outreach" to start the audit trail.</div>'}
-        </div>
-
-        <div class="home-card">
-          <h3>Jump in</h3>
-          <p class="sub">Quick links</p>
-          <div class="home-tiles">
-            <button class="home-tile" onclick="switchView('globe')"><span class="tile-name">Globe view</span><small>Drag, zoom, click a country</small></button>
-            <button class="home-tile" onclick="switchView('pipeline')"><span class="tile-name">Pipeline matrix</span><small>Region × priority deep-dive</small></button>
-            <button class="home-tile" onclick="switchView('database')"><span class="tile-name">Database</span><small>All ${total} entities, sortable table</small></button>
-            <button class="home-tile" onclick="switchView('outreach')"><span class="tile-name">Outreach log</span><small>All emails &amp; calls logged</small></button>
-            <button class="home-tile" onclick="switchView('brochures')"><span class="tile-name">Brochures</span><small>H-FARM College PDFs ready to send</small></button>
-            <button class="home-tile" onclick="switchView('about')"><span class="tile-name">About H-FARM College</span><small>Programmes &amp; teams reference</small></button>
-          </div>
+      <!-- Live activity strip -->
+      <div class="hb-live-head">
+        <span class="hb-live-title">Live activity</span>
+        <span class="hb-live-cap">What the team is doing right now</span>
+      </div>
+      <div class="hb-live-card">
+        <div id="home-activity-list" class="hb-live-list">
+          <div class="hb-live-item" style="color:var(--ink-mute);font-style:italic">Loading recent activity…</div>
         </div>
       </div>
     </div>
   `;
   // Live activity stream — fetch in background, populate when ready
   _loadHomeActivity();
+}
+
+// ============================================================
+// COUNTRY → ISO MAP for flag rendering on the home view
+// ----------------------------------------------------------
+// Covers the most common partnership countries; unknown countries
+// fall back to a 2-letter text badge. Add new entries here as the
+// pipeline expands into new regions.
+// ============================================================
+const _COUNTRY_ISO_MAP = {
+  // EU
+  "italy":"it","italia":"it","germany":"de","deutschland":"de","france":"fr",
+  "spain":"es","españa":"es","portugal":"pt","netherlands":"nl","belgium":"be",
+  "austria":"at","switzerland":"ch","sweden":"se","norway":"no","denmark":"dk",
+  "finland":"fi","poland":"pl","polska":"pl","czech republic":"cz","czechia":"cz",
+  "slovakia":"sk","hungary":"hu","slovenia":"si","croatia":"hr","greece":"gr",
+  "ireland":"ie","romania":"ro","bulgaria":"bg","lithuania":"lt","latvia":"lv",
+  "estonia":"ee","luxembourg":"lu","malta":"mt","cyprus":"cy","iceland":"is",
+  // Adjacent EU / Balkans / Turkey
+  "turkey":"tr","türkiye":"tr","united kingdom":"gb","uk":"gb","england":"gb",
+  "scotland":"gb","ukraine":"ua","serbia":"rs","bosnia":"ba","montenegro":"me",
+  "albania":"al","north macedonia":"mk","kosovo":"xk","moldova":"md","russia":"ru",
+  "georgia":"ge","armenia":"am","azerbaijan":"az",
+  // Americas
+  "usa":"us","united states":"us","u.s.a.":"us","u.s.":"us","united states of america":"us",
+  "canada":"ca","mexico":"mx","brazil":"br","argentina":"ar","chile":"cl",
+  "colombia":"co","peru":"pe","uruguay":"uy",
+  // MENA
+  "egypt":"eg","morocco":"ma","tunisia":"tn","algeria":"dz","jordan":"jo",
+  "lebanon":"lb","israel":"il","palestine":"ps","saudi arabia":"sa","uae":"ae",
+  "united arab emirates":"ae","qatar":"qa","kuwait":"kw","oman":"om","bahrain":"bh",
+  // Asia
+  "china":"cn","japan":"jp","south korea":"kr","korea":"kr","north korea":"kp",
+  "india":"in","pakistan":"pk","bangladesh":"bd","vietnam":"vn","thailand":"th",
+  "indonesia":"id","malaysia":"my","singapore":"sg","philippines":"ph","taiwan":"tw",
+  "hong kong":"hk","sri lanka":"lk","nepal":"np",
+  // Oceania
+  "australia":"au","new zealand":"nz",
+  // Africa
+  "south africa":"za","nigeria":"ng","kenya":"ke","ghana":"gh","ethiopia":"et",
+};
+function _isoForCountry(country) {
+  if (!country) return null;
+  const k = String(country).trim().toLowerCase();
+  return _COUNTRY_ISO_MAP[k] || null;
 }
 
 // Pulls /api/edits/recent and renders into the home activity card. Each row
@@ -11025,7 +11332,7 @@ async function _loadHomeActivity() {
     if (!r.ok) { host.innerHTML = `<div class="home-empty">Couldn't load activity.</div>`; return; }
     const edits = data.edits || [];
     if (!edits.length) {
-      host.innerHTML = `<div class="home-empty">Nothing yet. Any edit, drag, or outreach the team makes will surface here.</div>`;
+      host.innerHTML = `<div class="hb-live-item" style="color:var(--ink-mute);font-style:italic">Nothing yet. Any edit, drag, or outreach the team makes will surface here.</div>`;
       return;
     }
     // Build a lookup: outreach id → entity name (we only have OUTREACH grouped by entity)
@@ -11039,20 +11346,21 @@ async function _loadHomeActivity() {
       if (e.resource === "outreach") return outreachToEntity[e.key] || null;
       return null;
     };
-    host.innerHTML = edits.map(e => {
+    // Render top 4 edits as a compact horizontal strip; dot color cycles
+    // by index so multiple items don't all glow the same shade.
+    const dotColors = ["", "blue", "green", ""];
+    host.innerHTML = edits.slice(0, 4).map((e, i) => {
       const eid = resolveEntityId(e);
       const entity = eid ? UNIS.find(u => u.id === eid) : null;
       const who = e.display_name || "Anonymous";
       const what = _activityLabel(e).replace(who, '').trim().replace(/^·\s*/, '');
       const when = _timeAgo(e.occurred_at) || "";
-      const onclick = entity ? `onclick="openDetail('${entity.id}')"` : "";
-      const entityChip = entity ? `<span class="ha-ent">${escape(entity.name)}</span>` : "";
-      return `<div class="ha-row" ${onclick}>
-        <div class="ha-dot"></div>
-        <div class="ha-body">
-          <div class="ha-text"><b>${escape(who)}</b> ${escape(what)} ${entityChip}</div>
-          <div class="ha-when">${escape(when)}</div>
-        </div>
+      const onclickAttr = entity ? `style="cursor:pointer" onclick="openDetail('${escape(entity.id)}')"` : "";
+      const entityChip = entity ? `<span class="hb-live-tag">${escape(entity.name)}</span>` : "";
+      return `<div class="hb-live-item" ${onclickAttr}>
+        <span class="hb-live-dot ${dotColors[i] || ''}"></span>
+        <span class="hb-live-time">${escape(when)}</span>
+        <span class="hb-live-text"><b>${escape(who)}</b> ${escape(what)} ${entityChip}</span>
       </div>`;
     }).join("");
   } catch (err) {
