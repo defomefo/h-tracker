@@ -109,6 +109,15 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .brand-divider{width:1px;height:24px;background:rgba(255,255,255,.2);flex-shrink:0}
 .brand-bar h1{font-size:14px;font-weight:700;letter-spacing:1.8px;color:#fff}
 .brand-bar h1 span.thin{font-weight:300;opacity:.75}
+/* Data-source chip — sits in the top bar so the reviewer's "where does
+   this data come from?" question is answered before they ask. Live count
+   + Google Sheets indicator + last-sync time. Clickable → refresh. */
+.brand-source-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px;color:rgba(255,255,255,.85);font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.2px;cursor:pointer;transition:all .12s;margin-right:12px}
+.brand-source-chip:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.18);color:#fff}
+.brand-source-chip .bsc-dot{width:7px;height:7px;border-radius:50%;background:#2E7D5B;box-shadow:0 0 0 2px rgba(46,125,91,.25);flex-shrink:0;animation:bsc-pulse 2.4s ease-in-out infinite}
+.brand-source-chip.error .bsc-dot{background:var(--hf-red);box-shadow:0 0 0 2px rgba(217,83,79,.25);animation:none}
+@keyframes bsc-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.85)}}
+.brand-source-chip b{color:#fff;font-weight:800;font-variant-numeric:tabular-nums}
 .brand-bar .meta-actions{display:flex;align-items:center;gap:14px}
 .brand-bar .meta{font-size:11px;letter-spacing:1.5px;opacity:.7;text-transform:uppercase}
 .brand-bar button.action-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px;padding:6px 11px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.5px;font-weight:600}
@@ -4180,6 +4189,15 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
     <h1>GLOBAL PARTNERSHIPS</h1>
   </div>
   <div class="meta-actions">
+    <!-- Data-source chip — proves at a glance that every row in the
+         platform comes from the published Google Sheet, not somewhere
+         else. Updated by _updateBrandMeta() on data load + every sync. -->
+    <button class="brand-source-chip" id="brand-source-chip" type="button"
+            onclick="refreshData()"
+            title="287 entities · synced from Google Sheets · click to refresh">
+      <span class="bsc-dot"></span>
+      <span class="bsc-text" id="bsc-text">Loading…</span>
+    </button>
     <div class="meta" id="brand-meta">Global partnership intelligence</div>
   </div>
 </header>
@@ -5424,7 +5442,11 @@ function submitAdminEdit() {
 // ONBOARDING TOUR — 10-step guided walkthrough on first visit.
 // Re-trigger any time from the floating "?" help button.
 // ========================================================================
-const LS_ONBOARDING_KEY = "hfarm_onboarded_v1";
+// Bump to v2 after the May 2026 dashboard-strip + sentiment + fit-warnings
+// shipment so existing users get re-onboarded once and see the new
+// affordances (their priority-grid muscle memory still applies; the tour
+// just adds 2 new steps).
+const LS_ONBOARDING_KEY = "hfarm_onboarded_v2";
 const ONBOARDING_STEPS = [
   {
     target: null,
@@ -5485,8 +5507,22 @@ const ONBOARDING_STEPS = [
     placement: 'top',
     eyebrow: "Database & Outreach log",
     title: "Every entity, one table",
-    body: "Sortable, searchable, CSV-exportable. Click any row to open the full detail panel — score breakdown, contacts, programme fit, and the <em>Outreach log</em> where you record every email/call/meeting with PDF export.",
+    body: "Sortable, searchable, CSV-exportable. Click any row to open the full detail panel — score breakdown, contacts, programme fit, and the <em>Outreach log</em> where you record every email/call/meeting with PDF export. The <b>Last Contacted</b> column shows a sentiment dot (green/amber/red) and flips to a red <em>'no resp · Nd'</em> badge when a sent email has been quiet for 14+ days.",
     view: "database",
+  },
+  {
+    target: '.dp-head',
+    placement: 'left',
+    eyebrow: "What's new · Dashboard strip",
+    title: "Last contact · Next step · Fit warnings",
+    body: "Opening any entity now shows a 3-row operational strip right under the name: <b>last interaction</b> (when, channel, sentiment, subject snippet), <b>next step</b> (open follow-up with due date + owner), and any <b>fit warnings</b> (research-intensive, Italian competitor). The three metric tiles (Score / Readiness / Engagement Depth) sit below. Reviewer feedback: 'It is a dashboard, so it should be easy to use and operational' — this is that piece.",
+  },
+  {
+    target: '#ol-status',
+    placement: 'left',
+    eyebrow: "What's new · Reply sentiment",
+    title: "Capture the outcome, not just the reply",
+    body: "When you flip outreach <b>Status</b> to <em>Replied</em>, a new <b>Reply sentiment</b> selector appears: <em>Positive · Neutral · Negative · Rejected</em>. The sentiment shows as a colored pill on the outreach log and a dot in the Database last-contacted column — so a 200-row scan answers 'are they answering?' and 'is the answer negative?' without opening anything.",
   },
   {
     target: 'button[data-view="brochures"]',
@@ -5643,6 +5679,26 @@ function endOnboarding(completed) {
   destroyTourOverlay();
   TOUR_STATE.active = false;
   if (completed) localStorage.setItem(LS_ONBOARDING_KEY, "1");
+}
+
+// Update the data-source chip in the top brand bar. Called after CSV
+// load and on every "Refresh data" tap so the count + sync time stays
+// honest. The chip exists to answer the reviewer's "where does this
+// data come from" question at a glance — without needing to open
+// Settings or the sidebar foot.
+function _updateBrandMeta() {
+  const el = document.getElementById("bsc-text");
+  const chip = document.getElementById("brand-source-chip");
+  if (!el || !chip) return;
+  const n = (typeof UNIS !== "undefined" && UNIS) ? UNIS.length : 0;
+  if (n === 0) {
+    el.textContent = "Loading from Google Sheets…";
+    chip.title = "Fetching the latest data from the published Google Sheet";
+    return;
+  }
+  const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  el.innerHTML = `<b>${n}</b> entities · Google Sheets · ${t}`;
+  chip.title = `${n} entities live-synced from the published Google Sheet · click to refresh from the source · last sync ${t}`;
 }
 
 // Re-position bubble on resize (so it tracks layout shifts)
@@ -8129,6 +8185,8 @@ async function parseAndRender(csvText) {
   document.getElementById("loading-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
   document.getElementById("data-status").textContent = `${UNIS.length} entities · synced ${new Date().toLocaleTimeString()}`;
+  // Mirror to the brand-bar data-source chip so it's always visible.
+  if (typeof _updateBrandMeta === "function") _updateBrandMeta();
 
   // Render globe-view content (was always run; cards/globe/pivot stay live in background)
   renderPivotTable();
@@ -10937,6 +10995,19 @@ async function upsertOutreach(entry) {
   // an entity logged outreach but still showed "never contacted" on the
   // kanban card because days_dormant only got set during CSV ingest.
   _refreshEntityRecency(entry.entityId);
+
+  // Push the latest reply sentiment + date to Google Sheets so the
+  // operator sees it on the canonical sheet too — without having to
+  // open the platform. Only fires when status === replied AND sentiment
+  // is set (otherwise the existing field stays as-is). Best-effort:
+  // if the Apps Script doesn't have these columns the write silently
+  // no-ops on the sheet side.
+  if (entry.status === "replied" && entry.sentiment) {
+    if (typeof pushFieldToSheets === "function") {
+      pushFieldToSheets(entry.entityId, "latest_reply_sentiment", entry.sentiment);
+      if (entry.date) pushFieldToSheets(entry.entityId, "latest_reply_date", entry.date);
+    }
+  }
 
   try {
     const r = await apiFetch("/api/state/outreach/" + encodeURIComponent(entry.id), {
