@@ -9784,8 +9784,25 @@ function cardHtml(u) {
   const prioTag = u.priority ? `<span class="tag prio-${PRIO_SLUG(u.priority)}">${u.priority}</span>` : "";
   const stratTag = u.strategic_tier && STRAT_SLUG[u.strategic_tier]
     ? `<span class="tag strat-${STRAT_SLUG[u.strategic_tier]}">${u.strategic_tier}</span>` : "";
-  const topProg = u.top_program_score > 0 ? PROG_BY_ID[u.top_program_id] : null;
-  const topProgChip = topProg ? `<span class="top-prog" style="background:${topProg.color}">${topProg.name} &middot; ${u.top_program_score}</span>` : "";
+  // Programme-match badge — gated by two rules per reviewer feedback:
+  //   1) For agencies, never show a summer-programme match. They refer
+  //      students to Bachelor's / Master's enrollment, not summer
+  //      programs — so showing e.g. "Defending Digital Worlds · 10" on
+  //      a Turkish study-abroad agency (Pisa Edu) is semantically wrong
+  //      even when secondary keywords coincidentally overlap.
+  //   2) For all other types, suppress the badge if confidence is below
+  //      25/100 — anything weaker is noise, not a real signal.
+  const MIN_PROG_CONFIDENCE = 25;
+  const isReferralAgency = (u.type === "agency");
+  let topProgChip = "";
+  if (isReferralAgency) {
+    topProgChip = `<span class="top-prog" style="background:var(--brand-navy)" title="Agencies refer students to Bachelor / Master enrolment, not summer programmes">BACHELOR / MASTER ROUTING</span>`;
+  } else if (u.top_program_score >= MIN_PROG_CONFIDENCE) {
+    const topProg = PROG_BY_ID[u.top_program_id];
+    if (topProg) {
+      topProgChip = `<span class="top-prog" style="background:${topProg.color}">${topProg.name} &middot; ${u.top_program_score}</span>`;
+    }
+  }
   return `<div class="card prio-${PRIO_SLUG(u.priority)}" data-id="${u.id}">
     <div class="card-header">
       <div class="card-name">${escape(u.name)}</div>
@@ -11372,8 +11389,13 @@ function showOutreachForm(entityId, entryId) {
   // === META SIDEBAR ====================================================
   const teamOpts = TEAMS.map(t => `<option value="${t.id}" ${e.senderTeamId === t.id ? 'selected' : ''}>${escape(t.name)}</option>`).join("");
   const collab = recommendCollabFormat(entity);
-  const topProg = PROG_BY_ID[entity.top_program_id];
-  const recName = topProg ? topProg.name : (collab && collab.name) || "—";
+  // Use the shared _pitchReference helper so this sidebar agrees with the
+  // detail panel + card chip + action-recommendation text on what to pitch.
+  // For agencies → Bachelor / Master routing. For low-confidence programme
+  // matches (<25/100) → fall back to the collab format. Otherwise → top
+  // programme name + score.
+  const pitch = (typeof _pitchReference === "function") ? _pitchReference(entity) : null;
+  const recName = (pitch && pitch.name) || ((collab && collab.name) || "—");
   const recBody = (collab && collab.ideal) || "Closest fit for this partner profile.";
 
   // Quick attach — first 3 BROCHURES with a URL
@@ -11588,9 +11610,12 @@ function loMentionInBody() {
   const entityId = document.getElementById("ol-entity").value;
   const entity = UNIS.find(u => u.id === entityId);
   if (!entity) return;
-  const topProg = PROG_BY_ID[entity.top_program_id];
-  const collab  = recommendCollabFormat(entity);
-  const recName = topProg ? topProg.name : (collab && collab.name) || "";
+  // Pull the recommendation through _pitchReference so agencies get the
+  // Bachelor/Master routing language and low-confidence programme matches
+  // fall back to the collab format instead of inserting a misleading
+  // "our X programme is a strong fit" sentence.
+  const pitch = (typeof _pitchReference === "function") ? _pitchReference(entity) : null;
+  const recName = (pitch && pitch.name) || "";
   if (!recName) return;
   const sentence = `In particular, our ${recName} programme looks like a strong fit for ${entity.name}.`;
   const ta = document.getElementById("ol-body");
@@ -19039,18 +19064,53 @@ function _abSetAudience(aud) { _abAudience = aud; renderAboutView(); }
 function _abSetDegreeTab(tab) { _abDegreeTab = tab; renderAboutView(); }
 function _abSetSummerFilter(f) { _abSummerFilter = f; renderAboutView(); }
 
+// Programme-match minimum-confidence threshold. Below this, the matching
+// engine's "top programme" is too noisy to use as a recommendation hook
+// (e.g. Pisa Edu, a Turkish agency, was getting Defending Digital Worlds
+// at score 10 because secondary keywords like "data" / "ai" happened to
+// hit). One source of truth so the card, the outreach modal, and the
+// action-recommendation text all gate the same way.
+const MIN_PROG_CONFIDENCE = 25;
+
+// Pick the right "what to pitch" reference for an entity:
+//   - Agencies refer students to Bachelor / Master enrolment (their
+//     business model isn't running summer programmes), so swap the
+//     summer-programme reference for that
+//   - Low-confidence programme matches (score < MIN_PROG_CONFIDENCE)
+//     fall back to the collab format's name so we don't pitch a
+//     specific summer programme to someone who barely fits any
+// Returns { name, type: "program" | "format", entity_aware: bool }
+function _pitchReference(u) {
+  const isAgency = u.type === "agency";
+  const topProg  = PROG_BY_ID[u.top_program_id];
+  const topScore = u.top_program_score || 0;
+  if (!isAgency && topProg && topScore >= MIN_PROG_CONFIDENCE) {
+    return { name: topProg.name, type: "program", entity_aware: true };
+  }
+  if (isAgency) {
+    return { name: "Bachelor / Master enrolment routing", type: "format", entity_aware: true };
+  }
+  const collab = (typeof recommendCollabFormat === "function") ? recommendCollabFormat(u) : null;
+  if (collab && collab.name) {
+    return { name: collab.name, type: "format", entity_aware: true };
+  }
+  return { name: "the H-FARM College catalogue", type: "fallback", entity_aware: false };
+}
+
 function recommendAction(u) {
   const p = u.priority || "";
   const top = u.top_program_score;
-  const topProg = PROG_BY_ID[u.top_program_id];
   const dorm = u.days_dormant;
-  if (p === "Up & Running") return `<strong>Live partnership.</strong> Quarterly account-management cadence; explore co-branded summer programmes &mdash; especially <em>${topProg.name}</em>.`;
-  if (p === "Critical") return `<strong>Must-close this cycle.</strong> Schedule a direct senior call. Lead with <em>${topProg.name}</em> (match ${top}/100) if relevant to their portfolio.`;
-  if (p === "Hot") return `<strong>Reply within 48h.</strong> Active conversation &mdash; propose next milestone (FAM trip / MoU draft). Programme angle: <em>${topProg.name}</em>.`;
-  if (p === "Warm") return `<strong>Nurture.</strong> Send tailored value: sample MoU, agenda, ${topProg ? `<em>${topProg.name}</em> deck` : 'programme deck'}. Schedule follow-up in 14 days.`;
+  const pitch = _pitchReference(u);
+  const pitchEm = `<em>${escape(pitch.name)}</em>`;
+  const matchHint = (pitch.type === "program") ? ` (match ${top}/100)` : "";
+  if (p === "Up & Running") return `<strong>Live partnership.</strong> Quarterly account-management cadence; explore co-branded ${pitch.type === "program" ? "summer programmes" : "offerings"} &mdash; especially ${pitchEm}.`;
+  if (p === "Critical") return `<strong>Must-close this cycle.</strong> Schedule a direct senior call. Lead with ${pitchEm}${matchHint} if relevant to their portfolio.`;
+  if (p === "Hot") return `<strong>Reply within 48h.</strong> Active conversation &mdash; propose next milestone (FAM trip / MoU draft). ${pitch.type === "program" ? "Programme angle: " : "Lead with: "}${pitchEm}.`;
+  if (p === "Warm") return `<strong>Nurture.</strong> Send tailored value: sample MoU, agenda, ${pitchEm} deck. Schedule follow-up in 14 days.`;
   if (p === "Cold") {
-    if (dorm && dorm > 60) return `<strong>Re-warm needed.</strong> ${dorm} days since last contact. New hook required &mdash; propose <em>${topProg.name}</em> (match ${top}/100) or a conference touchpoint.`;
-    return `<strong>Soft sequence.</strong> Send the H-FARM College brochure + ${topProg ? `<em>${topProg.name}</em> teaser` : 'programme deck'}. Aim for a 15-min intro call.`;
+    if (dorm && dorm > 60) return `<strong>Re-warm needed.</strong> ${dorm} days since last contact. New hook required &mdash; propose ${pitchEm}${matchHint} or a conference touchpoint.`;
+    return `<strong>Soft sequence.</strong> Send the H-FARM College brochure + ${pitchEm} teaser. Aim for a 15-min intro call.`;
   }
   if (p === "Cold-storage") return `<strong>Dormant.</strong> Don't push generic outreach. Wait for a new hook (new programme, ranking change, alumni event), then re-open with that as anchor.`;
   if (p === "Not interested") return `<strong>Parked.</strong> Reassess next academic cycle. If email bounced, finding a new contact via LinkedIn for the same university is the fastest path.`;
