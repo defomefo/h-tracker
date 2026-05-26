@@ -8,7 +8,7 @@
     "applied_signal_bonus": 10,
     "applied_signal_cap": 10,
     "hide_from_candidates": true,
-    "notes": "Patterns match against the entity name (case-insensitive substring). Each warning is additionally gated by entity_type so a competitor pattern (e.g. 'Bocconi') doesn't false-positive on a student org named after the competitor university ('ESN Milano Bocconi'). Manual 'Hot' / 'Critical' / 'Up & Running' priority always overrides the candidate hide. Keep the list tight — false positives are worse than false negatives."
+    "notes": "GEOGRAPHIC RULE (no pattern needed): every Italian university is auto-tagged italian_competitor. Reviewer's 'not interesting to have other Italian uni like Bocconi LUISS etc' covered the whole field, so we don't maintain a name-pattern list for them — Italy + university + automatic flag. The specific patterns below (Bocconi, LUISS, Politecnico, etc.) still fire so the detail-panel badge can stay specific where it matters; de-dupe keeps the penalty from stacking. Patterns match case-insensitive substring on the entity name. Each warning is gated by entity_type so a competitor pattern (e.g. 'Bocconi') doesn't false-positive on a student org named after the competitor university ('ESN Milano Bocconi'). Manual 'Hot' / 'Critical' / 'Up & Running' priority always overrides the candidate hide."
   },
   "fit_warnings": [
     { "pattern": "MIT", "entity_type": "university", "tag": "research_intensive", "label": "Top research university — H-FARM is applied, fit is limited" },

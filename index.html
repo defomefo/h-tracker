@@ -5988,6 +5988,25 @@ function normalizeRow(row, idx) {
   const appliedCap = (fitMeta.applied_signal_cap !== undefined) ? fitMeta.applied_signal_cap : 10;
   const seenTags = new Set();
   const entityType = (row.type || "university").toLowerCase();
+
+  // Geographic rule — every Italian university is, by default, a
+  // competitor. Reviewer made the "not interesting to have other Italian
+  // uni like Bocconi LUISS etc" call: the "etc" covers the whole field.
+  // Cheaper than maintaining a 50-row name pattern list and future-proof
+  // (a new Italian uni added to the sheet next month is auto-flagged).
+  // Specific patterns below (Bocconi, LUISS, etc.) still fire so the
+  // detail-panel badge label can stay specific where it matters.
+  if (entityType === "university" && italianRelevant) {
+    seenTags.add("italian_competitor");
+    fitTags.push({
+      tag: "italian_competitor",
+      label: "Italian competitor — limited partnership opportunity",
+      pattern: "country:Italy",
+    });
+    const pen = penalties.italian_competitor;
+    if (typeof pen === "number") fitAdjust += pen;
+  }
+
   for (const w of fitWarnings) {
     if (!w.pattern) continue;
     // entity_type gate — a "Bocconi" pattern targeting universities should
@@ -5998,7 +6017,9 @@ function normalizeRow(row, idx) {
     if (wantedType !== entityType) continue;
     if (nameLower.includes(w.pattern.toLowerCase())) {
       // De-dupe tags so an entity matching 2 research patterns only gets
-      // ONE research_intensive penalty + tag (not stacked).
+      // ONE research_intensive penalty + tag (not stacked). Also catches
+      // the geographic Italian rule above so Bocconi (matched by pattern +
+      // by country=Italy) only gets ONE penalty, not two.
       if (seenTags.has(w.tag)) continue;
       seenTags.add(w.tag);
       fitTags.push({ tag: w.tag, label: w.label || w.tag, pattern: w.pattern });
