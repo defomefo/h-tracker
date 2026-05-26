@@ -2666,10 +2666,17 @@ Rules:
             config=_gtypes.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.1,
-                # 4096 covers the richer directional-framed list items —
-                # 2048 was getting truncated on rebuilds with verbose
-                # rejection reasons, hitting MAX_TOKENS and breaking JSON.
-                max_output_tokens=4096,
+                # 8192 covers the richer institutional-policy preamble +
+                # 5-item lists. Previous 4096 truncated to ~700 chars of
+                # JSON because gemini-2.5-flash burned most of the budget
+                # on internal "thinking" — see thinking_config below.
+                max_output_tokens=8192,
+                # gemini-2.5-flash enables thinking by default. For a
+                # structured-JSON distillation task we don't need
+                # internal chain-of-thought — disabling frees the entire
+                # output budget for the actual JSON response. Same fix
+                # already in /api/chat-query at line ~1015.
+                thinking_config=_gtypes.ThinkingConfig(thinking_budget=0),
             ),
         )
         # Defensive multi-part concat (same trick as discover) + capture
