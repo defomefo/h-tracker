@@ -2214,6 +2214,52 @@ OUT OF SCOPE — REJECT these even if the search results return them:
   ❌ Banks, insurance, real-estate firms unless they run a structured
      academic-scholarship or research-collaboration program.
 
+  ❌ TOP RESEARCH UNIVERSITIES — H-FARM College is an APPLIED,
+     project-based teaching institution. Reviewer's mandate: "We
+     cannot partner with universities which do deep research, because
+     they are looking normally for deep research as well." NEVER
+     surface (even if asked broadly):
+       MIT, Harvard, Stanford, Princeton, Yale, Caltech, Berkeley,
+       Columbia, Cornell, UCLA, Chicago, Johns Hopkins, UPenn,
+       Carnegie Mellon, Oxford, Cambridge, Imperial, LSE, UCL,
+       ETH Zürich, EPFL, Sorbonne, Sciences Po, INSEAD, HEC Paris,
+       Tsinghua, Peking University, NUS, Tokyo University.
+     If a search result describes a university as "research-intensive",
+     "deep research", "PhD-focused", "doctoral-focused", or
+     "primarily research", treat that as a soft signal to deprioritise
+     (fit_score under 30) and explain the mismatch in fit_reasoning.
+
+  ❌ ITALIAN UNIVERSITIES — H-FARM College is Italian; other Italian
+     universities are GEOGRAPHIC COMPETITORS for the same students.
+     NEVER surface ANY Italian university as a partnership prospect
+     (Bocconi, LUISS, Sapienza, Politecnico Milano/Torino, Bologna,
+     Padova, Cattolica, Ca' Foscari, and every other Italian uni).
+     Non-university Italian partners (high schools, student orgs,
+     agencies, sponsors) ARE in scope — only Italian UNIVERSITIES
+     are excluded.
+
+============================================================
+H-FARM PARTNERSHIP FIT — what to LEAN INTO:
+============================================================
+H-FARM College is APPLIED, hands-on, industry-linked. Best partners
+share that DNA. When you find a candidate, boost fit_score for any of:
+  ✅ Applied / project-based curricula
+  ✅ Strong internship / company-visit programs
+  ✅ Polytechnics, business schools, design schools, applied-science
+     universities
+  ✅ Industry partnership / dual-education programs
+  ✅ Hands-on / experiential learning emphasis
+
+And the LANGUAGE rule for matching summer programmes:
+  • For INTERNATIONAL (non-Italian) partners → suggest only
+    English-language H-FARM programmes (Startup Summer (AD)Venture,
+    Defending Digital Worlds, Designing Connected Futures, AI Fashion
+    Lab, Brand Building, World of AI, Emerals IRL).
+  • The Italian-language programmes (Out of the Box, Finanza per il
+    tuo futuro) are RELEVANT ONLY for Italian-speaking partners.
+    Suggesting them to a Czech polytechnic or a Turkish business
+    school is a known false positive — don't.
+
 If a search result is CLEARLY one of these (e.g. its URL or title plainly
 identifies it as an inbound "Study in X" portal or a SaaS employer),
 skip it. But if you're UNSURE whether something is in-scope or
@@ -2479,6 +2525,68 @@ The profile feeds back into FUTURE discovery prompts to bias what the
 model surfaces. Be specific, not generic. Cite concrete attributes
 (country, entity type, directionality, focus area, mission) — not
 feel-good fluff.
+
+============================================================
+INSTITUTIONAL PARTNERSHIP POLICY (this OVERRIDES personal preference)
+============================================================
+The user is one operator on the global partnerships team — their past
+decisions are signal, but H-FARM College has FIXED institutional
+partnership criteria that ALWAYS apply. If a past YES decision
+contradicts policy, treat it as noise (a learning operator, not a
+mandate). If a past NO decision aligns with policy, generalise it
+forcefully. The profile MUST reflect the policy below, not the
+operator's habits where they conflict.
+
+H-FARM College is an APPLIED, hands-on, project-based teaching
+institution. Its students learn by building products, visiting
+companies, and running real projects with industry. It is NOT a
+research-output university. Therefore:
+
+  ✅ STRONG FIT — partners whose curricula are applied / industry-
+     linked / project-based: business schools, polytechnics, design
+     schools, applied-science universities, schools running
+     internship + company-visit programs, hands-on engineering
+     programs. Signal keywords: "applied", "internship",
+     "industry partnership", "project-based", "company visits",
+     "hands-on", "experiential learning", "polytechnic",
+     "business school".
+
+  ❌ STRONG ANTI-FIT — top research-intensive universities. They
+     look for research-output peers, not applied teaching partners.
+     Reviewer's exact framing: "We cannot partner with universities
+     which do deep research, because they are looking normally for
+     deep research as well". Specifically NEVER recommend, even if
+     a past decision said YES:
+       MIT, Harvard, Stanford, Princeton, Yale, Caltech, Berkeley,
+       Columbia, Cornell, UCLA, Chicago, Johns Hopkins, UPenn,
+       Carnegie Mellon, Oxford, Cambridge, Imperial, LSE, UCL,
+       ETH Zürich, EPFL, Sorbonne, Sciences Po, INSEAD, HEC Paris,
+       Tsinghua, Peking, NUS, Tokyo. Generalise to "top global
+       research universities" in the profile.
+
+  ❌ STRONG ANTI-FIT — Italian universities. They are GEOGRAPHIC
+     COMPETITORS for the same students. Reviewer: "not interesting
+     to have other Italian uni like Bocconi LUISS etc". This covers
+     EVERY Italian university (Bocconi, LUISS, La Sapienza,
+     Politecnico Milano / Torino, Bologna, Padova, Cattolica,
+     Ca' Foscari, and any other Italian uni in the sheet).
+     Non-university Italian partners (agencies, student orgs,
+     high schools, sponsors) ARE in scope — only Italian
+     UNIVERSITIES are excluded.
+
+  ✅ LANGUAGE FILTER — for INTERNATIONAL partners (i.e. not Italian),
+     English-language H-FARM programmes are the ONLY relevant pitch.
+     Italian-language programmes (Out of the Box · Italian, Finanza
+     per il tuo futuro · Italian) MUST NOT be surfaced as a match
+     for any non-Italian-speaking partner. Reviewer caught this
+     specifically: "Out of the Box (Italian) was marked interesting
+     for many international universities, which is not — same
+     applies to Finance".
+
+If the operator's past decisions include any of the above as YES,
+treat them as noise — DO NOT inherit them into strongly_prefers.
+Instead surface them in `rejects` with the policy-aligned framing,
+even if it contradicts the operator's clicked YES.
 
 ============================================================
 KEY CONCEPT — DIRECTIONALITY (read before analysing)
