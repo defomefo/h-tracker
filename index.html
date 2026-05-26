@@ -2242,17 +2242,34 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
    ============================================================ */
 .sm-shell.aspiration-mode .sm-chart-svg .sm-bubble{cursor:crosshair}
 .sm-shell.aspiration-mode .sm-chart-svg{background:linear-gradient(180deg,rgba(217,83,79,.04) 0%, rgba(217,83,79,0) 50%)}
+/* Aspiration line + arrow stay click-through (would block bubble clicks
+   along their path). The TARGET reticle + glow halo are interactive
+   though — click them to open the modal in review mode. */
 .sm-chart-svg .sm-asp-line{stroke:var(--hf-red);stroke-width:2;stroke-dasharray:5,4;fill:none;pointer-events:none;opacity:.85}
 .sm-chart-svg .sm-asp-line.drag-preview{stroke-width:2.5;stroke-dasharray:6,4;animation:sm-asp-march 800ms linear infinite}
 .sm-chart-svg .sm-asp-line.achieved{stroke:#1F6E48;stroke-dasharray:none;opacity:.7}
 .sm-chart-svg .sm-asp-line.expired,.sm-chart-svg .sm-asp-line.abandoned{stroke:var(--ink-mute);stroke-dasharray:2,3;opacity:.4}
-.sm-chart-svg .sm-asp-arrow{fill:var(--hf-red)}
+.sm-chart-svg .sm-asp-arrow{fill:var(--hf-red);cursor:pointer;pointer-events:auto}
 .sm-chart-svg .sm-asp-arrow.achieved{fill:#1F6E48}
 .sm-chart-svg .sm-asp-arrow.expired,.sm-chart-svg .sm-asp-arrow.abandoned{fill:var(--ink-mute)}
-.sm-chart-svg .sm-asp-target{fill:none;stroke:var(--hf-red);stroke-width:2;stroke-dasharray:3,3;pointer-events:none}
-.sm-chart-svg .sm-asp-target.drag-preview{animation:sm-asp-pulse 1s ease-in-out infinite}
-.sm-chart-svg .sm-asp-target-glow{fill:rgba(217,83,79,.18);pointer-events:none}
-.sm-chart-svg .sm-asp-target-bullseye{fill:var(--hf-red);pointer-events:none}
+.sm-chart-svg .sm-asp-target{fill:none;stroke:var(--hf-red);stroke-width:2;stroke-dasharray:3,3;cursor:pointer;pointer-events:visiblePainted;transition:stroke-width .15s,transform .2s;transform-origin:center;transform-box:fill-box}
+.sm-chart-svg .sm-asp-target:hover{stroke-width:3.2;transform:scale(1.18)}
+.sm-chart-svg .sm-asp-target.drag-preview{animation:sm-asp-pulse 1s ease-in-out infinite;cursor:default}
+/* The glow halo is the biggest hit-target (r=14 vs reticle r=9). Making
+   it the primary pointer target makes the bullseye easy to click. */
+.sm-chart-svg .sm-asp-target-glow{fill:rgba(217,83,79,.18);cursor:pointer;pointer-events:visiblePainted;transition:fill .15s}
+.sm-chart-svg .sm-asp-target-glow:hover{fill:rgba(217,83,79,.32)}
+.sm-chart-svg .sm-asp-target-bullseye{fill:var(--hf-red);cursor:pointer;pointer-events:auto}
+/* Hover-dismiss × badge — appears just above the reticle when you mouse
+   over it. One click = hard delete + 60s Undo toast (no modal detour).
+   The reticle's hover state and this badge's visibility share the same
+   group, so hover anywhere in the group keeps the × visible. */
+.sm-asp-group{}
+.sm-asp-dismiss-bg{fill:var(--ink);opacity:0;cursor:pointer;pointer-events:none;transition:opacity .15s}
+.sm-asp-dismiss-x{fill:#fff;font-size:13px;font-weight:800;opacity:0;cursor:pointer;pointer-events:none;transition:opacity .15s;font-family:inherit;user-select:none}
+.sm-asp-group:hover .sm-asp-dismiss-bg{opacity:.92;pointer-events:auto}
+.sm-asp-group:hover .sm-asp-dismiss-x{opacity:1;pointer-events:auto}
+.sm-asp-dismiss-bg:hover{opacity:1;fill:var(--crit)}
 .sm-chart-svg .sm-asp-feas{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;fill:#fff;paint-order:stroke;stroke:var(--hf-red);stroke-width:8px;stroke-linejoin:round}
 @keyframes sm-asp-march { to { stroke-dashoffset: -18; } }
 @keyframes sm-asp-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
@@ -16877,23 +16894,31 @@ function renderStrategicView() {
       const dx = x2 - x1, dy = y2 - y1, dist = Math.sqrt(dx*dx + dy*dy);
       if (dist < 2) return;  // skip near-zero deltas (avoids visual jitter)
       const stCls = (a.status === "active") ? "" : ` ${a.status}`;
+      // Line + arrow render OUTSIDE the hover group — they shouldn't
+      // trigger the × dismiss badge to appear (they run across the chart
+      // and would create accidental hover targets). Click on the line
+      // is intentionally ignored (pointer-events:none in CSS).
       html += `<line class="sm-asp-line${stCls}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" data-asp-id="${escape(a.id)}"/>`;
-      // Arrowhead pointing toward target (simple triangle, no marker-end —
-      // it's positioned analytically so we can color it per aspiration status).
-      const ah = 8;  // arrowhead length
+      const ah = 8;
       const ux = dx / dist, uy = dy / dist;
-      const tipX = x2 - ux * 12;  // 12px back from target so arrow points AT target
+      const tipX = x2 - ux * 12;
       const tipY = y2 - uy * 12;
       const pX1 = tipX - ux * ah + uy * (ah * 0.55);
       const pY1 = tipY - uy * ah - ux * (ah * 0.55);
       const pX2 = tipX - ux * ah - uy * (ah * 0.55);
       const pY2 = tipY - uy * ah + ux * (ah * 0.55);
-      html += `<polygon class="sm-asp-arrow${stCls}" points="${tipX.toFixed(1)},${tipY.toFixed(1)} ${pX1.toFixed(1)},${pY1.toFixed(1)} ${pX2.toFixed(1)},${pY2.toFixed(1)}" data-asp-id="${escape(a.id)}"/>`;
-      // Ghost target — concentric circles (bullseye reticle). data-asp-id
-      // on the interactive layers so a click opens the modal in review mode.
-      html += `<circle class="sm-asp-target-glow" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="14" data-asp-id="${escape(a.id)}"/>`;
-      html += `<circle class="sm-asp-target${stCls}" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="9" data-asp-id="${escape(a.id)}"/>`;
-      html += `<circle class="sm-asp-target-bullseye" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="2" data-asp-id="${escape(a.id)}"/>`;
+      // Group the reticle + dismiss badge so hovering ANY of them keeps
+      // the × visible (CSS :hover on .sm-asp-group cascades to children).
+      const dismissCx = x2 + 14;   // top-right of bullseye
+      const dismissCy = y2 - 14;
+      html += `<g class="sm-asp-group" data-asp-id="${escape(a.id)}">
+        <polygon class="sm-asp-arrow${stCls}" points="${tipX.toFixed(1)},${tipY.toFixed(1)} ${pX1.toFixed(1)},${pY1.toFixed(1)} ${pX2.toFixed(1)},${pY2.toFixed(1)}" data-asp-id="${escape(a.id)}"/>
+        <circle class="sm-asp-target-glow" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="14" data-asp-id="${escape(a.id)}"/>
+        <circle class="sm-asp-target${stCls}" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="9" data-asp-id="${escape(a.id)}"/>
+        <circle class="sm-asp-target-bullseye" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="2" data-asp-id="${escape(a.id)}"/>
+        <circle class="sm-asp-dismiss-bg" cx="${dismissCx.toFixed(1)}" cy="${dismissCy.toFixed(1)}" r="10" data-asp-dismiss="${escape(a.id)}"><title>Delete aspiration (60s Undo)</title></circle>
+        <text class="sm-asp-dismiss-x" x="${dismissCx.toFixed(1)}" y="${(dismissCy + 4).toFixed(1)}" text-anchor="middle" data-asp-dismiss="${escape(a.id)}">×</text>
+      </g>`;
     });
 
     // Bubbles — radial gradient gives a "sphere" feel even in 2D. The
@@ -18245,12 +18270,27 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
     return { x: Math.max(0, Math.min(100, xData)), y: Math.max(0, Math.min(100, yData)) };
   }
 
-  // Wire clicks on the persisted aspiration target reticles — opens the
-  // modal in "review existing" mode (current plan, abandon button, etc.)
+  // Wire clicks on the persisted aspiration target reticles. Two paths:
+  //   - dismiss × badge (data-asp-dismiss) → hard delete with 60s Undo
+  //   - reticle/arrow/glow (data-asp-id)   → open modal in review mode
+  // Note the order: dismiss check first so clicking the × doesn't bubble
+  // up and ALSO open the modal.
+  svg.querySelectorAll("[data-asp-dismiss]").forEach(node => {
+    node.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const aspId = node.getAttribute("data-asp-dismiss");
+      const asp = (typeof ASPIRATIONS !== "undefined" ? ASPIRATIONS : []).find(a => a.id === aspId);
+      if (asp && typeof deleteAspirationWithUndo === "function") {
+        deleteAspirationWithUndo(asp);
+      }
+    });
+  });
   svg.querySelectorAll(".sm-asp-target, .sm-asp-target-bullseye, .sm-asp-target-glow, .sm-asp-arrow")
     .forEach(node => {
-      node.style.cursor = "pointer";
       node.addEventListener("click", (ev) => {
+        // The × badge handled its own click already (stopPropagation).
+        // This handler only runs for the reticle bodies.
+        if (node.hasAttribute("data-asp-dismiss")) return;
         ev.stopPropagation();
         const aspId = node.getAttribute("data-asp-id");
         if (!aspId) return;
