@@ -3244,6 +3244,21 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ppi-empty{font-size:12px;color:var(--ink-mute);font-style:italic;padding:4px 0}
 .ppi-meta{font-size:11px;color:var(--ink-mute);line-height:1.5;padding:12px 0;border-top:1px solid var(--rule);margin-top:8px}
 .ppi-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)}
+/* Institutional-policy panel — hard rules block that sits at the top of
+   the preference-profile modal so the operator (and any reviewer) sees
+   the bias that's institution-mandated, not operator-learned. */
+.ppi-policy{background:var(--ink);color:#fff;border-radius:8px;padding:14px 16px;border-bottom:3px solid var(--hf-red);margin-bottom:20px}
+.ppi-policy .ppi-label{color:#fff;margin-bottom:10px;letter-spacing:.6px}
+.ppi-policy .ppi-label small{color:rgba(255,255,255,.55) !important}
+.ppi-policy-body{display:flex;flex-direction:column;gap:8px}
+.ppi-policy-row{font-size:12px;line-height:1.5;color:rgba(255,255,255,.88);padding:8px 10px;border-radius:5px;border-left:3px solid transparent}
+.ppi-policy-row b{font-weight:800;color:#fff;display:inline-block;margin-right:6px}
+.ppi-policy-row.ppi-policy-yes{background:rgba(46,125,91,.18);border-left-color:#2E7D5B}
+.ppi-policy-row.ppi-policy-no{background:rgba(217,83,79,.16);border-left-color:#D9534F}
+.ppi-policy-row.ppi-policy-lang{background:rgba(31,111,180,.18);border-left-color:#1F6FB4}
+.ppi-policy-row.ppi-policy-dir{background:rgba(201,122,26,.16);border-left-color:#C97A1A}
+.ppi-policy-foot{font-size:11px;color:rgba(255,255,255,.60);line-height:1.5;padding-top:10px;margin-top:10px;border-top:1px solid rgba(255,255,255,.10);font-style:italic}
+.ppi-policy-foot em{color:rgba(255,255,255,.80);font-style:normal;font-weight:700}
 
 .prospects-tabs{display:flex;gap:6px;border-bottom:1px solid var(--rule);padding-bottom:0;align-items:center}
 .prospects-tabs .pt-tab{background:transparent;border:none;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:8px;transition:all .12s;text-transform:uppercase}
@@ -7253,7 +7268,37 @@ function openProspectsProfileInspect() {
   const list = (arr) => (arr && arr.length)
     ? `<ul class="ppi-list">${arr.map(x => `<li>${escape(x)}</li>`).join("")}</ul>`
     : `<div class="ppi-empty">— none identified —</div>`;
+  // Institutional policy panel — the hard rules that override operator
+  // habit in BOTH the discovery + distillation prompts. Surfacing them
+  // here so the operator can audit why the AI is biased the way it is,
+  // and reviewers can see that the bias is institution-policy, not
+  // operator whim.
+  const policyHtml = `
+    <div class="ppi-section ppi-policy">
+      <div class="ppi-label">📜 H-FARM College institutional policy <small style="font-weight:600;color:var(--ink-soft);letter-spacing:0;text-transform:none;margin-left:8px">(hard rules — override operator habit)</small></div>
+      <div class="ppi-policy-body">
+        <div class="ppi-policy-row ppi-policy-yes">
+          <b>✅ FIT</b> — Applied / hands-on / project-based partners. Polytechnics, business schools, design schools, applied-science universities, schools with strong internship + company-visit programmes. H-FARM is an applied teaching institution, not a research-output peer.
+        </div>
+        <div class="ppi-policy-row ppi-policy-no">
+          <b>❌ ANTI-FIT</b> — Top research universities (MIT, Harvard, Stanford, Oxford, Cambridge, ETH, INSEAD, NUS, Tsinghua, etc. — 33 named patterns). They want research peers, not us. Reviewer mandate.
+        </div>
+        <div class="ppi-policy-row ppi-policy-no">
+          <b>❌ ANTI-FIT</b> — Every Italian university (Bocconi, LUISS, Politecnico, Bologna, Padova, Ca' Foscari, etc.) — geographic competitors for the same students. Non-university Italian partners (agencies, student orgs, high schools) stay in scope.
+        </div>
+        <div class="ppi-policy-row ppi-policy-lang">
+          <b>🌐 LANGUAGE</b> — For international (non-Italian-speaking) partners, only English-language H-FARM programmes are valid pitches. Italian-only programmes (Out of the Box, Finanza per il tuo futuro) never surface for them.
+        </div>
+        <div class="ppi-policy-row ppi-policy-dir">
+          <b>↗ DIRECTION</b> — Outbound entities only (those sending local students abroad). Inbound recruitment agencies ("Study in X" portals) are competitors, not partners.
+        </div>
+      </div>
+      <div class="ppi-policy-foot">
+        These rules are injected into every <i>Find prospects</i> call AND the profile-rebuild prompt. The operator's past decisions inform <em>style</em> within these rules (which countries, which entity types are emphasised) — they don't override the rules themselves.
+      </div>
+    </div>`;
   const body = `
+    ${policyHtml}
     <div class="ppi-section">
       <div class="ppi-label">🧠 Summary (steering preamble)</div>
       <div class="ppi-notes">${escape(p.notes || "—")}</div>

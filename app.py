@@ -2652,6 +2652,19 @@ Rules:
   the underlying pattern and list "rejected: INBOUND education agencies".
   One generalised pattern blocks many future false positives; one
   specific entity blocks only that exact name.
+- **GEOGRAPHIC NEUTRALITY**: do NOT narrow the geography in the `notes`
+  summary based on which countries happened to appear in the small
+  decision sample. A search that happened to surface Asian universities
+  doesn't mean the operator only wants Asia — it means Asia is where
+  they searched that week. Keep geographic bias OUT of the `notes`
+  preamble UNLESS the decisions clearly show the operator rejecting
+  several entities from one region for region-specific reasons.
+  Geographic mentions belong in `softly_prefers` (as a hint), not the
+  summary or `strongly_prefers`.
+- The `notes` summary should reflect H-FARM's APPLIED-fit mission +
+  the directional/quality patterns from decisions — NOT specific
+  countries or markets. Reviewer wants this AI to surface partners
+  GLOBALLY where applied-fit + outbound conditions are met.
 - If a category is empty, return [] (not null).
 - No commentary outside the JSON object.
 """
