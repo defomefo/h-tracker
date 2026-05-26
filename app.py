@@ -2832,6 +2832,12 @@ def _prospect_row_to_dict(row):
         "status":              row["status"] or "pending",
         "approved_entity_id":  row["approved_entity_id"] or "",
         "search_run_id":       row["search_run_id"] or "",
+        # Surface the policy push date so the frontend can flag pre-policy
+        # candidates that need re-evaluation. Comparing discovered_at <
+        # POLICY_PUSH_AT tells the UI "this candidate's score was generated
+        # before the May 2026 institutional-policy update".
+        "policy_push_at":      POLICY_PUSH_AT,
+        "is_pre_policy":       (row["discovered_at"] or "") < POLICY_PUSH_AT,
     }
 
 
@@ -3247,6 +3253,181 @@ def prospects_decide(prospect_id):
         "decision_id": did,
         "new_status": new_status,
         "profile_distilled": distill_meta,
+    })
+
+
+# ============================================================================
+# POLICY_PUSH_AT — UTC date of the May 2026 institutional-policy update.
+# Prospect candidates discovered before this carry AI scoring that was
+# done under the OLD (wrong) profile bias (research-intensive preference,
+# Italian competitors not excluded, etc.). The /reeval endpoint lets the
+# operator one-click re-score them with the current policy-aligned prompt.
+# Frontend uses this same string to show a "pre-policy" warning badge.
+# ============================================================================
+POLICY_PUSH_AT = "2026-05-25"
+
+
+@app.route("/api/prospects/<prospect_id>/reeval", methods=["POST"])
+@auth_required
+def prospects_reeval(prospect_id):
+    """Re-score one prospect candidate with the CURRENT discovery prompt
+    (which now carries the institutional policy preamble: applied-fit,
+    no research-intensive, no Italian universities, English-language
+    rule for international partners).
+
+    Reads the candidate's existing name + description + source URLs out
+    of prospect_candidates, builds a minimal prompt asking Gemini to
+    return ONLY {fit_score, fit_reasoning, suggested_programs} for THIS
+    one row, then updates the DB. Lighter than re-running a full
+    discovery (no Tavily search, no candidate extraction loop)."""
+    if not GEMINI_KEY:
+        return jsonify({"ok": False, "error": "GEMINI_API_KEY not configured"}), 503
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM prospect_candidates WHERE id = ?",
+        (prospect_id,),
+    ).fetchone()
+    if not row:
+        return jsonify({"ok": False, "error": "candidate not found"}), 404
+
+    # Build a focused single-candidate prompt that carries the same
+    # institutional policy as the full discovery prompt. We don't need
+    # web search results — the candidate already exists in the DB with
+    # its description + sources, so we score from those.
+    name        = row["name"]
+    rtype       = row["type"] or "university"
+    country     = row["country"] or ""
+    region      = row["region"] or ""
+    description = row["description"] or ""
+    primary_url = row["primary_url"] or ""
+    try:
+        existing_sources = json.loads(row["source_urls"] or "[]")
+    except Exception:
+        existing_sources = []
+    src_str = "\n".join(f"- {u}" for u in (existing_sources[:5] or [primary_url]) if u) or "(none)"
+
+    prompt = f"""You re-score ONE partnership prospect for H-FARM College using
+the CURRENT institutional partnership policy. Older scores in the DB
+were generated under a prior (incorrect) preference bias and need
+refreshing.
+
+============================================================
+INSTITUTIONAL POLICY (the only thing that matters here)
+============================================================
+H-FARM College is an APPLIED, hands-on, project-based teaching
+institution. Best fits share that DNA. NEVER recommend top research
+universities — they look for research peers, not us. Specifically
+AVOID even if surfaced:
+  MIT, Harvard, Stanford, Princeton, Yale, Caltech, Berkeley,
+  Columbia, Cornell, UCLA, Chicago, Johns Hopkins, UPenn, Carnegie
+  Mellon, Oxford, Cambridge, Imperial, LSE, UCL, ETH Zürich, EPFL,
+  Sorbonne, Sciences Po, INSEAD, HEC Paris, Tsinghua, Peking, NUS,
+  Tokyo. If the candidate is in this group → fit_score 5-15 with
+  reasoning explaining the policy mismatch.
+
+NEVER recommend Italian universities (Bocconi, LUISS, Sapienza,
+Politecnico Milano / Torino, Bologna, Padova, Cattolica, Ca' Foscari,
+any other Italian uni) — geographic competitors. → fit_score 5-15.
+
+For everyone else:
+  ✅ APPLIED FIT boost: business schools, polytechnics, design
+     schools, applied-science universities, schools with strong
+     internship + company-visit + project-based programmes
+  ✅ OUTBOUND-direction agencies (sending local students abroad)
+  ❌ INBOUND-direction agencies ("Study in X" portals — competitors)
+
+For international (non-Italian-speaking) partners, only English-
+language H-FARM programmes are valid pitches. Italian-only
+programmes (Out of the Box, Finanza per il tuo futuro) MUST NOT
+be suggested for them.
+
+============================================================
+CANDIDATE TO RE-SCORE
+============================================================
+Name:        {name}
+Type:        {rtype}
+Country:     {country}
+Region:      {region}
+Description: {description}
+Sources:
+{src_str}
+
+Return STRICT JSON in this exact shape (no commentary, no markdown):
+{{
+  "fit_score": <integer 0-100, your policy-aligned score>,
+  "fit_reasoning": "<2-3 sentences explaining the score, citing the
+                    policy where relevant. Be specific. If you're
+                    downgrading from a previous high score, say so
+                    and why.>",
+  "suggested_programs": ["<H-FARM programme name>", ...]
+}}
+
+Fit-score guide under current policy:
+  80-100 — strong applied fit, clear outbound direction, no policy violations
+  50-79  — moderate fit, useful partner with some reservations
+  20-49  — weak fit, policy concerns OR borderline relevance
+  0-19   — policy violation (research-intensive top, Italian university,
+           inbound agency, out-of-scope corporation)
+"""
+
+    try:
+        from google.genai import types as _gtypes
+        client_ai = genai.Client(api_key=GEMINI_KEY)
+        resp = client_ai.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=_gtypes.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1,
+                max_output_tokens=2048,
+                thinking_config=_gtypes.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+        text_parts = []
+        if getattr(resp, "candidates", None):
+            for cand in resp.candidates:
+                content = getattr(cand, "content", None)
+                parts = getattr(content, "parts", None) if content else None
+                if parts:
+                    for p in parts:
+                        t = getattr(p, "text", None)
+                        if t:
+                            text_parts.append(t)
+        raw_text = ("".join(text_parts) or getattr(resp, "text", "") or "").strip()
+        if raw_text.startswith("```"):
+            raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+            raw_text = re.sub(r"\s*```\s*$", "", raw_text).strip()
+        data = json.loads(raw_text)
+    except Exception as e:
+        return jsonify({
+            "ok":            False,
+            "error":         f"Re-eval failed: {e}",
+            "exception_type": type(e).__name__,
+        }), 502
+
+    new_score = int(data.get("fit_score") or 0)
+    new_score = max(0, min(100, new_score))
+    new_reasoning = str(data.get("fit_reasoning") or "").strip()[:2000]
+    raw_programs = data.get("suggested_programs") or []
+    if not isinstance(raw_programs, list):
+        raw_programs = []
+    new_programs = [str(p).strip() for p in raw_programs if str(p).strip()][:5]
+
+    db.execute(
+        "UPDATE prospect_candidates SET ai_fit_score = ?, ai_reasoning = ?, "
+        "suggested_programs = ? WHERE id = ?",
+        (new_score, new_reasoning, json.dumps(new_programs), prospect_id),
+    )
+    db.commit()
+    _record_edit("prospect", "reeval", prospect_id)
+
+    return jsonify({
+        "ok": True,
+        "id": prospect_id,
+        "fit_score": new_score,
+        "fit_reasoning": new_reasoning,
+        "suggested_programs": new_programs,
+        "policy_version": POLICY_PUSH_AT,
     })
 
 

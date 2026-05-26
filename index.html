@@ -3286,6 +3286,17 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .prospect-card .pc-fit-num.high{color:var(--ur)}
 .prospect-card .pc-fit-num.mid{color:var(--warm)}
 .prospect-card .pc-fit-num.low{color:var(--ink-mute)}
+
+/* Pre-policy warning — surfaced on candidates whose AI fit score was
+   generated before the May 2026 institutional-policy update. Pushes
+   the operator to one-click re-evaluate so they don't act on a
+   misleading number (e.g. Istanbul Technical scored 98 under the old
+   "user prefers research uni's" bias the policy now rejects). */
+.prospect-pre-policy{display:inline-block;margin-left:8px;font-size:10px;font-weight:800;letter-spacing:.6px;padding:2px 8px;border-radius:9px;background:#FAEFD8;color:#7A5215;text-transform:uppercase;cursor:help;vertical-align:1px}
+.prospect-policy-warn{margin:8px 0 12px;padding:11px 14px;background:linear-gradient(90deg,#FAEFD8 0%,#FFF8E8 100%);border:1px solid #EBDDB5;border-left:3px solid #C97A1A;border-radius:6px;font-size:12px;line-height:1.5;color:var(--ink);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.prospect-policy-warn b{font-weight:800;color:#7A5215}
+.prospect-reeval-btn{flex-shrink:0;font-size:11px !important;padding:6px 12px !important;letter-spacing:.3px}
+.prospect-reeval-btn:disabled{opacity:.6;cursor:wait}
 .prospect-card .pc-fit-lbl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--ink-soft);margin-top:2px}
 .prospect-card .pc-desc{font-size:12px;color:var(--ink);line-height:1.45;font-style:italic}
 .prospect-card .pc-reasoning{font-size:12px;color:var(--ink);line-height:1.55}
@@ -7652,13 +7663,18 @@ function openProspectDetail(prospectId) {
     </div>
 
     <div class="cd-section">
-      <h4>AI fit assessment</h4>
+      <h4>AI fit assessment ${p.is_pre_policy ? `<span class="prospect-pre-policy" title="This score was generated before the May 2026 institutional-policy update — it may overstate (or understate) fit. Re-evaluate to refresh.">pre-policy</span>` : ''}</h4>
+      ${p.is_pre_policy ? `<div class="prospect-policy-warn">
+        <b>⚠ Scored under old policy.</b> This candidate's score and reasoning were generated before the institutional-policy update (research-intensive + Italian-competitor exclusions, applied-fit boost, language rules). The number below may not reflect current fit.
+        <button class="btn outline prospect-reeval-btn" onclick="reevalProspect('${escapeAttr(p.id)}')" id="reeval-btn-${escapeAttr(p.id)}">↻ Re-evaluate with current policy</button>
+      </div>` : ''}
       <div class="prospect-fit-bar">
         <div class="prospect-fit-num">${p.ai_fit_score || 0}<small>/100</small></div>
         <div class="prospect-fit-bar-track"><div style="width:${p.ai_fit_score || 0}%"></div></div>
       </div>
       <div class="prospect-reasoning">${escape(p.ai_reasoning || "—")}</div>
       ${(p.suggested_programs || []).length ? `<div style="margin-top:10px"><div class="cd-k" style="margin-bottom:4px">Suggested H-FARM College programs</div><div class="cd-progs">${p.suggested_programs.map(s => `<span class="cd-prog">${escape(s)}</span>`).join("")}</div></div>` : ''}
+      ${!p.is_pre_policy ? `<div style="margin-top:10px;text-align:right"><button class="btn outline prospect-reeval-btn" onclick="reevalProspect('${escapeAttr(p.id)}')" id="reeval-btn-${escapeAttr(p.id)}" title="Re-run the AI scoring on this candidate with the current policy — useful if you've updated the policy or want a fresh take">↻ Re-evaluate fit</button></div>` : ''}
     </div>
 
     <div class="cd-section">
@@ -7706,6 +7722,53 @@ function openProspectDetail(prospectId) {
 function closeProspectDetail() {
   document.getElementById("prospect-detail-modal").classList.remove("open");
   PROSPECTS_STATE.detailId = null;
+}
+
+// Re-evaluate one prospect's fit score with the CURRENT institutional
+// policy. Useful for pre-policy candidates whose score was generated
+// under the previous (operator-biased) prompt. Hits the backend
+// /api/prospects/<id>/reeval endpoint, which runs Gemini on just this
+// row with the policy-aligned scoring prompt and persists the new
+// fit_score + reasoning + suggested_programs.
+async function reevalProspect(prospectId) {
+  const btn = document.getElementById(`reeval-btn-${prospectId}`);
+  if (!btn) return;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "↻ Re-evaluating…";
+  try {
+    const r = await apiFetch(`/api/prospects/${encodeURIComponent(prospectId)}/reeval`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body: "{}",
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) {
+      throw new Error(data.error || `HTTP ${r.status}`);
+    }
+    // Patch the local PROSPECTS row so the modal + the list both reflect
+    // the new score without needing a full refetch.
+    const idx = PROSPECTS.findIndex(p => p.id === prospectId);
+    if (idx >= 0) {
+      PROSPECTS[idx].ai_fit_score = data.fit_score;
+      PROSPECTS[idx].ai_reasoning = data.fit_reasoning;
+      PROSPECTS[idx].suggested_programs = data.suggested_programs;
+      // Re-evaluation rebases the policy_version stamp — no longer "pre-policy".
+      PROSPECTS[idx].is_pre_policy = false;
+    }
+    // Re-render the modal + the prospects view if it's the active view.
+    if (typeof openProspectDetail === "function") openProspectDetail(prospectId);
+    if (typeof renderProspectsView === "function") renderProspectsView();
+    if (typeof showSyncToast === "function") {
+      showSyncToast(`✓ Re-evaluated · new fit ${data.fit_score}/100`, "ok");
+    }
+  } catch (err) {
+    if (typeof showSyncToast === "function") {
+      showSyncToast("⚠ Re-eval failed: " + (err.message || err), "warn");
+    }
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
 }
 
 // ============================================================================
