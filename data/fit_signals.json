@@ -61,11 +61,41 @@
     { "pattern": "Ca' Foscari", "entity_type": "university", "tag": "italian_competitor", "label": "Italian competitor — limited partnership opportunity" }
   ],
   "applied_signal_keywords": [
-    "internship", "internships", "applied", "project-based", "project based",
-    "company visits", "industry partnership", "industry partnerships",
-    "hands-on", "hands on", "experiential learning", "work-integrated",
-    "co-op", "coop", "industry-linked", "industry collaboration",
-    "applied research", "professional practice", "real-world projects",
-    "business school", "polytechnic"
+    "internship", "internships", "stage curricolare", "praktikum",
+    "applied", "applied science", "applied sciences",
+    "project-based", "project based", "project work", "real project",
+    "company visits", "company visit", "industry visit", "site visit",
+    "industry partnership", "industry partnerships", "industry-linked",
+    "industry collaboration", "industry projects", "client projects",
+    "hands-on", "hands on", "experiential learning",
+    "work-integrated", "work integrated", "dual education",
+    "dual-education", "dual studies", "dual-studies",
+    "co-op", "coop", "cooperative education",
+    "apprenticeship", "vocational", "technical education",
+    "professional school", "professional practice", "professional training",
+    "real-world projects", "applied research",
+    "business school", "school of business", "school of management",
+    "polytechnic", "polytechnical", "polytechnique",
+    "fachhochschule", "hochschule", "hogeschool", "haute école",
+    "université de technologie", "institut de technologie",
+    "institute of technology", "tech institute", "technology institute",
+    "school of design", "design school", "school of architecture",
+    "art school", "school of art", "creative school",
+    "industry-aligned", "career-focused", "career focused",
+    "experiential", "praktisch", "tirocinio",
+    "alternanza scuola-lavoro", "alternanza"
+  ],
+  "applied_name_patterns": [
+    "polytechnic", "polytechnical", "polytechnique", "politecnico",
+    "applied science", "applied sciences",
+    "fachhochschule", "hochschule", "hogeschool", "haute école",
+    "université de technologie", "institut de technologie",
+    "institute of technology", "tech institute",
+    "school of business", "school of management",
+    "school of design", "design school", "school of architecture",
+    "art school", "school of art",
+    "professional school", "vocational",
+    "institut catholique", "instituto tecnico",
+    "fh ", "htw ", "uas "
   ]
 }

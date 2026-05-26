@@ -6130,14 +6130,44 @@ function normalizeRow(row, idx) {
     }
   }
   // Applied-signal bonus: any keyword hit grants the bonus once (cap).
+  // Two parallel paths:
+  //   1) Focus/notes/programs blob match — user-typed evidence the entity
+  //      runs applied programmes (internships, project-based learning, etc.)
+  //   2) NAME pattern match — entity NAME itself signals applied (e.g.
+  //      "Politecnico", "Polytechnic", "Fachhochschule", "Hogeschool",
+  //      "School of Applied Sciences"). This catches the institutional
+  //      DNA even when focus_areas just lists generic field names like
+  //      "Business, Economics, Engineering" — most CSV rows look like that.
+  // De-duped: a single applied_signal tag fires once even if both paths
+  // match, so the score bonus isn't stacked.
   const appliedKw = (FIT_SIGNALS && FIT_SIGNALS.applied_signal_keywords) || [];
+  const appliedNamePatterns = (FIT_SIGNALS && FIT_SIGNALS.applied_name_patterns) || [];
   let appliedHit = null;
-  for (const kw of appliedKw) {
-    if (blob.includes(kw.toLowerCase())) { appliedHit = kw; break; }
+  let appliedHitSource = "";   // "name" | "focus" — surfaces in the badge label
+  // Path 2 first — name signal is stronger (it's the institution's identity)
+  for (const pat of appliedNamePatterns) {
+    if (nameLower.includes(pat.toLowerCase())) {
+      appliedHit = pat;
+      appliedHitSource = "name";
+      break;
+    }
+  }
+  // Path 1 if name didn't hit
+  if (!appliedHit) {
+    for (const kw of appliedKw) {
+      if (blob.includes(kw.toLowerCase())) {
+        appliedHit = kw;
+        appliedHitSource = "focus";
+        break;
+      }
+    }
   }
   if (appliedHit) {
     fitAdjust += Math.min(appliedCap, appliedBonus);
-    fitTags.push({ tag: "applied_signal", label: `Applied / hands-on signal: "${appliedHit}"`, pattern: appliedHit });
+    const labelPrefix = appliedHitSource === "name"
+      ? `Applied institution signal (name): "${appliedHit}"`
+      : `Applied / hands-on signal (focus areas): "${appliedHit}"`;
+    fitTags.push({ tag: "applied_signal", label: labelPrefix, pattern: appliedHit, source: appliedHitSource });
   }
   // Clamp adjusted top score to [0,100] so the rest of the scoring math
   // stays in its expected range.
@@ -10520,6 +10550,47 @@ function _dpProfileTabHtml(u) {
       </div>
     </div>`;
 
+  // Fit-signals audit section — surfaces the WHY behind the score
+  // adjustment. Reviewer asked: where does the applied-signal flag
+  // appear, how does the algorithm decide? This section answers both
+  // by listing every fit_tag attached to the entity + the cumulative
+  // score adjustment. Shows even when no tags fire so the operator
+  // knows the rule ran (and what it was looking for).
+  const fitTagsList = (u.fit_tags || []);
+  const fitAdjustVal = (typeof u.fit_adjust === "number") ? u.fit_adjust : 0;
+  const fitAuditHtml = `
+    <div class="dp-sec">
+      <div class="dp-sec-head">
+        <div class="dp-sec-title">Fit signals · how the score adjusted</div>
+        <div class="dp-sec-aside">${fitAdjustVal === 0 ? "no adjustment" : (fitAdjustVal > 0 ? `+${fitAdjustVal}` : `${fitAdjustVal}`) + " to programme-fit slice"}</div>
+      </div>
+      ${fitTagsList.length ? `
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${fitTagsList.map(t => {
+            const isPositive = (t.tag === "applied_signal");
+            const tone = isPositive ? "color:#1F6E48;background:#DCEFE3;border-color:#B7DCC5"
+              : t.tag === "italian_competitor" ? "color:#5F6B7C;background:#ECEEF1;border-color:#D2D8E0"
+              : "color:#B0322E;background:#FCE4E4;border-color:#F2C9C9";
+            return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 11px;border-radius:6px;border:1px solid;${tone}">
+              <div style="font-size:14px;line-height:1;margin-top:1px">${isPositive ? "✓" : "⚠"}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:800;letter-spacing:.2px">${escape(t.label || t.tag)}</div>
+                <div style="font-size:10px;opacity:.8;margin-top:2px;font-family:'Consolas',monospace">matched: ${escape(t.pattern || "—")}</div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      ` : `
+        <div style="font-size:11px;color:var(--ink-soft);line-height:1.5;padding:8px 0">
+          No fit signals matched. The algorithm scanned <b>name</b> + <b>focus areas</b> + <b>notes</b> for ${(FIT_SIGNALS && FIT_SIGNALS.applied_signal_keywords || []).length} applied-fit keywords (internship · applied · project-based · company visits · hands-on · polytechnic · business school · Fachhochschule · Hogeschool · etc.) and ${(FIT_SIGNALS && FIT_SIGNALS.applied_name_patterns || []).length} institutional name patterns (Polytechnic · Applied Sciences · Tech Institute · etc.). No match → no programme-fit score adjustment.
+          ${u.type === "university" ? `<br><br>If this is genuinely an applied / hands-on institution, edit <b>Focus areas / curriculum</b> above to mention concrete signals like "internships", "company visits", "project-based learning", or "applied research" — the score will refresh on next sync.` : ""}
+        </div>
+      `}
+      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--rule);font-size:10px;color:var(--ink-mute);line-height:1.4">
+        <b>How the rule works:</b> the matcher scans the entity's name + focus areas + notes for two lists in <code>data/fit_signals.json</code> — applied-signal keywords (focus-text evidence the institution runs applied programmes) and applied name patterns (the institution's name itself signals applied DNA: Polytechnic / Fachhochschule / Hogeschool / Applied Sciences / etc.). Negative signals (research-intensive name, Italian university) deduct from the programme-fit slice; positive signals (applied hit) add up to +${(FIT_SIGNALS && FIT_SIGNALS._meta && FIT_SIGNALS._meta.applied_signal_bonus) || 10}.
+      </div>
+    </div>`;
+
   // Profile section assembled
   const revertBtn = (typeof ENTITY_OVERRIDES !== "undefined" && ENTITY_OVERRIDES[u.id])
     ? `<button type="button" class="dp-sec-link" onclick="revertEntityOverrides('${u.id}')" title="Discard edits and reload from CSV">↶ Revert edits</button>`
@@ -10539,6 +10610,7 @@ function _dpProfileTabHtml(u) {
     </div>
     ${formatHtml}
     ${teamHtml}
+    ${fitAuditHtml}
     ${progHtml}
     ${u.notes ? `<div class="dp-sec">
       <div class="dp-sec-head"><div class="dp-sec-title">Notes</div></div>
