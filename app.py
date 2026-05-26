@@ -1845,6 +1845,79 @@ def aspirations_delete(aspiration_id):
     return jsonify({"ok": True})
 
 
+@app.route("/api/aspirations/<aspiration_id>", methods=["PUT"])
+@auth_required
+def aspirations_upsert(aspiration_id):
+    """Upsert an aspiration with its original id — used by the frontend
+    Undo flow to restore a deleted aspiration with all its history intact
+    (actions_json, linked_followup_ids, created_at, expires_at). Mirrors
+    the pattern followups + contracts use for their undo restoration."""
+    body = request.get_json(force=True, silent=True) or {}
+    entity_id = (body.get("entity_id") or "").strip()
+    axis_key  = (body.get("axis_key")  or "").strip()
+    if not entity_id or axis_key not in _ASPIRATION_AXES:
+        return jsonify({"error": "entity_id + valid axis_key required"}), 400
+    try:
+        cur_x = int(body.get("current_x", 0))
+        cur_y = int(body.get("current_y", 0))
+        tgt_x = int(body.get("target_x", 0))
+        tgt_y = int(body.get("target_y", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "xy coordinates must be integers"}), 400
+
+    src_q = (body.get("source_quadrant") or _aspiration_quadrant(cur_x, cur_y))
+    tgt_q = (body.get("target_quadrant") or _aspiration_quadrant(tgt_x, tgt_y))
+    jump  = body.get("quadrant_jump")
+    if not isinstance(jump, int):
+        jump = _aspiration_quadrant_jump(src_q, tgt_q)
+    feas  = body.get("feasibility") or _aspiration_feasibility(jump, src_q, tgt_q)
+    status = (body.get("status") or "active").strip().lower()
+    if status not in _ASPIRATION_STATUSES:
+        status = "active"
+    now = _now_iso()
+    created_at  = body.get("created_at")  or now
+    updated_at  = now
+    expires_at  = body.get("expires_at")  or now
+    created_by  = body.get("created_by")  or ((request.headers.get("X-Display-Name") or "").strip() or None)
+    note        = (body.get("note") or "").strip() or None
+    actions_json = json.dumps(body["actions"]) if body.get("actions") else (body.get("actions_json") or None)
+    linked      = body.get("linked_followup_ids") or []
+    linked_json = json.dumps(linked) if linked else None
+
+    db = get_db()
+    db.execute(
+        "INSERT INTO aspiration_goals "
+        "(id, entity_id, axis_key, current_x, current_y, target_x, target_y, "
+        " source_quadrant, target_quadrant, quadrant_jump, feasibility, "
+        " status, actions_json, note, linked_followup_ids, "
+        " created_at, updated_at, expires_at, created_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT (id) DO UPDATE SET "
+        "  entity_id = excluded.entity_id, axis_key = excluded.axis_key, "
+        "  current_x = excluded.current_x, current_y = excluded.current_y, "
+        "  target_x = excluded.target_x, target_y = excluded.target_y, "
+        "  source_quadrant = excluded.source_quadrant, "
+        "  target_quadrant = excluded.target_quadrant, "
+        "  quadrant_jump = excluded.quadrant_jump, "
+        "  feasibility = excluded.feasibility, "
+        "  status = excluded.status, "
+        "  actions_json = excluded.actions_json, "
+        "  note = excluded.note, "
+        "  linked_followup_ids = excluded.linked_followup_ids, "
+        "  updated_at = excluded.updated_at",
+        (
+            aspiration_id, entity_id, axis_key,
+            cur_x, cur_y, tgt_x, tgt_y,
+            src_q, tgt_q, jump, feas,
+            status, actions_json, note, linked_json,
+            created_at, updated_at, expires_at, created_by,
+        ),
+    )
+    db.commit()
+    _record_edit("aspiration", "upsert", aspiration_id)
+    return jsonify({"ok": True, "id": aspiration_id})
+
+
 @app.route("/api/aspirations/<aspiration_id>/link-followup", methods=["POST"])
 @auth_required
 def aspirations_link_followup(aspiration_id):
