@@ -579,6 +579,20 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .db-spark-cell{display:flex;align-items:center;gap:8px;min-width:120px}
 .db-spark-cell .spark{flex-shrink:0}
 .db-spark-cell .trj-vel{flex-shrink:0;font-size:9px;padding:1px 5px}
+/* Reply Health card — sent/replied/no-reply breakdown w/ ghosting flag */
+.rh-card{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--ink-soft);border-radius:6px;padding:10px 14px 11px;margin:0 0 16px;display:flex;flex-direction:column;gap:6px}
+.rh-empty{border-left-color:var(--rule)}
+.rh-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.rh-label{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:800}
+.rh-verdict{font-size:11px;font-weight:800;letter-spacing:.3px}
+.rh-empty-msg{font-size:11px;color:var(--ink-mute);font-style:italic;line-height:1.4}
+.rh-stats{display:flex;gap:14px;flex-wrap:wrap;align-items:baseline}
+.rh-stat{font-size:11px;color:var(--ink-soft);display:inline-flex;align-items:baseline;gap:4px}
+.rh-stat b{font-size:18px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
+.rh-stat small{font-size:10px;font-weight:600;letter-spacing:.2px;text-transform:lowercase}
+.rh-stat.rh-pos b{color:#1F6E48}
+.rh-stat.rh-warn b{color:#C97A1A}
+.rh-stat.rh-bad b{color:#B0322E}
 /* Home briefing cooling cluster */
 .briefing-cooling{color:var(--crit);font-weight:800}
 
@@ -11057,27 +11071,33 @@ function _dpHeaderHtml(u) {
     ${_dpTrajectoryHtml(u)}`;
 }
 
-// Trajectory card — full-width sparkline of the last 90 days of engagement
-// depth + a velocity pill (↑ +X in 30d). Uses the cached TRAJECTORY_BULK so
-// re-renders are instant; falls back to "building…" placeholder when the
-// snapshot table has <2 distinct days for this entity (cold-start state).
+// Engagement trajectory section — two cards stacked:
+//   1. Activity Pulse: monthly outreach bars + recency-aware velocity
+//      (CAN drop, so cooling actually shows). Replaces the old
+//      cumulative-depth sparkline which could only go up or flat.
+//   2. Reply Health: 60-day sent/replied breakdown + ghosting flag.
+//      Catches "we're pushing into the void" — different signal from
+//      activity drop ("nobody is talking to them").
+// Both compute locally from OUTREACH so they're instant; no API calls.
 function _dpTrajectoryHtml(u) {
-  const rawPoints  = (typeof TRAJECTORY_BULK !== "undefined" && TRAJECTORY_BULK[u.id]) || [];
-  const allPoints  = (typeof _trajectoryWithToday === "function") ? _trajectoryWithToday(rawPoints, u) : rawPoints;
-  const sparkSvg   = (typeof renderTrajectorySparkline === "function")
-    ? renderTrajectorySparkline(allPoints, { width: 420, height: 48, windowDays: 30 })
+  const sparkSvg = (typeof renderActivityPulseSparkline === "function")
+    ? renderActivityPulseSparkline(u.id, { width: 420, height: 48, months: 6 })
     : "";
-  const velPill    = (typeof renderVelocityPill === "function")
-    ? renderVelocityPill(allPoints, 30) : "";
-  const v          = (typeof trajectoryVelocity === "function") ? trajectoryVelocity(allPoints, 30) : { tone: "flat" };
-  const isCooling  = v.tone === "down" && (u.priority === "Hot" || u.priority === "Critical");
-  const histCount  = allPoints.filter(p => p && p.depth !== null).length;
-  const windowLbl  = histCount < 2 ? "Building — snapshots accumulate daily"
-                                   : `Last ${Math.min(90, histCount)} day${histCount === 1 ? '' : 's'} · 30d velocity`;
+  const velPill  = (typeof renderActivityVelocityPill === "function")
+    ? renderActivityVelocityPill(u.id) : "";
+  const v        = (typeof activityVelocity === "function") ? activityVelocity(u.id) : { tone: "flat" };
+  const series   = (typeof _activityPulseSeries === "function") ? _activityPulseSeries(u.id, 6) : [];
+  const totalAct = series.reduce((s, b) => s + b.count, 0);
+  const isCooling = (v.tone === "down") && (u.priority === "Hot" || u.priority === "Critical");
+  const monthLabels = series.map(b => b.label).join("·");
+  const windowLbl = totalAct === 0
+    ? "No outreach in the last 6 months"
+    : `Last 6 months · ${totalAct} total · ${escape(monthLabels)}`;
+  const replyCard = (typeof renderReplyHealthCard === "function") ? renderReplyHealthCard(u.id) : "";
   return `<div class="dp-trajectory">
     <div>
       <div class="dp-trj-head">
-        <span class="dp-trj-label">Engagement trajectory</span>
+        <span class="dp-trj-label">Activity pulse</span>
         <span class="dp-trj-window">${escape(windowLbl)}</span>
       </div>
       ${sparkSvg}
@@ -11086,7 +11106,8 @@ function _dpTrajectoryHtml(u) {
       ${velPill}
       ${isCooling ? `<span class="dp-trj-cooling show" title="A ${u.priority} partner cooling — high priority for re-engagement">⚠ Cooling</span>` : ''}
     </div>
-  </div>`;
+  </div>
+  ${replyCard}`;
 }
 
 function _dpScoreBreakdownHtml(u) {
@@ -14256,20 +14277,24 @@ function renderHomeView() {
   if (dormantHi.length > 0) {
     insights.push(`<strong>${dormantHi.length}</strong> ${dormantHi.length === 1 ? "high-priority partner hasn't" : "high-priority partners haven't"} been contacted in 30+ days`);
   }
-  // Cooling alert — Hot/Critical partners whose engagement depth has dropped
-  // ≥15% over the last 30 days. Different signal from "days dormant" — a
-  // partner can be recently contacted but still cooling (one reply, no
-  // follow-through). Surfaces via the trajectory snapshot data.
-  const coolingPartners = (typeof detectCoolingPartners === "function")
-    ? detectCoolingPartners({ priorities: ["Critical", "Hot"], pctThreshold: 15, windowDays: 30 })
+  // Partner health alert — three patologies, one insight slot. Detector
+  // ranks ghosting > cooling > weak-reply (worst first). Different signals
+  // from "days dormant": cooling = activity dropped, ghosting = we're
+  // pushing into the void, weak-reply = we're being talked AT not WITH.
+  const coolingPartners = (typeof detectCoolingPartnersV2 === "function")
+    ? detectCoolingPartnersV2({ priorities: ["Critical", "Hot"] })
     : [];
   if (coolingPartners.length > 0) {
-    const topName = coolingPartners[0].entity.name;
+    const top = coolingPartners[0];
+    const topName = top.entity.name;
     const otherN = coolingPartners.length - 1;
+    const verb = top.reason.kind === "ghosting" ? "is ghosting us"
+              : top.reason.kind === "weak-reply" ? "has weak reply rate"
+              : "is cooling";
     const headline = coolingPartners.length === 1
-      ? `<strong class="briefing-cooling">${escape(topName)}</strong> is cooling — depth dropped <strong>${coolingPartners[0].dropPct}%</strong> in 30 days`
-      : `<strong class="briefing-cooling">${escape(topName)}</strong> + <strong>${otherN}</strong> other${otherN === 1 ? '' : 's'} cooling — Hot/Critical partners losing engagement`;
-    insights.push(`${headline} — <a onclick="openDetail('${escape(coolingPartners[0].entity.id)}')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">open ${escape(topName)}</a>`);
+      ? `<strong class="briefing-cooling">${escape(topName)}</strong> ${verb} — ${escape(top.reason.text)}`
+      : `<strong class="briefing-cooling">${escape(topName)}</strong> + <strong>${otherN}</strong> other${otherN === 1 ? '' : 's'} need attention — partner-health signals weakening`;
+    insights.push(`${headline} — <a onclick="openDetail('${escape(top.entity.id)}')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">open ${escape(topName)}</a>`);
   }
   // Active aspirations — surface when present so the user remembers
   // ongoing transformation goals (otherwise drag-and-forget happens).
@@ -16210,6 +16235,239 @@ function renderVelocityPill(points, windowDays) {
   const color = v.tone === "up" ? "#1F6E48" : v.tone === "down" ? "#B0322E" : "#7A5215";
   const bg    = v.tone === "up" ? "rgba(31,110,72,.13)" : v.tone === "down" ? "rgba(176,50,46,.13)" : "rgba(122,82,21,.13)";
   return `<span class="trj-vel" style="background:${bg};color:${color}" title="Depth change over the last ${windowDays || 30} days">${v.arrow} ${escape(v.slopeText)}</span>`;
+}
+
+// ============================================================================
+// ACTIVITY PULSE + REPLY HEALTH — recency-aware partner-health signals.
+// ----------------------------------------------------------------------------
+// Why these exist (and why we don't use cumulative depth for velocity):
+// engagement_depth is monotonically non-decreasing — outreach count, contact
+// count, distinct dates all only go UP unless data is deleted. So a velocity
+// computed on depth has no "cooling" signal — every partner reads as flat or
+// growing. Useless for "is this relationship in trouble?"
+//
+// The two metrics below are different by design:
+//   1. Activity Pulse — outreach count per month, last 6 months. Bucketed,
+//      so it CAN drop (we did 8 outreaches last month, only 2 this month).
+//   2. Reply Health — sent/replied/no-reply ratio over last 60 days, with
+//      ghosting detection (5+ sent, 0 replies).
+// Both compute locally from OUTREACH (which is already client-cached) —
+// no API needed.
+// ============================================================================
+
+// Monthly outreach count time series. Returns [{month: "YYYY-MM", count, label}]
+// for the last `monthsBack` months, INCLUDING zero-count months (we want
+// the sparkline to dip to zero when nothing happened, not skip the month).
+function _activityPulseSeries(entityId, monthsBack) {
+  monthsBack = monthsBack || 6;
+  const entries = (typeof OUTREACH !== "undefined" && OUTREACH[entityId]) || [];
+  const now = new Date();
+  // Build the month buckets first (zero-initialised) so a dead month
+  // still renders. Bucket key = "YYYY-MM" so string sort works.
+  const buckets = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleString("en-US", { month: "short" });
+    buckets.push({ month: ym, count: 0, label });
+  }
+  const bucketIdx = {};
+  buckets.forEach((b, i) => { bucketIdx[b.month] = i; });
+  // Bucket each outreach entry into its month
+  entries.forEach(e => {
+    if (!e || !e.date) return;
+    const ym = String(e.date).slice(0, 7);
+    if (bucketIdx[ym] !== undefined) buckets[bucketIdx[ym]].count++;
+  });
+  return buckets;
+}
+
+// Compare last 30d outreach count vs prior 30d (days 30-60 ago). Returns
+// {arrow, tone, label, recent, prior} where:
+//   tone = "up" (re-engaging) / "down" (cooling) / "flat" (steady)
+// Recency is what we actually care about for partner health, not lifetime
+// volume. A long-dead partner with 50 outreaches from 2 years ago should
+// read as "cooling" if nothing has happened in 6 months.
+function activityVelocity(entityId, opts) {
+  opts = opts || {};
+  const recentDays = opts.recentDays || 30;
+  const priorDays  = opts.priorDays  || 30;
+  const entries = (typeof OUTREACH !== "undefined" && OUTREACH[entityId]) || [];
+  const now = Date.now();
+  const cutoffRecent = now - recentDays * 86400000;
+  const cutoffPrior  = now - (recentDays + priorDays) * 86400000;
+  let recent = 0, prior = 0;
+  entries.forEach(e => {
+    if (!e || !e.date) return;
+    const t = new Date(e.date).getTime();
+    if (t >= cutoffRecent)      recent++;
+    else if (t >= cutoffPrior)  prior++;
+  });
+  // Edge cases — partner has no recent history at all
+  if (recent === 0 && prior === 0) {
+    return { arrow: "—", tone: "muted", label: "no activity", recent: 0, prior: 0, delta: 0 };
+  }
+  const delta = recent - prior;
+  // "Re-engaging" — was dormant, started up again
+  if (prior === 0 && recent > 0)            return { arrow: "↑", tone: "up",   label: `re-engaging · ${recent} in 30d`, recent, prior, delta };
+  // "Cooling" — meaningful drop (was active, now silent)
+  if (prior >= 2 && recent === 0)           return { arrow: "↓", tone: "down", label: `silent · 0 vs ${prior} prev 30d`, recent, prior, delta };
+  if (prior >= 3 && recent < prior * 0.5)   return { arrow: "↓", tone: "down", label: `cooling · ${recent} vs ${prior}`, recent, prior, delta };
+  // "Re-engaging" with meaningful step-up
+  if (recent >= prior * 1.5 && recent >= 2) return { arrow: "↑", tone: "up",   label: `re-engaging · ${recent} vs ${prior}`, recent, prior, delta };
+  // Otherwise flat
+  return                                       { arrow: "→", tone: "flat", label: `steady · ${recent} in 30d`, recent, prior, delta };
+}
+
+// Reply Health — sent / replied / no-reply counts over last `days` (default 60).
+// Detects "ghosting" (operator keeps sending, partner never responds) which is
+// a different patology from "going cold" (no recent activity from anyone).
+function replyHealth(entityId, days) {
+  days = days || 60;
+  const entries = (typeof OUTREACH !== "undefined" && OUTREACH[entityId]) || [];
+  const cutoff = Date.now() - days * 86400000;
+  let sent = 0, replied = 0, bounced = 0, no_reply = 0;
+  let lastReplyDate = null, lastSentDate = null;
+  entries.forEach(e => {
+    if (!e || !e.date) return;
+    const t = new Date(e.date).getTime();
+    if (t < cutoff) return;
+    const status = (e.status || "").toLowerCase();
+    if (status === "sent") {
+      sent++;
+      // "Sent but no reply" if 14+ days passed
+      if (t < Date.now() - 14 * 86400000) no_reply++;
+      if (!lastSentDate || t > lastSentDate) lastSentDate = t;
+    } else if (status === "replied") {
+      replied++;
+      sent++;  // a replied entry was also sent
+      if (!lastReplyDate || t > lastReplyDate) lastReplyDate = t;
+    } else if (status === "bounced") {
+      bounced++;
+      sent++;
+    }
+  });
+  const reply_rate = sent > 0 ? Math.round((replied / sent) * 100) : null;
+  // Ghosting: 5+ sent, 0 replies in the window — operator pushing into the void
+  const ghosting = (sent >= 5 && replied === 0);
+  // Strong signal: 3+ sent, reply rate <20%
+  const weak_reply = (sent >= 3 && reply_rate !== null && reply_rate < 20);
+  return {
+    days, sent, replied, bounced, no_reply,
+    reply_rate, ghosting, weak_reply,
+    lastReplyDate, lastSentDate,
+  };
+}
+
+// Render a chunky monthly-bar sparkline for the activity pulse. Each bar
+// = one month's outreach count. Bars never disappear (zero months render
+// as a thin baseline) so the cooling pattern reads visually.
+function renderActivityPulseSparkline(entityId, opts) {
+  opts = opts || {};
+  const series = _activityPulseSeries(entityId, opts.months || 6);
+  const w = opts.width || 80;
+  const h = opts.height || 24;
+  const total = series.reduce((s, b) => s + b.count, 0);
+  if (total === 0) {
+    return `<svg class="spark spark-empty" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="No activity in window">
+      <line x1="0" y1="${h/2}" x2="${w}" y2="${h/2}" stroke="rgba(0,0,0,.18)" stroke-width="1" stroke-dasharray="2,3"/>
+      <text x="${w/2}" y="${h/2 + 3}" text-anchor="middle" font-size="9" fill="rgba(0,0,0,.4)" font-style="italic">no activity</text>
+    </svg>`;
+  }
+  const maxCount = Math.max(1, ...series.map(b => b.count));
+  const v = activityVelocity(entityId);
+  const color = opts.color
+    || (v.tone === "up" ? "#1F6E48" : v.tone === "down" ? "#B0322E" : v.tone === "muted" ? "#999" : "#7A5215");
+  const barW = w / series.length;
+  const gap = Math.max(1, Math.min(2, barW * 0.18));
+  const padY = 2;
+  const bars = series.map((b, i) => {
+    const x = i * barW + gap / 2;
+    // Empty month → thin baseline tick so the timeline reads continuously
+    const hRaw = (b.count / maxCount) * (h - padY * 2);
+    const barH = b.count === 0 ? 1.5 : Math.max(2, hRaw);
+    const y = h - padY - barH;
+    const opacity = b.count === 0 ? 0.25 : 1;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW - gap).toFixed(1)}" height="${barH.toFixed(1)}" fill="${color}" fill-opacity="${opacity}" rx="1"><title>${escape(b.label)}: ${b.count} outreach</title></rect>`;
+  }).join("");
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Activity pulse — ${v.label}">${bars}</svg>`;
+}
+
+// Compact pill: "↓ cooling · 2 vs 8 prev 30d" — drop-in replacement for
+// the old depth-based renderVelocityPill on every surface.
+function renderActivityVelocityPill(entityId) {
+  const v = activityVelocity(entityId);
+  const color = v.tone === "up" ? "#1F6E48" : v.tone === "down" ? "#B0322E" : v.tone === "muted" ? "#999" : "#7A5215";
+  const bg    = v.tone === "up" ? "rgba(31,110,72,.13)" : v.tone === "down" ? "rgba(176,50,46,.13)" : v.tone === "muted" ? "rgba(0,0,0,.06)" : "rgba(122,82,21,.13)";
+  return `<span class="trj-vel" style="background:${bg};color:${color}" title="Outreach count: last 30d (${v.recent}) vs prior 30d (${v.prior})">${v.arrow} ${escape(v.label)}</span>`;
+}
+
+// Detail-panel "Reply health" card — sent/replied breakdown + warning pills.
+function renderReplyHealthCard(entityId) {
+  const r = replyHealth(entityId, 60);
+  if (r.sent === 0) {
+    return `<div class="rh-card rh-empty">
+      <div class="rh-head"><span class="rh-label">Reply health · 60 days</span></div>
+      <div class="rh-empty-msg">No outreach sent in the last 60 days.</div>
+    </div>`;
+  }
+  // Severity classification — drives the card's left border color
+  const sev = r.ghosting ? "danger" : r.weak_reply ? "warn" : (r.reply_rate >= 40 ? "good" : "neutral");
+  const sevColor = sev === "danger" ? "#B0322E" : sev === "warn" ? "#C97A1A" : sev === "good" ? "#1F6E48" : "var(--ink-soft)";
+  const verdict = r.ghosting ? `⚠ Ghosting — ${r.sent} sent, 0 replies`
+                : r.weak_reply ? `⚠ Weak reply rate — ${r.reply_rate}%`
+                : r.reply_rate >= 40 ? `Healthy reply rate · ${r.reply_rate}%`
+                : `${r.reply_rate}% reply rate`;
+  return `<div class="rh-card" style="border-left-color:${sevColor}">
+    <div class="rh-head">
+      <span class="rh-label">Reply health · 60 days</span>
+      <span class="rh-verdict" style="color:${sevColor}">${escape(verdict)}</span>
+    </div>
+    <div class="rh-stats">
+      <span class="rh-stat"><b>${r.sent}</b> <small>sent</small></span>
+      <span class="rh-stat rh-pos"><b>${r.replied}</b> <small>replied</small></span>
+      <span class="rh-stat ${r.no_reply > 0 ? 'rh-warn' : ''}"><b>${r.no_reply}</b> <small>14d no reply</small></span>
+      ${r.bounced > 0 ? `<span class="rh-stat rh-bad"><b>${r.bounced}</b> <small>bounced</small></span>` : ''}
+    </div>
+  </div>`;
+}
+
+// New cooling detector — fundamentally different from the depth-based one
+// because activity pulse CAN drop. Surfaces partners that are either:
+//   (a) cooling — activity dropped vs prior period
+//   (b) ghosting — sent 5+ but got zero replies in 60 days
+// Either condition + Hot/Critical priority = surfaced in Home briefing.
+function detectCoolingPartnersV2(opts) {
+  opts = opts || {};
+  const priorities = opts.priorities || ["Critical", "Hot"];
+  if (typeof UNIS === "undefined" || !UNIS.length) return [];
+  const out = [];
+  UNIS.forEach(u => {
+    if (!priorities.includes(u.priority)) return;
+    const v = activityVelocity(u.id);
+    const r = replyHealth(u.id, 60);
+    // Skip partners we've truly never engaged — they're not "cooling",
+    // they're "untouched", and the briefing has different copy for that
+    // (the dormantHi insight).
+    if (v.tone === "muted" && r.sent === 0) return;
+    let reason = null;
+    if (r.ghosting) {
+      reason = { kind: "ghosting", text: `${r.sent} sent, 0 replies in 60d` };
+    } else if (v.tone === "down") {
+      reason = { kind: "cooling", text: v.label };
+    } else if (r.weak_reply) {
+      reason = { kind: "weak-reply", text: `${r.reply_rate}% reply rate` };
+    }
+    if (reason) out.push({ entity: u, velocity: v, reply: r, reason });
+  });
+  // Rank: ghosting first (worst), then biggest cooling drop, then weak reply
+  const sevRank = { "ghosting": 0, "cooling": 1, "weak-reply": 2 };
+  out.sort((a, b) => {
+    const r = sevRank[a.reason.kind] - sevRank[b.reason.kind];
+    if (r !== 0) return r;
+    return (b.velocity.prior - b.velocity.recent) - (a.velocity.prior - a.velocity.recent);
+  });
+  return out;
 }
 
 // ============================================================================
@@ -18721,16 +18979,14 @@ function renderDatabaseView() {
       <div class="db-score-bar"><span style="width:${Math.max(2, u.partnership_score)}%"></span></div>
       <div class="db-score-num">${u.partnership_score}</div>
     </div>`;
-    // Health trajectory — 90-day depth sparkline + 30-day velocity pill.
-    // Renders silently as "building…" when the snapshot table has <2
-    // points for this entity (cold-start state).
-    const trjRaw    = (typeof TRAJECTORY_BULK !== "undefined" && TRAJECTORY_BULK[u.id]) || [];
-    const trjPoints = (typeof _trajectoryWithToday === "function") ? _trajectoryWithToday(trjRaw, u) : trjRaw;
-    const trjSpark  = (typeof renderTrajectorySparkline === "function")
-      ? renderTrajectorySparkline(trjPoints, { width: 70, height: 22, windowDays: 30 })
+    // Activity pulse — 6-month outreach bars + 30-day velocity arrow.
+    // Built locally from OUTREACH so it's instant; renders "no activity"
+    // placeholder when the partner has zero outreach in the window.
+    const trjSpark  = (typeof renderActivityPulseSparkline === "function")
+      ? renderActivityPulseSparkline(u.id, { width: 70, height: 22, months: 6 })
       : "";
-    const trjPill   = (typeof renderVelocityPill === "function")
-      ? renderVelocityPill(trjPoints, 30) : "";
+    const trjPill   = (typeof renderActivityVelocityPill === "function")
+      ? renderActivityVelocityPill(u.id) : "";
     const trjCell   = `<div class="db-spark-cell">${trjSpark}${trjPill}</div>`;
     const d = u.days_dormant;
     let dormCell;
@@ -18813,7 +19069,7 @@ function renderDatabaseView() {
       ${dbSortHead("priority", "Priority")}
       ${dbSortHead("strategic", "Strategic")}
       ${dbSortHead("score", "Score", { right: true })}
-      <th title="90-day engagement-depth trajectory · ↑ growing, ↓ cooling">Trajectory</th>
+      <th title="6-month outreach activity · last 30d vs prior 30d · ↑ re-engaging, ↓ cooling">Activity</th>
       ${dbSortHead("dormant", "Dormant", { right: true })}
       ${dbSortHead("lc", "Last contacted", { right: true })}
       <th>Owner</th>
