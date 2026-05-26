@@ -659,6 +659,27 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .dp-loc{font-size:12px;color:rgba(255,255,255,.65);display:flex;gap:8px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
 .dp-loc img{width:18px;height:13px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle}
 .dp-loc-id{font-family:'Consolas',monospace;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px;color:#fff;font-size:11px}
+/* Fit-warning + next-step rows — pre-metrics dashboard strip that
+   surfaces (1) why this entity might be a low-fit partner (research-
+   intensive / Italian competitor badges) and (2) what's next (open
+   follow-up). Both rows added per reviewer feedback ("It is a
+   dashboard, so it should be easy to use and operational"). */
+.dp-fit{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.dp-fit-tag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:3px 9px 3px 7px;border-radius:11px;line-height:1.2}
+.dp-fit-tag::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.dp-fit-tag.research_intensive{background:rgba(217,83,79,.18);color:#FF8A85}
+.dp-fit-tag.italian_competitor{background:rgba(110,110,110,.25);color:#C5CDD8}
+.dp-fit-tag.applied_signal{background:rgba(46,125,91,.20);color:#7FE0B0}
+.dp-next{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.65);margin-bottom:14px;line-height:1.4;padding:8px 11px;background:rgba(255,255,255,.04);border-left:2px solid var(--hf-red);border-radius:0 5px 5px 0}
+.dp-next-lbl{font-size:9px;letter-spacing:1.4px;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase}
+.dp-next-title{color:#fff;font-weight:700;flex:1;min-width:0}
+.dp-next-when{font-family:'Consolas',monospace;color:rgba(255,255,255,.85);font-weight:700;font-size:10px}
+.dp-next-overdue{padding:1px 7px;border-radius:9px;background:rgba(217,83,79,.25);color:#FF8A85;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.dp-next-owner{padding:1px 7px;border-radius:9px;background:rgba(255,255,255,.10);color:#fff;font-size:10px;font-weight:700;letter-spacing:.2px}
+.dp-next-empty{font-style:italic;color:rgba(255,255,255,.50)}
+.dp-next-cta{background:none;border:none;color:var(--hf-red);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;text-decoration-color:rgba(217,83,79,.5);text-underline-offset:2px}
+.dp-next-cta:hover{color:#fff;text-decoration-color:#fff}
+
 /* Last-interaction summary — single line beneath the eyebrow that
    surfaces "when was the last contact, what kind, what was the outcome"
    so the dashboard reads as operational at a glance (reviewer feedback). */
@@ -2964,6 +2985,15 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .db-shell .db-dorm{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
 .db-shell .db-dorm-muted{color:var(--ink-mute)}
 .db-shell .db-dorm-ok{color:var(--ink-soft)}
+/* Sentiment dot — inline before the date in the Last Contacted cell.
+   Same tone palette as the outreach sentiment pills. */
+.db-shell .db-sentiment-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;flex-shrink:0;box-shadow:0 0 0 2px var(--paper)}
+.db-shell .db-sentiment-dot.positive{background:#1F6E48}
+.db-shell .db-sentiment-dot.neutral{background:#4A6B8A}
+.db-shell .db-sentiment-dot.negative{background:#E0A93B}
+.db-shell .db-sentiment-dot.rejected{background:#8B1A1A}
+/* "No response" badge — sent + 14+ days quiet. */
+.db-shell .db-noresp{display:inline-block;font-size:9px;font-weight:800;padding:1px 6px;border-radius:8px;background:#FBEAEA;color:#8B1A1A;letter-spacing:.3px;text-transform:uppercase;margin-left:4px;font-variant-numeric:tabular-nums}
 .db-shell .db-dorm-warn{color:#7A5215}
 .db-shell .db-dorm-bad{color:#B0322E}
 
@@ -4786,6 +4816,12 @@ let TAILOR_MADE = [];
 
 // Brochures — loaded from data/brochures.json at boot.
 let BROCHURES = [];
+// Fit-warning signals — loaded from data/fit_signals.json at boot.
+// Drives the research-intensive / Italian-competitor name-pattern denylist
+// and the applied-keyword bonus. parseEntityRow consumes this to surface
+// fit_tags + a score adjustment on every entity. Falls back to a no-op
+// empty shape when the file is missing so older deployments keep working.
+let FIT_SIGNALS = { fit_warnings: [], applied_signal_keywords: [], _meta: {} };
 
 // Outreach email templates — loaded from data/templates.json. Used by the
 // "Start from template" picker in the outreach modal. CRUD lives in the
@@ -5044,7 +5080,7 @@ async function fetchJson(path) {
 async function loadKnowledgeBase() {
   // Files + server drafts in parallel. If the server is unreachable we
   // gracefully degrade to localStorage cache → bundled files.
-  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, tpls, users, tailorMade, serverDrafts] = await Promise.all([
+  const [progs, teams, collab, brochures, org, bach, masters, prep, exp, exOnly, talentHub, tpls, users, tailorMade, fitSignals, serverDrafts] = await Promise.all([
     fetchJson(KB_SCHEMA.programs.file),
     fetchJson(KB_SCHEMA.teams.file),
     fetchJson(KB_SCHEMA.collab.file),
@@ -5059,8 +5095,12 @@ async function loadKnowledgeBase() {
     fetchJson(KB_SCHEMA.templates.file).catch(() => []),   // templates added later; tolerate missing file
     fetchJson(KB_SCHEMA.users.file).catch(() => []),       // users added later; tolerate missing file
     fetchJson(KB_SCHEMA.tailorMade.file).catch(() => []),  // tailor-made added later; tolerate missing file
+    fetchJson("data/fit_signals.json").catch(() => null),  // research-intensive + competitor denylist (P1)
     kvStore.fetchAll("kb_draft").catch(() => null),
   ]);
+  // Stash fit signals globally so parseEntityRow can apply penalties + tags.
+  // Falls back to empty object if the file is missing so old deployments still parse.
+  if (fitSignals) FIT_SIGNALS = fitSignals;
   // One-shot migrate localStorage → server, then refresh draft map
   let drafts = serverDrafts;
   if (drafts !== null) {
@@ -5931,6 +5971,47 @@ function normalizeRow(row, idx) {
     if (score > topScore) { topScore = score; topId = p.id; }
   }
 
+  // ===== Fit warnings + applied-signal bonus (P1 — reviewer feedback) =====
+  // Surface visible tags on entities that are top research universities OR
+  // Italian competitors so the operator sees WHY a high-keyword-overlap
+  // entity is still a low-fit partner. Also boost entities whose focus
+  // areas read as applied / hands-on / industry-linked (the kind of partner
+  // H-FARM actually pairs well with).
+  const fitTags = [];
+  let fitAdjust = 0;
+  const nameLower = (row.name || "").toLowerCase();
+  const fitWarnings = (FIT_SIGNALS && FIT_SIGNALS.fit_warnings) || [];
+  const fitMeta = (FIT_SIGNALS && FIT_SIGNALS._meta) || {};
+  const penalties = (fitMeta.score_penalties) || { research_intensive: -20, italian_competitor: -15 };
+  const appliedBonus = (fitMeta.applied_signal_bonus !== undefined) ? fitMeta.applied_signal_bonus : 10;
+  const appliedCap = (fitMeta.applied_signal_cap !== undefined) ? fitMeta.applied_signal_cap : 10;
+  const seenTags = new Set();
+  for (const w of fitWarnings) {
+    if (!w.pattern) continue;
+    if (nameLower.includes(w.pattern.toLowerCase())) {
+      // De-dupe tags so an entity matching 2 research patterns only gets
+      // ONE research_intensive penalty + tag (not stacked).
+      if (seenTags.has(w.tag)) continue;
+      seenTags.add(w.tag);
+      fitTags.push({ tag: w.tag, label: w.label || w.tag, pattern: w.pattern });
+      const pen = penalties[w.tag];
+      if (typeof pen === "number") fitAdjust += pen;
+    }
+  }
+  // Applied-signal bonus: any keyword hit grants the bonus once (cap).
+  const appliedKw = (FIT_SIGNALS && FIT_SIGNALS.applied_signal_keywords) || [];
+  let appliedHit = null;
+  for (const kw of appliedKw) {
+    if (blob.includes(kw.toLowerCase())) { appliedHit = kw; break; }
+  }
+  if (appliedHit) {
+    fitAdjust += Math.min(appliedCap, appliedBonus);
+    fitTags.push({ tag: "applied_signal", label: `Applied / hands-on signal: "${appliedHit}"`, pattern: appliedHit });
+  }
+  // Clamp adjusted top score to [0,100] so the rest of the scoring math
+  // stays in its expected range.
+  const topScoreAdjusted = Math.max(0, Math.min(100, topScore + fitAdjust));
+
   // ===== Partnership score (transparent breakdown) =====
   const prioVal   = PRIO_SCORE[row.priority] !== undefined ? PRIO_SCORE[row.priority] : 30;
   const hasNamed  = contacts.some(c => c.name && c.name !== "-");
@@ -5943,11 +6024,20 @@ function normalizeRow(row, idx) {
     else if (daysDormant < 180) recencyVal = 25;
     else recencyVal = 10;
   }
+  // programFit uses the FIT-ADJUSTED top score so research-intensive +
+  // Italian-competitor entities surface a visibly lower partnership_score
+  // (and don't sneak into Hot/Critical via keyword overlap alone). The
+  // breakdown label spells out the adjustment so the operator can audit.
+  let programFitLabel = `Top match: ${PROG_BY_ID[topId].name} (${topScore}/100)`;
+  if (fitAdjust !== 0) {
+    const sign = fitAdjust > 0 ? "+" : "";
+    programFitLabel += ` · fit adj ${sign}${fitAdjust} → ${topScoreAdjusted}`;
+  }
   const breakdown = {
     priority:    { weight: 0.40, raw: prioVal,                          label: row.priority || "Unclassified" },
     namedContact:{ weight: 0.20, raw: hasNamed ? 100 : 0,               label: hasNamed ? "Yes — named contact on file" : "No named contact yet" },
     email:       { weight: 0.10, raw: hasEmail ? 100 : 0,               label: hasEmail ? "Yes — email captured" : "No email yet" },
-    programFit:  { weight: 0.20, raw: topScore,                         label: `Top match: ${PROG_BY_ID[topId].name} (${topScore}/100)` },
+    programFit:  { weight: 0.20, raw: topScoreAdjusted,                 label: programFitLabel },
     recency:     { weight: 0.10, raw: recencyVal,                       label: daysDormant === null ? "No date on file" : `${daysDormant} days since last contact` },
   };
   let pScore = 0;
@@ -5987,6 +6077,9 @@ function normalizeRow(row, idx) {
     match_details: matchDetails,
     top_program_id: topId,
     top_program_score: topScore,
+    top_program_score_adjusted: topScoreAdjusted,
+    fit_tags: fitTags,        // [{tag, label, pattern}] — drives detail panel badges
+    fit_adjust: fitAdjust,    // total +/- adjustment applied to topScore (audit trail)
     partnership_score: pScore,
     partnership_breakdown: breakdown,
     partnership_readiness: readiness,
@@ -6197,11 +6290,24 @@ function recomputeEntityDerived(u) {
   }
   const topScore = u.top_program_score || 0;
   const topId    = u.top_program_id;
+  // Use the fit-adjusted top score if parseEntityRow computed one; otherwise
+  // fall back to the raw top score. fit_adjust is set per-entity at parse
+  // time and doesn't change on user edits (it depends on name + focus_areas,
+  // both of which trigger a full re-parse from CSV, not just a recompute).
+  const fitAdj = (typeof u.fit_adjust === "number") ? u.fit_adjust : 0;
+  const topScoreAdjusted = (typeof u.top_program_score_adjusted === "number")
+    ? u.top_program_score_adjusted
+    : Math.max(0, Math.min(100, topScore + fitAdj));
+  let programFitLabel = `Top match: ${(PROG_BY_ID[topId] && PROG_BY_ID[topId].name) || "Unknown"} (${topScore}/100)`;
+  if (fitAdj !== 0) {
+    const sign = fitAdj > 0 ? "+" : "";
+    programFitLabel += ` · fit adj ${sign}${fitAdj} → ${topScoreAdjusted}`;
+  }
   const breakdown = {
     priority:    { weight: 0.40, raw: prioVal,                label: u.priority || "Unclassified" },
     namedContact:{ weight: 0.20, raw: hasNamed ? 100 : 0,     label: hasNamed ? "Yes — named contact on file" : "No named contact yet" },
     email:       { weight: 0.10, raw: hasEmail ? 100 : 0,     label: hasEmail ? "Yes — email captured" : "No email yet" },
-    programFit:  { weight: 0.20, raw: topScore,               label: `Top match: ${(PROG_BY_ID[topId] && PROG_BY_ID[topId].name) || "Unknown"} (${topScore}/100)` },
+    programFit:  { weight: 0.20, raw: topScoreAdjusted,       label: programFitLabel },
     recency:     { weight: 0.10, raw: recencyVal,             label: u.days_dormant === null || u.days_dormant === undefined ? "No date on file" : `${u.days_dormant} days since last contact` },
   };
   let pScore = 0;
@@ -9627,6 +9733,59 @@ function _dpPriorityTone(priority) {
   }
 }
 
+// Build the fit-warning tag row for the detail panel header. Reads
+// u.fit_tags (populated by parseEntityRow from data/fit_signals.json).
+// Returns "" if no tags so the header doesn't render an empty gap.
+function _dpFitTagsHtml(u) {
+  const tags = (u && u.fit_tags) || [];
+  if (!tags.length) return "";
+  return `<div class="dp-fit">
+    ${tags.map(t => `<span class="dp-fit-tag ${escape(t.tag)}" title="${escape(t.label || t.tag)}">${escape(t.label || t.tag)}</span>`).join("")}
+  </div>`;
+}
+
+// Build the "next step" row from the open follow-up most likely due next.
+// Sort follow-ups for this entity by status open first, then earliest
+// due_date. Empty state: a quick "+ Add follow-up" link to the entity
+// followups tab (handled by dpSwitchTab('followups')).
+function _dpNextStepHtml(u) {
+  const fups = (typeof _followupsForEntity === "function") ? _followupsForEntity(u.id) : [];
+  const open = fups.filter(f => (f.status || "open") !== "done");
+  open.sort((a, b) => {
+    const da = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+    const db = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+    return da - db;
+  });
+  const next = open[0];
+  if (!next) {
+    return `<div class="dp-next">
+      <span class="dp-next-lbl">Next step</span>
+      <span class="dp-next-empty">No follow-up set</span>
+      <button type="button" class="dp-next-cta" onclick="dpSwitchTab('followups')">+ Add</button>
+    </div>`;
+  }
+  // Format due date as relative
+  let dueLabel = "no date", overdue = false;
+  if (next.due_date) {
+    const d = new Date(next.due_date);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const days = Math.round((d.getTime() - today.getTime()) / 86400000);
+    if (days < 0)      { dueLabel = `${Math.abs(days)}d overdue`; overdue = true; }
+    else if (days === 0) dueLabel = "due today";
+    else if (days === 1) dueLabel = "due tomorrow";
+    else if (days < 30)  dueLabel = `due in ${days}d`;
+    else                 dueLabel = `due ${next.due_date}`;
+  }
+  // Owner — handle from data/users.json roster if available
+  const owner = next.owner_handle || "";
+  return `<div class="dp-next">
+    <span class="dp-next-lbl">Next step</span>
+    <span class="dp-next-title">${escape(next.title || "(no title)")}</span>
+    ${overdue ? `<span class="dp-next-overdue">${escape(dueLabel)}</span>` : `<span class="dp-next-when">${escape(dueLabel)}</span>`}
+    ${owner ? `<span class="dp-next-owner">@${escape(owner)}</span>` : ""}
+  </div>`;
+}
+
 // Build the "last interaction" summary line for the detail panel header.
 // Returns HTML for: when · channel · status (with sentiment if replied) ·
 // subject snippet. If no outreach yet → "Never contacted" + stuck flag.
@@ -9709,7 +9868,9 @@ function _dpHeaderHtml(u) {
       <span class="dp-dot">·</span>
       <span class="dp-loc-id">${escape((u.id || "").toUpperCase())}</span>
     </div>
+    ${_dpFitTagsHtml(u)}
     ${_dpLastInteractionHtml(u)}
+    ${_dpNextStepHtml(u)}
     <div class="dp-metrics">
       <button type="button" class="dp-metric interactive${scoreOpen}" onclick="dpToggleScoreBreakdown()" title="Click to see how this score is computed">
         <div class="dp-metric-lbl-row">
@@ -16175,9 +16336,21 @@ function renderDatabaseView() {
       const dCls = d > 180 ? "db-dorm-bad" : d > 60 ? "db-dorm-warn" : "db-dorm-ok";
       dormCell = `<span class="db-dorm ${dCls}">${d}d</span>`;
     }
-    const lcCell = u.last_contacted
-      ? `<span class="db-dorm db-dorm-ok">${escape(u.last_contacted)}</span>`
-      : `<span class="db-dash">—</span>`;
+    // Last-contacted cell now embeds a sentiment dot when the most recent
+    // outreach entry has one, AND a "no response" red badge when status is
+    // sent and 14+ days have passed without a reply. Surfaces the reviewer's
+    // "is it evident if they're not answering / answer is negative" ask
+    // right in the table without opening the detail panel.
+    let lcCell;
+    if (u.last_contacted) {
+      const lastOutreach = _dbLastOutreach(u.id);
+      const sentDot = (lastOutreach && lastOutreach.status === "replied" && lastOutreach.sentiment)
+        ? `<span class="db-sentiment-dot ${escape(lastOutreach.sentiment)}" title="Last reply: ${escape(lastOutreach.sentiment)}"></span>` : "";
+      const noResp = _dbNoResponseFlag(u, lastOutreach);
+      lcCell = `<span class="db-dorm db-dorm-ok">${sentDot}${escape(u.last_contacted)}${noResp}</span>`;
+    } else {
+      lcCell = `<span class="db-dash">—</span>`;
+    }
     const ownerCell = owner
       ? `<span class="db-owner" style="background:${owner.color}22;color:${owner.color}">${escape(owner.name)}</span>`
       : `<span class="db-dash">—</span>`;
@@ -16261,6 +16434,31 @@ function renderDatabaseView() {
       }
     });
   }
+}
+
+// Most recent outreach for the entity, sorted by date desc. Returns null
+// if the entity has no outreach. Used by the Last-contacted cell to
+// surface sentiment dot + no-response badge.
+function _dbLastOutreach(entityId) {
+  const list = (OUTREACH && OUTREACH[entityId]) || [];
+  if (!list.length) return null;
+  return list.slice().sort((a, b) => {
+    const da = a.date ? new Date(a.date).getTime() : 0;
+    const db = b.date ? new Date(b.date).getTime() : 0;
+    return db - da;
+  })[0];
+}
+
+// "No response" flag — when the latest outreach status is sent (not yet
+// replied/bounced) AND 14+ days have passed, surface a small red badge
+// so the operator sees stalled outreach without opening the detail panel.
+function _dbNoResponseFlag(u, lastOutreach) {
+  if (!lastOutreach) return "";
+  if (lastOutreach.status !== "sent") return "";
+  if (!lastOutreach.date) return "";
+  const days = Math.floor((Date.now() - new Date(lastOutreach.date).getTime()) / 86400000);
+  if (days < 14) return "";
+  return ` <span class="db-noresp" title="${days} days with no reply">no resp · ${days}d</span>`;
 }
 
 function _dbSetSavedView(v) { _dbSavedView = v; renderDatabaseView(); }
