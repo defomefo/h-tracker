@@ -4,12 +4,12 @@
     "name": "Out of the Box — Discover Yourself",
     "topic": "Career orientation & self-discovery",
     "age": "16-18",
-    "lang": "English",
+    "lang": "Italian",
     "color": "#1F6FB4",
-    "audience": "Pre-university orientation",
+    "audience": "Italian-speaking high-school students preparing for university",
     "primary_kw": ["orientation", "self-discovery", "liberal arts", "general studies", "international baccalaureate", "career counseling", "gymnasium"],
     "secondary_kw": ["education", "studies", "mindset", "high school", "secondary", "preparatory", "ib", "american", "british curriculum"],
-    "pitch_to": "High schools with broad/IB curricula, liberal-arts colleges, intercultural orgs (Intercultura, AFSAI)"
+    "pitch_to": "Italian high schools, intercultural orgs serving Italian students (Intercultura, AFSAI)"
   },
   {
     "id": "startup",

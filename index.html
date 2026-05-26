@@ -619,6 +619,14 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .outreach-meta .status-pill.replied{background:var(--warm);color:var(--ink)}
 .outreach-meta .status-pill.bounced{background:var(--ni);color:#fff}
 .outreach-meta .status-pill.draft{background:var(--paper);color:var(--ink-soft)}
+/* Sentiment pill — only shown on replied entries. Tone matches the
+   feedback color (green positive, slate neutral, amber soft-no, red hard-no). */
+.outreach-meta .sentiment-pill{padding:1px 7px;border-radius:9px;font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px}
+.outreach-meta .sentiment-pill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.outreach-meta .sentiment-pill.positive{background:#DCEFE3;color:#1F6E48}
+.outreach-meta .sentiment-pill.neutral{background:#E7ECF1;color:#4A6B8A}
+.outreach-meta .sentiment-pill.negative{background:#FAEFD8;color:#7A5215}
+.outreach-meta .sentiment-pill.rejected{background:#FBEAEA;color:#8B1A1A}
 .outreach-subject{font-weight:700;color:var(--navy);font-size:12px;line-height:1.3}
 .outreach-progs{display:flex;flex-wrap:wrap;gap:4px}
 .outreach-progs .pr-chip{font-size:9px;padding:2px 7px;border-radius:9px;background:var(--paper);color:var(--navy);font-weight:600}
@@ -651,6 +659,23 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .dp-loc{font-size:12px;color:rgba(255,255,255,.65);display:flex;gap:8px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
 .dp-loc img{width:18px;height:13px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle}
 .dp-loc-id{font-family:'Consolas',monospace;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.5px;color:#fff;font-size:11px}
+/* Last-interaction summary — single line beneath the eyebrow that
+   surfaces "when was the last contact, what kind, what was the outcome"
+   so the dashboard reads as operational at a glance (reviewer feedback). */
+.dp-last{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.65);margin-bottom:14px;line-height:1.4}
+.dp-last-dot{color:rgba(255,255,255,.35)}
+.dp-last-when{font-family:'Consolas',monospace;color:rgba(255,255,255,.85);font-weight:700}
+.dp-last-chan{padding:1px 7px;border-radius:9px;background:rgba(255,255,255,.10);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.dp-last-sent{padding:1px 7px;border-radius:9px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.dp-last-sent.positive{background:rgba(46,125,91,.30);color:#7FE0B0}
+.dp-last-sent.neutral{background:rgba(74,107,138,.30);color:#9DBBDB}
+.dp-last-sent.negative{background:rgba(224,169,59,.30);color:#FFD27A}
+.dp-last-sent.rejected{background:rgba(217,83,79,.30);color:#FF8A85}
+.dp-last-sent.sent{background:rgba(74,107,138,.25);color:rgba(255,255,255,.85)}
+.dp-last-sent.bounced{background:rgba(110,110,110,.30);color:rgba(255,255,255,.75)}
+.dp-last-empty{font-style:italic;color:rgba(255,255,255,.45)}
+.dp-last-stuck{padding:1px 7px;border-radius:9px;background:rgba(217,83,79,.20);color:#FF8A85;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.dp-last-subj{color:rgba(255,255,255,.80);font-style:italic;flex-basis:100%;font-size:10.5px;margin-top:2px}
 .dp-dot{color:rgba(255,255,255,.35)}
 /* Metrics row */
 .dp-metrics{display:grid;grid-template-columns:1.1fr 1fr 1.4fr;gap:12px}
@@ -5865,10 +5890,36 @@ function normalizeRow(row, idx) {
   // Build a wide search blob from type-relevant fields
   const blobParts = [row.name||"", row.focus_areas||"", row.programs||"", row.notes||""];
   const blob = blobParts.join(" ").toLowerCase();
+  // Italian-language relevance — Italian-only programmes (ootb, finance)
+  // should NOT match international universities. Reviewer feedback after
+  // demo: "Out of the Box (Italian) was marked interesting for many
+  // international universities, which is not — same applies to Finance".
+  // Strongest signal: entity is based in Italy. Backup signals: focus
+  // areas mention italian / italiano (e.g. an agency placing Italian
+  // speakers from abroad).
+  const italianRelevant = (
+    ((country_canonical || "").toLowerCase() === "italy") ||
+    ((country || "").toLowerCase().includes("italy")) ||
+    (/italian|italiano/.test(blob))
+  );
   const matches = {};
   const matchDetails = {};
   let topId = "ootb", topScore = 0;
   for (const p of PROGRAMS) {
+    // Language compatibility gate. Italian-only programmes are zeroed out
+    // for non-Italian entities so they never surface as "hot" matches.
+    // English / Both programmes have no penalty.
+    const pLang = (p.lang || "").toLowerCase();
+    if (pLang === "italian" && !italianRelevant) {
+      matches[p.id] = 0;
+      matchDetails[p.id] = {
+        primaryHits: [], secondaryHits: [],
+        primaryScore: 0, secondaryScore: 0,
+        langSkipped: true,
+        langReason: `Italian-only programme suppressed for non-Italian entity (${country || 'unknown country'})`,
+      };
+      continue;
+    }
     let primaryHits = [], secondaryHits = [];
     p.primary_kw.forEach(kw => { if (blob.includes(kw.toLowerCase())) primaryHits.push(kw); });
     p.secondary_kw.forEach(kw => { if (blob.includes(kw.toLowerCase())) secondaryHits.push(kw); });
@@ -9576,6 +9627,64 @@ function _dpPriorityTone(priority) {
   }
 }
 
+// Build the "last interaction" summary line for the detail panel header.
+// Returns HTML for: when · channel · status (with sentiment if replied) ·
+// subject snippet. If no outreach yet → "Never contacted" + stuck flag.
+function _dpLastInteractionHtml(u) {
+  const list = (OUTREACH && OUTREACH[u.id]) || [];
+  // Most recent first (handle missing dates gracefully)
+  const sorted = list.slice().sort((a, b) => {
+    const da = a.date ? new Date(a.date).getTime() : 0;
+    const db = b.date ? new Date(b.date).getTime() : 0;
+    return db - da;
+  });
+  const last = sorted[0];
+  if (!last) {
+    const dorm = u.days_dormant;
+    return `<div class="dp-last">
+      <span class="dp-last-empty">Never contacted</span>
+      ${dorm === null || dorm === undefined ? "" : `<span class="dp-last-dot">·</span><span class="dp-last-stuck">stuck</span>`}
+    </div>`;
+  }
+  // Format the "when" — relative + absolute
+  let whenStr = last.date || "—";
+  let ago = "";
+  if (last.date) {
+    const d = new Date(last.date);
+    const days = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+    if (days === 0) ago = "today";
+    else if (days === 1) ago = "yesterday";
+    else if (days < 30) ago = `${days}d ago`;
+    else if (days < 365) ago = `${Math.round(days/30)}mo ago`;
+    else ago = `${Math.round(days/365)}y ago`;
+  }
+  // Status / sentiment pill — sentiment overrides status when set so the
+  // operator sees the OUTCOME (positive / negative / rejected) immediately,
+  // not just "replied".
+  const sentClass = (last.status === "replied" && last.sentiment) ? last.sentiment : (last.status || "draft");
+  const sentLabel = (last.status === "replied" && last.sentiment) ? last.sentiment : (last.status || "—");
+  // Channel — first of channels[] or legacy channel field
+  const chan = (Array.isArray(last.channels) && last.channels[0]) || last.channel || "email";
+  // Subject snippet — strip channel prefixes the modal adds for non-email
+  // entries ([Call · Connected], etc.) so the operator sees the actual topic
+  const rawSubj = last.subject || (last.body || "").split("\n").find(l => l.trim() && !l.trim().startsWith("[")) || "";
+  const subj = (rawSubj || "").trim().slice(0, 90);
+  const dorm = u.days_dormant;
+  const stuckFlag = (dorm !== null && dorm !== undefined && dorm > 30 && (u.priority === "Hot" || u.priority === "Critical"))
+    ? `<span class="dp-last-dot">·</span><span class="dp-last-stuck">stuck ${dorm}d</span>`
+    : "";
+  return `<div class="dp-last">
+    <span>Last contact</span>
+    <span class="dp-last-when" title="${escape(whenStr)}">${escape(ago || whenStr)}</span>
+    <span class="dp-last-dot">·</span>
+    <span class="dp-last-chan">${escape(chan)}</span>
+    <span class="dp-last-dot">·</span>
+    <span class="dp-last-sent ${escape(sentClass)}">${escape(sentLabel)}</span>
+    ${stuckFlag}
+    ${subj ? `<span class="dp-last-subj">"${escape(subj)}"</span>` : ""}
+  </div>`;
+}
+
 function _dpHeaderHtml(u) {
   const iso = (typeof _isoForCountry === "function") ? _isoForCountry(u.country) : null;
   const flag = iso
@@ -9600,6 +9709,7 @@ function _dpHeaderHtml(u) {
       <span class="dp-dot">·</span>
       <span class="dp-loc-id">${escape((u.id || "").toUpperCase())}</span>
     </div>
+    ${_dpLastInteractionHtml(u)}
     <div class="dp-metrics">
       <button type="button" class="dp-metric interactive${scoreOpen}" onclick="dpToggleScoreBreakdown()" title="Click to see how this score is computed">
         <div class="dp-metric-lbl-row">
@@ -10160,6 +10270,7 @@ function renderTrackingBody(entity) {
           <span class="channel-icon">${channelIcons(e)}</span>
           <span>${escape(e.date || "")}</span>
           <span class="status-pill ${e.status || 'draft'}">${escape(e.status || "draft")}</span>
+          ${(e.status === "replied" && e.sentiment) ? `<span class="sentiment-pill ${escape(e.sentiment)}" title="Reply sentiment">${escape(e.sentiment)}</span>` : ""}
         </div>
       </div>
       <div class="outreach-subject">${escape(e.subject || "(no subject)")}</div>
@@ -10696,6 +10807,7 @@ function renderOutreachLog(entity) {
           <span class="channel-tag">${channelLabel(e.channel)}</span>
           <span>${escape(e.date || "")}</span>
           <span class="status-pill ${e.status || 'draft'}">${escape(e.status || "draft")}</span>
+          ${(e.status === "replied" && e.sentiment) ? `<span class="sentiment-pill ${escape(e.sentiment)}" title="Reply sentiment">${escape(e.sentiment)}</span>` : ""}
         </div>
       </div>
       <div class="outreach-subject">${escape(e.subject || "(no subject)")}</div>
@@ -10956,11 +11068,23 @@ function showOutreachForm(entityId, entryId) {
       </div>
       <div class="lo-field small">
         <span class="lo-lbl">Status</span>
-        <select id="ol-status" class="lo-input lo-select">
+        <select id="ol-status" class="lo-input lo-select" onchange="_loToggleSentiment(this.value)">
           <option value="draft"   ${e.status==="draft"  ?"selected":""}>Draft</option>
           <option value="sent"    ${e.status==="sent"   ?"selected":""}>Sent</option>
           <option value="replied" ${e.status==="replied"?"selected":""}>Replied</option>
           <option value="bounced" ${e.status==="bounced"?"selected":""}>Bounced</option>
+        </select>
+      </div>
+      <!-- Sentiment — only meaningful when status = Replied. Hidden otherwise
+           via inline display style flipped by _loToggleSentiment(status). -->
+      <div class="lo-field small" id="lo-sentiment-wrap" style="display:${e.status === 'replied' ? 'flex' : 'none'}">
+        <span class="lo-lbl">Reply sentiment</span>
+        <select id="ol-sentiment" class="lo-input lo-select">
+          <option value=""         ${!e.sentiment             ?"selected":""}>— not set —</option>
+          <option value="positive" ${e.sentiment==="positive" ?"selected":""}>Positive — moving forward</option>
+          <option value="neutral"  ${e.sentiment==="neutral"  ?"selected":""}>Neutral — info request, lukewarm</option>
+          <option value="negative" ${e.sentiment==="negative" ?"selected":""}>Negative — soft no / not now</option>
+          <option value="rejected" ${e.sentiment==="rejected" ?"selected":""}>Rejected — hard no</option>
         </select>
       </div>
       <div class="lo-field small">
@@ -11042,6 +11166,21 @@ function showOutreachForm(entityId, entryId) {
 }
 
 // --- LO modal helpers ----------------------------------------------------
+
+// Show/hide the "Reply sentiment" selector based on the current status.
+// Only meaningful when status === "replied". Other statuses keep the
+// field hidden so the form doesn't ask for sentiment on a draft / bounce.
+function _loToggleSentiment(status) {
+  const wrap = document.getElementById("lo-sentiment-wrap");
+  if (!wrap) return;
+  wrap.style.display = (status === "replied") ? "flex" : "none";
+  // Clear sentiment when we leave Replied so a stale "positive" tag
+  // doesn't get persisted to a Sent / Bounced entry.
+  if (status !== "replied") {
+    const sel = document.getElementById("ol-sentiment");
+    if (sel) sel.value = "";
+  }
+}
 
 // Single-select channel: flip the active tab styling, the data-channel
 // attribute on .lo-modal (drives the lo-not-* CSS gating), the hidden
@@ -11676,12 +11815,18 @@ function _collectOutreachEntry() {
   } else if (activeChan === "event") {
     if (body && !body.startsWith("[")) body = `[Event]\n\n${body}`;
   }
+  // Sentiment is only persisted when status === replied. Stripped to "" for
+  // any other status so we don't carry stale labels through edits.
+  const statusVal = document.getElementById("ol-status").value;
+  const sentEl    = document.getElementById("ol-sentiment");
+  const sentiment = (statusVal === "replied" && sentEl) ? (sentEl.value || "") : "";
   return {
     id, entityId,
     date:           document.getElementById("ol-date").value,
     channels:       activeChan ? [activeChan] : ["email"],
     channel:        activeChan || "email",   // legacy single-channel field kept for backward compat
-    status:         document.getElementById("ol-status").value,
+    status:         statusVal,
+    sentiment:      sentiment,               // "" | positive | neutral | negative | rejected
     senderTeamId:   document.getElementById("ol-team").value,
     senderName:     getDisplayName() || "",
     senderEmail:    getUserEmail()   || "",
