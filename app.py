@@ -2178,15 +2178,19 @@ def aspirations_generate_actions(aspiration_id):
 
     # Pull recent outreach + follow-ups so the action plan doesn't suggest
     # things the operator has already tried this quarter.
+    # Outreach table columns are (id, entity_id, payload, updated_at,
+    # deleted) — NOT entry_json / created_at. Tombstoned rows have
+    # deleted=1 and should be excluded.
     recent_outreach = db.execute(
-        "SELECT entry_json FROM outreach WHERE entity_id = ? "
-        "  ORDER BY created_at DESC LIMIT 5",
+        "SELECT payload FROM outreach "
+        " WHERE entity_id = ? AND (deleted = 0 OR deleted IS NULL) "
+        " ORDER BY updated_at DESC LIMIT 5",
         (entity.get("id"),),
     ).fetchall()
     recent_outreach_summaries = []
     for r in recent_outreach:
         try:
-            o = json.loads(r["entry_json"])
+            o = json.loads(r["payload"])
             recent_outreach_summaries.append({
                 "kind":      o.get("kind", ""),
                 "subject":   (o.get("subject") or "")[:120],
