@@ -18730,28 +18730,40 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       return;
     }
 
-    // Pointer-based drag with click vs drag distinction. Two drag modes:
-    //   - default = manual override (existing behavior, unchanged)
-    //   - aspiration mode (toggle OR Shift+drag) = create a goal
-    // Aspiration mode flow is visually different: the bubble STAYS PUT,
-    // and a ghost target + live arrow follow the cursor so the user sees
-    // current → target relationship clearly.
+    // Pointer-based drag with explicit modifier semantics:
+    //   - plain drag       = NO-OP. Bubble snaps back on release. We used
+    //                        to silently persist a manual override here,
+    //                        but that surprised users (especially after
+    //                        aspirations launched — accidental drags
+    //                        created phantom overrides that looked like
+    //                        duplicate entities).
+    //   - Shift+drag OR
+    //     aspiration mode  = create a goal (modal). Bubble stays put,
+    //                        ghost target follows cursor.
+    //   - Alt+drag         = explicit manual override. Bubble follows
+    //                        cursor live, persists on release. The
+    //                        power-user "I know better than the
+    //                        algorithm" escape hatch.
+    // Click (no movement) = opens detail panel.
     let dragging = false, startX = 0, startY = 0, moved = 0;
-    let aspMode = false;      // captured at pointerdown so user can't flip mid-drag
-    let aspOrigCx = 0, aspOrigCy = 0;
-    let aspGhost = null;      // <g> with the ghost target reticle + connecting line
+    let dragKind = "noop";    // "noop" | "aspiration" | "override"
+    let origCx = 0, origCy = 0;  // snapshot for snap-back on plain drag
+    let aspGhost = null;      // <g> with ghost target reticle + connecting line
     b.addEventListener("pointerdown", (ev) => {
       dragging = true;
       moved = 0;
       startX = ev.clientX; startY = ev.clientY;
-      // Capture aspiration intent at pointerdown — either the toggle is on
-      // OR the user is holding Shift. We don't re-check after this so a
-      // mid-drag toggle flip can't switch modes confusingly.
-      aspMode = !!(STRAT_STATE.aspirationMode || ev.shiftKey);
-      if (aspMode) {
-        aspOrigCx = parseFloat(b.getAttribute("cx"));
-        aspOrigCy = parseFloat(b.getAttribute("cy"));
-      }
+      // Snapshot current screen position so we can snap back if this turns
+      // out to be a plain (no-op) drag — without the snapshot the bubble
+      // would visually stay where the user dragged it until the next
+      // re-render.
+      origCx = parseFloat(b.getAttribute("cx"));
+      origCy = parseFloat(b.getAttribute("cy"));
+      // Capture intent at pointerdown so a mid-drag modifier release
+      // doesn't switch the action ambiguously.
+      if (STRAT_STATE.aspirationMode || ev.shiftKey) dragKind = "aspiration";
+      else if (ev.altKey)                            dragKind = "override";
+      else                                           dragKind = "noop";
       b.classList.add("dragging");
       b.setPointerCapture(ev.pointerId);
     });
@@ -18768,16 +18780,14 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       const yData = (1 - (cy - plotT) / plotH) * 100;
       const ax = STRAT_AXES[STRAT_STATE.axisKey];
 
-      if (aspMode) {
-        // ASPIRATIONAL DRAG — bubble stays put, ghost target follows cursor.
-        // Build/update the ghost group inline (avoid full re-render cost).
+      if (dragKind === "aspiration") {
+        // Bubble STAYS PUT, ghost target follows cursor. Build/update the
+        // ghost group inline (avoid full re-render cost).
         if (!aspGhost) {
           aspGhost = document.createElementNS("http://www.w3.org/2000/svg", "g");
           aspGhost.classList.add("sm-asp-ghost");
           svg.appendChild(aspGhost);
         }
-        // Compute feasibility live so the chip color updates as the user
-        // moves between quadrants.
         const { x: cur100x, y: cur100y } = stratComputeXY(u, STRAT_STATE.axisKey);
         const srcQ = _aspirationQuadrant(cur100x, cur100y);
         const tgtQ = _aspirationQuadrant(xData, yData);
@@ -18785,9 +18795,8 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
         const feas = _aspirationFeasibility(jump, srcQ, tgtQ);
         const feasColor = (ASPIRATION_FEASIBILITY_COPY[feas] || {}).color || "#D9534F";
         const feasLabel = (ASPIRATION_FEASIBILITY_COPY[feas] || {}).label || "Aspiration";
-        // Build the ghost: connecting dashed line + target reticle + feasibility chip
         aspGhost.innerHTML = `
-          <line class="sm-asp-line drag-preview" x1="${aspOrigCx.toFixed(1)}" y1="${aspOrigCy.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}"/>
+          <line class="sm-asp-line drag-preview" x1="${origCx.toFixed(1)}" y1="${origCy.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}"/>
           <circle class="sm-asp-target-glow" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="16"/>
           <circle class="sm-asp-target drag-preview" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="11"/>
           <circle class="sm-asp-target-bullseye" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.5"/>
@@ -18796,12 +18805,24 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
         tip.innerHTML = `<div class="nm">🎯 ${escape(u.name)} <span style="opacity:.6">(aspiring)</span></div>
           <div class="vals">From (<b>${Math.round(cur100x)}</b>, <b>${Math.round(cur100y)}</b>) → To (<b>${Math.round(xData)}</b>, <b>${Math.round(yData)}</b>)<br>
             ${escape(feasLabel)} · ${escape(ax.xLabel)} ${Math.round(xData - cur100x) >= 0 ? '+' : ''}${Math.round(xData - cur100x)} · ${escape(ax.yLabel)} ${Math.round(yData - cur100y) >= 0 ? '+' : ''}${Math.round(yData - cur100y)}</div>`;
-      } else {
-        // MANUAL OVERRIDE (existing behavior) — bubble follows cursor live.
+      } else if (dragKind === "override") {
+        // Explicit override — bubble follows cursor live.
         b.setAttribute("cx", cx);
         b.setAttribute("cy", cy);
-        tip.innerHTML = `<div class="nm">${escape(u.name)} <span style="opacity:.6">(dragging)</span></div>
+        tip.innerHTML = `<div class="nm">⇄ ${escape(u.name)} <span style="opacity:.6">(overriding)</span></div>
           <div class="vals">${escape(ax.xLabel)}: <b>${Math.round(xData)}</b> · ${escape(ax.yLabel)}: <b>${Math.round(yData)}</b></div>`;
+      } else {
+        // Plain drag (no modifier, aspiration mode off) — we let the bubble
+        // visually follow the cursor so the gesture feels responsive, but
+        // we'll snap it back on release. Tooltip hints what the user could
+        // have done instead.
+        b.setAttribute("cx", cx);
+        b.setAttribute("cy", cy);
+        tip.innerHTML = `<div class="nm">${escape(u.name)}</div>
+          <div class="vals" style="font-size:10px;color:rgba(255,255,255,.7)">
+            Hold <b>Shift</b> to set aspiration · <b>Alt</b> to override position<br>
+            Release to cancel drag · click to open
+          </div>`;
       }
       tip.style.left = (ev.clientX + 14) + "px";
       tip.style.top  = (ev.clientY + 14) + "px";
@@ -18812,9 +18833,7 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       dragging = false;
       b.classList.remove("dragging");
       b.releasePointerCapture(ev.pointerId);
-      // Clean up the aspiration ghost (drag-preview) — we'll re-render
-      // with the persisted overlay on next renderStrategicView() if the
-      // user confirms in the modal.
+      // Clean up the aspiration ghost (drag-preview)
       if (aspGhost && aspGhost.parentNode) aspGhost.parentNode.removeChild(aspGhost);
       aspGhost = null;
       tip.style.display = "none";
@@ -18825,10 +18844,9 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
         return;
       }
       const data = clientToData(ev);
-      if (aspMode) {
-        // Aspiration drag complete — open the modal with current + target.
-        // The bubble visually snapped back since we never moved it; the
-        // modal flow handles persistence + AI action generation.
+      if (dragKind === "aspiration") {
+        // Aspiration drag complete — open the modal. Bubble visually
+        // snapped back since we never moved it.
         const { x: cur100x, y: cur100y } = stratComputeXY(u, STRAT_STATE.axisKey);
         openAspirationModal({
           entity: u,
@@ -18838,10 +18856,23 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
           target_x:  Math.round(data.x),
           target_y:  Math.round(data.y),
         });
-      } else {
-        // Override drag complete — persist + re-render.
+      } else if (dragKind === "override") {
+        // Explicit override — persist + re-render. Confirmation prompt
+        // so the user can't override accidentally even with Alt held.
+        if (!confirm(`Override ${u.name}'s position on the ${(STRAT_AXES[STRAT_STATE.axisKey] || {}).label} map?\n\nPin at (${Math.round(data.x)}, ${Math.round(data.y)}) — algorithm-computed position is replaced. Reversible from the toolbar's "Reset overrides" button.`)) {
+          // Cancelled — snap back to original position
+          b.setAttribute("cx", origCx);
+          b.setAttribute("cy", origCy);
+          return;
+        }
         stratSaveOverride(id, STRAT_STATE.axisKey, data.x, data.y);
         renderStrategicView();
+      } else {
+        // Plain drag — NO-OP. Snap the bubble back to its original
+        // screen position so the user sees their action was discarded.
+        // (No re-render needed — only cx/cy were touched.)
+        b.setAttribute("cx", origCx);
+        b.setAttribute("cy", origCy);
       }
     });
   });
