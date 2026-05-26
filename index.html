@@ -424,6 +424,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid var(--gold)}
 .results-header h2{font-size:18px;color:var(--navy);font-weight:700}
 .results-header h2 .count{color:var(--gold);margin-left:6px}
+.results-header h2 .count-hidden{display:inline-block;margin-left:10px;font-size:11px;font-weight:600;color:var(--ink-mute);letter-spacing:.2px;padding:2px 8px;border-radius:9px;background:var(--paper);border:1px solid var(--rule);cursor:help}
 .results-actions{display:flex;gap:8px;align-items:center}
 .btn{background:var(--navy);color:#fff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.5px;font-family:inherit;transition:background var(--motion-fast) var(--ease-standard),color var(--motion-fast) var(--ease-standard),border-color var(--motion-fast) var(--ease-standard),transform var(--motion-fast) var(--ease-standard),box-shadow var(--motion-fast) var(--ease-standard)}
 .btn:hover:not(:disabled){box-shadow:0 2px 8px rgba(10,20,40,.18)}
@@ -5986,8 +5987,15 @@ function normalizeRow(row, idx) {
   const appliedBonus = (fitMeta.applied_signal_bonus !== undefined) ? fitMeta.applied_signal_bonus : 10;
   const appliedCap = (fitMeta.applied_signal_cap !== undefined) ? fitMeta.applied_signal_cap : 10;
   const seenTags = new Set();
+  const entityType = (row.type || "university").toLowerCase();
   for (const w of fitWarnings) {
     if (!w.pattern) continue;
+    // entity_type gate — a "Bocconi" pattern targeting universities should
+    // NOT false-positive on "ESN Milano Bocconi" (which is a student org
+    // named after Bocconi University but is itself a perfectly fine partner).
+    // Default to "university" if the JSON omits the field for backward compat.
+    const wantedType = (w.entity_type || "university").toLowerCase();
+    if (wantedType !== entityType) continue;
     if (nameLower.includes(w.pattern.toLowerCase())) {
       // De-dupe tags so an entity matching 2 research patterns only gets
       // ONE research_intensive penalty + tag (not stacked).
@@ -9552,8 +9560,34 @@ function clearFilters() {
   drawDots(); render();
 }
 
-function applyFilters(unis) {
+// Predicate — true when an entity is "fit-flagged out": research-intensive
+// or italian competitor AND the operator hasn't explicitly upgraded it via
+// the Priority field. This is the hide-default rule for candidate surfaces
+// (Geography candidates list, recommended-for-program drill-downs, etc).
+// Database keeps everything visible — that's the audit table.
+function _isFitHiddenFromCandidates(u) {
+  if (!u || !Array.isArray(u.fit_tags) || !u.fit_tags.length) return false;
+  // User override — Hot / Critical / Up & Running means the operator
+  // explicitly wants this on the radar. Respect that.
+  const overrideKeep = ["Hot", "Critical", "Up & Running"];
+  if (overrideKeep.includes(u.priority)) return false;
+  // Otherwise hide if any "hide-worthy" tag is present.
+  const hideTags = new Set(["research_intensive", "italian_competitor"]);
+  return u.fit_tags.some(t => hideTags.has(t.tag));
+}
+
+function applyFilters(unis, opts) {
+  // opts.includeFitFlagged === true → bypass the fit-flag default-hide.
+  // Database view sets this to true (audit table — show everything so the
+  // operator can manually mark Bocconi etc. as Not Interested if needed).
+  // Geography candidate list + recommendation surfaces leave it false.
+  const includeFitFlagged = !!(opts && opts.includeFitFlagged);
+  const hideFlag = !includeFitFlagged && !!(FIT_SIGNALS && FIT_SIGNALS._meta && FIT_SIGNALS._meta.hide_from_candidates);
   return unis.filter(u => {
+    // Fit-flag default-hide (applies to candidate surfaces). Honors the
+    // hide_from_candidates flag in fit_signals.json so we can flip it off
+    // without redeploying code if it ever turns out to be wrong.
+    if (hideFlag && _isFitHiddenFromCandidates(u)) return false;
     if (STATE.filters.continent.size && !STATE.filters.continent.has(u.continent)) return false;
     if (STATE.filters.country.size && !STATE.filters.country.has(u.country_canonical || u.country)) return false;
     if (STATE.filters.type.size && !STATE.filters.type.has(u.type)) return false;
@@ -9601,7 +9635,18 @@ function render() {
   renderActionQueue();
   const filtered = applyFilters(UNIS);
   const sorted = sortUnis(filtered);
-  document.getElementById("result-count").textContent = sorted.length;
+  // Count how many entities the fit-default-hide is suppressing within the
+  // current scope so the candidate list shows a transparent "+ N hidden as
+  // low-fit" note rather than silently dropping rows. Operator can click
+  // through to Database to see them.
+  const fullScope = applyFilters(UNIS, { includeFitFlagged: true });
+  const hiddenByFit = Math.max(0, fullScope.length - sorted.length);
+  const countEl = document.getElementById("result-count");
+  if (countEl) {
+    countEl.innerHTML = hiddenByFit > 0
+      ? `${sorted.length} <span class="count-hidden" title="Hidden as low-fit: top research universities + Italian competitors. Open Database to see them.">+ ${hiddenByFit} hidden as low-fit</span>`
+      : `${sorted.length}`;
+  }
   const grid = document.getElementById("cards-grid");
   if (!sorted.length) {
     grid.innerHTML = '<div class="empty" style="grid-column: 1 / -1;">No partnerships match your filters. Try removing one or two criteria.</div>';
@@ -16259,7 +16304,10 @@ function renderDatabaseView() {
   // Active-filter scope (search + STATE.filters) — what the user can see
   // before they pick a saved-view tab. Saved-view counts compute within
   // this scope so they reflect what the tap will actually return.
-  const scoped = applyFilters(UNIS);
+  // Database is the audit table — include fit-flagged entities (research-
+  // intensive + Italian competitors) so the operator can see them and
+  // manually mark Not Interested if appropriate.
+  const scoped = applyFilters(UNIS, { includeFitFlagged: true });
   // Apply the saved view as a post-filter so we don't mutate STATE.filters
   // (which would clobber the user's explicit filter pills + persist across
   // view switches in confusing ways).
