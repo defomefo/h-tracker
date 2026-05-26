@@ -3454,18 +3454,89 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .pkg-card-actions .btn{font-size:10px;padding:4px 10px;letter-spacing:.3px}
 .pkg-empty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:14px;text-align:center;background:var(--paper);border-radius:6px;border:1px dashed var(--rule)}
 
-/* Inline add/edit form */
-.pkg-form{background:var(--paper);border:1px solid var(--rule);border-radius:7px;padding:14px 16px;margin-top:10px}
-.pkg-form-row{display:grid;gap:10px;margin-bottom:10px;grid-template-columns:1fr}
+/* ---------- Inline add/edit form (composer with animated package) ----------
+   Corporate-toned riff on the design ref — restrained animations, H-FARM
+   ink/red palette, no decorative emoji swap, package box stays 📦.
+   Hero: animated 📦 that scales/pulses as programmes are checked,
+   tick meter visualises selection, flying chip on each tick, ribbon +
+   subtle sparkles on save. */
+.pkg-form{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:20px 22px;margin-top:12px;position:relative}
+
+/* Hero — left: animated package, right: caption + meter */
+.pkg-hero{display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center;padding-bottom:18px;margin-bottom:16px;border-bottom:1px dashed var(--rule)}
+.pkg-stage{position:relative;width:170px;height:150px;display:flex;align-items:center;justify-content:center}
+.pkg-stage .pkg-shadow{position:absolute;bottom:10px;width:100px;height:10px;background:radial-gradient(ellipse at center,rgba(26,26,26,.22) 0%,rgba(26,26,26,0) 70%);transition:width 400ms var(--ease-cinematic),opacity 400ms}
+.pkg-stage .pkg-box{position:relative;font-size:74px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.12));transition:transform 400ms cubic-bezier(.34,1.56,.64,1);transform-origin:50% 75%;user-select:none}
+.pkg-stage .pkg-box.pulse{animation:pkg-pulse 550ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes pkg-pulse{
+  0%   { transform: scale(var(--scale,1))                rotate(0deg); }
+  30%  { transform: scale(calc(var(--scale,1) * 1.16))   rotate(-5deg); }
+  55%  { transform: scale(calc(var(--scale,1) * 0.94))   rotate(3deg); }
+  80%  { transform: scale(calc(var(--scale,1) * 1.04))   rotate(-1.5deg); }
+  100% { transform: scale(var(--scale,1))                rotate(0deg); }
+}
+.pkg-stage .pkg-badge{position:absolute;top:6px;right:12px;min-width:24px;height:24px;padding:0 7px;background:var(--hf-red);color:#fff;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;font-variant-numeric:tabular-nums;box-shadow:0 4px 10px rgba(217,83,79,.40),0 0 0 3px var(--paper);transform:scale(0);transition:transform 300ms cubic-bezier(.34,1.56,.64,1)}
+.pkg-stage .pkg-badge.show{transform:scale(1)}
+.pkg-stage .pkg-badge.bounce{animation:pkg-badge-bounce 400ms ease-out}
+@keyframes pkg-badge-bounce{0%{transform:scale(1)}40%{transform:scale(1.32)}100%{transform:scale(1)}}
+.pkg-stage .pkg-ribbon{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 400ms 150ms}
+.pkg-stage .pkg-ribbon.show{opacity:1}
+.pkg-stage .pkg-ribbon::before{content:'';position:absolute;left:50%;top:22px;bottom:18px;width:11px;transform:translateX(-50%);background:var(--hf-red);border-radius:2px}
+.pkg-stage .pkg-ribbon::after{content:'🎀';position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+.pkg-stage .pkg-empty-hint{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-mute);font-weight:700;white-space:nowrap;transition:opacity 200ms}
+
+/* Caption + meter */
+.pkg-caption .pkg-eyebrow{color:var(--hf-red);font-weight:800;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:4px}
+.pkg-caption .pkg-title{font-size:18px;font-weight:800;color:var(--ink);line-height:1.2;margin-bottom:6px;letter-spacing:-.2px}
+.pkg-caption .pkg-title .pkg-name-preview{color:var(--hf-red);font-style:italic}
+.pkg-caption .pkg-lede{font-size:12px;color:var(--ink-soft);line-height:1.5;max-width:480px}
+.pkg-caption .pkg-meter{margin-top:10px;display:flex;gap:3px;width:200px}
+.pkg-caption .pkg-meter .tick{flex:1;height:5px;background:rgba(26,26,26,.08);border-radius:3px;transition:background 300ms,transform 300ms}
+.pkg-caption .pkg-meter .tick.lit{background:var(--hf-red)}
+
+/* Form fields — 3-up grid */
+.pkg-form-row{display:grid;gap:12px;margin-bottom:14px;grid-template-columns:1fr}
 .pkg-form-row.three{grid-template-columns:1.4fr 1fr 1fr}
-.pkg-form-row label{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--ink-soft);font-weight:700;letter-spacing:.6px;text-transform:uppercase}
-.pkg-form-row input,.pkg-form-row select{padding:8px 10px;border:1px solid var(--rule);border-radius:5px;font-size:12px;font-family:inherit;color:var(--ink);background:#fff;text-transform:none;letter-spacing:0;font-weight:500}
-.pkg-form-row input:focus,.pkg-form-row select:focus{outline:none;border-color:var(--hf-red);box-shadow:0 0 0 3px rgba(217,83,79,.10)}
-.pkg-programs{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0}
-.pkg-prog-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--ink);background:#fff;border:1px solid var(--rule);padding:5px 11px 5px 8px;border-radius:12px;cursor:pointer;letter-spacing:0;text-transform:none}
-.pkg-prog-chip input{margin:0;padding:0;width:auto;cursor:pointer}
-.pkg-prog-chip:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
-.pkg-form-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:10px;border-top:1px solid var(--rule);margin-top:6px}
+.pkg-form-row label{display:flex;flex-direction:column;gap:5px;font-size:10px;color:var(--ink-soft);font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.pkg-form-row input,.pkg-form-row select{padding:9px 11px;border:1px solid var(--rule);border-radius:6px;font-size:13px;font-family:inherit;color:var(--ink);background:#fff;text-transform:none;letter-spacing:0;font-weight:500;transition:border-color .15s,box-shadow .15s}
+.pkg-form-row input:focus,.pkg-form-row select:focus{outline:none;border-color:var(--hf-red);box-shadow:0 0 0 3px rgba(217,83,79,.12)}
+
+/* Programme grid — pill-style chips that flip red-soft on check */
+.pkg-prog-grid-head{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--ink-soft);margin-bottom:10px}
+.pkg-prog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}
+.pkg-prog-chip{position:relative;background:#fff;border:1px solid var(--rule);border-radius:14px;padding:11px 14px 11px 38px;cursor:pointer;transition:all 180ms var(--ease-cinematic);font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--ink);line-height:1.3;user-select:none;overflow:hidden;text-align:left;font-family:inherit}
+.pkg-prog-chip::before{content:'';position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;border:1.5px solid var(--rule);border-radius:4px;background:#fff;transition:all .15s}
+.pkg-prog-chip::after{content:'✓';position:absolute;left:12px;top:50%;transform:translateY(-50%) scale(0);width:16px;height:16px;line-height:16px;text-align:center;color:#fff;font-weight:900;font-size:12px;transition:transform 200ms cubic-bezier(.34,1.56,.64,1)}
+.pkg-prog-chip:hover:not(.checked){border-color:var(--ink-mute);transform:translateY(-1px);box-shadow:0 1px 4px rgba(10,37,64,.04)}
+.pkg-prog-chip.checked{background:var(--hf-red-soft);border-color:var(--hf-red);color:var(--hf-red-deep)}
+.pkg-prog-chip.checked::before{background:var(--hf-red);border-color:var(--hf-red)}
+.pkg-prog-chip.checked::after{transform:translateY(-50%) scale(1)}
+
+/* Analysis card — fit + revenue projection (live as programmes selected) */
+.pkg-analysis{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pkg-analysis-empty{font-size:11px;color:var(--ink-mute);font-style:italic;text-align:center;padding:6px}
+.pkg-analysis-cell{display:flex;flex-direction:column;gap:4px}
+.pkg-analysis-cell + .pkg-analysis-cell{padding-left:16px;border-left:1px solid var(--rule)}
+.pkg-analysis-lbl{font-size:9px;letter-spacing:1.4px;color:var(--ink-soft);text-transform:uppercase;font-weight:800;margin-bottom:2px}
+.pkg-analysis-val{font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.4px;line-height:1;font-variant-numeric:tabular-nums}
+.pkg-analysis-val.fit-high{color:#1F6E48}
+.pkg-analysis-val.fit-mid{color:#7A5215}
+.pkg-analysis-val.fit-low{color:#B0322E}
+.pkg-analysis-sub{font-size:11px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
+.pkg-analysis-sub b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Footer actions */
+.pkg-form-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid var(--rule);margin-top:6px}
+
+/* Flying chip — programme name flies from chip → box on check */
+.pkg-flyer{position:fixed;z-index:9999;background:var(--hf-red);color:#fff;border-radius:14px;padding:6px 12px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;pointer-events:none;box-shadow:0 6px 18px rgba(217,83,79,.45);will-change:transform,opacity;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+
+/* Sparkle particles — burst from box on save */
+.pkg-sparkle{position:fixed;z-index:9998;pointer-events:none;will-change:transform,opacity;user-select:none}
+
+@media (prefers-reduced-motion: reduce){
+  .pkg-stage .pkg-box,.pkg-stage .pkg-badge,.pkg-stage .pkg-ribbon,.pkg-prog-chip,.pkg-analysis-val{transition:none;animation:none !important}
+}
 
 /* Small package-count badge next to company name in the sponsor table */
 .st-pkg-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:9px;background:var(--gold-light);color:var(--hf-red-deep);margin-left:8px;text-transform:uppercase;vertical-align:1px}
@@ -7938,29 +8009,293 @@ function showAddPackageForm(sponsorId, pkgId) {
   const statusOpts = PACKAGE_STATUSES.map(st =>
     `<option value="${st.id}" ${p.status === st.id ? "selected" : ""}>${escape(st.label)}</option>`
   ).join("");
+  // Programme chips — click-to-toggle, animated. We DON'T use native
+  // <input type=checkbox> so the chip can fully own its state for the
+  // fly-to-box animation. Pkg.programs is the source of truth, read
+  // back by savePackage from the .checked class.
   const progChips = (PROGRAMS || []).map(prog => {
     const checked = (p.programs || []).includes(prog.id) ? "checked" : "";
-    return `<label class="pkg-prog-chip"><input type="checkbox" value="${escape(prog.id)}" ${checked}/>${escape(prog.name)}</label>`;
+    return `<button type="button" class="pkg-prog-chip ${checked}" data-prog-id="${escape(prog.id)}" data-prog-name="${escape(prog.name)}" onclick="_pkgToggleProg('${escapeAttr(sponsorId)}', '${escape(prog.id)}', this)">${escape(prog.name)}</button>`;
   }).join("");
+  // Meter tick count — caps at 8 (max programmes we expect in a package)
+  const meterTicks = Array.from({length: 8}, (_, i) => `<span class="tick" data-idx="${i}"></span>`).join("");
+
   formEl.innerHTML = `
-    <div class="pkg-form">
+    <div class="pkg-form" id="pkg-form-shell-${sponsorId}">
+      <!-- Animated hero — package grows + pulses + receives flying chips -->
+      <div class="pkg-hero">
+        <div class="pkg-stage" id="pkg-stage-${sponsorId}">
+          <div class="pkg-shadow" id="pkg-shadow-${sponsorId}"></div>
+          <div class="pkg-box" id="pkg-box-${sponsorId}">📦</div>
+          <div class="pkg-badge" id="pkg-badge-${sponsorId}">0</div>
+          <div class="pkg-ribbon" id="pkg-ribbon-${sponsorId}"></div>
+          <div class="pkg-empty-hint" id="pkg-empty-hint-${sponsorId}">Drop programmes in ↓</div>
+        </div>
+        <div class="pkg-caption">
+          <div class="pkg-eyebrow">Your package preview</div>
+          <div class="pkg-title">You're building <span class="pkg-name-preview" id="pkg-title-preview-${sponsorId}">${existing ? escape(p.name) : "a new bundle"}</span></div>
+          <div class="pkg-lede">As you tick programmes below, they fly into the box. Hit <b>+ Add package</b> to seal it and propose it to the sponsor.</div>
+          <div class="pkg-meter" id="pkg-meter-${sponsorId}">${meterTicks}</div>
+        </div>
+      </div>
+
+      <!-- Editable fields -->
       <div class="pkg-form-row three">
-        <label>Package name<input type="text" id="pkg-name-${sponsorId}" value="${escape(p.name)}" placeholder="e.g. Tech Bundle"/></label>
-        <label>Value (€)<input type="number" id="pkg-value-${sponsorId}" value="${p.value_eur || ""}" min="0" placeholder="0"/></label>
-        <label>Cohort size<input type="number" id="pkg-cohort-${sponsorId}" value="${p.cohort_size || ""}" min="0" placeholder="0"/></label>
+        <label>Package name<input type="text" id="pkg-name-${sponsorId}" value="${escape(p.name)}" placeholder="e.g. Tech Bundle" oninput="_pkgUpdateTitlePreview('${escapeAttr(sponsorId)}', this.value)"/></label>
+        <label>Value (€)<input type="number" id="pkg-value-${sponsorId}" value="${p.value_eur || ""}" min="0" placeholder="0" oninput="_pkgRefreshAnalysis('${escapeAttr(sponsorId)}')"/></label>
+        <label>Cohort size<input type="number" id="pkg-cohort-${sponsorId}" value="${p.cohort_size || ""}" min="0" placeholder="0" oninput="_pkgRefreshAnalysis('${escapeAttr(sponsorId)}')"/></label>
       </div>
       <div class="pkg-form-row">
         <label>Status<select id="pkg-status-${sponsorId}">${statusOpts}</select></label>
       </div>
-      <div class="pkg-form-row">
-        <label>Programmes (pick one or more)<div class="pkg-programs" id="pkg-progs-${sponsorId}">${progChips}</div></label>
+
+      <!-- Programme grid (click-to-toggle, fly-to-box animation) -->
+      <div class="pkg-prog-grid-head">Programmes (pick one or more)</div>
+      <div class="pkg-prog-grid" id="pkg-progs-${sponsorId}">${progChips}</div>
+
+      <!-- Live fit + revenue analysis card -->
+      <div class="pkg-analysis" id="pkg-analysis-${sponsorId}">
+        <div class="pkg-analysis-empty" style="grid-column:1/-1">Tick at least one programme to see the sponsor-fit analysis and revenue projection.</div>
       </div>
+
       <div class="pkg-form-actions">
         <button class="btn outline" type="button" onclick="hideAddPackageForm('${escapeAttr(sponsorId)}')">Cancel</button>
-        <button class="btn gold" type="button" onclick="savePackage('${escapeAttr(sponsorId)}', ${pkgId ? `'${escapeAttr(pkgId)}'` : 'null'})">${existing ? 'Save changes' : '+ Add package'}</button>
+        <button class="btn gold" type="button" id="pkg-save-${sponsorId}" onclick="savePackage('${escapeAttr(sponsorId)}', ${pkgId ? `'${escapeAttr(pkgId)}'` : 'null'})">${existing ? 'Save changes' : '+ Add package'}</button>
       </div>
     </div>`;
   formEl.style.display = "block";
+  // Render initial state (pre-existing selections animate in, analysis fires)
+  _pkgRefreshHero(sponsorId);
+  _pkgRefreshAnalysis(sponsorId);
+}
+
+// ---- Animated composer interactions ----------------------------------------
+
+// Toggle a programme chip with the fly-to-box / pulse animation.
+function _pkgToggleProg(sponsorId, progId, chipEl) {
+  const wasChecked = chipEl.classList.contains("checked");
+  chipEl.classList.toggle("checked");
+  if (!wasChecked) {
+    _pkgFlyToBox(sponsorId, chipEl);
+    setTimeout(() => _pkgPulseBox(sponsorId), 280);
+  } else {
+    _pkgDeflateBox(sponsorId);
+  }
+  _pkgRefreshHero(sponsorId);
+  _pkgRefreshAnalysis(sponsorId);
+}
+
+// Read current chip-checked state and update box scale + badge + meter.
+function _pkgRefreshHero(sponsorId) {
+  const grid = document.getElementById(`pkg-progs-${sponsorId}`);
+  if (!grid) return;
+  const checked = grid.querySelectorAll(".pkg-prog-chip.checked").length;
+  const cap = 8;
+  const t = Math.min(checked / cap, 1);
+  const scale = 1 + t * 0.5;
+  const stage = document.getElementById(`pkg-stage-${sponsorId}`);
+  const box = document.getElementById(`pkg-box-${sponsorId}`);
+  const shadow = document.getElementById(`pkg-shadow-${sponsorId}`);
+  const badge = document.getElementById(`pkg-badge-${sponsorId}`);
+  const emptyHint = document.getElementById(`pkg-empty-hint-${sponsorId}`);
+  const meter = document.getElementById(`pkg-meter-${sponsorId}`);
+  if (stage) stage.style.setProperty("--scale", scale.toFixed(3));
+  if (box && !box.classList.contains("pulse")) box.style.transform = `scale(${scale.toFixed(3)})`;
+  if (shadow) shadow.style.width = (100 + t * 50) + "px";
+  if (badge) {
+    badge.textContent = checked;
+    badge.classList.toggle("show", checked > 0);
+  }
+  if (emptyHint) emptyHint.style.opacity = (checked === 0) ? "1" : "0";
+  if (meter) {
+    [...meter.querySelectorAll(".tick")].forEach((tick, i) => {
+      tick.classList.toggle("lit", i < checked);
+    });
+  }
+  // Disable save when 0 programmes
+  const saveBtn = document.getElementById(`pkg-save-${sponsorId}`);
+  if (saveBtn) {
+    saveBtn.disabled = (checked === 0);
+    saveBtn.style.opacity = (checked === 0) ? ".55" : "1";
+    saveBtn.style.cursor = (checked === 0) ? "not-allowed" : "pointer";
+  }
+}
+
+function _pkgUpdateTitlePreview(sponsorId, val) {
+  const el = document.getElementById(`pkg-title-preview-${sponsorId}`);
+  if (el) el.textContent = (val && val.trim()) || "a new bundle";
+}
+
+function _pkgPulseBox(sponsorId) {
+  const box = document.getElementById(`pkg-box-${sponsorId}`);
+  const badge = document.getElementById(`pkg-badge-${sponsorId}`);
+  if (box) {
+    box.classList.remove("pulse"); void box.offsetWidth; box.classList.add("pulse");
+  }
+  if (badge) {
+    badge.classList.remove("bounce"); void badge.offsetWidth; badge.classList.add("bounce");
+  }
+}
+
+function _pkgDeflateBox(sponsorId) {
+  const box = document.getElementById(`pkg-box-${sponsorId}`);
+  const stage = document.getElementById(`pkg-stage-${sponsorId}`);
+  if (!box || !stage) return;
+  const cur = parseFloat(stage.style.getPropertyValue("--scale")) || 1;
+  box.animate([
+    { transform: `scale(${cur})` },
+    { transform: `scale(${(cur * 0.9).toFixed(3)})` },
+    { transform: `scale(${cur})` },
+  ], { duration: 280, easing: "cubic-bezier(.4,0,.2,1)" });
+}
+
+// Fly a chip from the clicked programme → into the package box.
+function _pkgFlyToBox(sponsorId, srcEl) {
+  const box = document.getElementById(`pkg-box-${sponsorId}`);
+  if (!box) return;
+  const src = srcEl.getBoundingClientRect();
+  const dst = box.getBoundingClientRect();
+  const flyer = document.createElement("div");
+  flyer.className = "pkg-flyer";
+  flyer.textContent = srcEl.dataset.progName || srcEl.textContent.trim();
+  flyer.style.left = src.left + "px";
+  flyer.style.top = src.top + "px";
+  flyer.style.width = src.width + "px";
+  document.body.appendChild(flyer);
+  const dx = (dst.left + dst.width/2) - (src.left + src.width/2);
+  const dy = (dst.top + dst.height/2) - (src.top + src.height/2);
+  flyer.animate([
+    { transform: "translate(0,0) scale(1)",                                              opacity: 1, borderRadius: "14px" },
+    { transform: `translate(${dx*0.5}px, ${dy*0.5 - 50}px) scale(0.6)`,                  opacity: .95, offset: 0.55 },
+    { transform: `translate(${dx}px, ${dy}px) scale(0.25)`,                              opacity: 0, borderRadius: "50%" },
+  ], { duration: 520, easing: "cubic-bezier(.55,.08,.2,1)" }).onfinish = () => flyer.remove();
+}
+
+// Subtle sparkle burst (corporate-restrained — 14 particles, ink-red palette)
+const _PKG_SPARKLES = ["✨","✦","★","✺"];
+function _pkgSparkleBurst(originEl) {
+  if (!originEl) return;
+  const r = originEl.getBoundingClientRect();
+  const ox = r.left + r.width/2;
+  const oy = r.top + r.height/2;
+  const count = 14;
+  const colors = ["#D9534F","#E0A93B","#1A1A1A","#7A5215"];
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement("div");
+    s.className = "pkg-sparkle";
+    s.textContent = _PKG_SPARKLES[i % _PKG_SPARKLES.length];
+    const size = 12 + Math.random() * 16;
+    s.style.fontSize = size + "px";
+    s.style.left = ox + "px";
+    s.style.top  = oy + "px";
+    s.style.color = colors[i % colors.length];
+    s.style.textShadow = "0 1px 4px rgba(0,0,0,.2)";
+    document.body.appendChild(s);
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
+    const dist  = 70 + Math.random() * 100;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist - 20;
+    const rot = (Math.random() - 0.5) * 540;
+    s.animate([
+      { transform: "translate(-50%,-50%) scale(0.2) rotate(0deg)",                                          opacity: 0 },
+      { transform: `translate(calc(-50% + ${dx*0.4}px), calc(-50% + ${dy*0.4}px)) scale(1) rotate(${rot*0.4}deg)`, opacity: 1, offset: 0.35 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy + 60}px)) scale(0.5) rotate(${rot}deg)`,      opacity: 0 },
+    ], { duration: 800 + Math.random() * 300, easing: "cubic-bezier(.2,.7,.4,1)" }).onfinish = () => s.remove();
+  }
+}
+
+// ---- Live fit + revenue analysis -------------------------------------------
+
+// Compute keyword fit between this sponsor and ONE programme. Uses the
+// same primary +25 / secondary +5 engine as parseEntityRow, but feeds it
+// the sponsor's name + industry_sector + notes (sponsors aren't in UNIS
+// so they don't carry program_matches pre-computed).
+function _pkgSponsorProgramFit(sponsor, prog) {
+  const blob = [
+    sponsor.company_name || "",
+    sponsor.industry_sector || "",
+    sponsor.notes || "",
+  ].join(" ").toLowerCase();
+  let primary = 0, secondary = 0;
+  (prog.primary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) primary++; });
+  (prog.secondary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) secondary++; });
+  return Math.min(100, Math.min(75, primary * 25) + Math.min(25, secondary * 5));
+}
+
+// Revenue projection — derived from past Career Day data.
+//   baseline_per_student = avg value_no_iva_eur ÷ avg attendee_count
+//                          across all sponsors with both numbers > 0
+//   estimate = baseline_per_student × cohort_size × √(programmes.length)
+// √ multiplier gives diminishing returns for adding more programmes.
+// Returns { lo, hi, baseline_per_student, sample_size } so the UI can
+// show a range + the source of the math.
+function _pkgRevenueProjection(programmesCount, cohortSize) {
+  const all = (typeof SPONSORS !== "undefined" && SPONSORS) || [];
+  const valid = all.filter(s => (s.value_no_iva_eur || 0) > 0 && (s.attendee_count || 0) > 0);
+  if (!valid.length) return { lo: 0, hi: 0, baseline_per_student: 0, sample_size: 0 };
+  const totalValue = valid.reduce((sum, s) => sum + (s.value_no_iva_eur || 0), 0);
+  const totalAttendees = valid.reduce((sum, s) => sum + (s.attendee_count || 0), 0);
+  const baseline = totalValue / totalAttendees;
+  const cohort = Math.max(1, cohortSize || 1);
+  const mult = Math.sqrt(Math.max(1, programmesCount));
+  const mid = baseline * cohort * mult;
+  return {
+    lo: Math.round(mid * 0.75),
+    hi: Math.round(mid * 1.25),
+    baseline_per_student: Math.round(baseline),
+    sample_size: valid.length,
+  };
+}
+
+function _pkgRefreshAnalysis(sponsorId) {
+  const host = document.getElementById(`pkg-analysis-${sponsorId}`);
+  if (!host) return;
+  const sponsor = (typeof SPONSORS !== "undefined" && SPONSORS || []).find(s => s.id === sponsorId);
+  if (!sponsor) { host.innerHTML = ""; return; }
+  const grid = document.getElementById(`pkg-progs-${sponsorId}`);
+  const checkedProgs = grid
+    ? [...grid.querySelectorAll(".pkg-prog-chip.checked")].map(c => c.dataset.progId)
+    : [];
+  if (!checkedProgs.length) {
+    host.innerHTML = `<div class="pkg-analysis-empty" style="grid-column:1/-1">Tick at least one programme to see the sponsor-fit analysis and revenue projection.</div>`;
+    return;
+  }
+  // Fit score — average of per-programme keyword fit, weighted by max
+  const fits = checkedProgs.map(pid => {
+    const prog = (PROGRAMS || []).find(p => p.id === pid);
+    return prog ? _pkgSponsorProgramFit(sponsor, prog) : 0;
+  });
+  const fitAvg = Math.round(fits.reduce((s, n) => s + n, 0) / fits.length);
+  const fitMax = Math.max.apply(null, fits);
+  const fitClass = fitAvg >= 50 ? "fit-high" : fitAvg >= 25 ? "fit-mid" : "fit-low";
+  const fitWord = fitAvg >= 50 ? "Strong" : fitAvg >= 25 ? "Moderate" : "Weak";
+  // Cohort + projection
+  const cohortRaw = parseInt((document.getElementById(`pkg-cohort-${sponsorId}`) || {}).value, 10);
+  const valueRaw  = parseInt((document.getElementById(`pkg-value-${sponsorId}`) || {}).value, 10);
+  const cohort = isNaN(cohortRaw) ? 0 : cohortRaw;
+  const proj = _pkgRevenueProjection(checkedProgs.length, cohort || 20);  // default 20 if not entered
+  const projHi = proj.hi.toLocaleString("en-US");
+  const projLo = proj.lo.toLocaleString("en-US");
+  const yourValue = !isNaN(valueRaw) && valueRaw > 0 ? valueRaw : null;
+  // Compare entered value to projection
+  let valueHint = "";
+  if (yourValue && proj.hi > 0) {
+    if (yourValue < proj.lo) valueHint = ` · <b style="color:#B0322E">below projection</b>`;
+    else if (yourValue > proj.hi) valueHint = ` · <b style="color:#1F6E48">above projection</b>`;
+    else valueHint = ` · <b style="color:#1F6E48">within range</b>`;
+  }
+  host.innerHTML = `
+    <div class="pkg-analysis-cell">
+      <div class="pkg-analysis-lbl">Sponsor-package fit</div>
+      <div class="pkg-analysis-val ${fitClass}">${fitAvg}<small style="font-size:14px;font-weight:700;color:var(--ink-soft);margin-left:2px">/100</small></div>
+      <div class="pkg-analysis-sub">${escape(fitWord)} fit · top programme <b>${fitMax}/100</b> · avg across ${checkedProgs.length} programme${checkedProgs.length === 1 ? '' : 's'}.${fitAvg < 25 ? ` Sponsor's industry (<b>${escape(sponsor.industry_sector || 'unset')}</b>) doesn't overlap strongly with the selected programmes' keywords.` : ''}</div>
+    </div>
+    <div class="pkg-analysis-cell">
+      <div class="pkg-analysis-lbl">Revenue projection</div>
+      <div class="pkg-analysis-val">€${projLo}–${projHi}</div>
+      <div class="pkg-analysis-sub">Baseline <b>€${proj.baseline_per_student.toLocaleString("en-US")}</b>/student × ${cohort || 20}-cohort × √${checkedProgs.length}-programme multiplier${valueHint}.${proj.sample_size ? ` Derived from <b>${proj.sample_size}</b> past Career Day sponsors.` : ''}</div>
+    </div>
+  `;
 }
 
 function hideAddPackageForm(sponsorId) {
@@ -7974,7 +8309,12 @@ async function savePackage(sponsorId, pkgId) {
   const status = document.getElementById(`pkg-status-${sponsorId}`).value;
   const value_eur = parseInt(document.getElementById(`pkg-value-${sponsorId}`).value, 10);
   const cohort_size = parseInt(document.getElementById(`pkg-cohort-${sponsorId}`).value, 10);
-  const programs = [...document.querySelectorAll(`#pkg-progs-${sponsorId} input[type=checkbox]:checked`)].map(c => c.value);
+  // New chip-based UI: read selected programmes off `.pkg-prog-chip.checked`
+  // (we ditched native <input type=checkbox> so the chip could own its
+  // .checked state for the fly-to-box animation).
+  const programs = [...document.querySelectorAll(`#pkg-progs-${sponsorId} .pkg-prog-chip.checked`)]
+    .map(c => c.dataset.progId)
+    .filter(Boolean);
   if (!programs.length) { alert("Pick at least one programme for this package."); return; }
   const now = new Date().toISOString();
   if (!SPONSOR_PACKAGES[sponsorId]) SPONSOR_PACKAGES[sponsorId] = [];
@@ -7999,6 +8339,29 @@ async function savePackage(sponsorId, pkgId) {
       updated_at: now,
     });
   }
+  // ---- Celebration: ribbon seals, sparkles burst, box does a victory hop.
+  // User explicitly asked for this — "Done → sparkle patlaması — '+ Add
+  // package' tıklayınca kurdele bağlanır, glitter saçılır, başarı bildirimi
+  // gelir." We persist + close on a short delay so the animation is visible.
+  const stage  = document.getElementById(`pkg-stage-${sponsorId}`);
+  const ribbon = document.getElementById(`pkg-ribbon-${sponsorId}`);
+  const box    = document.getElementById(`pkg-box-${sponsorId}`);
+  const saveBtn = document.getElementById(`pkg-save-${sponsorId}`);
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.cursor = "wait"; }
+  if (ribbon) ribbon.classList.add("show");
+  if (stage)  _pkgSparkleBurst(stage);
+  if (box && stage) {
+    const cur = parseFloat(stage.style.getPropertyValue("--scale")) || 1;
+    box.animate([
+      { transform: `scale(${cur})       rotate(0deg)` },
+      { transform: `scale(${(cur*1.2).toFixed(3)}) rotate(-6deg)`, offset: 0.35 },
+      { transform: `scale(${(cur*1.1).toFixed(3)}) rotate(4deg)`,  offset: 0.7  },
+      { transform: `scale(${cur})       rotate(0deg)` },
+    ], { duration: 720, easing: "cubic-bezier(.34,1.56,.64,1)" });
+  }
+  showSyncToast(`📦 Package "${name}" ${pkgId ? "updated" : "added"} · proposing to sponsor`, "ok");
+  // Persist + close on a short delay so the user sees the seal animation.
+  await new Promise(r => setTimeout(r, 720));
   await _persistSponsorPackages(sponsorId);
   hideAddPackageForm(sponsorId);
   openSponsorDetail(sponsorId);
