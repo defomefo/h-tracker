@@ -1453,6 +1453,113 @@ def snapshots_take():
     })
 
 
+@app.route("/api/snapshots/trajectory/<entity_id>", methods=["GET"])
+@auth_required
+def snapshots_trajectory(entity_id):
+    """Per-entity engagement-depth time series. Picks one axis_key and
+    returns its `z` (=depth) value for each snapshot date in the window.
+
+    Query params:
+      days — window size, default 90, max 365
+      axis — which axis to read from; default 'effortFit'. Depth (z) is
+             the same across all 3 axes per snapshot day so this is
+             really just a stable choice for the dedupe key.
+
+    Returns:
+      { entity_id, days, axis, points: [{date, depth, priority}] }
+    """
+    try:
+        days = int(request.args.get("days", "90"))
+    except (TypeError, ValueError):
+        days = 90
+    days = max(7, min(365, days))
+    axis = (request.args.get("axis") or "effortFit").strip()
+
+    cutoff = (_dt.datetime.utcnow() - _dt.timedelta(days=days)).strftime("%Y-%m-%d")
+    db = get_db()
+    rows = db.execute(
+        "SELECT snapshot_date, z, priority "
+        "  FROM entity_position_snapshots "
+        " WHERE entity_id = ? AND axis_key = ? AND snapshot_date >= ? "
+        " ORDER BY snapshot_date ASC",
+        (entity_id, axis, cutoff),
+    ).fetchall()
+    points = [
+        {"date": r["snapshot_date"], "depth": (float(r["z"]) if r["z"] is not None else None), "priority": r["priority"]}
+        for r in rows
+    ]
+    return jsonify({
+        "entity_id": entity_id,
+        "days": days,
+        "axis": axis,
+        "points": points,
+        "count": len(points),
+    })
+
+
+@app.route("/api/snapshots/trajectories", methods=["GET"])
+@auth_required
+def snapshots_trajectories_bulk():
+    """Batch trajectory endpoint — returns ALL entities' depth time series
+    in one round trip. Used to render sparklines across the database view
+    without firing 300 individual requests.
+
+    Query params:
+      days — window size, default 90, max 365
+      axis — default 'effortFit' (depth is axis-invariant; we just pick
+             one for the dedupe key)
+      ids  — optional comma-separated subset, e.g. ?ids=ent-1,ent-2
+
+    Returns:
+      { days, axis, by_entity: { entity_id: [{date, depth, priority}, …] } }
+    """
+    try:
+        days = int(request.args.get("days", "90"))
+    except (TypeError, ValueError):
+        days = 90
+    days = max(7, min(365, days))
+    axis = (request.args.get("axis") or "effortFit").strip()
+    ids_param = (request.args.get("ids") or "").strip()
+    ids_filter = [i.strip() for i in ids_param.split(",") if i.strip()] if ids_param else None
+
+    cutoff = (_dt.datetime.utcnow() - _dt.timedelta(days=days)).strftime("%Y-%m-%d")
+    db = get_db()
+    if ids_filter:
+        # SQLite parameter limit is 999, but our list will be at most a few
+        # hundred entities so a single IN-clause is fine on both backends.
+        placeholders = ",".join(["?"] * len(ids_filter))
+        sql = (
+            "SELECT entity_id, snapshot_date, z, priority "
+            "  FROM entity_position_snapshots "
+            " WHERE axis_key = ? AND snapshot_date >= ? "
+            f"   AND entity_id IN ({placeholders}) "
+            " ORDER BY entity_id ASC, snapshot_date ASC"
+        )
+        params = [axis, cutoff, *ids_filter]
+    else:
+        sql = (
+            "SELECT entity_id, snapshot_date, z, priority "
+            "  FROM entity_position_snapshots "
+            " WHERE axis_key = ? AND snapshot_date >= ? "
+            " ORDER BY entity_id ASC, snapshot_date ASC"
+        )
+        params = [axis, cutoff]
+    rows = db.execute(sql, tuple(params)).fetchall()
+    by_entity = {}
+    for r in rows:
+        by_entity.setdefault(r["entity_id"], []).append({
+            "date": r["snapshot_date"],
+            "depth": (float(r["z"]) if r["z"] is not None else None),
+            "priority": r["priority"],
+        })
+    return jsonify({
+        "days": days,
+        "axis": axis,
+        "entities_with_history": len(by_entity),
+        "by_entity": by_entity,
+    })
+
+
 # ============================================================================
 # FOLLOW-UPS — prospective task per partner ("Follow up with X by Friday").
 # ----------------------------------------------------------------------------

@@ -558,6 +558,30 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .depth-row .depth-breakdown span{flex:1}
 .depth-row .depth-breakdown b{color:var(--navy);font-weight:700;font-size:11px}
 .depth-row .depth-breakdown small{color:var(--ink-mute);font-weight:600;margin-left:1px}
+
+/* ============================================================
+   PARTNER HEALTH TRAJECTORY — sparkline + velocity arrow.
+   Used in detail panel, database rows, and home briefing.
+   ============================================================ */
+.spark{display:inline-block;vertical-align:middle}
+.spark-empty{opacity:.6}
+.trj-vel{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:9px;font-variant-numeric:tabular-nums;vertical-align:middle;white-space:nowrap}
+/* Detail panel: bigger trajectory card under metrics */
+.dp-trajectory{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:10px 14px 11px;margin:0 0 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.dp-trj-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
+.dp-trj-label{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:800}
+.dp-trj-window{font-size:10px;color:var(--ink-mute);font-weight:600}
+.dp-trj-spark{display:block;width:100%;height:48px}
+.dp-trj-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:90px}
+.dp-trj-cooling{display:none;background:rgba(176,50,46,.1);color:#B0322E;font-size:10px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:9px;text-transform:uppercase}
+.dp-trj-cooling.show{display:inline-block}
+/* Database row sparkline */
+.db-spark-cell{display:flex;align-items:center;gap:8px;min-width:120px}
+.db-spark-cell .spark{flex-shrink:0}
+.db-spark-cell .trj-vel{flex-shrink:0;font-size:9px;padding:1px 5px}
+/* Home briefing cooling cluster */
+.briefing-cooling{color:var(--crit);font-weight:800}
+
 .score-breakdown h4{font-size:11px;letter-spacing:1.2px;color:var(--navy);text-transform:uppercase;font-weight:800;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
 .bd-row{display:grid;grid-template-columns:130px 1fr 78px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--rule);font-size:11px}
 .bd-row:last-of-type{border-bottom:none}
@@ -10999,7 +11023,40 @@ function _dpHeaderHtml(u) {
           <span>persistence <b>${d.persistence}</b></span>
         </div>
       </div>
-    </div>`;
+    </div>
+    ${_dpTrajectoryHtml(u)}`;
+}
+
+// Trajectory card — full-width sparkline of the last 90 days of engagement
+// depth + a velocity pill (↑ +X in 30d). Uses the cached TRAJECTORY_BULK so
+// re-renders are instant; falls back to "building…" placeholder when the
+// snapshot table has <2 distinct days for this entity (cold-start state).
+function _dpTrajectoryHtml(u) {
+  const rawPoints  = (typeof TRAJECTORY_BULK !== "undefined" && TRAJECTORY_BULK[u.id]) || [];
+  const allPoints  = (typeof _trajectoryWithToday === "function") ? _trajectoryWithToday(rawPoints, u) : rawPoints;
+  const sparkSvg   = (typeof renderTrajectorySparkline === "function")
+    ? renderTrajectorySparkline(allPoints, { width: 420, height: 48, windowDays: 30 })
+    : "";
+  const velPill    = (typeof renderVelocityPill === "function")
+    ? renderVelocityPill(allPoints, 30) : "";
+  const v          = (typeof trajectoryVelocity === "function") ? trajectoryVelocity(allPoints, 30) : { tone: "flat" };
+  const isCooling  = v.tone === "down" && (u.priority === "Hot" || u.priority === "Critical");
+  const histCount  = allPoints.filter(p => p && p.depth !== null).length;
+  const windowLbl  = histCount < 2 ? "Building — snapshots accumulate daily"
+                                   : `Last ${Math.min(90, histCount)} day${histCount === 1 ? '' : 's'} · 30d velocity`;
+  return `<div class="dp-trajectory">
+    <div>
+      <div class="dp-trj-head">
+        <span class="dp-trj-label">Engagement trajectory</span>
+        <span class="dp-trj-window">${escape(windowLbl)}</span>
+      </div>
+      ${sparkSvg}
+    </div>
+    <div class="dp-trj-side">
+      ${velPill}
+      ${isCooling ? `<span class="dp-trj-cooling show" title="A ${u.priority} partner cooling — high priority for re-engagement">⚠ Cooling</span>` : ''}
+    </div>
+  </div>`;
 }
 
 function _dpScoreBreakdownHtml(u) {
@@ -14169,6 +14226,21 @@ function renderHomeView() {
   if (dormantHi.length > 0) {
     insights.push(`<strong>${dormantHi.length}</strong> ${dormantHi.length === 1 ? "high-priority partner hasn't" : "high-priority partners haven't"} been contacted in 30+ days`);
   }
+  // Cooling alert — Hot/Critical partners whose engagement depth has dropped
+  // ≥15% over the last 30 days. Different signal from "days dormant" — a
+  // partner can be recently contacted but still cooling (one reply, no
+  // follow-through). Surfaces via the trajectory snapshot data.
+  const coolingPartners = (typeof detectCoolingPartners === "function")
+    ? detectCoolingPartners({ priorities: ["Critical", "Hot"], pctThreshold: 15, windowDays: 30 })
+    : [];
+  if (coolingPartners.length > 0) {
+    const topName = coolingPartners[0].entity.name;
+    const otherN = coolingPartners.length - 1;
+    const headline = coolingPartners.length === 1
+      ? `<strong class="briefing-cooling">${escape(topName)}</strong> is cooling — depth dropped <strong>${coolingPartners[0].dropPct}%</strong> in 30 days`
+      : `<strong class="briefing-cooling">${escape(topName)}</strong> + <strong>${otherN}</strong> other${otherN === 1 ? '' : 's'} cooling — Hot/Critical partners losing engagement`;
+    insights.push(`${headline} — <a onclick="openDetail('${escape(coolingPartners[0].entity.id)}')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">open ${escape(topName)}</a>`);
+  }
   // Active aspirations — surface when present so the user remembers
   // ongoing transformation goals (otherwise drag-and-forget happens).
   const activeAsps = (typeof ASPIRATIONS !== "undefined" && Array.isArray(ASPIRATIONS))
@@ -15900,6 +15972,199 @@ function engagementDepth(u) {
     counts: { outreach: oCount, contacts: cCount, distinctDates: dCount, seniors: seniorN },
     breakdown: `outreach ${oScore}/40 · contacts ${cScore}/30 · persistence ${pScore}/30`,
   };
+}
+
+// ============================================================================
+// PARTNER HEALTH TRAJECTORY — engagement-depth history rendering.
+// ----------------------------------------------------------------------------
+// Backed by /api/snapshots/trajectory (per-entity) and
+// /api/snapshots/trajectories (bulk). Two cached layers:
+//   - TRAJECTORY_BULK    → result of the bulk load, keyed by entity_id
+//   - TRAJECTORY_PENDING → in-flight requests so duplicate calls coalesce
+// Bulk is loaded once on app boot (and on focus-sync). Detail-panel renders
+// also pre-warm individual entries via loadTrajectory() if missing.
+//
+// Why use depth as the metric: depth = (outreach * contacts * persistence)
+// composite, computed locally. The snapshot z column stores the same value
+// the strategic map's 3D Z axis displays — so a "cooling" partner shows up
+// as a shrinking tower AND a downward sparkline. Two surfaces, one truth.
+// ============================================================================
+const TRAJECTORY_BULK = {};       // entity_id → array of {date, depth, priority}
+const TRAJECTORY_PENDING = {};    // entity_id → Promise (for coalesce)
+let TRAJECTORY_BULK_LOADED_AT = 0;
+const TRAJECTORY_BULK_TTL_MS = 5 * 60 * 1000;  // 5 minutes
+
+async function loadAllTrajectories(opts) {
+  opts = opts || {};
+  const now = Date.now();
+  if (!opts.force && (now - TRAJECTORY_BULK_LOADED_AT) < TRAJECTORY_BULK_TTL_MS
+      && Object.keys(TRAJECTORY_BULK).length) {
+    return TRAJECTORY_BULK;
+  }
+  try {
+    const days = opts.days || 90;
+    const r = await apiFetch(`/api/snapshots/trajectories?days=${days}`);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    Object.keys(TRAJECTORY_BULK).forEach(k => delete TRAJECTORY_BULK[k]);
+    Object.assign(TRAJECTORY_BULK, j.by_entity || {});
+    TRAJECTORY_BULK_LOADED_AT = now;
+    return TRAJECTORY_BULK;
+  } catch (e) {
+    console.warn("[trajectory] bulk load failed:", e.message);
+    return TRAJECTORY_BULK;
+  }
+}
+
+async function loadTrajectory(entityId, opts) {
+  opts = opts || {};
+  if (!opts.force && TRAJECTORY_BULK[entityId]) return TRAJECTORY_BULK[entityId];
+  if (TRAJECTORY_PENDING[entityId]) return TRAJECTORY_PENDING[entityId];
+  const days = opts.days || 90;
+  TRAJECTORY_PENDING[entityId] = (async () => {
+    try {
+      const r = await apiFetch(`/api/snapshots/trajectory/${encodeURIComponent(entityId)}?days=${days}`);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const j = await r.json();
+      TRAJECTORY_BULK[entityId] = j.points || [];
+      return TRAJECTORY_BULK[entityId];
+    } catch (e) {
+      console.warn("[trajectory] entity load failed:", e.message);
+      return [];
+    } finally {
+      delete TRAJECTORY_PENDING[entityId];
+    }
+  })();
+  return TRAJECTORY_PENDING[entityId];
+}
+
+// Augment server snapshots with TODAY's live computed depth so the sparkline
+// always ends at the right-now value (snapshot trigger fires once per day —
+// without this, today's outreach edits wouldn't visibly bend the line).
+function _trajectoryWithToday(points, entity) {
+  const today = new Date().toISOString().slice(0, 10);
+  const live = (typeof engagementDepth === "function") ? engagementDepth(entity).total : null;
+  const out = (points || []).slice();
+  if (live === null) return out;
+  const last = out[out.length - 1];
+  if (last && last.date === today) {
+    // Replace today's snapshot with the live value (which is fresher)
+    out[out.length - 1] = { ...last, depth: live };
+  } else {
+    out.push({ date: today, depth: live, priority: entity.priority || null });
+  }
+  return out;
+}
+
+// Velocity arrow + slope detection for the last `windowDays`. Returns
+// {arrow, tone, delta, slopeText} where:
+//   arrow = "↑" / "↓" / "→"
+//   tone  = "up" / "down" / "flat"
+//   delta = numeric change (last - first in window)
+function trajectoryVelocity(points, windowDays) {
+  windowDays = windowDays || 30;
+  if (!points || points.length < 2) {
+    return { arrow: "→", tone: "flat", delta: 0, slopeText: "no history" };
+  }
+  const cutoff = Date.now() - windowDays * 86400000;
+  const recent = points.filter(p => new Date(p.date).getTime() >= cutoff);
+  const window = recent.length >= 2 ? recent : points.slice(-2);
+  const first = window[0];
+  const last  = window[window.length - 1];
+  if (!first || !last || first.depth === null || last.depth === null) {
+    return { arrow: "→", tone: "flat", delta: 0, slopeText: "no history" };
+  }
+  const delta = (last.depth - first.depth);
+  if (delta > 3)   return { arrow: "↑", tone: "up",   delta, slopeText: `+${delta.toFixed(0)} in ${windowDays}d` };
+  if (delta < -3)  return { arrow: "↓", tone: "down", delta, slopeText: `${delta.toFixed(0)} in ${windowDays}d` };
+  return            { arrow: "→", tone: "flat", delta, slopeText: `${delta >= 0 ? '+' : ''}${delta.toFixed(0)} in ${windowDays}d` };
+}
+
+// Cooling detector — used by the Home briefing alert. Returns the entities
+// whose 30-day depth has dropped at least `pctThreshold` percent AND
+// whose priority is in `priorities`. Default: Hot/Critical partners
+// dropping ≥15% over 30 days.
+function detectCoolingPartners(opts) {
+  opts = opts || {};
+  const pctThreshold = opts.pctThreshold !== undefined ? opts.pctThreshold : 15;
+  const minStartDepth = opts.minStartDepth !== undefined ? opts.minStartDepth : 20;
+  const priorities = opts.priorities || ["Critical", "Hot"];
+  const windowDays = opts.windowDays || 30;
+  if (typeof UNIS === "undefined" || !UNIS.length) return [];
+  const out = [];
+  UNIS.forEach(u => {
+    if (!priorities.includes(u.priority)) return;
+    const points = TRAJECTORY_BULK[u.id];
+    if (!points || points.length < 2) return;
+    const cutoff = Date.now() - windowDays * 86400000;
+    const recent = points.filter(p => new Date(p.date).getTime() >= cutoff && p.depth !== null);
+    if (recent.length < 2) return;
+    const start = recent[0].depth;
+    const end   = recent[recent.length - 1].depth;
+    if (start < minStartDepth) return;  // ignore noise from never-engaged partners
+    const dropPct = ((start - end) / start) * 100;
+    if (dropPct >= pctThreshold) {
+      out.push({ entity: u, start, end, dropPct: Math.round(dropPct), windowDays });
+    }
+  });
+  // Worst drops first
+  out.sort((a, b) => b.dropPct - a.dropPct);
+  return out;
+}
+
+// ----------------------------------------------------------------------------
+// SVG sparkline renderer — vanilla, no library. Returns an inline SVG string.
+// Forward-fills missing daily values (snapshot trigger may skip days, so
+// gaps would otherwise read as zeros). Renders a path + optional area fill +
+// final-point dot. Color auto-selects based on velocity direction unless
+// opts.color is explicitly passed.
+// ----------------------------------------------------------------------------
+function renderTrajectorySparkline(points, opts) {
+  opts = opts || {};
+  const w = opts.width || 80;
+  const h = opts.height || 24;
+  const padY = 2;
+  const valid = (points || []).filter(p => p && p.depth !== null && p.depth !== undefined);
+  if (valid.length < 2) {
+    return `<svg class="spark spark-empty" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="No trajectory data yet">
+      <line x1="0" y1="${h/2}" x2="${w}" y2="${h/2}" stroke="rgba(0,0,0,.18)" stroke-width="1" stroke-dasharray="2,3"/>
+      <text x="${w/2}" y="${h/2 + 3}" text-anchor="middle" font-size="9" fill="rgba(0,0,0,.4)" font-style="italic">building…</text>
+    </svg>`;
+  }
+  // Pick color from velocity unless caller forced one
+  const vel = trajectoryVelocity(valid, opts.windowDays || 30);
+  const color = opts.color || (vel.tone === "up" ? "#1F6E48" : vel.tone === "down" ? "#B0322E" : "#7A5215");
+  // Time-aware X: map each point's date to a 0..w position based on the
+  // window's actual time span (not point index — so a 60-day gap doesn't
+  // visually compress into the same width as a 1-day gap).
+  const t0 = new Date(valid[0].date).getTime();
+  const tN = new Date(valid[valid.length - 1].date).getTime();
+  const span = Math.max(1, tN - t0);
+  const minD = Math.min(...valid.map(p => p.depth));
+  const maxD = Math.max(...valid.map(p => p.depth));
+  const range = Math.max(1, maxD - minD);
+  const pts = valid.map(p => {
+    const x = ((new Date(p.date).getTime() - t0) / span) * w;
+    const y = h - padY - ((p.depth - minD) / range) * (h - padY * 2);
+    return { x, y, depth: p.depth };
+  });
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${h} L${pts[0].x.toFixed(1)},${h} Z`;
+  const lastPt = pts[pts.length - 1];
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Engagement depth ${vel.slopeText}">
+    <path d="${areaPath}" fill="${color}" fill-opacity="0.10"/>
+    <path d="${linePath}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="2" fill="${color}"/>
+  </svg>`;
+}
+
+// Compact "↑ +12 in 30d" pill — used next to sparklines for a textual
+// summary of the velocity. Color matches the sparkline.
+function renderVelocityPill(points, windowDays) {
+  const v = trajectoryVelocity(points, windowDays || 30);
+  const color = v.tone === "up" ? "#1F6E48" : v.tone === "down" ? "#B0322E" : "#7A5215";
+  const bg    = v.tone === "up" ? "rgba(31,110,72,.13)" : v.tone === "down" ? "rgba(176,50,46,.13)" : "rgba(122,82,21,.13)";
+  return `<span class="trj-vel" style="background:${bg};color:${color}" title="Depth change over the last ${windowDays || 30} days">${v.arrow} ${escape(v.slopeText)}</span>`;
 }
 
 // ============================================================================
@@ -18273,6 +18538,17 @@ function renderDatabaseView() {
       <div class="db-score-bar"><span style="width:${Math.max(2, u.partnership_score)}%"></span></div>
       <div class="db-score-num">${u.partnership_score}</div>
     </div>`;
+    // Health trajectory — 90-day depth sparkline + 30-day velocity pill.
+    // Renders silently as "building…" when the snapshot table has <2
+    // points for this entity (cold-start state).
+    const trjRaw    = (typeof TRAJECTORY_BULK !== "undefined" && TRAJECTORY_BULK[u.id]) || [];
+    const trjPoints = (typeof _trajectoryWithToday === "function") ? _trajectoryWithToday(trjRaw, u) : trjRaw;
+    const trjSpark  = (typeof renderTrajectorySparkline === "function")
+      ? renderTrajectorySparkline(trjPoints, { width: 70, height: 22, windowDays: 30 })
+      : "";
+    const trjPill   = (typeof renderVelocityPill === "function")
+      ? renderVelocityPill(trjPoints, 30) : "";
+    const trjCell   = `<div class="db-spark-cell">${trjSpark}${trjPill}</div>`;
     const d = u.days_dormant;
     let dormCell;
     if (d === null || d === undefined) {
@@ -18308,6 +18584,7 @@ function renderDatabaseView() {
       <td>${prioCell}</td>
       <td>${tierCell}</td>
       <td class="right">${scoreCell}</td>
+      <td>${trjCell}</td>
       <td class="right">${dormCell}</td>
       <td class="right">${lcCell}</td>
       <td>${ownerCell}</td>
@@ -18353,6 +18630,7 @@ function renderDatabaseView() {
       ${dbSortHead("priority", "Priority")}
       ${dbSortHead("strategic", "Strategic")}
       ${dbSortHead("score", "Score", { right: true })}
+      <th title="90-day engagement-depth trajectory · ↑ growing, ↓ cooling">Trajectory</th>
       ${dbSortHead("dormant", "Dormant", { right: true })}
       ${dbSortHead("lc", "Last contacted", { right: true })}
       <th>Owner</th>
@@ -18360,7 +18638,7 @@ function renderDatabaseView() {
     <tbody>
       ${sorted.length
         ? sorted.map(renderRow).join("")
-        : `<tr><td colspan="10" class="db-empty">No entities match your current scope. Clear filters or try a different saved view.</td></tr>`}
+        : `<tr><td colspan="11" class="db-empty">No entities match your current scope. Clear filters or try a different saved view.</td></tr>`}
     </tbody></table></div>`;
 
   el.innerHTML = `<div class="db-shell">${headerHtml}${viewsHtml}${toolbarHtml}${tableHtml}</div>`;
@@ -21485,6 +21763,7 @@ async function bootApp(opts = {}) {
   syncSponsorPackagesFromServer();
   syncProspectsFromServer();
   loadAspirations();
+  loadAllTrajectories();
   startPresence();
   try {
     await loadKnowledgeBase();
@@ -21615,6 +21894,7 @@ window.addEventListener("focus", () => {
   if (typeof syncSponsorPackagesFromServer === "function") syncSponsorPackagesFromServer();
   if (typeof syncProspectsFromServer === "function")       syncProspectsFromServer();
   if (typeof loadAspirations === "function")               loadAspirations();
+  if (typeof loadAllTrajectories === "function")           loadAllTrajectories();
 });
 </script>
 </body>
