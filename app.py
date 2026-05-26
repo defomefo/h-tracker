@@ -655,7 +655,7 @@ def outreach_delete(entry_id):
 # Allowed namespaces are whitelisted to avoid accidental sprawl. Add new
 # namespaces here when Phase 3+ introduces new shared state buckets.
 # ============================================================================
-_KV_NAMESPACES = {"team_assignment", "stage_override", "map2x2_override", "kb_draft", "entity_override"}
+_KV_NAMESPACES = {"team_assignment", "stage_override", "map2x2_override", "kb_draft", "entity_override", "sponsor_packages"}
 
 
 def _check_ns(ns):
