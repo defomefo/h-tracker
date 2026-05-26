@@ -2210,6 +2210,100 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .sm-chart-svg .sm-bubble.override{stroke:var(--hf-red);stroke-width:1.5;stroke-dasharray:2,2}
 
 /* ============================================================
+   ASPIRATIONAL DRAG — "where I want this partner to be" overlay.
+   Plain bubble drag = manual override (existing behavior, unchanged).
+   Aspiration-mode drag OR Shift+drag = aspirational goal.
+   Visual language: dashed line from current → target, ghost
+   target sphere, feasibility chip on the connecting line.
+   ============================================================ */
+.sm-shell.aspiration-mode .sm-chart-svg .sm-bubble{cursor:crosshair}
+.sm-shell.aspiration-mode .sm-chart-svg{background:linear-gradient(180deg,rgba(217,83,79,.04) 0%, rgba(217,83,79,0) 50%)}
+.sm-chart-svg .sm-asp-line{stroke:var(--hf-red);stroke-width:2;stroke-dasharray:5,4;fill:none;pointer-events:none;opacity:.85}
+.sm-chart-svg .sm-asp-line.drag-preview{stroke-width:2.5;stroke-dasharray:6,4;animation:sm-asp-march 800ms linear infinite}
+.sm-chart-svg .sm-asp-line.achieved{stroke:#1F6E48;stroke-dasharray:none;opacity:.7}
+.sm-chart-svg .sm-asp-line.expired,.sm-chart-svg .sm-asp-line.abandoned{stroke:var(--ink-mute);stroke-dasharray:2,3;opacity:.4}
+.sm-chart-svg .sm-asp-arrow{fill:var(--hf-red)}
+.sm-chart-svg .sm-asp-arrow.achieved{fill:#1F6E48}
+.sm-chart-svg .sm-asp-arrow.expired,.sm-chart-svg .sm-asp-arrow.abandoned{fill:var(--ink-mute)}
+.sm-chart-svg .sm-asp-target{fill:none;stroke:var(--hf-red);stroke-width:2;stroke-dasharray:3,3;pointer-events:none}
+.sm-chart-svg .sm-asp-target.drag-preview{animation:sm-asp-pulse 1s ease-in-out infinite}
+.sm-chart-svg .sm-asp-target-glow{fill:rgba(217,83,79,.18);pointer-events:none}
+.sm-chart-svg .sm-asp-target-bullseye{fill:var(--hf-red);pointer-events:none}
+.sm-chart-svg .sm-asp-feas{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;fill:#fff;paint-order:stroke;stroke:var(--hf-red);stroke-width:8px;stroke-linejoin:round}
+@keyframes sm-asp-march { to { stroke-dashoffset: -18; } }
+@keyframes sm-asp-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
+.sm-asp-toggle{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:5px;background:var(--paper);height:32px;padding:0 12px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);cursor:pointer;font-family:inherit;transition:all .15s}
+.sm-asp-toggle:hover{color:var(--navy);background:#fff}
+.sm-asp-toggle.active{background:var(--hf-red);color:#fff;border-color:var(--hf-red);box-shadow:0 2px 6px rgba(217,83,79,.3)}
+.sm-asp-toggle .sm-asp-icon{font-size:13px;line-height:1}
+.sm-asp-toggle .sm-asp-count{display:inline-block;font-size:9px;background:var(--ink);color:#fff;padding:1px 6px;border-radius:8px;letter-spacing:.4px;font-weight:800;margin-left:2px}
+.sm-asp-toggle.active .sm-asp-count{background:rgba(255,255,255,.25);color:#fff}
+.sm-asp-hint{background:linear-gradient(135deg,rgba(217,83,79,.08) 0%,rgba(217,83,79,.03) 100%);border-left:3px solid var(--hf-red);padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--ink);line-height:1.5;border-radius:5px;display:flex;align-items:center;gap:10px;animation:sm-asp-hint-in .35s ease-out}
+.sm-asp-hint b{color:var(--hf-red-deep);font-weight:800;letter-spacing:.3px}
+.sm-asp-hint .sm-asp-hint-glyph{font-size:18px;line-height:1}
+@keyframes sm-asp-hint-in { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
+/* Aspiration Modal — the "where do you want to go + how do we get there" dialog */
+.asp-modal-backdrop{position:fixed;inset:0;background:rgba(15,15,15,.55);backdrop-filter:blur(2px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:40px 20px;animation:asp-fade-in .2s ease-out}
+@keyframes asp-fade-in{from{opacity:0}to{opacity:1}}
+.asp-modal{background:#fff;border-radius:12px;max-width:780px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;animation:asp-slide-in .25s cubic-bezier(.34,1.56,.64,1)}
+@keyframes asp-slide-in{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.asp-modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--rule);background:linear-gradient(135deg,#FBF8F2 0%,#fff 100%);position:relative}
+.asp-modal-eyebrow{font-size:9px;letter-spacing:1.8px;font-weight:800;color:var(--hf-red);text-transform:uppercase;margin-bottom:4px}
+.asp-modal-title{font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.25}
+.asp-modal-sub{font-size:12px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+.asp-modal-close{position:absolute;top:14px;right:14px;background:transparent;border:none;font-size:24px;color:var(--ink-mute);cursor:pointer;padding:4px 10px;border-radius:5px;line-height:1;font-family:inherit;transition:all .12s}
+.asp-modal-close:hover{background:rgba(0,0,0,.06);color:var(--ink)}
+.asp-modal-body{padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:18px}
+/* Mini-map showing current → target position */
+.asp-minimap{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.asp-minimap-svg{background:#FBF8F2;border:1px solid var(--rule);border-radius:5px;width:200px;height:200px}
+.asp-minimap-meta{display:flex;flex-direction:column;gap:8px}
+.asp-minimap-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft)}
+.asp-minimap-row b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.asp-minimap-row .dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex-shrink:0}
+.asp-minimap-row .dot.current{background:var(--ink);border:2px solid #fff;box-shadow:0 0 0 1px var(--ink)}
+.asp-minimap-row .dot.target{background:var(--hf-red);border:2px solid #fff;box-shadow:0 0 0 1px var(--hf-red)}
+.asp-minimap-row.delta{padding-top:6px;border-top:1px dashed var(--rule);font-size:11px}
+/* Feasibility chip + warning copy */
+.asp-feas{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:8px;border:1px solid;background:#fff}
+.asp-feas-chip{font-size:9px;letter-spacing:1.4px;font-weight:800;color:#fff;padding:5px 10px;border-radius:10px;text-transform:uppercase;flex-shrink:0;white-space:nowrap}
+.asp-feas-copy{font-size:12px;line-height:1.5;color:var(--ink)}
+.asp-feas-copy b{color:var(--ink);font-weight:700}
+/* AI action plan */
+.asp-actions-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.asp-actions-title{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.1px}
+.asp-actions-headline{background:linear-gradient(135deg,var(--ink) 0%, #2a2a2a 100%);color:#fff;padding:12px 16px;border-radius:7px;border-left:4px solid var(--gold);font-size:13px;line-height:1.5;font-weight:500;letter-spacing:.1px}
+.asp-actions-headline b{color:var(--gold);font-weight:700}
+.asp-actions{display:flex;flex-direction:column;gap:8px}
+.asp-action{background:#fff;border:1px solid var(--rule);border-radius:7px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;transition:all .15s}
+.asp-action:hover{border-color:var(--ink-soft);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.asp-action.committed{background:linear-gradient(135deg,rgba(31,110,72,.06) 0%, rgba(31,110,72,.02) 100%);border-color:rgba(31,110,72,.4)}
+.asp-action-idx{width:28px;height:28px;border-radius:50%;background:var(--gold-light);color:var(--hf-red-deep);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;flex-shrink:0}
+.asp-action.committed .asp-action-idx{background:rgba(31,110,72,.18);color:#1F6E48}
+.asp-action-body{display:flex;flex-direction:column;gap:5px;min-width:0}
+.asp-action-title{font-size:13px;font-weight:700;color:var(--ink);line-height:1.35}
+.asp-action-detail{font-size:11.5px;color:var(--ink-soft);line-height:1.5}
+.asp-action-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:center}
+.asp-action-tag{font-size:9px;letter-spacing:.5px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:9px;color:var(--ink-soft);background:rgba(26,26,26,.06)}
+.asp-action-tag.owner{background:rgba(31,111,180,.1);color:#1F6FB4}
+.asp-action-tag.due{background:rgba(122,82,21,.12);color:var(--hf-red-deep)}
+.asp-action-tag.evidence{background:rgba(176,50,46,.08);color:#B0322E;font-style:italic;letter-spacing:.2px;text-transform:none;font-weight:500;padding:2px 8px}
+.asp-action-add{flex-shrink:0;align-self:start;background:var(--gold);color:var(--ink);border:none;border-radius:5px;padding:7px 11px;font-size:10.5px;font-weight:800;letter-spacing:.5px;cursor:pointer;font-family:inherit;text-transform:uppercase;transition:all .12s;white-space:nowrap}
+.asp-action-add:hover{background:var(--hf-red);color:#fff;transform:translateY(-1px)}
+.asp-action-add:disabled{background:rgba(31,110,72,.18);color:#1F6E48;cursor:default;transform:none}
+.asp-reality-check{background:rgba(176,50,46,.06);border:1px solid rgba(176,50,46,.3);border-radius:7px;padding:12px 14px;font-size:12px;line-height:1.5;color:var(--ink);font-style:italic;display:flex;gap:10px;align-items:flex-start}
+.asp-reality-check::before{content:"⚠";font-style:normal;color:#B0322E;font-size:18px;font-weight:bold;line-height:1;flex-shrink:0}
+.asp-loading{padding:30px;text-align:center;color:var(--ink-soft);font-size:12px;font-style:italic}
+.asp-loading-dots{display:inline-block;margin-left:4px;animation:asp-dots 1.4s infinite;width:18px;text-align:left}
+@keyframes asp-dots{0%{content:""}25%{content:"."}50%{content:".."}75%,100%{content:"..."}}
+.asp-loading-dots::after{content:"..."}
+.asp-modal-foot{padding:14px 24px;border-top:1px solid var(--rule);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.asp-modal-foot-meta{font-size:10.5px;color:var(--ink-mute);letter-spacing:.2px}
+.asp-modal-foot-meta b{color:var(--ink);font-weight:600}
+.asp-modal-foot-actions{display:flex;gap:8px}
+
+/* ============================================================
    2D / 3D toggle pill (Bloomberg-terminal style segmented).
    ============================================================ */
 .sm-dim-toggle{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden;background:var(--paper);height:32px}
@@ -14075,6 +14169,13 @@ function renderHomeView() {
   if (dormantHi.length > 0) {
     insights.push(`<strong>${dormantHi.length}</strong> ${dormantHi.length === 1 ? "high-priority partner hasn't" : "high-priority partners haven't"} been contacted in 30+ days`);
   }
+  // Active aspirations — surface when present so the user remembers
+  // ongoing transformation goals (otherwise drag-and-forget happens).
+  const activeAsps = (typeof ASPIRATIONS !== "undefined" && Array.isArray(ASPIRATIONS))
+    ? ASPIRATIONS.filter(a => a && a.status === "active") : [];
+  if (activeAsps.length > 0 && insights.length < 3) {
+    insights.push(`<strong>${activeAsps.length}</strong> aspirational goal${activeAsps.length === 1 ? '' : 's'} active — <a onclick="switchView('strategy')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">review on the map</a>`);
+  }
   if (signedActive > 0) {
     insights.push(`<strong>${signedActive}</strong> ${signedActive === 1 ? "partnership is" : "partnerships are"} live and signed`);
   }
@@ -15396,6 +15497,134 @@ const STRAT_STATE = {
   overrides: _loadStratOverrides(),  // { effortFit: { entityId: {x,y} }, ... }
   showAll: false,                    // top-50 by default
   is3D: (() => { try { return localStorage.getItem(LS_STRAT_3D) === "1"; } catch { return false; } })(),
+  // Aspirational drag mode. When true, click+drag on a bubble creates an
+  // "aspiration goal" (drag to where you WANT the partner to be) instead
+  // of overriding the algorithm's computed position. Shift-key also acts
+  // as a one-shot aspiration drag without flipping the mode globally.
+  aspirationMode: false,
+};
+
+// ============================================================================
+// ASPIRATIONS — partnership goal tracker.
+// Operator drags a sphere on a strategic map to a target position; we POST
+// to /api/aspirations, get back an aspiration_id, then optionally call
+// /api/aspirations/<id>/generate-actions for a Gemini-backed action plan.
+// Each action can be one-click promoted to a follow-up via the existing
+// createFollowup() infra.
+//
+// Client-side cache lives in ASPIRATIONS (id → row). loadAspirations()
+// hits the server on app boot + after every mutation; the dashed-line
+// overlay on the 2×2 map reads from this cache so re-renders are instant.
+// ============================================================================
+let ASPIRATIONS = [];
+
+async function loadAspirations(opts) {
+  opts = opts || {};
+  const params = new URLSearchParams();
+  if (opts.status)    params.set("status", opts.status);
+  if (opts.entity_id) params.set("entity_id", opts.entity_id);
+  if (opts.axis_key)  params.set("axis_key", opts.axis_key);
+  try {
+    const r = await apiFetch("/api/aspirations" + (params.toString() ? `?${params}` : ""));
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    ASPIRATIONS = j.aspirations || [];
+    return ASPIRATIONS;
+  } catch (e) {
+    console.warn("[aspirations] load failed:", e.message);
+    return ASPIRATIONS;
+  }
+}
+
+async function createAspiration(payload) {
+  const r = await apiFetch("/api/aspirations", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", ..._identityHeaders() },
+    body:    JSON.stringify(payload),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.error || ("HTTP " + r.status));
+  }
+  const j = await r.json();
+  await loadAspirations();  // refresh cache so overlay updates
+  return j;
+}
+
+async function setAspirationStatus(aspirationId, status) {
+  const r = await apiFetch(`/api/aspirations/${encodeURIComponent(aspirationId)}/status`, {
+    method:  "PUT",
+    headers: { "Content-Type": "application/json", ..._identityHeaders() },
+    body:    JSON.stringify({ status }),
+  });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  await loadAspirations();
+  return r.json();
+}
+
+async function deleteAspiration(aspirationId) {
+  const r = await apiFetch(`/api/aspirations/${encodeURIComponent(aspirationId)}`, {
+    method:  "DELETE",
+    headers: _identityHeaders(),
+  });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  await loadAspirations();
+  return r.json();
+}
+
+async function generateAspirationActions(aspirationId, entity, force) {
+  const r = await apiFetch(`/api/aspirations/${encodeURIComponent(aspirationId)}/generate-actions`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", ..._identityHeaders() },
+    body:    JSON.stringify({ entity, force: !!force }),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.error || ("HTTP " + r.status));
+  }
+  return r.json();
+}
+
+async function linkAspirationFollowup(aspirationId, followupId, actionIndex) {
+  try {
+    const r = await apiFetch(`/api/aspirations/${encodeURIComponent(aspirationId)}/link-followup`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body:    JSON.stringify({ followup_id: followupId, action_index: actionIndex }),
+    });
+    if (!r.ok) return null;
+    return r.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+// Client-side mirror of the backend's quadrant + jump calculation. Used by
+// the live drag visualisation (we want feasibility shown BEFORE the user
+// releases the pointer, so the server round-trip would be too slow).
+function _aspirationQuadrant(x, y) {
+  if (y >= 50) return x >= 50 ? "tr" : "tl";
+  return x >= 50 ? "br" : "bl";
+}
+function _aspirationJump(srcQ, tgtQ) {
+  if (srcQ === tgtQ) return 0;
+  const sameRow = srcQ[0] === tgtQ[0];
+  const sameCol = srcQ[1] === tgtQ[1];
+  return (sameRow || sameCol) ? 1 : 2;
+}
+function _aspirationFeasibility(jump, srcQ, tgtQ) {
+  if (srcQ === tgtQ) return "micro";
+  if (jump === 1)    return "realistic";
+  if (jump === 2)    return "transformational";
+  return "ambitious";
+}
+// Maps backend feasibility code → user-facing copy used everywhere
+// (modal headline, friction banner, tracker card). Single source of truth.
+const ASPIRATION_FEASIBILITY_COPY = {
+  micro:            { label: "Micro nudge",        color: "#7A5215", desc: "Same quadrant — small adjustment, 1-2 light actions can shift the position." },
+  realistic:        { label: "Realistic 90-day",   color: "#1F6E48", desc: "One axis flip — concrete actions in a normal quarter can move this partner." },
+  ambitious:        { label: "Ambitious",          color: "#C97A1A", desc: "Significant shift — expect a multi-quarter cultivation cycle." },
+  transformational: { label: "Transformational",   color: "#B0322E", desc: "Diagonal jump — this is a 12-18 month relationship transformation, not a sprint." },
 };
 
 // Per-axis "what Z reveals" tagline — the strategic story unlocked when the
@@ -15738,6 +15967,402 @@ async function stratClearAllOverrides() {
   showResetUndoToast(`${count} position${count === 1 ? "" : "s"} cleared across all 2×2 maps`);
 }
 
+// ============================================================================
+// ASPIRATION MODE — toolbar toggle + auto-achievement checker.
+// ============================================================================
+function stratToggleAspirationMode() {
+  // Can't aspire in 3D — axes are projected, so the drop target is ambiguous
+  if (STRAT_STATE.is3D) {
+    showSyncToast("Switch to 2D to use Aspiration mode.", "warn");
+    return;
+  }
+  STRAT_STATE.aspirationMode = !STRAT_STATE.aspirationMode;
+  renderStrategicView();
+}
+
+// Walk every active aspiration and check if its entity's CURRENT
+// computed position has reached the target quadrant. If so, auto-flip
+// to "achieved" (PUT /api/aspirations/<id>/status) and show a celebratory
+// toast. Called after every render so the user gets the satisfaction
+// of seeing the dashed line vanish + a positive nudge.
+let _aspAchievedSeen = new Set();
+async function checkAspirationAchievements() {
+  if (typeof ASPIRATIONS === "undefined" || !ASPIRATIONS.length) return;
+  if (typeof UNIS === "undefined" || !UNIS.length) return;
+  const newlyAchieved = [];
+  for (const a of ASPIRATIONS) {
+    if (!a || a.status !== "active") continue;
+    if (_aspAchievedSeen.has(a.id)) continue;
+    const u = UNIS.find(x => x.id === a.entity_id);
+    if (!u) continue;
+    const { x, y } = stratComputeXY(u, a.axis_key);
+    const currentQ = _aspirationQuadrant(x, y);
+    if (currentQ === a.target_quadrant) {
+      _aspAchievedSeen.add(a.id);
+      newlyAchieved.push({ a, u });
+    }
+  }
+  if (!newlyAchieved.length) return;
+  // Promote in parallel; show one toast per partner (capped at 3 to
+  // avoid notification spam if a bulk import triggers many at once).
+  await Promise.all(newlyAchieved.map(({ a }) =>
+    setAspirationStatus(a.id, "achieved").catch(() => null)
+  ));
+  newlyAchieved.slice(0, 3).forEach(({ u, a }) => {
+    const label = (STRAT_AXES[a.axis_key] || {}).label || a.axis_key;
+    showSyncToast(`🎯 Aspiration achieved · ${u.name} reached the target quadrant on ${label}`, "ok");
+  });
+}
+
+// ============================================================================
+// ASPIRATION MODAL — the "confirm + generate action plan + add to follow-ups"
+// dialog opened when an aspirational drag completes. Lifecycle:
+//   1) User drags a sphere in aspiration mode → openAspirationModal()
+//   2) Modal shows current → target mini-map + feasibility friction copy
+//   3) User clicks "Save aspiration & generate plan" → POST /api/aspirations,
+//      then POST /api/aspirations/<id>/generate-actions
+//   4) AI returns 4-6 actions; user can checkbox + one-click promote each
+//      to a follow-up via existing saveFollowup() infra
+//   5) User closes modal → re-render strategic view (overlay updates)
+// ============================================================================
+let _ASPIRATION_MODAL = null;  // tracks current modal state for re-renders
+
+function openAspirationModal(opts) {
+  // opts: { entity, axisKey, current_x, current_y, target_x, target_y }
+  //       OR { aspiration } when re-opening an existing aspiration
+  let asp = null;        // server-persisted aspiration row (after save)
+  let actionsResp = null; // generated action plan { headline, actions, reality_check }
+  let loadingActions = false;
+  let stage = "draft";   // draft | persisted | generating | ready
+
+  if (opts.aspiration) {
+    asp = opts.aspiration;
+    opts.entity = (typeof UNIS !== "undefined" ? UNIS : []).find(x => x.id === asp.entity_id);
+    opts.axisKey = asp.axis_key;
+    opts.current_x = asp.current_x;
+    opts.current_y = asp.current_y;
+    opts.target_x = asp.target_x;
+    opts.target_y = asp.target_y;
+    if (asp.actions) actionsResp = asp.actions;
+    stage = actionsResp ? "ready" : "persisted";
+  }
+
+  if (!opts.entity) {
+    showSyncToast("Couldn't find that entity — aborted.", "warn");
+    return;
+  }
+
+  // Build the modal backdrop + shell. We tear down + rebuild on every state
+  // change (cheap — single modal, doesn't fight with the tour or other UI).
+  let backdrop = document.getElementById("asp-modal-backdrop");
+  if (backdrop) backdrop.remove();
+  backdrop = document.createElement("div");
+  backdrop.id = "asp-modal-backdrop";
+  backdrop.className = "asp-modal-backdrop";
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeAspirationModal(); });
+  document.body.appendChild(backdrop);
+
+  _ASPIRATION_MODAL = { opts, asp, actionsResp, loadingActions, stage,
+    committedActions: new Set(),  // indices of actions promoted to followups
+  };
+  _renderAspirationModal();
+}
+
+function closeAspirationModal() {
+  const b = document.getElementById("asp-modal-backdrop");
+  if (b) b.remove();
+  _ASPIRATION_MODAL = null;
+  // Re-render so the new aspiration's dashed line appears on the chart
+  if (typeof renderStrategicView === "function" && STATE && STATE.view === "strategy") {
+    renderStrategicView();
+  }
+}
+
+function _renderAspirationModal() {
+  const m = _ASPIRATION_MODAL;
+  if (!m) return;
+  const backdrop = document.getElementById("asp-modal-backdrop");
+  if (!backdrop) return;
+  const o = m.opts;
+  const entity = o.entity;
+  const ax = STRAT_AXES[o.axisKey] || { label: o.axisKey, xLabel: "X", yLabel: "Y" };
+  const srcQ = _aspirationQuadrant(o.current_x, o.current_y);
+  const tgtQ = _aspirationQuadrant(o.target_x,  o.target_y);
+  const jump = _aspirationJump(srcQ, tgtQ);
+  const feas = _aspirationFeasibility(jump, srcQ, tgtQ);
+  const feasMeta = ASPIRATION_FEASIBILITY_COPY[feas] || ASPIRATION_FEASIBILITY_COPY.realistic;
+  const dx = o.target_x - o.current_x;
+  const dy = o.target_y - o.current_y;
+
+  // Mini-map SVG — 200×200, shows the 2×2 grid + current dot + target dot + arrow
+  const miniW = 200, miniH = 200, miniPad = 14;
+  const innerW = miniW - miniPad*2, innerH = miniH - miniPad*2;
+  const cx1 = miniPad + (o.current_x / 100) * innerW;
+  const cy1 = miniPad + (1 - o.current_y / 100) * innerH;
+  const cx2 = miniPad + (o.target_x / 100) * innerW;
+  const cy2 = miniPad + (1 - o.target_y / 100) * innerH;
+  const ddx = cx2 - cx1, ddy = cy2 - cy1, ddist = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
+  const ahx = cx2 - (ddx/ddist) * 6, ahy = cy2 - (ddy/ddist) * 6;
+  const ux = ddx/ddist, uy = ddy/ddist;
+  const aL1x = ahx - ux*7 + uy*4, aL1y = ahy - uy*7 - ux*4;
+  const aL2x = ahx - ux*7 - uy*4, aL2y = ahy - uy*7 + ux*4;
+  const minimapSvg = `
+    <svg class="asp-minimap-svg" viewBox="0 0 ${miniW} ${miniH}">
+      <rect x="${miniPad}" y="${miniPad}" width="${innerW/2}" height="${innerH/2}" fill="rgba(31,111,180,.06)"/>
+      <rect x="${miniPad + innerW/2}" y="${miniPad}" width="${innerW/2}" height="${innerH/2}" fill="rgba(217,83,79,.06)"/>
+      <rect x="${miniPad}" y="${miniPad + innerH/2}" width="${innerW/2}" height="${innerH/2}" fill="rgba(31,110,72,.06)"/>
+      <rect x="${miniPad + innerW/2}" y="${miniPad + innerH/2}" width="${innerW/2}" height="${innerH/2}" fill="rgba(122,82,21,.06)"/>
+      <line x1="${miniPad + innerW/2}" y1="${miniPad}" x2="${miniPad + innerW/2}" y2="${miniPad + innerH}" stroke="#ccc" stroke-dasharray="3,3"/>
+      <line x1="${miniPad}" y1="${miniPad + innerH/2}" x2="${miniPad + innerW}" y2="${miniPad + innerH/2}" stroke="#ccc" stroke-dasharray="3,3"/>
+      ${ddist > 4 ? `<line x1="${cx1.toFixed(1)}" y1="${cy1.toFixed(1)}" x2="${cx2.toFixed(1)}" y2="${cy2.toFixed(1)}" stroke="${feasMeta.color}" stroke-width="2" stroke-dasharray="4,3"/>
+      <polygon points="${ahx.toFixed(1)},${ahy.toFixed(1)} ${aL1x.toFixed(1)},${aL1y.toFixed(1)} ${aL2x.toFixed(1)},${aL2y.toFixed(1)}" fill="${feasMeta.color}"/>` : ''}
+      <circle cx="${cx1.toFixed(1)}" cy="${cy1.toFixed(1)}" r="7" fill="#1A1A1A" stroke="#fff" stroke-width="2"/>
+      <circle cx="${cx2.toFixed(1)}" cy="${cy2.toFixed(1)}" r="9" fill="none" stroke="${feasMeta.color}" stroke-width="2.5" stroke-dasharray="3,3"/>
+      <circle cx="${cx2.toFixed(1)}" cy="${cy2.toFixed(1)}" r="3" fill="${feasMeta.color}"/>
+    </svg>`;
+
+  let bodyHtml = `
+    <div class="asp-minimap">
+      ${minimapSvg}
+      <div class="asp-minimap-meta">
+        <div class="asp-minimap-row"><span class="dot current"></span> <b>Current</b> · (${o.current_x}, ${o.current_y}) · ${(ax.bl && {bl:ax.bl,br:ax.br,tl:ax.tl,tr:ax.tr}[srcQ]) || srcQ}</div>
+        <div class="asp-minimap-row"><span class="dot target"></span> <b>Target</b> · (${o.target_x}, ${o.target_y}) · ${(ax.bl && {bl:ax.bl,br:ax.br,tl:ax.tl,tr:ax.tr}[tgtQ]) || tgtQ}</div>
+        <div class="asp-minimap-row delta">Δ${escape(ax.xLabel)} <b>${dx >= 0 ? '+' : ''}${dx}</b> · Δ${escape(ax.yLabel)} <b>${dy >= 0 ? '+' : ''}${dy}</b> · jump <b>${jump}</b></div>
+      </div>
+    </div>
+    <div class="asp-feas" style="border-color:${feasMeta.color}">
+      <span class="asp-feas-chip" style="background:${feasMeta.color}">${escape(feasMeta.label)}</span>
+      <div class="asp-feas-copy">${escape(feasMeta.desc)}</div>
+    </div>`;
+
+  // Actions section — depends on stage
+  if (m.stage === "draft") {
+    bodyHtml += `
+      <div style="text-align:center;padding:10px 0">
+        <button class="btn gold" type="button" onclick="confirmAspiration()" style="font-size:13px;padding:10px 22px">
+          ✨ Save aspiration &amp; generate AI action plan
+        </button>
+        <div style="font-size:11px;color:var(--ink-mute);margin-top:8px">90-day TTL · auto-archives when partner reaches target quadrant · you can abandon any time</div>
+      </div>`;
+  } else if (m.stage === "persisted" && !m.loadingActions) {
+    bodyHtml += `
+      <div style="text-align:center;padding:10px 0">
+        <button class="btn gold" type="button" onclick="generateAspirationPlan()" style="font-size:13px;padding:10px 22px">
+          🤖 Generate AI action plan
+        </button>
+        <div style="font-size:11px;color:var(--ink-mute);margin-top:8px">Specific 4-6 actions to actually move this partner. Sources: entity + recent outreach + open follow-ups + contacts.</div>
+      </div>`;
+  } else if (m.loadingActions || m.stage === "generating") {
+    bodyHtml += `
+      <div class="asp-loading">
+        <div style="font-size:32px;margin-bottom:8px">🤖</div>
+        Gemini is drafting a specific action plan<span class="asp-loading-dots"></span><br>
+        <span style="font-size:10px;color:var(--ink-mute)">Reading entity profile + outreach history + open follow-ups…</span>
+      </div>`;
+  } else if (m.stage === "ready" && m.actionsResp) {
+    const r = m.actionsResp;
+    bodyHtml += `
+      ${r.headline ? `<div class="asp-actions-headline">${escape(r.headline)}</div>` : ''}
+      <div class="asp-actions-head">
+        <div class="asp-actions-title">Action plan · ${r.actions.length} step${r.actions.length === 1 ? '' : 's'}</div>
+        <button class="btn outline" type="button" onclick="generateAspirationPlan(true)" style="font-size:10px;padding:5px 10px;letter-spacing:.5px">⟳ Regenerate</button>
+      </div>
+      <div class="asp-actions">
+        ${r.actions.map((a, i) => {
+          const committed = m.committedActions.has(i);
+          return `<div class="asp-action${committed ? ' committed' : ''}" data-idx="${i}">
+            <div class="asp-action-idx">${i + 1}</div>
+            <div class="asp-action-body">
+              <div class="asp-action-title">${escape(a.title)}</div>
+              ${a.detail ? `<div class="asp-action-detail">${escape(a.detail)}</div>` : ''}
+              <div class="asp-action-meta">
+                ${a.owner_hint ? `<span class="asp-action-tag owner">${escape(a.owner_hint)}</span>` : ''}
+                ${a.due_in_days ? `<span class="asp-action-tag due">Due in ${a.due_in_days}d</span>` : ''}
+                ${a.evidence ? `<span class="asp-action-tag evidence">${escape(a.evidence)}</span>` : ''}
+              </div>
+            </div>
+            <button class="asp-action-add" type="button" onclick="promoteAspActionToFollowup(${i})" ${committed ? 'disabled' : ''}>
+              ${committed ? '✓ Added' : '+ Follow-up'}
+            </button>
+          </div>`;
+        }).join('')}
+      </div>
+      ${r.reality_check ? `<div class="asp-reality-check">${escape(r.reality_check)}</div>` : ''}`;
+  }
+
+  // Foot meta
+  let footMeta = '';
+  if (m.asp) {
+    const created = m.asp.created_at ? new Date(m.asp.created_at).toLocaleDateString() : '—';
+    const exp = m.asp.expires_at ? new Date(m.asp.expires_at).toLocaleDateString() : '—';
+    footMeta = `Saved <b>${escape(created)}</b> · expires <b>${escape(exp)}</b>${m.committedActions.size ? ` · <b>${m.committedActions.size}</b> action${m.committedActions.size === 1 ? '' : 's'} promoted` : ''}`;
+  } else {
+    footMeta = 'Draft — not yet saved';
+  }
+
+  backdrop.innerHTML = `
+    <div class="asp-modal" role="dialog" aria-label="Aspirational goal for ${escape(entity.name)}">
+      <div class="asp-modal-head">
+        <div class="asp-modal-eyebrow">Aspirational goal · ${escape(ax.label)}</div>
+        <div class="asp-modal-title">${escape(entity.name)}</div>
+        <div class="asp-modal-sub">${escape(entity.country_canonical || entity.country || '')} · ${escape(entity.type || '')} · score ${entity.partnership_score || 0}</div>
+        <button class="asp-modal-close" type="button" onclick="closeAspirationModal()" title="Close (Esc)">×</button>
+      </div>
+      <div class="asp-modal-body">${bodyHtml}</div>
+      <div class="asp-modal-foot">
+        <div class="asp-modal-foot-meta">${footMeta}</div>
+        <div class="asp-modal-foot-actions">
+          ${m.asp ? `<button class="btn outline" type="button" onclick="abandonAspiration()" style="color:var(--crit);border-color:var(--crit)">Abandon</button>` : ''}
+          <button class="btn outline" type="button" onclick="closeAspirationModal()">${m.stage === 'ready' ? 'Done' : 'Cancel'}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function confirmAspiration() {
+  const m = _ASPIRATION_MODAL;
+  if (!m || m.asp) return;
+  try {
+    const o = m.opts;
+    const result = await createAspiration({
+      entity_id: o.entity.id,
+      axis_key:  o.axisKey,
+      current_x: o.current_x,
+      current_y: o.current_y,
+      target_x:  o.target_x,
+      target_y:  o.target_y,
+    });
+    // Cache server-derived fields so subsequent renders show the right metadata
+    m.asp = {
+      id: result.id,
+      entity_id: o.entity.id,
+      axis_key: o.axisKey,
+      current_x: o.current_x,
+      current_y: o.current_y,
+      target_x: o.target_x,
+      target_y: o.target_y,
+      source_quadrant: result.source_quadrant,
+      target_quadrant: result.target_quadrant,
+      quadrant_jump:   result.quadrant_jump,
+      feasibility:     result.feasibility,
+      expires_at:      result.expires_at,
+      status: "active",
+      created_at: new Date().toISOString(),
+    };
+    m.stage = "persisted";
+    _renderAspirationModal();
+    showSyncToast(`🎯 Aspiration saved for ${o.entity.name}`, "ok");
+    // Auto-fire the action plan generation immediately — saves a click,
+    // and the user already committed by clicking "Save & generate plan".
+    setTimeout(() => generateAspirationPlan(), 250);
+  } catch (e) {
+    alert("Could not save aspiration: " + e.message);
+  }
+}
+
+async function generateAspirationPlan(force) {
+  const m = _ASPIRATION_MODAL;
+  if (!m || !m.asp) return;
+  m.loadingActions = true;
+  m.stage = "generating";
+  _renderAspirationModal();
+  try {
+    // Send the full entity (incl. contacts) so Gemini can reference real names
+    const u = m.opts.entity;
+    const fullEntity = {
+      id: u.id, name: u.name, type: u.type,
+      country: u.country_canonical || u.country, continent: u.continent, city: u.city,
+      priority: u.priority, strategic_tier: u.strategic_tier,
+      partnership_score: u.partnership_score, partnership_readiness: u.partnership_readiness,
+      days_dormant: u.days_dormant, last_contacted: u.last_contacted,
+      focus_areas: u.focus_areas, notes: u.notes, website: u.website,
+      top_program_id: u.top_program_id, top_program_score: u.top_program_score,
+      contacts: u.contacts || [],
+    };
+    const resp = await generateAspirationActions(m.asp.id, fullEntity, !!force);
+    m.actionsResp = { headline: resp.headline, actions: resp.actions || [], reality_check: resp.reality_check };
+    m.loadingActions = false;
+    m.stage = "ready";
+    _renderAspirationModal();
+    if (resp.cached) {
+      showSyncToast(`Loaded cached action plan (${resp.actions ? resp.actions.length : 0} steps)`, "ok");
+    } else {
+      showSyncToast(`Action plan ready · ${resp.actions ? resp.actions.length : 0} steps drafted`, "ok");
+    }
+  } catch (e) {
+    m.loadingActions = false;
+    m.stage = "persisted";
+    _renderAspirationModal();
+    alert("Could not generate action plan: " + e.message);
+  }
+}
+
+// Take ONE action from the AI plan and turn it into a Follow-up using the
+// existing saveFollowup() infra. Stamps the aspiration_id into the
+// follow-up's notes so the activity timeline can back-reference.
+async function promoteAspActionToFollowup(actionIdx) {
+  const m = _ASPIRATION_MODAL;
+  if (!m || !m.asp || !m.actionsResp) return;
+  const action = m.actionsResp.actions[actionIdx];
+  if (!action) return;
+  if (m.committedActions.has(actionIdx)) return;
+
+  // Map AI owner_hint → roster handle if possible. AI returns role names
+  // ("Marketing"), not handles, so we try to fuzz-match against the
+  // OPERATORS roster (role field), then fall back to the current user.
+  let ownerHandle = (typeof getUserHandle === "function" ? getUserHandle() : "") || null;
+  if (action.owner_hint && typeof OPERATORS !== "undefined" && Array.isArray(OPERATORS)) {
+    const hint = action.owner_hint.toLowerCase();
+    const match = OPERATORS.find(o => o.role && o.role.toLowerCase().includes(hint));
+    if (match) ownerHandle = match.handle;
+  }
+
+  // Compute due date — today + due_in_days
+  const due = new Date();
+  due.setDate(due.getDate() + (action.due_in_days || 14));
+  const dueIso = due.toISOString().slice(0, 10);  // YYYY-MM-DD
+
+  const followupId = "fu-asp-" + Math.random().toString(36).slice(2, 10);
+  const followup = {
+    id:           followupId,
+    entity_id:    m.opts.entity.id,
+    title:        action.title,
+    due_date:     dueIso,
+    owner_handle: ownerHandle,
+    status:       "open",
+    notes: (action.detail ? action.detail + "\n\n" : "")
+         + (action.evidence ? `Evidence: ${action.evidence}\n` : "")
+         + `[Generated from aspiration ${m.asp.id} · ${(STRAT_AXES[m.asp.axis_key] || {}).label || m.asp.axis_key}]`,
+  };
+  try {
+    await saveFollowup(followup);
+    await linkAspirationFollowup(m.asp.id, followupId, actionIdx);
+    m.committedActions.add(actionIdx);
+    _renderAspirationModal();
+    showSyncToast(`✓ Added to follow-ups · "${action.title.slice(0, 60)}"`, "ok");
+  } catch (e) {
+    alert("Could not create follow-up: " + e.message);
+  }
+}
+
+async function abandonAspiration() {
+  const m = _ASPIRATION_MODAL;
+  if (!m || !m.asp) return;
+  if (!confirm("Abandon this aspiration? The action plan + linked follow-ups will stay; only the aspiration itself is marked abandoned.")) return;
+  try {
+    await setAspirationStatus(m.asp.id, "abandoned");
+    showSyncToast("Aspiration abandoned · linked follow-ups preserved", "ok");
+    closeAspirationModal();
+  } catch (e) {
+    alert("Could not abandon: " + e.message);
+  }
+}
+
+// Esc closes the modal
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && _ASPIRATION_MODAL) closeAspirationModal();
+});
+
 function renderStrategicView() {
   const el = document.getElementById("view-strategy");
   if (!el) return;
@@ -15759,7 +16384,16 @@ function renderStrategicView() {
     <p>Position every partner across three strategic lenses. Drag any bubble to override its position — overrides persist in your browser. Top 50 by partnership score shown by default; toggle to see all.</p>
   </div>`;
 
-  html += `<div class="sm-shell">`;
+  // Count active aspirations on this axis (for the toggle badge)
+  const activeAspirationsOnAxis = (typeof ASPIRATIONS !== "undefined" ? ASPIRATIONS : [])
+    .filter(a => a && a.status === "active" && a.axis_key === axisKey).length;
+
+  // .aspiration-mode class on .sm-shell flips the chart into goal-setting
+  // mode: cursor becomes crosshair, faint red tint on the plot, drags
+  // create aspirations instead of overrides. 3D mode disables it (axes
+  // are projected — aspirational positioning is ambiguous in 3D).
+  const aspirationModeOn = STRAT_STATE.aspirationMode && !STRAT_STATE.is3D;
+  html += `<div class="sm-shell${aspirationModeOn ? ' aspiration-mode' : ''}">`;
 
   // Unified tab strip — shows 3 axis tabs + Funnel tab. See
   // _renderUnifiedStrategyTabs comment for the consolidation rationale.
@@ -15767,6 +16401,15 @@ function renderStrategicView() {
 
   // Tip banner
   html += `<div class="sm-banner"><b>Reading the chart:</b> top-left & top-right are the high-value quadrants; bottom-right is where to deprioritise. Bubble size = partnership score, color = priority. <b>${escape(ax.xLabel)}</b> goes left→right (low to high); <b>${escape(ax.yLabel)}</b> goes bottom→top.</div>`;
+
+  // Aspiration-mode hint — shows what to do when mode is on. Disappears
+  // automatically when mode is off so the toolbar stays calm by default.
+  if (aspirationModeOn) {
+    html += `<div class="sm-asp-hint">
+      <span class="sm-asp-hint-glyph">🎯</span>
+      <div><b>Aspiration mode on.</b> Drag any partner to where you <i>want</i> it to be. We'll generate a Gemini-backed action plan and one-click promote actions to follow-ups. Plain click still opens the detail panel; <b>Shift+drag</b> also works as a shortcut.</div>
+    </div>`;
+  }
 
   // Toolbar
   html += `<div class="sm-toolbar">
@@ -15776,6 +16419,10 @@ function renderStrategicView() {
       ${overrideCount ? `<span class="sm-override-tag">${overrideCount} manual override${overrideCount === 1 ? '' : 's'}</span>` : ''}
     </div>
     <div class="sm-toolbar-actions">
+      ${!STRAT_STATE.is3D ? `<button class="sm-asp-toggle ${aspirationModeOn ? 'active' : ''}" onclick="stratToggleAspirationMode()" title="Drag a sphere to where you want it to be — AI generates an action plan to actually move it there. Shift+drag also works.">
+        <span class="sm-asp-icon">🎯</span>
+        Aspiration mode${activeAspirationsOnAxis ? ` <span class="sm-asp-count">${activeAspirationsOnAxis}</span>` : ''}
+      </button>` : ''}
       <button class="sm-story-btn" onclick="stratPlayStory()" title="Play a 5-scene narrated walkthrough of this map">
         <span class="sm-play-glyph">▶</span> Play story
       </button>
@@ -15859,6 +16506,49 @@ function renderStrategicView() {
     html += `<text class="sm-axis-label" transform="translate(${plotL - 50},${midY}) rotate(-90)" text-anchor="middle">↑ ${escape(ax.yLabel)}</text>`;
     html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotT}) rotate(-90)" text-anchor="end">${escape(ax.yMax)}</text>`;
     html += `<text class="sm-axis-end"   transform="translate(${plotL - 22},${plotB}) rotate(-90)" text-anchor="start">${escape(ax.yMin)}</text>`;
+
+    // Aspiration overlay — dashed line + ghost target for every active
+    // aspiration on this axis, drawn UNDER the bubbles so the live
+    // sphere stays the visual focus. ASPIRATIONS comes from
+    // loadAspirations() at app boot; refreshed after every mutation.
+    // We only render aspirations whose entity is in the current cohort
+    // (otherwise the line points to a sphere that isn't on the chart).
+    const cohortIds = new Set(cohort.map(u => u.id));
+    const aspsOnAxis = (typeof ASPIRATIONS !== "undefined" ? ASPIRATIONS : [])
+      .filter(a => a && a.axis_key === axisKey && cohortIds.has(a.entity_id));
+    aspsOnAxis.forEach(a => {
+      const u = cohort.find(x => x.id === a.entity_id);
+      if (!u) return;
+      // Use the entity's LIVE position (post-override) as the line start —
+      // not the snapshotted current_x/y, so as the partner actually moves
+      // toward the goal, the dashed line shrinks visibly.
+      const { x: cx100, y: cy100 } = stratComputeXY(u, axisKey);
+      const x1 = plotL + (cx100 / 100) * plotW;
+      const y1 = plotT + (1 - cy100 / 100) * plotH;
+      const x2 = plotL + (a.target_x / 100) * plotW;
+      const y2 = plotT + (1 - a.target_y / 100) * plotH;
+      // Tiny pull-back so the line doesn't overlap the sphere
+      const dx = x2 - x1, dy = y2 - y1, dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 2) return;  // skip near-zero deltas (avoids visual jitter)
+      const stCls = (a.status === "active") ? "" : ` ${a.status}`;
+      html += `<line class="sm-asp-line${stCls}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" data-asp-id="${escape(a.id)}"/>`;
+      // Arrowhead pointing toward target (simple triangle, no marker-end —
+      // it's positioned analytically so we can color it per aspiration status).
+      const ah = 8;  // arrowhead length
+      const ux = dx / dist, uy = dy / dist;
+      const tipX = x2 - ux * 12;  // 12px back from target so arrow points AT target
+      const tipY = y2 - uy * 12;
+      const pX1 = tipX - ux * ah + uy * (ah * 0.55);
+      const pY1 = tipY - uy * ah - ux * (ah * 0.55);
+      const pX2 = tipX - ux * ah - uy * (ah * 0.55);
+      const pY2 = tipY - uy * ah + ux * (ah * 0.55);
+      html += `<polygon class="sm-asp-arrow${stCls}" points="${tipX.toFixed(1)},${tipY.toFixed(1)} ${pX1.toFixed(1)},${pY1.toFixed(1)} ${pX2.toFixed(1)},${pY2.toFixed(1)}" data-asp-id="${escape(a.id)}"/>`;
+      // Ghost target — concentric circles (bullseye reticle). data-asp-id
+      // on the interactive layers so a click opens the modal in review mode.
+      html += `<circle class="sm-asp-target-glow" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="14" data-asp-id="${escape(a.id)}"/>`;
+      html += `<circle class="sm-asp-target${stCls}" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="9" data-asp-id="${escape(a.id)}"/>`;
+      html += `<circle class="sm-asp-target-bullseye" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="2" data-asp-id="${escape(a.id)}"/>`;
+    });
 
     // Bubbles — radial gradient gives a "sphere" feel even in 2D. The
     // data-priority attr lets the story orchestrator reveal them by category.
@@ -16062,6 +16752,11 @@ function renderStrategicView() {
     STRAT_STATE._animateNext = false;
     _animateStratTransition();
   }
+
+  // Auto-detect aspiration achievements — if a partner's live position has
+  // arrived at the target quadrant since we last checked, promote the
+  // aspiration to "achieved" + show a celebratory toast.
+  if (typeof checkAspirationAchievements === "function") checkAspirationAchievements();
 }
 
 function stratSwitchAxis(key) {
@@ -17204,6 +17899,20 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
     return { x: Math.max(0, Math.min(100, xData)), y: Math.max(0, Math.min(100, yData)) };
   }
 
+  // Wire clicks on the persisted aspiration target reticles — opens the
+  // modal in "review existing" mode (current plan, abandon button, etc.)
+  svg.querySelectorAll(".sm-asp-target, .sm-asp-target-bullseye, .sm-asp-target-glow, .sm-asp-arrow")
+    .forEach(node => {
+      node.style.cursor = "pointer";
+      node.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const aspId = node.getAttribute("data-asp-id");
+        if (!aspId) return;
+        const asp = (typeof ASPIRATIONS !== "undefined" ? ASPIRATIONS : []).find(a => a.id === aspId);
+        if (asp) openAspirationModal({ aspiration: asp });
+      });
+    });
+
   bubbles.forEach(b => {
     const id = b.dataset.id;
     const u  = UNIS.find(x => x.id === id);
@@ -17234,12 +17943,28 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       return;
     }
 
-    // Pointer-based drag with click vs drag distinction
+    // Pointer-based drag with click vs drag distinction. Two drag modes:
+    //   - default = manual override (existing behavior, unchanged)
+    //   - aspiration mode (toggle OR Shift+drag) = create a goal
+    // Aspiration mode flow is visually different: the bubble STAYS PUT,
+    // and a ghost target + live arrow follow the cursor so the user sees
+    // current → target relationship clearly.
     let dragging = false, startX = 0, startY = 0, moved = 0;
+    let aspMode = false;      // captured at pointerdown so user can't flip mid-drag
+    let aspOrigCx = 0, aspOrigCy = 0;
+    let aspGhost = null;      // <g> with the ghost target reticle + connecting line
     b.addEventListener("pointerdown", (ev) => {
       dragging = true;
       moved = 0;
       startX = ev.clientX; startY = ev.clientY;
+      // Capture aspiration intent at pointerdown — either the toggle is on
+      // OR the user is holding Shift. We don't re-check after this so a
+      // mid-drag toggle flip can't switch modes confusingly.
+      aspMode = !!(STRAT_STATE.aspirationMode || ev.shiftKey);
+      if (aspMode) {
+        aspOrigCx = parseFloat(b.getAttribute("cx"));
+        aspOrigCy = parseFloat(b.getAttribute("cy"));
+      }
       b.classList.add("dragging");
       b.setPointerCapture(ev.pointerId);
     });
@@ -17247,20 +17972,50 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       if (!dragging) return;
       moved = Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY);
       if (moved < 3) return;
-      // Move bubble live
       const pt = svg.createSVGPoint();
       pt.x = ev.clientX; pt.y = ev.clientY;
       const local = pt.matrixTransform(svg.getScreenCTM().inverse());
       const cx = Math.max(plotL + 4, Math.min(plotL + plotW - 4, local.x));
       const cy = Math.max(plotT + 4, Math.min(plotT + plotH - 4, local.y));
-      b.setAttribute("cx", cx);
-      b.setAttribute("cy", cy);
-      // Refresh tooltip live
       const xData = ((cx - plotL) / plotW) * 100;
       const yData = (1 - (cy - plotT) / plotH) * 100;
       const ax = STRAT_AXES[STRAT_STATE.axisKey];
-      tip.innerHTML = `<div class="nm">${escape(u.name)} <span style="opacity:.6">(dragging)</span></div>
-        <div class="vals">${escape(ax.xLabel)}: <b>${Math.round(xData)}</b> · ${escape(ax.yLabel)}: <b>${Math.round(yData)}</b></div>`;
+
+      if (aspMode) {
+        // ASPIRATIONAL DRAG — bubble stays put, ghost target follows cursor.
+        // Build/update the ghost group inline (avoid full re-render cost).
+        if (!aspGhost) {
+          aspGhost = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          aspGhost.classList.add("sm-asp-ghost");
+          svg.appendChild(aspGhost);
+        }
+        // Compute feasibility live so the chip color updates as the user
+        // moves between quadrants.
+        const { x: cur100x, y: cur100y } = stratComputeXY(u, STRAT_STATE.axisKey);
+        const srcQ = _aspirationQuadrant(cur100x, cur100y);
+        const tgtQ = _aspirationQuadrant(xData, yData);
+        const jump = _aspirationJump(srcQ, tgtQ);
+        const feas = _aspirationFeasibility(jump, srcQ, tgtQ);
+        const feasColor = (ASPIRATION_FEASIBILITY_COPY[feas] || {}).color || "#D9534F";
+        const feasLabel = (ASPIRATION_FEASIBILITY_COPY[feas] || {}).label || "Aspiration";
+        // Build the ghost: connecting dashed line + target reticle + feasibility chip
+        aspGhost.innerHTML = `
+          <line class="sm-asp-line drag-preview" x1="${aspOrigCx.toFixed(1)}" y1="${aspOrigCy.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}"/>
+          <circle class="sm-asp-target-glow" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="16"/>
+          <circle class="sm-asp-target drag-preview" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="11"/>
+          <circle class="sm-asp-target-bullseye" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.5"/>
+          <text class="sm-asp-feas" x="${cx.toFixed(1)}" y="${(cy - 22).toFixed(1)}" text-anchor="middle" style="stroke:${feasColor}">${escape(feasLabel)}</text>
+        `;
+        tip.innerHTML = `<div class="nm">🎯 ${escape(u.name)} <span style="opacity:.6">(aspiring)</span></div>
+          <div class="vals">From (<b>${Math.round(cur100x)}</b>, <b>${Math.round(cur100y)}</b>) → To (<b>${Math.round(xData)}</b>, <b>${Math.round(yData)}</b>)<br>
+            ${escape(feasLabel)} · ${escape(ax.xLabel)} ${Math.round(xData - cur100x) >= 0 ? '+' : ''}${Math.round(xData - cur100x)} · ${escape(ax.yLabel)} ${Math.round(yData - cur100y) >= 0 ? '+' : ''}${Math.round(yData - cur100y)}</div>`;
+      } else {
+        // MANUAL OVERRIDE (existing behavior) — bubble follows cursor live.
+        b.setAttribute("cx", cx);
+        b.setAttribute("cy", cy);
+        tip.innerHTML = `<div class="nm">${escape(u.name)} <span style="opacity:.6">(dragging)</span></div>
+          <div class="vals">${escape(ax.xLabel)}: <b>${Math.round(xData)}</b> · ${escape(ax.yLabel)}: <b>${Math.round(yData)}</b></div>`;
+      }
       tip.style.left = (ev.clientX + 14) + "px";
       tip.style.top  = (ev.clientY + 14) + "px";
       tip.style.display = "block";
@@ -17270,15 +18025,36 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       dragging = false;
       b.classList.remove("dragging");
       b.releasePointerCapture(ev.pointerId);
-      if (moved >= 3) {
-        // Persist override
-        const data = clientToData(ev);
-        stratSaveOverride(id, STRAT_STATE.axisKey, data.x, data.y);
-        // Re-render to refresh sidebar quadrant assignment + override badge
-        renderStrategicView();
-      } else {
+      // Clean up the aspiration ghost (drag-preview) — we'll re-render
+      // with the persisted overlay on next renderStrategicView() if the
+      // user confirms in the modal.
+      if (aspGhost && aspGhost.parentNode) aspGhost.parentNode.removeChild(aspGhost);
+      aspGhost = null;
+      tip.style.display = "none";
+
+      if (moved < 3) {
         // Click — open detail panel
         openDetail(id);
+        return;
+      }
+      const data = clientToData(ev);
+      if (aspMode) {
+        // Aspiration drag complete — open the modal with current + target.
+        // The bubble visually snapped back since we never moved it; the
+        // modal flow handles persistence + AI action generation.
+        const { x: cur100x, y: cur100y } = stratComputeXY(u, STRAT_STATE.axisKey);
+        openAspirationModal({
+          entity: u,
+          axisKey: STRAT_STATE.axisKey,
+          current_x: Math.round(cur100x),
+          current_y: Math.round(cur100y),
+          target_x:  Math.round(data.x),
+          target_y:  Math.round(data.y),
+        });
+      } else {
+        // Override drag complete — persist + re-render.
+        stratSaveOverride(id, STRAT_STATE.axisKey, data.x, data.y);
+        renderStrategicView();
       }
     });
   });
@@ -20627,6 +21403,7 @@ async function bootApp(opts = {}) {
   syncSponsorsFromServer();
   syncSponsorPackagesFromServer();
   syncProspectsFromServer();
+  loadAspirations();
   startPresence();
   try {
     await loadKnowledgeBase();
@@ -20756,6 +21533,7 @@ window.addEventListener("focus", () => {
   if (typeof syncSponsorsFromServer === "function")        syncSponsorsFromServer();
   if (typeof syncSponsorPackagesFromServer === "function") syncSponsorPackagesFromServer();
   if (typeof syncProspectsFromServer === "function")       syncProspectsFromServer();
+  if (typeof loadAspirations === "function")               loadAspirations();
 });
 </script>
 </body>

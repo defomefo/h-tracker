@@ -462,6 +462,48 @@ def _ensure_schema():
                     distilled_at    TEXT NOT NULL,
                     decision_count  INTEGER
                 )""",
+            # ====================================================================
+            # ASPIRATION GOALS — "where I want this partner to be."
+            # An operator drags a sphere on a 2×2 strategic map to a desired
+            # position; we record current vs. target + the quadrant jump,
+            # generate a Gemini-backed action plan, and watch for the entity
+            # to actually arrive. Status flips automatically when the entity's
+            # computed position reaches the target quadrant ("achieved") or
+            # the 90-day TTL elapses ("expired"). Operators can manually
+            # abandon a goal.
+            #
+            # This is fundamentally different from map2x2_override (kv_store):
+            #   - override   = "the algorithm got the CURRENT position wrong"
+            #   - aspiration = "I want this partner to MOVE to a new position"
+            # They store on different axes of the same map without conflict.
+            # ====================================================================
+            """CREATE TABLE IF NOT EXISTS aspiration_goals (
+                    id              TEXT PRIMARY KEY,
+                    entity_id       TEXT NOT NULL,
+                    axis_key        TEXT NOT NULL,
+                    current_x       INTEGER NOT NULL,
+                    current_y       INTEGER NOT NULL,
+                    target_x        INTEGER NOT NULL,
+                    target_y        INTEGER NOT NULL,
+                    source_quadrant TEXT NOT NULL,
+                    target_quadrant TEXT NOT NULL,
+                    quadrant_jump   INTEGER NOT NULL,
+                    feasibility     TEXT NOT NULL,
+                    status          TEXT NOT NULL DEFAULT 'active',
+                    actions_json    TEXT,
+                    note            TEXT,
+                    linked_followup_ids TEXT,
+                    created_at      TEXT NOT NULL,
+                    updated_at      TEXT NOT NULL,
+                    expires_at      TEXT NOT NULL,
+                    achieved_at     TEXT,
+                    abandoned_at    TEXT,
+                    created_by      TEXT
+                )""",
+            "CREATE INDEX IF NOT EXISTS idx_aspirations_entity ON aspiration_goals(entity_id)",
+            "CREATE INDEX IF NOT EXISTS idx_aspirations_status ON aspiration_goals(status)",
+            "CREATE INDEX IF NOT EXISTS idx_aspirations_expires ON aspiration_goals(expires_at)",
+            "CREATE INDEX IF NOT EXISTS idx_aspirations_axis ON aspiration_goals(axis_key)",
         ]
         conn = _connect()
         try:
@@ -1559,6 +1601,533 @@ def followups_delete(followup_id):
         return jsonify({"error": "not found"}), 404
     _record_edit("followup", "delete", followup_id)
     return jsonify({"ok": True})
+
+
+# ============================================================================
+# ASPIRATIONAL DRAG — partnership goal tracking.
+# ----------------------------------------------------------------------------
+# Operator drags a sphere on a 2×2 strategic map to a desired position. The
+# system records (entity, axis, current, target, quadrant_jump) and asks
+# Gemini for a 4-6 step action plan to actually move the partner there.
+# Actions can be one-click promoted to follow-ups (closing the loop with
+# the existing /api/followups infra). The aspiration auto-resolves when:
+#   - the entity's computed position arrives in the target quadrant
+#     ("achieved") — checked client-side on each render
+#   - the 90-day TTL elapses ("expired") — checked nightly via the
+#     /api/aspirations endpoint's lazy-expiry on read
+#   - the operator hits Abandon ("abandoned")
+# Killer feature: no CRM in market lets you drag a partner to "where you
+# want it" and get back specific actions. See CLAUDE.md backlog #2.
+# ============================================================================
+
+# Allowed axes — matches STRAT_AXES on the frontend. Pinning the list
+# server-side prevents typos / malicious axis names from creating
+# orphaned aspirations.
+_ASPIRATION_AXES = {"effortFit", "reachReadiness", "costRoi"}
+_ASPIRATION_QUADRANTS = {"bl", "br", "tl", "tr"}
+_ASPIRATION_STATUSES = {"active", "achieved", "abandoned", "expired"}
+_ASPIRATION_FEASIBILITY = {"micro", "realistic", "ambitious", "transformational"}
+
+
+def _aspiration_feasibility(jump, source_q, target_q):
+    """Distance-based feasibility label. Same quadrant = micro tweak;
+    adjacent = realistic (1 axis flip); diagonal = transformational
+    (both axes flip). The label feeds the friction modal copy on the
+    frontend so users don't drag every partner to Quick Win mindlessly."""
+    if source_q == target_q:
+        return "micro"
+    if jump == 1:
+        return "realistic"
+    if jump == 2:
+        # Diagonal opposite (e.g. bl → tr) — the hardest jump
+        return "transformational"
+    # Shouldn't happen with our 2×2 grid, but fall back gracefully
+    return "ambitious"
+
+
+def _aspiration_quadrant(x, y):
+    """0-100 coords → BCG quadrant. Matches the frontend's quadrant
+    assignment in _stratTopOpportunities exactly so the server and
+    client never disagree on which quadrant a position falls in."""
+    if y >= 50:
+        return "tr" if x >= 50 else "tl"
+    return "br" if x >= 50 else "bl"
+
+
+def _aspiration_quadrant_jump(source_q, target_q):
+    """Hamming-style distance between two quadrants on the 2×2.
+    0 = same · 1 = one axis flipped · 2 = both axes flipped (diagonal)."""
+    if source_q == target_q:
+        return 0
+    # Same row OR same column = 1; otherwise = 2
+    same_row = source_q[0] == target_q[0]
+    same_col = source_q[1] == target_q[1]
+    return 1 if (same_row or same_col) else 2
+
+
+def _aspiration_row_to_dict(row):
+    """DB row → JSON-serialisable dict. Decodes the cached AI action plan
+    and the linked-followup id list so the frontend gets real arrays/objects
+    instead of stringified JSON."""
+    if not row:
+        return None
+    d = dict(row)
+    # actions_json → actions
+    if d.get("actions_json"):
+        try:
+            d["actions"] = json.loads(d["actions_json"])
+        except (ValueError, TypeError):
+            d["actions"] = None
+    d.pop("actions_json", None)
+    # linked_followup_ids JSON string → real list
+    if d.get("linked_followup_ids"):
+        try:
+            d["linked_followup_ids"] = json.loads(d["linked_followup_ids"])
+        except (ValueError, TypeError):
+            d["linked_followup_ids"] = []
+    else:
+        d["linked_followup_ids"] = []
+    return d
+
+
+@app.route("/api/aspirations", methods=["GET"])
+@auth_required
+def aspirations_list():
+    """List aspirations. Optional filters: status, entity_id, axis_key.
+    Also performs lazy TTL expiry — any active aspiration past expires_at
+    is auto-flipped to 'expired' before we return."""
+    db = get_db()
+    # Lazy expiry: flip stale active rows to expired in one shot
+    db.execute(
+        "UPDATE aspiration_goals "
+        "   SET status = 'expired', updated_at = ? "
+        " WHERE status = 'active' AND expires_at < ?",
+        (_now_iso(), _now_iso()),
+    )
+    db.commit()
+
+    status = (request.args.get("status") or "").strip()
+    entity = (request.args.get("entity_id") or "").strip()
+    axis   = (request.args.get("axis_key") or "").strip()
+    clauses, params = [], []
+    if status:
+        clauses.append("status = ?")
+        params.append(status)
+    if entity:
+        clauses.append("entity_id = ?")
+        params.append(entity)
+    if axis:
+        clauses.append("axis_key = ?")
+        params.append(axis)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    sql = (
+        "SELECT * FROM aspiration_goals " + where + " "
+        " ORDER BY status ASC, created_at DESC"
+    )
+    rows = db.execute(sql, tuple(params)).fetchall()
+    return jsonify({"aspirations": [_aspiration_row_to_dict(r) for r in rows]})
+
+
+@app.route("/api/aspirations/<aspiration_id>", methods=["GET"])
+@auth_required
+def aspirations_get(aspiration_id):
+    db = get_db()
+    row = db.execute("SELECT * FROM aspiration_goals WHERE id = ?", (aspiration_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(_aspiration_row_to_dict(row))
+
+
+@app.route("/api/aspirations", methods=["POST"])
+@auth_required
+def aspirations_create():
+    """Create a new aspiration goal. The frontend sends the entity_id +
+    axis_key + current/target coordinates; we derive quadrants + jump +
+    feasibility server-side so they're computed consistently."""
+    body = request.get_json(force=True, silent=True) or {}
+    entity_id = (body.get("entity_id") or "").strip()
+    axis_key  = (body.get("axis_key")  or "").strip()
+    try:
+        cur_x = int(body.get("current_x"))
+        cur_y = int(body.get("current_y"))
+        tgt_x = int(body.get("target_x"))
+        tgt_y = int(body.get("target_y"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "current_x, current_y, target_x, target_y must all be integers 0-100"}), 400
+    if not entity_id:
+        return jsonify({"error": "entity_id is required"}), 400
+    if axis_key not in _ASPIRATION_AXES:
+        return jsonify({"error": f"axis_key must be one of {sorted(_ASPIRATION_AXES)}"}), 400
+    for v, name in ((cur_x, "current_x"), (cur_y, "current_y"), (tgt_x, "target_x"), (tgt_y, "target_y")):
+        if v < 0 or v > 100:
+            return jsonify({"error": f"{name}={v} out of range 0-100"}), 400
+
+    src_q = _aspiration_quadrant(cur_x, cur_y)
+    tgt_q = _aspiration_quadrant(tgt_x, tgt_y)
+    jump  = _aspiration_quadrant_jump(src_q, tgt_q)
+    feas  = _aspiration_feasibility(jump, src_q, tgt_q)
+
+    aspiration_id = "asp-" + secrets.token_hex(6)
+    now = _now_iso()
+    # 90-day TTL — picked per CLAUDE.md backlog notes ("aspirations expire
+    # at 90 days with a 'still chasing?' reminder"). Computed from now.
+    expires = (
+        _dt.datetime.now(_dt.timezone.utc) + _dt.timedelta(days=90)
+    ).isoformat().replace("+00:00", "Z")
+    created_by = (request.headers.get("X-Display-Name") or "").strip() or None
+    note = (body.get("note") or "").strip() or None
+
+    db = get_db()
+    db.execute(
+        "INSERT INTO aspiration_goals "
+        "(id, entity_id, axis_key, current_x, current_y, target_x, target_y, "
+        " source_quadrant, target_quadrant, quadrant_jump, feasibility, "
+        " status, note, created_at, updated_at, expires_at, created_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)",
+        (
+            aspiration_id, entity_id, axis_key,
+            cur_x, cur_y, tgt_x, tgt_y,
+            src_q, tgt_q, jump, feas,
+            note, now, now, expires, created_by,
+        ),
+    )
+    db.commit()
+    _record_edit("aspiration", "create", aspiration_id)
+    return jsonify({
+        "ok": True,
+        "id": aspiration_id,
+        "source_quadrant": src_q,
+        "target_quadrant": tgt_q,
+        "quadrant_jump":   jump,
+        "feasibility":     feas,
+        "expires_at":      expires,
+    })
+
+
+@app.route("/api/aspirations/<aspiration_id>/status", methods=["PUT"])
+@auth_required
+def aspirations_set_status(aspiration_id):
+    """Flip an aspiration's status — used for the operator-driven 'Abandon'
+    button and the automatic 'Achieved' when the entity reaches the target
+    quadrant. Frontend posts new status; we record the appropriate timestamp."""
+    body = request.get_json(force=True, silent=True) or {}
+    new_status = (body.get("status") or "").strip().lower()
+    if new_status not in _ASPIRATION_STATUSES:
+        return jsonify({"error": f"status must be one of {sorted(_ASPIRATION_STATUSES)}"}), 400
+    db = get_db()
+    row = db.execute("SELECT id, status FROM aspiration_goals WHERE id = ?", (aspiration_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    now = _now_iso()
+    achieved_at  = now if new_status == "achieved"  else None
+    abandoned_at = now if new_status == "abandoned" else None
+    db.execute(
+        "UPDATE aspiration_goals SET status = ?, updated_at = ?, "
+        "  achieved_at = COALESCE(?, achieved_at), "
+        "  abandoned_at = COALESCE(?, abandoned_at) "
+        "WHERE id = ?",
+        (new_status, now, achieved_at, abandoned_at, aspiration_id),
+    )
+    db.commit()
+    _record_edit("aspiration", "status", aspiration_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/aspirations/<aspiration_id>", methods=["DELETE"])
+@auth_required
+def aspirations_delete(aspiration_id):
+    db = get_db()
+    cur = db.execute("DELETE FROM aspiration_goals WHERE id = ?", (aspiration_id,))
+    db.commit()
+    if cur.rowcount == 0:
+        return jsonify({"error": "not found"}), 404
+    _record_edit("aspiration", "delete", aspiration_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/aspirations/<aspiration_id>/link-followup", methods=["POST"])
+@auth_required
+def aspirations_link_followup(aspiration_id):
+    """Record that a follow-up was created from one of this aspiration's
+    AI actions. Stored as a JSON array of {followup_id, action_index}
+    so the UI can show 'X of N actions promoted to follow-ups'."""
+    body = request.get_json(force=True, silent=True) or {}
+    followup_id  = (body.get("followup_id")  or "").strip()
+    action_index = body.get("action_index")
+    if not followup_id:
+        return jsonify({"error": "followup_id is required"}), 400
+    if not isinstance(action_index, int):
+        return jsonify({"error": "action_index must be an integer"}), 400
+    db = get_db()
+    row = db.execute(
+        "SELECT linked_followup_ids FROM aspiration_goals WHERE id = ?",
+        (aspiration_id,),
+    ).fetchone()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    existing = []
+    if row["linked_followup_ids"]:
+        try:
+            existing = json.loads(row["linked_followup_ids"])
+        except (ValueError, TypeError):
+            existing = []
+    if not isinstance(existing, list):
+        existing = []
+    # Avoid duplicate links if user clicks twice
+    if not any(
+        isinstance(x, dict) and x.get("followup_id") == followup_id
+        for x in existing
+    ):
+        existing.append({"followup_id": followup_id, "action_index": action_index})
+    db.execute(
+        "UPDATE aspiration_goals SET linked_followup_ids = ?, updated_at = ? WHERE id = ?",
+        (json.dumps(existing), _now_iso(), aspiration_id),
+    )
+    db.commit()
+    _record_edit("aspiration", "link-followup", aspiration_id)
+    return jsonify({"ok": True, "linked": existing})
+
+
+# Action-generator system prompt. Tight constraints — generic actions
+# ("schedule a meeting") are worthless; specific actions ("Anna Sokolova
+# at TalTech, warm intro via Defne's 2nd degree LinkedIn") are gold.
+# We pass entity + contacts + score components + delta + KB; Gemini
+# returns 4-6 actions as JSON.
+ASPIRATION_SYSTEM_PROMPT = """You are a senior partnership strategist for H-FARM College — a hands-on, applied institution near Venice that runs summer programmes, sponsorship events, and exchange agreements with universities, agencies, schools, and student organisations.
+
+The operator has DRAGGED a partner on a 2×2 strategic map from its current position to where they want it to be. Your job: return a concrete, specific action plan that would actually move the partner there. Not generic CRM advice — specific to THIS entity, using THIS data.
+
+Hard rules:
+1. Output 4-6 actions. No more, no less. Fewer for micro tweaks, more for transformational jumps.
+2. Each action is ONE concrete step the operator can do in 1-30 days. Not a multi-month epic.
+3. Reference SPECIFIC data the operator gave you: a contact name, an existing programme fit, the entity's country, a focus area, the gap implied by the drag. If contacts is empty, say "research a named contact at <department>" — DON'T invent names.
+4. Order by impact × ease: fastest wins first, longer plays last.
+5. NEVER invent: contact names, programme names, email addresses, or facts not in the data. If you don't know, say "research the X" or "verify Y."
+6. Refuse generic actions: "schedule a meeting" alone is useless; "schedule a 30-min discovery call with <name from contacts> about <specific focus_area>" is useful.
+7. Calibrate to the feasibility band:
+   - micro:           1-2 light actions to nudge the position
+   - realistic:       4-5 concrete actions in 90 days
+   - ambitious:       5-6 actions, some longer-cycle
+   - transformational: 6 actions including a "honest reality check" item flagging this as 12-18 month work
+
+Return ONLY a JSON object with this exact shape, no markdown, no commentary:
+{
+  "headline": "1-sentence framing of what the operator is actually trying to do — not a restatement of the drag, but the strategic intent behind it.",
+  "actions": [
+    {
+      "title":   "<5-12 word imperative action — e.g. 'Email Anna Sokolova about Q3 startup summer placement'>",
+      "detail":  "<1-2 sentences explaining WHY this action moves the entity toward the target. Reference the entity's data.>",
+      "owner_hint": "<role best suited to drive this — Marketing / Programmes / Executive / Operator>",
+      "due_in_days": <integer 1-90>,
+      "evidence": "<which entity field or score component justifies this — e.g. 'days_dormant=87' or 'no contacts on file'>"
+    }
+  ],
+  "reality_check": "<OPTIONAL — only present for transformational jumps. 1-2 sentences acknowledging this is a long arc, not a sprint. Empty string otherwise.>"
+}"""
+
+
+@app.route("/api/aspirations/<aspiration_id>/generate-actions", methods=["POST"])
+@auth_required
+def aspirations_generate_actions(aspiration_id):
+    """Gemini-backed AI action generator. The frontend POSTs the full entity
+    context (the same _CHAT_FIELDS slim used by /api/chat-query, plus
+    contacts + score components). We combine it with the aspiration's
+    delta + feasibility and ask Gemini for 4-6 specific actions.
+
+    Caches the result in actions_json so a re-open of the modal doesn't
+    re-bill Gemini. Pass `force=true` to bust the cache (e.g. user wants
+    a fresh suggestion after editing the target)."""
+    if not GEMINI_KEY:
+        return jsonify({"error": "GEMINI_API_KEY is not set on the server."}), 500
+    body = request.get_json(force=True, silent=True) or {}
+    force = bool(body.get("force"))
+    entity = body.get("entity") or {}
+    if not isinstance(entity, dict) or not entity.get("id"):
+        return jsonify({"error": "entity payload (with id + slim fields) is required"}), 400
+
+    db = get_db()
+    asp_row = db.execute(
+        "SELECT * FROM aspiration_goals WHERE id = ?",
+        (aspiration_id,),
+    ).fetchone()
+    if not asp_row:
+        return jsonify({"error": "aspiration not found"}), 404
+    asp = dict(asp_row)
+
+    # Cache hit: return the stored actions unless force=true
+    if asp.get("actions_json") and not force:
+        try:
+            cached = json.loads(asp["actions_json"])
+            return jsonify({"cached": True, **cached})
+        except (ValueError, TypeError):
+            pass  # fall through to regenerate if cache corrupted
+
+    # Axis labels (so the prompt can talk about "Effort × Fit" not the
+    # opaque key "effortFit"). Mirrors STRAT_AXES on the frontend.
+    axis_labels = {
+        "effortFit":      {"label": "Effort × Fit",
+                           "x": "Effort to land",  "y": "Fit",
+                           "quadrants": {"bl": "Easy Passes", "br": "Don't Bother", "tl": "Quick Wins", "tr": "Strategic Bets"}},
+        "reachReadiness": {"label": "Reach × Readiness",
+                           "x": "Reach",           "y": "Readiness",
+                           "quadrants": {"bl": "Triage", "br": "Wake-up Calls", "tl": "Long Shots", "tr": "Active Wins"}},
+        "costRoi":        {"label": "Cost × ROI",
+                           "x": "Cost to develop", "y": "ROI",
+                           "quadrants": {"bl": "Quick Wins", "br": "Money Pit", "tl": "Star Deals", "tr": "Worth Fighting"}},
+    }
+    axis_info = axis_labels.get(asp["axis_key"], {})
+
+    # Slim the entity to the fields Gemini actually needs — saves tokens
+    # and keeps the payload predictable.
+    slim_entity = {k: entity.get(k) for k in (
+        "id", "name", "type", "country", "continent", "city",
+        "priority", "strategic_tier", "partnership_score",
+        "partnership_readiness", "days_dormant", "last_contacted",
+        "focus_areas", "top_program_id", "top_program_score",
+        "notes", "website",
+    ) if entity.get(k) not in (None, "")}
+    contacts = entity.get("contacts") or []
+    if isinstance(contacts, list):
+        slim_contacts = [
+            {k: c.get(k) for k in ("name", "role", "email") if c.get(k)}
+            for c in contacts
+            if isinstance(c, dict) and any(c.get(k) for k in ("name", "role", "email"))
+        ]
+        if slim_contacts:
+            slim_entity["contacts"] = slim_contacts
+
+    # Pull recent outreach + follow-ups so the action plan doesn't suggest
+    # things the operator has already tried this quarter.
+    recent_outreach = db.execute(
+        "SELECT entry_json FROM outreach WHERE entity_id = ? "
+        "  ORDER BY created_at DESC LIMIT 5",
+        (entity.get("id"),),
+    ).fetchall()
+    recent_outreach_summaries = []
+    for r in recent_outreach:
+        try:
+            o = json.loads(r["entry_json"])
+            recent_outreach_summaries.append({
+                "kind":      o.get("kind", ""),
+                "subject":   (o.get("subject") or "")[:120],
+                "status":    o.get("status", ""),
+                "date":      o.get("date", ""),
+            })
+        except (ValueError, TypeError):
+            continue
+    open_followups = db.execute(
+        "SELECT title, due_date FROM followups "
+        " WHERE entity_id = ? AND status = 'open' "
+        " ORDER BY due_date ASC LIMIT 6",
+        (entity.get("id"),),
+    ).fetchall()
+    open_followups_list = [
+        {"title": r["title"], "due_date": r["due_date"]}
+        for r in open_followups
+    ]
+
+    prompt_parts = [
+        "## The map",
+        f"Axis: **{axis_info.get('label', asp['axis_key'])}**",
+        f"X-axis: {axis_info.get('x', '')} (low=0 → high=100)",
+        f"Y-axis: {axis_info.get('y', '')} (low=0 → high=100)",
+        f"Quadrant labels: BL={axis_info.get('quadrants', {}).get('bl', '')}, BR={axis_info.get('quadrants', {}).get('br', '')}, TL={axis_info.get('quadrants', {}).get('tl', '')}, TR={axis_info.get('quadrants', {}).get('tr', '')}",
+        "",
+        "## The aspirational drag",
+        f"Current position: ({asp['current_x']}, {asp['current_y']}) — quadrant **{asp['source_quadrant'].upper()}** ({axis_info.get('quadrants', {}).get(asp['source_quadrant'], '')})",
+        f"Target position:  ({asp['target_x']}, {asp['target_y']}) — quadrant **{asp['target_quadrant'].upper()}** ({axis_info.get('quadrants', {}).get(asp['target_quadrant'], '')})",
+        f"Delta: ΔX = {asp['target_x'] - asp['current_x']:+d}, ΔY = {asp['target_y'] - asp['current_y']:+d}",
+        f"Quadrant jump: {asp['quadrant_jump']} ({asp['feasibility']})",
+        "",
+        "## The entity",
+        json.dumps(slim_entity, ensure_ascii=False),
+        "",
+        "## Recent outreach (last 5)",
+        json.dumps(recent_outreach_summaries, ensure_ascii=False) if recent_outreach_summaries else "(none — partner has no logged outreach yet)",
+        "",
+        "## Open follow-ups",
+        json.dumps(open_followups_list, ensure_ascii=False) if open_followups_list else "(none)",
+        "",
+        "Respond with JSON only.",
+    ]
+    if asp.get("note"):
+        prompt_parts.insert(0, f"## Operator's note when creating this aspiration\n{asp['note']}\n")
+
+    prompt = "\n".join(prompt_parts)
+
+    try:
+        resp = gemini_client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=ASPIRATION_SYSTEM_PROMPT,
+                max_output_tokens=2048,
+                temperature=0.5,
+                response_mime_type="application/json",
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": f"Gemini API error: {e}"}), 502
+
+    text = (resp.text or "").strip()
+    try:
+        parsed = json.loads(text)
+    except (ValueError, TypeError):
+        # Tolerant retry — strip code fences if Gemini wrapped it
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", text).strip()
+        try:
+            parsed = json.loads(cleaned)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Gemini returned non-JSON", "raw": text}), 502
+
+    headline = (parsed.get("headline") or "").strip()
+    actions  = parsed.get("actions") or []
+    if not isinstance(actions, list):
+        actions = []
+    # Normalise + clamp 4-6 (defensive — sometimes Gemini overshoots)
+    clean_actions = []
+    for i, a in enumerate(actions[:6]):
+        if not isinstance(a, dict):
+            continue
+        try:
+            due_in = int(a.get("due_in_days", 14))
+        except (ValueError, TypeError):
+            due_in = 14
+        due_in = max(1, min(90, due_in))
+        clean_actions.append({
+            "title":       (a.get("title") or "").strip()[:200],
+            "detail":      (a.get("detail") or "").strip()[:600],
+            "owner_hint":  (a.get("owner_hint") or "").strip()[:60],
+            "due_in_days": due_in,
+            "evidence":    (a.get("evidence") or "").strip()[:200],
+        })
+    reality_check = (parsed.get("reality_check") or "").strip()
+
+    payload = {
+        "headline":      headline,
+        "actions":       clean_actions,
+        "reality_check": reality_check,
+        "generated_at":  _now_iso(),
+        "model":         MODEL,
+    }
+    # Cache so re-opening the modal doesn't hit Gemini twice
+    db.execute(
+        "UPDATE aspiration_goals SET actions_json = ?, updated_at = ? WHERE id = ?",
+        (json.dumps(payload), _now_iso(), aspiration_id),
+    )
+    db.commit()
+    _record_edit("aspiration", "generate-actions", aspiration_id)
+
+    usage_md = getattr(resp, "usage_metadata", None)
+    return jsonify({
+        **payload,
+        "cached": False,
+        "usage": {
+            "input_tokens":  getattr(usage_md, "prompt_token_count",     0) if usage_md else 0,
+            "output_tokens": getattr(usage_md, "candidates_token_count", 0) if usage_md else 0,
+        },
+    })
 
 
 # ============================================================================
