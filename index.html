@@ -12850,6 +12850,14 @@ function showProgramDashboard(programId) {
   // they were complaining about.
   const candidatePool = unisForCandidates();
 
+  // High-fit threshold lowered to 40 (was 50) to capture partial matches
+  // that are still real signal — most entities can hit 1 primary (+25) +
+  // 3 secondary (+15) easily but rarely clear 50 without 2 primary hits.
+  // Marginal band (20-39) is the "weak interest" zone. Tuned alongside
+  // the May 2026 primary_kw expansion in data/programs.json.
+  const HIGH_FIT_THRESHOLD = 40;
+  const MARGINAL_FIT_THRESHOLD = 20;
+
   // Bucket every entity
   let pitched = [], hiFitUnpitched = [], midFit = [], low = [];
   candidatePool.forEach(u => {
@@ -12857,8 +12865,8 @@ function showProgramDashboard(programId) {
     const item = { u, score: s };
     const isPitched = pitchedIds.has(u.id);
     if (isPitched) pitched.push(item);
-    else if (s >= 50) hiFitUnpitched.push(item);
-    else if (s >= 30) midFit.push(item);
+    else if (s >= HIGH_FIT_THRESHOLD) hiFitUnpitched.push(item);
+    else if (s >= MARGINAL_FIT_THRESHOLD) midFit.push(item);
     else low.push(item);
   });
   hiFitUnpitched.sort((a,b) => b.score - a.score);
@@ -12871,8 +12879,8 @@ function showProgramDashboard(programId) {
     byCountry[c].total++;
     if (pitchedIds.has(u.id)) byCountry[c].pitched++;
     const s = u.program_matches[programId] || 0;
-    if (s >= 50) byCountry[c].hi++;
-    else if (s >= 30) byCountry[c].mid++;
+    if (s >= HIGH_FIT_THRESHOLD) byCountry[c].hi++;
+    else if (s >= MARGINAL_FIT_THRESHOLD) byCountry[c].mid++;
     if (s > byCountry[c].topScore) { byCountry[c].topScore = s; byCountry[c].topEntity = u; }
   });
 
@@ -12883,8 +12891,8 @@ function showProgramDashboard(programId) {
   // Pie segments
   const pieSegs = [
     {label:"Pitched",  value: pitched.length,        color:"var(--hf-red)"},
-    {label:"Potential (≥50)", value: hiFitUnpitched.length, color: prog.color},
-    {label:"Marginal (30-49)", value: midFit.length, color: "#A8B5C5"},
+    {label:"Potential (≥40)", value: hiFitUnpitched.length, color: prog.color},
+    {label:"Marginal (20-39)", value: midFit.length, color: "#A8B5C5"},
     {label:"Low (<30)", value: low.length,           color:"var(--rule)"},
   ];
 
@@ -12922,7 +12930,7 @@ function showProgramDashboard(programId) {
       <div class="score-tag">${it.score}/100</div>
       <div class="arrow">→</div>
     </div>`;
-  }).join("") : '<div style="font-size:11px;color:var(--ink-soft);font-style:italic;padding:14px;background:var(--paper);border-radius:5px;text-align:center">No high-fit untapped targets — either everything ≥50 is already pitched, or there are no strong fits for this programme.</div>';
+  }).join("") : '<div style="font-size:11px;color:var(--ink-soft);font-style:italic;padding:14px;background:var(--paper);border-radius:5px;text-align:center">No high-fit untapped targets — either everything ≥40 is already pitched, or there are no strong fits for this programme.</div>';
 
   // Build HTML
   const body = `
@@ -12939,11 +12947,11 @@ function showProgramDashboard(programId) {
       </div>
       <div class="pd-stat potential">
         <div class="num">${hiFitUnpitched.length}</div>
-        <div class="lbl">Potential ≥50 fit · untapped</div>
+        <div class="lbl">Potential ≥40 fit · untapped</div>
       </div>
       <div class="pd-stat">
         <div class="num">${midFit.length}</div>
-        <div class="lbl">Marginal 30-49</div>
+        <div class="lbl">Marginal 20-39</div>
       </div>
       <div class="pd-stat">
         <div class="num">${avgFit}</div>
@@ -12959,7 +12967,7 @@ function showProgramDashboard(programId) {
     </div>
 
     <div class="pd-section">
-      <h3>Top untapped targets <span class="pd-hint">High fit (≥50) not yet in outreach log · click to open detail</span></h3>
+      <h3>Top untapped targets <span class="pd-hint">High fit (≥40) not yet in outreach log · click to open detail</span></h3>
       <div class="pd-untapped">${untappedHtml}</div>
     </div>
 

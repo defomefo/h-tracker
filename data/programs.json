@@ -7,8 +7,8 @@
     "lang": "Italian",
     "color": "#1F6FB4",
     "audience": "Italian-speaking high-school students preparing for university",
-    "primary_kw": ["orientation", "self-discovery", "liberal arts", "general studies", "international baccalaureate", "career counseling", "gymnasium"],
-    "secondary_kw": ["education", "studies", "mindset", "high school", "secondary", "preparatory", "ib", "american", "british curriculum"],
+    "primary_kw": ["orientation", "self-discovery", "liberal arts", "general studies", "international baccalaureate", "career counseling", "gymnasium", "high school", "secondary", "ib", "italian school", "scuola superiore", "liceo"],
+    "secondary_kw": ["education", "studies", "mindset", "preparatory", "american", "british curriculum"],
     "pitch_to": "Italian high schools, intercultural orgs serving Italian students (Intercultura, AFSAI)"
   },
   {
@@ -19,8 +19,8 @@
     "lang": "English",
     "color": "#D9534F",
     "audience": "Aspiring founders, future entrepreneurs",
-    "primary_kw": ["entrepreneurship", "startup", "innovation", "entrepreneurial", "venture", "accelerator", "incubator", "business creation"],
-    "secondary_kw": ["business", "management", "mba", "commerce", "economics", "strategy", "leadership", "design thinking", "pitch", "prototype", "ai", "artificial intelligence", "applied ai"],
+    "primary_kw": ["entrepreneurship", "startup", "innovation", "entrepreneurial", "venture", "accelerator", "incubator", "business creation", "business", "management", "mba", "business school", "business administration", "business studies"],
+    "secondary_kw": ["commerce", "economics", "strategy", "leadership", "design thinking", "pitch", "prototype", "ai", "artificial intelligence", "applied ai", "applied", "hands-on", "project-based", "industry partnership", "company visits"],
     "pitch_to": "Business schools (Bocconi, Corvinus, Warwick), MBA programmes, JEBO/Junior Enterprise, AIESEC"
   },
   {
@@ -31,8 +31,8 @@
     "lang": "English",
     "color": "#2E7D5B",
     "audience": "Engineering / CS students",
-    "primary_kw": ["iot", "internet of things", "robotics", "embedded", "sensors", "mechatronics", "electrical engineering", "mechanical engineering", "automation"],
-    "secondary_kw": ["engineering", "computer science", "cs", "tech", "technology", "ai", "data", "informatics", "computing", "systems", "smart", "applied ai"],
+    "primary_kw": ["iot", "internet of things", "robotics", "embedded", "sensors", "mechatronics", "electrical engineering", "mechanical engineering", "automation", "engineering", "computer science", "applied sciences", "technology", "tech", "software engineering", "polytechnic", "politecnico"],
+    "secondary_kw": ["cs", "ai", "data", "informatics", "computing", "systems", "smart", "applied ai", "hardware", "industrial", "manufacturing"],
     "pitch_to": "Engineering schools (CTU Prague, KTU, TalTech), polytechnics, BEST chapters"
   },
   {
@@ -43,8 +43,8 @@
     "lang": "English",
     "color": "#6B4C7D",
     "audience": "CS students with security focus",
-    "primary_kw": ["cybersecurity", "cyber", "infosec", "information security", "data protection", "privacy", "network security", "penetration testing"],
-    "secondary_kw": ["security", "computer science", "cs", "it", "ai", "data", "digital", "networks", "cloud", "defense"],
+    "primary_kw": ["cybersecurity", "cyber", "infosec", "information security", "data protection", "privacy", "network security", "penetration testing", "computer science", "information technology", "it", "software engineering", "cs"],
+    "secondary_kw": ["security", "ai", "data", "digital", "networks", "cloud", "defense", "computing", "informatics", "tech"],
     "pitch_to": "CS departments, IT-focused unis, defense/intelligence academies, ELSA (cyber-law)"
   },
   {
@@ -55,8 +55,8 @@
     "lang": "English",
     "color": "#C97A1A",
     "audience": "Marketing & communications students",
-    "primary_kw": ["marketing", "branding", "digital marketing", "advertising", "communications", "public relations", "content", "social media"],
-    "secondary_kw": ["business", "mba", "commerce", "media", "strategy", "ai", "digital", "creative"],
+    "primary_kw": ["marketing", "branding", "digital marketing", "advertising", "communications", "public relations", "content", "social media", "pr", "media studies", "media"],
+    "secondary_kw": ["business", "mba", "commerce", "strategy", "ai", "digital", "creative", "design", "journalism"],
     "pitch_to": "Marketing/comms programmes, business schools, AIESEC, AEGEE, FARMedia-style student agencies"
   },
   {
@@ -67,8 +67,8 @@
     "lang": "English",
     "color": "#B85C8E",
     "audience": "Fashion / design / creative tech students",
-    "primary_kw": ["fashion", "apparel", "textile", "luxury", "beauty", "runway", "couture", "aesthetic", "wearable"],
-    "secondary_kw": ["design", "creative", "art", "arts", "industry", "media", "ai", "tech", "made in italy"],
+    "primary_kw": ["fashion", "apparel", "textile", "luxury", "beauty", "runway", "couture", "aesthetic", "wearable", "design", "creative", "art", "arts", "design school"],
+    "secondary_kw": ["industry", "media", "ai", "tech", "made in italy", "architecture", "visual", "applied arts", "creative tech"],
     "pitch_to": "Fashion institutes (FIT NYC, Polimoda), design schools, creative arts, luxury programmes"
   },
   {
@@ -79,8 +79,8 @@
     "lang": "English",
     "color": "#0A8A6B",
     "audience": "Social / networking-oriented students",
-    "primary_kw": ["game", "gaming", "gamification", "multiplayer", "interactive", "experience design", "social"],
-    "secondary_kw": ["network", "networking", "design", "media", "creative", "entertainment", "play", "esports"],
+    "primary_kw": ["game", "gaming", "gamification", "multiplayer", "interactive", "experience design", "social", "design", "media", "creative", "student org", "networking"],
+    "secondary_kw": ["network", "entertainment", "play", "esports", "ux", "digital media"],
     "pitch_to": "Social/networking orgs (ESN, AEGEE, Rotaract), game design programmes"
   },
   {
@@ -91,7 +91,7 @@
     "lang": "Italian",
     "color": "#8B1A1A",
     "audience": "Italian-speaking finance/econ students",
-    "primary_kw": ["finance", "financial", "economics", "banking", "investment", "markets", "trading", "accounting", "wealth", "capital", "tax"],
+    "primary_kw": ["finance", "financial", "economics", "banking", "investment", "markets", "trading", "accounting", "wealth", "capital", "tax", "italian university", "italian high school"],
     "secondary_kw": ["business", "mba", "commerce", "money", "equity", "fintech"],
     "pitch_to": "Italian universities, business schools w/ finance focus, ELSA (financial-law track)"
   },
@@ -103,8 +103,8 @@
     "lang": "English",
     "color": "#1F6FB4",
     "audience": "Marketing / creative / digital students",
-    "primary_kw": ["marketing", "creativity", "creative", "advertising", "generative ai", "content"],
-    "secondary_kw": ["media", "digital", "ai", "artificial intelligence", "branding", "communications", "design"],
+    "primary_kw": ["marketing", "creativity", "creative", "advertising", "generative ai", "content", "design", "media", "ai", "artificial intelligence"],
+    "secondary_kw": ["digital", "branding", "communications", "innovation", "tech"],
     "pitch_to": "Marketing programmes, design schools, communications students"
   }
 ]
