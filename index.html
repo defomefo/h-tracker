@@ -3525,6 +3525,36 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .pkg-analysis-sub{font-size:11px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
 .pkg-analysis-sub b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
 
+/* "Show the math" — explicit, transparent calculation breakdowns.
+   Used for the revenue formula and per-programme fit detail. Whole
+   point is the user sees HOW we got the number, not just the number. */
+.pkg-math{margin-top:10px;background:linear-gradient(180deg,#FBF8F2 0%,#FFFDF7 100%);border:1px dashed rgba(122,82,21,.32);border-radius:7px;padding:10px 12px 11px}
+.pkg-math-cap{font-size:9px;letter-spacing:1.2px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.pkg-math-cap::before{content:"∑";font-size:13px;color:var(--hf-red-deep);font-weight:900}
+/* Revenue formula row: tokens separated by × / = signs */
+.pkg-formula{display:flex;align-items:stretch;flex-wrap:wrap;gap:6px;font-variant-numeric:tabular-nums}
+.pkg-formula-tok{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:6px 9px;min-width:64px}
+.pkg-formula-tok b{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.2px;line-height:1.1}
+.pkg-formula-tok span{font-size:8px;letter-spacing:.6px;color:var(--ink-mute);text-transform:uppercase;font-weight:700;margin-top:3px;text-align:center}
+.pkg-formula-op{display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--hf-red-deep);min-width:14px;padding:0 2px}
+.pkg-formula-tok.result{background:var(--hf-red);border-color:var(--hf-red-deep);box-shadow:0 2px 6px rgba(217,83,79,.25)}
+.pkg-formula-tok.result b{color:#fff}
+.pkg-formula-tok.result span{color:rgba(255,255,255,.78)}
+.pkg-formula-note{font-size:10px;color:var(--ink-mute);margin-top:8px;line-height:1.45}
+.pkg-formula-note b{color:var(--ink);font-weight:700}
+/* Per-programme fit detail rows */
+.pkg-fit-detail{display:flex;flex-direction:column;gap:6px}
+.pkg-fit-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:7px 10px}
+.pkg-fit-row-name{font-size:11px;font-weight:700;color:var(--ink);line-height:1.3}
+.pkg-fit-row-name small{display:block;font-size:9.5px;font-weight:500;color:var(--ink-mute);margin-top:2px;line-height:1.35}
+.pkg-fit-row-name small em{font-style:normal;background:var(--gold-light);padding:1px 5px;border-radius:3px;color:var(--hf-red-deep);font-weight:700;margin-right:3px;display:inline-block}
+.pkg-fit-row-name small em.sec{background:rgba(122,82,21,.1);color:var(--ink-soft);font-weight:600}
+.pkg-fit-row-name small i{font-style:italic;color:var(--ink-mute)}
+.pkg-fit-score{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);padding:3px 9px;border-radius:5px;background:rgba(26,26,26,.05)}
+.pkg-fit-score.hi{background:rgba(31,110,72,.13);color:#1F6E48}
+.pkg-fit-score.md{background:rgba(122,82,21,.13);color:#7A5215}
+.pkg-fit-score.lo{background:rgba(176,50,46,.13);color:#B0322E}
+
 /* Footer actions */
 .pkg-form-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid var(--rule);margin-top:6px}
 
@@ -8210,29 +8240,55 @@ function _pkgSparkleBurst(originEl) {
 // same primary +25 / secondary +5 engine as parseEntityRow, but feeds it
 // the sponsor's name + industry_sector + notes (sponsors aren't in UNIS
 // so they don't carry program_matches pre-computed).
+//
+// Returns { score, primary_hits, secondary_hits, primary_matched,
+// secondary_matched } — we keep the actual matched-keyword arrays so
+// the UI can show "WHY" this programme scored what it did, not just
+// the final number. That transparency is the whole point — operator
+// can see the evidence behind the algorithm and override it with
+// judgment when the keyword surface misses context.
 function _pkgSponsorProgramFit(sponsor, prog) {
   const blob = [
     sponsor.company_name || "",
     sponsor.industry_sector || "",
     sponsor.notes || "",
   ].join(" ").toLowerCase();
-  let primary = 0, secondary = 0;
-  (prog.primary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) primary++; });
-  (prog.secondary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) secondary++; });
-  return Math.min(100, Math.min(75, primary * 25) + Math.min(25, secondary * 5));
+  const primary_matched = [];
+  const secondary_matched = [];
+  (prog.primary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) primary_matched.push(kw); });
+  (prog.secondary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) secondary_matched.push(kw); });
+  const score = Math.min(100,
+    Math.min(75, primary_matched.length * 25)
+  + Math.min(25, secondary_matched.length * 5)
+  );
+  return {
+    score,
+    primary_hits:   primary_matched.length,
+    secondary_hits: secondary_matched.length,
+    primary_matched,
+    secondary_matched,
+  };
 }
 
 // Revenue projection — derived from past Career Day data.
-//   baseline_per_student = avg value_no_iva_eur ÷ avg attendee_count
+//   baseline_per_student = total value_no_iva_eur ÷ total attendee_count
 //                          across all sponsors with both numbers > 0
 //   estimate = baseline_per_student × cohort_size × √(programmes.length)
-// √ multiplier gives diminishing returns for adding more programmes.
-// Returns { lo, hi, baseline_per_student, sample_size } so the UI can
-// show a range + the source of the math.
+// √ multiplier gives diminishing returns for adding more programmes
+// (a 5-programme package isn't 5× a 1-programme package — sponsor
+// attention dilutes). ±25% band reflects historical variance.
+// Returns the raw inputs too (total_value, total_attendees, multiplier,
+// mid) so the UI can show every step of the math, not just the answer.
 function _pkgRevenueProjection(programmesCount, cohortSize) {
   const all = (typeof SPONSORS !== "undefined" && SPONSORS) || [];
   const valid = all.filter(s => (s.value_no_iva_eur || 0) > 0 && (s.attendee_count || 0) > 0);
-  if (!valid.length) return { lo: 0, hi: 0, baseline_per_student: 0, sample_size: 0 };
+  if (!valid.length) return {
+    lo: 0, hi: 0, mid: 0,
+    baseline_per_student: 0, sample_size: 0,
+    total_value: 0, total_attendees: 0,
+    cohort_used: cohortSize || 0, programmes_count: programmesCount,
+    multiplier: 1,
+  };
   const totalValue = valid.reduce((sum, s) => sum + (s.value_no_iva_eur || 0), 0);
   const totalAttendees = valid.reduce((sum, s) => sum + (s.attendee_count || 0), 0);
   const baseline = totalValue / totalAttendees;
@@ -8242,8 +8298,14 @@ function _pkgRevenueProjection(programmesCount, cohortSize) {
   return {
     lo: Math.round(mid * 0.75),
     hi: Math.round(mid * 1.25),
+    mid: Math.round(mid),
     baseline_per_student: Math.round(baseline),
     sample_size: valid.length,
+    total_value: Math.round(totalValue),
+    total_attendees: totalAttendees,
+    cohort_used: cohort,
+    programmes_count: programmesCount,
+    multiplier: mult,
   };
 }
 
@@ -8260,40 +8322,95 @@ function _pkgRefreshAnalysis(sponsorId) {
     host.innerHTML = `<div class="pkg-analysis-empty" style="grid-column:1/-1">Tick at least one programme to see the sponsor-fit analysis and revenue projection.</div>`;
     return;
   }
-  // Fit score — average of per-programme keyword fit, weighted by max
-  const fits = checkedProgs.map(pid => {
+
+  // ---- Sponsor-package fit ----------------------------------------------
+  // Per-programme detail so the operator can see WHICH programme is
+  // anchoring the fit (and WHICH keywords matched) — not just an opaque
+  // aggregate number.
+  const progRows = checkedProgs.map(pid => {
     const prog = (PROGRAMS || []).find(p => p.id === pid);
-    return prog ? _pkgSponsorProgramFit(sponsor, prog) : 0;
+    if (!prog) return { id: pid, name: pid, score: 0, primary_matched: [], secondary_matched: [], color: "#999" };
+    const fit = _pkgSponsorProgramFit(sponsor, prog);
+    return { id: pid, name: prog.name, color: prog.color || "#1F6FB4", ...fit };
   });
-  const fitAvg = Math.round(fits.reduce((s, n) => s + n, 0) / fits.length);
-  const fitMax = Math.max.apply(null, fits);
+  const scores = progRows.map(r => r.score);
+  const fitAvg = Math.round(scores.reduce((s, n) => s + n, 0) / scores.length);
+  const fitMax = Math.max.apply(null, scores);
   const fitClass = fitAvg >= 50 ? "fit-high" : fitAvg >= 25 ? "fit-mid" : "fit-low";
-  const fitWord = fitAvg >= 50 ? "Strong" : fitAvg >= 25 ? "Moderate" : "Weak";
-  // Cohort + projection
+  const fitWord  = fitAvg >= 50 ? "Strong"   : fitAvg >= 25 ? "Moderate" : "Weak";
+
+  const fitDetail = progRows.map(r => {
+    const cls = r.score >= 50 ? "hi" : r.score >= 25 ? "md" : "lo";
+    // matched-keyword pills (primary as emphasised, secondary as muted)
+    const evidence = (r.primary_matched.length || r.secondary_matched.length)
+      ? `${r.primary_matched.slice(0, 6).map(k => `<em>${escape(k)}</em>`).join("")}${r.secondary_matched.slice(0, 4).map(k => `<em class="sec">${escape(k)}</em>`).join("")}${r.primary_matched.length + r.secondary_matched.length > 10 ? ` <i>+${r.primary_matched.length + r.secondary_matched.length - 10} more</i>` : ""}`
+      : `<i>no keywords matched in sponsor's name / industry / notes</i>`;
+    return `<div class="pkg-fit-row">
+      <div class="pkg-fit-row-name">
+        <span style="color:${r.color}">${escape(r.name)}</span>
+        <small>${evidence}</small>
+      </div>
+      <div class="pkg-fit-score ${cls}">${r.score}</div>
+    </div>`;
+  }).join("");
+
+  // ---- Revenue projection ------------------------------------------------
   const cohortRaw = parseInt((document.getElementById(`pkg-cohort-${sponsorId}`) || {}).value, 10);
   const valueRaw  = parseInt((document.getElementById(`pkg-value-${sponsorId}`) || {}).value, 10);
   const cohort = isNaN(cohortRaw) ? 0 : cohortRaw;
-  const proj = _pkgRevenueProjection(checkedProgs.length, cohort || 20);  // default 20 if not entered
-  const projHi = proj.hi.toLocaleString("en-US");
-  const projLo = proj.lo.toLocaleString("en-US");
+  const cohortDefault = !cohort;  // marks the 20-cohort fallback in the formula label
+  const proj = _pkgRevenueProjection(checkedProgs.length, cohort || 20);
+  const projHi  = proj.hi.toLocaleString("en-US");
+  const projLo  = proj.lo.toLocaleString("en-US");
+  const projMid = proj.mid.toLocaleString("en-US");
+  const baselineFmt = proj.baseline_per_student.toLocaleString("en-US");
+  const totalValueFmt = proj.total_value.toLocaleString("en-US");
+  const multStr = proj.multiplier.toFixed(2);
+
   const yourValue = !isNaN(valueRaw) && valueRaw > 0 ? valueRaw : null;
-  // Compare entered value to projection
   let valueHint = "";
   if (yourValue && proj.hi > 0) {
-    if (yourValue < proj.lo) valueHint = ` · <b style="color:#B0322E">below projection</b>`;
-    else if (yourValue > proj.hi) valueHint = ` · <b style="color:#1F6E48">above projection</b>`;
-    else valueHint = ` · <b style="color:#1F6E48">within range</b>`;
+    if (yourValue < proj.lo)      valueHint = `Your proposed <b>€${yourValue.toLocaleString("en-US")}</b> is <b style="color:#B0322E">below</b> the projected range — leaving money on the table.`;
+    else if (yourValue > proj.hi) valueHint = `Your proposed <b>€${yourValue.toLocaleString("en-US")}</b> is <b style="color:#1F6E48">above</b> the projected range — aggressive but defensible.`;
+    else                          valueHint = `Your proposed <b>€${yourValue.toLocaleString("en-US")}</b> sits <b style="color:#1F6E48">within</b> the projected range — well-calibrated.`;
   }
+
+  // Build the formula chip row: €baseline × cohort × √progs = €mid
+  const formula = `
+    <div class="pkg-formula">
+      <div class="pkg-formula-tok"><b>€${baselineFmt}</b><span>baseline /<br>student</span></div>
+      <div class="pkg-formula-op">×</div>
+      <div class="pkg-formula-tok"><b>${cohort || 20}</b><span>cohort${cohortDefault ? ' (default)' : ''}</span></div>
+      <div class="pkg-formula-op">×</div>
+      <div class="pkg-formula-tok"><b>√${checkedProgs.length} = ${multStr}</b><span>programme<br>multiplier</span></div>
+      <div class="pkg-formula-op">=</div>
+      <div class="pkg-formula-tok result"><b>€${projMid}</b><span>mid estimate</span></div>
+    </div>`;
+
+  const sourceNote = proj.sample_size
+    ? `Baseline: <b>€${totalValueFmt}</b> total value ÷ <b>${proj.total_attendees}</b> total attendees across <b>${proj.sample_size}</b> past Career Day sponsors. Range is mid ±25% — captures historical variance. The √-multiplier reflects diminishing returns: a 5-programme package isn't 5× a 1-programme package because sponsor attention dilutes.`
+    : `No past sponsors with both value + attendee count yet — projection is suppressed.`;
+
   host.innerHTML = `
     <div class="pkg-analysis-cell">
       <div class="pkg-analysis-lbl">Sponsor-package fit</div>
       <div class="pkg-analysis-val ${fitClass}">${fitAvg}<small style="font-size:14px;font-weight:700;color:var(--ink-soft);margin-left:2px">/100</small></div>
       <div class="pkg-analysis-sub">${escape(fitWord)} fit · top programme <b>${fitMax}/100</b> · avg across ${checkedProgs.length} programme${checkedProgs.length === 1 ? '' : 's'}.${fitAvg < 25 ? ` Sponsor's industry (<b>${escape(sponsor.industry_sector || 'unset')}</b>) doesn't overlap strongly with the selected programmes' keywords.` : ''}</div>
+      <div class="pkg-math">
+        <div class="pkg-math-cap">How this is computed · per-programme</div>
+        <div class="pkg-fit-detail">${fitDetail}</div>
+        <div class="pkg-formula-note">Each programme scores <b>+25</b> per matched primary keyword (capped at 75) <b>+5</b> per matched secondary (capped at 25). Average across the selected programmes is the package score. Match surface = sponsor's name + industry sector + notes.</div>
+      </div>
     </div>
     <div class="pkg-analysis-cell">
       <div class="pkg-analysis-lbl">Revenue projection</div>
       <div class="pkg-analysis-val">€${projLo}–${projHi}</div>
-      <div class="pkg-analysis-sub">Baseline <b>€${proj.baseline_per_student.toLocaleString("en-US")}</b>/student × ${cohort || 20}-cohort × √${checkedProgs.length}-programme multiplier${valueHint}.${proj.sample_size ? ` Derived from <b>${proj.sample_size}</b> past Career Day sponsors.` : ''}</div>
+      <div class="pkg-analysis-sub">Mid estimate <b>€${projMid}</b> · ±25% band${cohortDefault ? ` · cohort defaulted to 20 — enter your own above for a tighter projection` : ''}.</div>
+      <div class="pkg-math">
+        <div class="pkg-math-cap">How this is computed</div>
+        ${formula}
+        <div class="pkg-formula-note">${sourceNote}${valueHint ? `<br><br>${valueHint}` : ''}</div>
+      </div>
     </div>
   `;
 }
