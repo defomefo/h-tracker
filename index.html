@@ -9560,6 +9560,17 @@ function clearFilters() {
   drawDots(); render();
 }
 
+// UNIS minus the fit-hidden entities (research-intensive + Italian
+// competitors without operator priority override). Use this in any view
+// that asks "who SHOULD we recommend?" — program dashboard, format
+// dashboard, untapped-target drill-downs. Database, entity detail,
+// outreach log etc. keep using UNIS directly (they show what exists,
+// not what we'd recommend).
+function unisForCandidates() {
+  if (!FIT_SIGNALS || !FIT_SIGNALS._meta || !FIT_SIGNALS._meta.hide_from_candidates) return UNIS;
+  return UNIS.filter(u => !_isFitHiddenFromCandidates(u));
+}
+
 // Predicate — true when an entity is "fit-flagged out": research-intensive
 // or italian competitor AND the operator hasn't explicitly upgraded it via
 // the Priority field. This is the hide-default rule for candidate surfaces
@@ -12315,9 +12326,16 @@ function showProgramDashboard(programId) {
     if ((e.programs || []).includes(programId)) pitchedIds.add(e.entityId);
   }));
 
+  // Use unisForCandidates so research-intensive + Italian-competitor
+  // entities don't surface as "high-fit unpitched" for any programme.
+  // Reviewer feedback: showing Politecnico di Milano as the top untapped
+  // target for an English-language program is exactly the kind of noise
+  // they were complaining about.
+  const candidatePool = unisForCandidates();
+
   // Bucket every entity
   let pitched = [], hiFitUnpitched = [], midFit = [], low = [];
-  UNIS.forEach(u => {
+  candidatePool.forEach(u => {
     const s = u.program_matches[programId] || 0;
     const item = { u, score: s };
     const isPitched = pitchedIds.has(u.id);
@@ -12330,7 +12348,7 @@ function showProgramDashboard(programId) {
 
   // Country-level breakdown
   const byCountry = {};
-  UNIS.forEach(u => {
+  candidatePool.forEach(u => {
     const c = u.country_canonical || u.country || "Unknown";
     if (!byCountry[c]) byCountry[c] = {total:0, pitched:0, hi:0, mid:0, topScore:0, topEntity:null};
     byCountry[c].total++;
@@ -12705,8 +12723,12 @@ function showCollabFormatDashboard(formatId) {
     // Bucket every entity by whether this format is its recommendation.
     // Using recommendCollabFormat() — already used in detail panel — keeps
     // the dashboard in sync with what users see at the entity level.
+    // Filter out fit-hidden entities (research-intensive + Italian
+    // competitors w/o operator priority override) so we don't recommend
+    // Politecnico di Milano as the top untapped target for, say, Start
+    // Online · Finish On Campus. Reviewer's exact complaint.
     const recommended = [], otherFormat = [];
-    UNIS.forEach(u => {
+    unisForCandidates().forEach(u => {
       const rec = recommendCollabFormat(u);
       if (rec && rec.id === formatId) recommended.push(u);
       else otherFormat.push(u);
