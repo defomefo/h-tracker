@@ -6007,6 +6007,26 @@ function normalizeRow(row, idx) {
     if (typeof pen === "number") fitAdjust += pen;
   }
 
+  // Focus-area research rule — catches research-heavy entities the name-
+  // pattern list misses (Padova, Pisa, etc. whose focus_areas explicitly
+  // say "Research-intensive" / "deep research" / "PhD-focused" but whose
+  // name doesn't match a top-50 pattern). Reviewer flagged: "We cannot
+  // partner with universities which do deep research". Self-declared
+  // research intensity is the most honest signal we have.
+  if (entityType === "university" && !seenTags.has("research_intensive")) {
+    const isResearchHeavy = /research[-\s]?intensive|deep research|research[-\s]?university|phd[-\s]?focused|doctoral[-\s]?focused|primarily research|research[-\s]?led/i.test(blob);
+    if (isResearchHeavy) {
+      seenTags.add("research_intensive");
+      fitTags.push({
+        tag: "research_intensive",
+        label: "Self-declared research-intensive — H-FARM is applied, fit is limited",
+        pattern: "focus:research-intensive",
+      });
+      const pen = penalties.research_intensive;
+      if (typeof pen === "number") fitAdjust += pen;
+    }
+  }
+
   for (const w of fitWarnings) {
     if (!w.pattern) continue;
     // entity_type gate — a "Bocconi" pattern targeting universities should
