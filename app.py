@@ -4707,11 +4707,15 @@ def brief_pdf(entity_id):
 # Server resolves entity_ids → result rows and returns them so the existing
 # chat UI can render exactly as it does for the canned demo queries.
 # ============================================================================
-CHAT_SYSTEM_PROMPT = """You are a senior analyst assistant for the H-FARM College Global Partnerships tracker — a CRM-style tool for managing relationships with universities, agencies, schools and student organisations.
+CHAT_SYSTEM_PROMPT = """You are a senior analyst assistant for the H-FARM College Global Partnerships tracker — a CRM-style tool for two distinct workflows:
+  (1) Partnership pipeline — universities, agencies, schools, student orgs (the "entities" payload below)
+  (2) Career Day sponsors — companies that pay/contribute to sponsor H-FARM's annual Career Day event (the "sponsors" payload below)
 
-Your job: answer the user's question about the partner portfolio they've shown you, and surface the SPECIFIC entities that are relevant. You are READ-ONLY — you never propose data changes, never invent entities, never speculate beyond the data.
+The two datasets are SEPARATE — a partner like 'TalTech' lives in entities; a sponsor like 'Cisco Italy' or 'EY' lives in sponsors. Some companies appear in BOTH if H-FARM has both an academic partnership AND a sponsorship arrangement. The user's question dictates which dataset to query.
 
-Entity fields you can rely on (per entity):
+You are READ-ONLY — you never propose data changes, never invent rows, never speculate beyond the data.
+
+ENTITY fields (partnership pipeline):
   id, name, type (university|agency|school|org), country, continent, city,
   priority (Critical|Hot|Warm|Cold|Cold-storage|Up & Running|Not interested),
   strategic_tier (Digital Pioneer|Prestige Hub|Applied Leader|Established Partner),
@@ -4721,14 +4725,26 @@ Entity fields you can rely on (per entity):
   top_program_id (id of best-fit H-FARM College offering), top_program_score (0-100),
   contacts (array of {name, role, email} — may be empty)
 
+SPONSOR fields (Career Day):
+  id, company_name, event_year, sponsorship_tier (Gold|Bronze|Base|null),
+  industry_sector, value_no_iva_eur (the contracted amount in EUR),
+  amount_paid_eur (what they've actually paid),
+  contract_signed_by_us (0/1), contract_signed_by_them (0/1),
+  primary_contact_name, primary_contact_email, notes,
+  attendee_count (number of company reps coming)
+
 Rules:
-- The `intro` field: 1-3 short sentences in plain English. ANSWER the user's actual question — don't just describe the entity. If they ask for a contact, give the contact (name, role, email). If they ask for a country breakdown, give numbers. If they ask "should I follow up?", weigh days_dormant + priority + readiness and give a verdict. No hedging, no "I would suggest", no "Based on the data".
-- The `entity_ids` array: ids that match the user's question, ranked best-first. If the question is broad (e.g. "what should I focus on?"), return up to 8. If it's specific (e.g. "tell me about TalTech"), return just that one. If nothing matches, return an empty array — `intro` should say so plainly.
-- When the user asks for a contact: pull name + role + email from `contacts` straight into the intro. If contacts is empty, say so plainly ("No contacts on file for X — you'd need to research this one") rather than describing the entity profile.
-- Never invent ids, names, emails, or any field values. Only quote what's in the provided entities list.
+- The `intro` field: 1-3 short sentences in plain English. ANSWER the user's actual question — don't just describe the row. If they ask "top 3 sponsors" rank by value_no_iva_eur desc and name them. If they ask for a contact, give name + email. If they ask for unsigned contracts, list which ones. No hedging, no "I would suggest", no "Based on the data".
+- The `entity_ids` array: IDs from the ENTITY (partnership) dataset that match.
+- The `sponsor_ids` array: IDs from the SPONSOR dataset that match. Use this when the question is clearly about sponsors ("top sponsors", "who paid for Career Day", "which sponsor", "Gold tier", etc.).
+- Each query usually returns rows from ONE dataset only — pick the right one based on the question. If the question genuinely spans both (e.g. "which Italian companies are both partners and sponsors?"), populate both arrays.
+- For sponsor questions: rank by sponsorship_tier (Gold > Bronze > Base) then value_no_iva_eur desc, unless the user specified another sort.
+- For "top N sponsors": ALWAYS sort by value_no_iva_eur desc, return at most N.
+- When a contact is asked: pull the actual name + email from primary_contact_name/primary_contact_email (sponsors) or contacts array (entities). If empty, say so plainly.
+- Never invent ids, names, emails, or any field values. Only quote what's in the provided lists.
 
 Return ONLY a JSON object with this exact shape, no markdown, no commentary:
-{"intro": "...", "entity_ids": ["...", "..."]}"""
+{"intro": "...", "entity_ids": ["...", "..."], "sponsor_ids": ["...", "..."]}"""
 
 
 # Fields we send to Gemini per entity — analytically rich but keeps the
@@ -4764,6 +4780,33 @@ def _slim_entities(entities):
     return out
 
 
+# Fields we send to Gemini per SPONSOR. Keep tight — there are ~50 sponsors
+# per event so the payload stays small even with multiple years.
+_SPONSOR_CHAT_FIELDS = (
+    "id", "company_name", "event_year", "sponsorship_tier", "industry_sector",
+    "value_no_iva_eur", "amount_paid_eur",
+    "contract_signed_by_us", "contract_signed_by_them",
+    "primary_contact_name", "primary_contact_email",
+    "notes", "attendee_count",
+)
+
+
+def _slim_sponsors(sponsors):
+    """Like _slim_entities but for sponsor rows. The chat endpoint accepts a
+    `sponsors` array alongside `entities`; without it the AI assistant
+    can't answer questions like 'who are my top 3 sponsors?' because the
+    sponsor data lives in a separate table from the partner pipeline."""
+    out = []
+    if not isinstance(sponsors, list):
+        return out
+    for s in sponsors:
+        if not isinstance(s, dict) or not s.get("id"):
+            continue
+        row = {k: s.get(k) for k in _SPONSOR_CHAT_FIELDS if s.get(k) not in (None, "")}
+        out.append(row)
+    return out
+
+
 @app.route("/api/chat-query", methods=["POST"])
 @auth_required
 def chat_query():
@@ -4779,6 +4822,7 @@ def chat_query():
         return jsonify({"error": "user_text is required."}), 400
 
     entities = _slim_entities(data.get("entities") or [])
+    sponsors = _slim_sponsors(data.get("sponsors") or [])
     history = data.get("history") or []
     # Keep history short — last 6 turns is plenty of context
     history = history[-6:] if isinstance(history, list) else []
@@ -4797,8 +4841,11 @@ def chat_query():
         "## Current question",
         user_text,
         "",
-        "## Available entities (live snapshot from the user's filtered view)",
+        "## Available ENTITIES — partnership pipeline (universities, agencies, schools, orgs)",
         json.dumps(entities, ensure_ascii=False),
+        "",
+        "## Available SPONSORS — Career Day sponsors (companies that pay/contribute)",
+        json.dumps(sponsors, ensure_ascii=False) if sponsors else "(no sponsors loaded)",
         "",
         "Respond with JSON only.",
     ]
@@ -4822,20 +4869,23 @@ def chat_query():
     text = (resp.text or "").strip()
     parsed = _parse_email_json(text)   # tolerant JSON extractor — same shape
     intro = parsed.get("intro") or "I couldn't make sense of that question — try rephrasing?"
-    ids = parsed.get("entity_ids") or []
-    if not isinstance(ids, list):
-        ids = []
+    entity_ids = parsed.get("entity_ids") or []
+    if not isinstance(entity_ids, list):
+        entity_ids = []
+    sponsor_ids = parsed.get("sponsor_ids") or []
+    if not isinstance(sponsor_ids, list):
+        sponsor_ids = []
 
-    # Resolve ids → full result rows so the UI renders consistently. Drop
-    # any hallucinated ids that aren't actually in the entities list.
+    # Resolve entity ids → result rows. Drop hallucinated ids.
     by_id = {u.get("id"): u for u in (data.get("entities") or []) if isinstance(u, dict)}
     results = []
-    for eid in ids:
+    for eid in entity_ids:
         u = by_id.get(eid)
         if not u:
             continue
         results.append({
             "id":   eid,
+            "kind": "entity",
             "name": u.get("name", ""),
             "meta": " · ".join(filter(None, [
                 u.get("country", ""),
@@ -4843,6 +4893,26 @@ def chat_query():
                 f"Score {u.get('partnership_score')}" if u.get("partnership_score") is not None else "",
             ])),
             "tag":  u.get("strategic_tier", ""),
+        })
+
+    # Resolve sponsor ids → result rows. Same shape as entities so the
+    # frontend's existing result renderer works without changes; the
+    # 'kind' field lets the UI badge them differently if it wants.
+    sponsors_by_id = {s.get("id"): s for s in (data.get("sponsors") or []) if isinstance(s, dict)}
+    for sid in sponsor_ids:
+        s = sponsors_by_id.get(sid)
+        if not s:
+            continue
+        results.append({
+            "id":   sid,
+            "kind": "sponsor",
+            "name": s.get("company_name", ""),
+            "meta": " · ".join(filter(None, [
+                s.get("sponsorship_tier", ""),
+                f"€{s.get('value_no_iva_eur'):,}".replace(",", ".") if isinstance(s.get("value_no_iva_eur"), (int, float)) and s.get("value_no_iva_eur") else "",
+                str(s.get("event_year")) if s.get("event_year") else "",
+            ])),
+            "tag":  s.get("industry_sector", "") or "Sponsor",
         })
 
     usage_md = getattr(resp, "usage_metadata", None)

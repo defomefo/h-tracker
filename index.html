@@ -13205,6 +13205,11 @@ async function chatSendInput() {
         user_text: text,
         history,
         entities: scope,
+        // Sponsors live in a separate table from the partnership pipeline.
+        // Pass them alongside `entities` so questions like "top 3 sponsors"
+        // can be answered. The backend's CHAT_SYSTEM_PROMPT knows about
+        // both datasets and decides which to query per question.
+        sponsors: (typeof SPONSORS !== "undefined" && Array.isArray(SPONSORS)) ? SPONSORS : [],
       }),
     });
     const out = await r.json();
@@ -13264,14 +13269,23 @@ function renderChat() {
       if (m.results.length === 0) {
         inner += `<div class="chat-no-results">No entities match — try a different query.</div>`;
       } else {
-        inner += `<div class="chat-msg-results">${m.results.map(r =>
-          `<div class="chat-result-row" onclick="chatOpenEntity('${r.id}')">
+        inner += `<div class="chat-msg-results">${m.results.map(r => {
+          // Sponsors route to sponsor detail modal, entities to the partner
+          // detail panel. The backend tags each result with kind=entity|sponsor;
+          // fall back to entity for old cached messages without the field.
+          const onClick = r.kind === "sponsor"
+            ? `chatOpenSponsor('${escapeAttr(r.id)}')`
+            : `chatOpenEntity('${escapeAttr(r.id)}')`;
+          const kindBadge = r.kind === "sponsor"
+            ? `<span style="font-size:8px;letter-spacing:.8px;font-weight:800;background:var(--gold);color:var(--ink);padding:1px 5px;border-radius:7px;margin-right:6px;vertical-align:1px">SPONSOR</span>` : '';
+          return `<div class="chat-result-row" onclick="${onClick}">
              <div>
-               <div class="chat-result-name">${escape(r.name)}</div>
+               <div class="chat-result-name">${kindBadge}${escape(r.name)}</div>
                <div class="chat-result-meta">${escape(r.meta || "")}</div>
              </div>
              <div class="chat-result-tag">${escape(r.tag || "")}</div>
-           </div>`).join("")}</div>`;
+           </div>`;
+        }).join("")}</div>`;
       }
     }
     if (m.examples) {
@@ -13291,6 +13305,12 @@ function renderChat() {
 function chatOpenEntity(id) {
   // Keep the chat panel open; just open the detail side-panel behind it.
   if (typeof openDetail === 'function') openDetail(id);
+}
+
+function chatOpenSponsor(id) {
+  // Sponsor results route to the sponsor detail modal (different from
+  // the partner detail panel — sponsors live in a separate table).
+  if (typeof openSponsorDetail === 'function') openSponsorDetail(id);
 }
 
 // AI gating — backend /api/health reports whether GEMINI_API_KEY is
