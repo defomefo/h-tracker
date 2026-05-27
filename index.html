@@ -8093,6 +8093,12 @@ async function runProspectDiscover() {
     <div>Searching the web · running Gemini grounding · checking each URL · ROR cross-check · dedupe vs your ${UNIS.length} partners…
     <br><small>This usually takes 15-40 seconds on first call (Render cold-start) then ~5-10s after.</small></div>
   </div>`;
+  // Pre-warm Render with a tiny /api/health ping so the actual discover
+  // call doesn't hit a cold instance — that's the path that times out
+  // at Vercel's 30s proxy limit and returns an HTML error page.
+  // Fire-and-forget; we don't await it before the real call below, but
+  // it kicks the server awake so the real call has a warm runtime.
+  try { fetch(API_BASE + "/api/health", { credentials: "include" }).catch(() => null); } catch {}
   try {
     const r = await apiFetch("/api/prospects/discover", {
       method:  "POST",
@@ -8102,6 +8108,31 @@ async function runProspectDiscover() {
         existing_entity_names: (UNIS || []).map(u => u.name).filter(Boolean),
       }),
     });
+    // Detect proxy timeout / cold-start HTML before trying to parse JSON.
+    // Vercel returns text/html on its own 504/502; Render returns text/html
+    // on gunicorn timeout. Either way r.json() would throw a confusing
+    // 'Unexpected token <' that hides what actually went wrong.
+    const ctype = (r.headers.get("content-type") || "").toLowerCase();
+    if (!ctype.includes("application/json")) {
+      const txt = await r.text();
+      const isHtml = /^\s*<(?:!doctype|html)/i.test(txt);
+      const isTimeout = r.status === 504 || r.status === 502 || /timeout|gateway/i.test(txt);
+      let hint = "";
+      if (isTimeout) {
+        hint = "The backend likely went to sleep (free-tier Render hibernates after 15 min idle) and took longer than Vercel's 30s proxy timeout to wake up. <b>Wait 30 seconds and try again</b> — the second call is fast.";
+      } else if (isHtml) {
+        hint = "Got an HTML error page instead of JSON — the backend is down or the proxy is misrouting. Check Render status.";
+      } else {
+        hint = `Unexpected response (${ctype || 'no content-type'}, ${txt.length} chars).`;
+      }
+      prog.innerHTML = `<div class="pd-progress-err">
+        ${isTimeout ? '⏱ Discovery timed out' : '⚠ Discovery failed'}
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.6">${hint}</div>
+        ${txt.length < 2000 ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--ink-soft)">Show raw response (${r.status} · ${txt.length} chars)</summary><pre style="background:var(--paper);padding:10px;border-radius:4px;font-size:10px;font-family:Consolas,monospace;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto;margin-top:6px">${escape(txt.slice(0, 1500))}</pre></details>` : ''}
+      </div>`;
+      btn.disabled = false; btn.textContent = "⚲ Run discovery";
+      return;
+    }
     const data = await r.json();
     if (!r.ok) {
       // Show every diagnostic field the backend sends — raw_preview (when
@@ -8153,7 +8184,14 @@ async function runProspectDiscover() {
       setTimeout(() => { closeProspectDiscoverModal(); renderProspectsView(); }, 1600);
     }
   } catch (e) {
-    prog.innerHTML = `<div class="pd-progress-err">Network error: ${escape(e.message)}</div>`;
+    // Classic 'Unexpected token <' = HTML got past our content-type guard
+    // (rare but possible if response advertises JSON but isn't). Translate
+    // the cryptic error to a usable hint.
+    const looksLikeHtmlPayload = /unexpected token/i.test(e.message || "");
+    const friendly = looksLikeHtmlPayload
+      ? "Backend returned HTML where JSON was expected — likely a Vercel/Render proxy timeout (Render hibernates after 15min idle). Wait 30s and retry."
+      : escape(e.message || String(e));
+    prog.innerHTML = `<div class="pd-progress-err">⚠ Discovery error<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.6">${friendly}</div></div>`;
     btn.disabled = false; btn.textContent = "⚲ Run discovery";
   }
 }
