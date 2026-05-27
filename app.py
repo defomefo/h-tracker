@@ -4707,7 +4707,7 @@ def brief_pdf(entity_id):
 # Server resolves entity_ids → result rows and returns them so the existing
 # chat UI can render exactly as it does for the canned demo queries.
 # ============================================================================
-CHAT_SYSTEM_PROMPT = """You are a senior analyst assistant for the H-FARM College Global Partnerships tracker — a CRM-style tool for two distinct workflows:
+CHAT_SYSTEM_PROMPT = """You are Mira, the senior analyst assistant for the H-FARM College Global Partnerships tracker — a CRM-style tool for two distinct workflows:
   (1) Partnership pipeline — universities, agencies, schools, student orgs (the "entities" payload below)
   (2) Career Day sponsors — companies that pay/contribute to sponsor H-FARM's annual Career Day event (the "sponsors" payload below)
 

@@ -1943,45 +1943,86 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .help-fab:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 6px 20px rgba(217,83,79,.55);background:var(--hf-red-deep)}
 
 /* ============== CHAT-WITH-YOUR-DATA (demo) ============== */
-.chat-fab{position:fixed;bottom:72px;right:18px;width:52px;height:52px;border-radius:50%;background:var(--navy);color:#fff;border:2px solid var(--hf-red);font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(10,20,40,.32);z-index:90;transition:transform .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;font-family:inherit}
-.chat-fab:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 8px 22px rgba(10,20,40,.42);background:var(--hf-red);border-color:var(--hf-red)}
+/* ============================================================
+   MIRA — AI assistant persona. The chat-fab is the floating
+   trigger; the chat-panel slides up with a soft-pink avatar
+   in the header, suggested query cards grouped by intent,
+   and an Enter-to-send hint in the input bar.
+   ============================================================ */
+.chat-fab{position:fixed;bottom:72px;right:18px;width:56px;height:56px;border-radius:50%;background:var(--navy);color:#fff;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(10,20,40,.32);z-index:90;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .15s;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0;overflow:hidden}
+.chat-fab:hover{transform:translateY(-3px) scale(1.06);box-shadow:0 10px 28px rgba(217,83,79,.42);background:var(--hf-red)}
+.chat-fab svg{width:26px;height:26px}
 .chat-fab.has-panel-open{display:none}
-.chat-panel{position:fixed;bottom:18px;right:18px;width:420px;max-width:calc(100vw - 36px);height:580px;max-height:calc(100vh - 100px);background:#fff;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.28);display:none;flex-direction:column;z-index:95;overflow:hidden}
-.chat-panel.open{display:flex;animation:chat-rise .22s ease}
-@keyframes chat-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.chat-head{background:var(--navy);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--hf-red);flex-shrink:0}
-.chat-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.3px}
-.chat-title .chat-spark{font-size:16px}
-.chat-demo-pill{font-size:9px;background:var(--hf-red);color:#fff;padding:2px 7px;border-radius:9px;font-weight:800;letter-spacing:.8px}
-.chat-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0 4px;font-family:inherit}
-.chat-close:hover{color:var(--hf-red-soft)}
-.chat-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
-.chat-msg{font-size:12px;line-height:1.5;max-width:92%}
-.chat-msg.user{align-self:flex-end;background:var(--hf-red);color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;font-weight:500}
-.chat-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--rule);padding:10px 14px;border-radius:14px 14px 14px 4px;color:var(--ink)}
-.chat-msg.bot b{color:var(--navy);font-weight:700}
-.chat-msg.bot em{color:var(--hf-red);font-style:normal;font-weight:600}
-.chat-msg-intro{margin-bottom:6px}
-.chat-msg-results{margin-top:8px;background:var(--paper);border:1px solid var(--rule);border-radius:6px;overflow:hidden;font-size:11px}
-.chat-result-row{display:grid;grid-template-columns:1fr auto;gap:6px;padding:7px 10px;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .1s}
+.chat-panel{position:fixed;bottom:18px;right:18px;width:480px;max-width:calc(100vw - 36px);height:640px;max-height:calc(100vh - 100px);background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.32);display:none;flex-direction:column;z-index:95;overflow:hidden}
+.chat-panel.open{display:flex;animation:chat-rise .26s cubic-bezier(.34,1.56,.64,1)}
+@keyframes chat-rise{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Header — Mira avatar + name + scope subtitle + close */
+.chat-head{background:linear-gradient(135deg,#FCE4E4 0%,#FFF1ED 50%,#FFFAF2 100%);color:var(--ink);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(217,83,79,.18);flex-shrink:0;gap:12px}
+.chat-head-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.chat-avatar{flex-shrink:0;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#FFFFFF 0%,#FCE4E4 65%);border:1.5px solid rgba(217,83,79,.28);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(217,83,79,.18);position:relative;animation:mira-breath 5s ease-in-out infinite}
+@keyframes mira-breath{0%,100%{box-shadow:0 2px 6px rgba(217,83,79,.18)}50%{box-shadow:0 2px 14px rgba(217,83,79,.36)}}
+.chat-avatar svg{width:22px;height:22px}
+.chat-head-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.chat-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:-.1px;color:var(--ink)}
+.chat-title-name{font-size:14px;font-weight:800;letter-spacing:.2px;color:var(--ink)}
+.chat-scope{font-size:10.5px;color:var(--ink-soft);font-weight:600;display:flex;align-items:center;gap:5px}
+.chat-scope::before{content:"";width:6px;height:6px;border-radius:50%;background:#1F6E48;display:inline-block;box-shadow:0 0 0 2px rgba(31,110,72,.22)}
+.chat-demo-pill{font-size:8.5px;background:var(--hf-red);color:#fff;padding:2px 8px;border-radius:9px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;vertical-align:middle}
+.chat-close{background:transparent;border:none;color:var(--ink-soft);font-size:22px;cursor:pointer;line-height:1;padding:4px 10px;border-radius:6px;font-family:inherit;transition:all .12s;flex-shrink:0}
+.chat-close:hover{background:rgba(0,0,0,.06);color:var(--ink)}
+
+/* Body */
+.chat-body{flex:1;overflow-y:auto;padding:18px 18px;display:flex;flex-direction:column;gap:12px;background:#FFFDF8}
+.chat-msg{font-size:12.5px;line-height:1.55;max-width:92%}
+.chat-msg.user{align-self:flex-end;background:var(--hf-red);color:#fff;padding:9px 14px;border-radius:14px 14px 4px 14px;font-weight:500;max-width:85%}
+.chat-msg.bot{align-self:flex-start;background:transparent;padding:0;color:var(--ink);max-width:100%;width:100%}
+.chat-msg.bot b{color:var(--ink);font-weight:700}
+.chat-msg.bot em{color:var(--hf-red);font-style:normal;font-weight:700}
+.chat-msg-intro{margin-bottom:6px;font-size:13px;line-height:1.6;color:var(--ink)}
+.chat-msg-intro:first-letter{font-weight:800}
+.chat-greeting{font-size:18px;font-weight:800;letter-spacing:-.3px;color:var(--ink);margin-bottom:6px;line-height:1.25}
+
+/* Result cards */
+.chat-msg-results{margin-top:10px;background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden;font-size:11.5px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.chat-result-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:9px 12px;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .12s}
 .chat-result-row:last-child{border-bottom:none}
-.chat-result-row:hover{background:#fff}
-.chat-result-name{font-weight:700;color:var(--navy);font-size:11px}
-.chat-result-meta{font-size:10px;color:var(--ink-soft);margin-top:1px}
-.chat-result-tag{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;font-size:11px;align-self:center}
-.chat-no-results{font-style:italic;color:var(--ink-soft);padding:10px;text-align:center;background:var(--paper);border-radius:5px;font-size:11px}
-.chat-examples{display:flex;flex-direction:column;gap:5px;margin-top:8px}
-.chat-example{font-size:11px;background:var(--paper);border:1px solid var(--rule);padding:7px 11px;border-radius:14px;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink);transition:all .12s;line-height:1.4}
-.chat-example:hover{background:var(--gold-light);border-color:var(--gold);color:var(--navy)}
-.chat-example::before{content:"› ";color:var(--hf-red);font-weight:800}
-.chat-fallback{background:#FAF3EA;border-left:3px solid var(--warm);padding:8px 10px;border-radius:0 5px 5px 0;font-size:11px;color:var(--ink);line-height:1.4;margin-top:6px}
-.chat-fallback b{color:var(--navy)}
-.chat-input-bar{border-top:1px solid var(--rule);background:#fff;padding:10px 12px;display:flex;gap:8px;flex-shrink:0}
-.chat-input-bar input{flex:1;padding:8px 12px;border:1px solid var(--rule);border-radius:18px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink)}
-.chat-input-bar input:focus{outline:none;border-color:var(--gold);background:#fff}
-.chat-send-btn{background:var(--hf-red);color:#fff;border:none;padding:8px 16px;border-radius:18px;cursor:pointer;font-weight:700;font-family:inherit;font-size:12px;letter-spacing:.3px}
-.chat-send-btn:hover{background:var(--hf-red-deep)}
-.chat-send-btn:disabled{background:var(--rule);cursor:not-allowed;color:var(--ink-soft)}
+.chat-result-row:hover{background:var(--paper)}
+.chat-result-name{font-weight:700;color:var(--ink);font-size:12px;line-height:1.3}
+.chat-result-meta{font-size:10.5px;color:var(--ink-soft);margin-top:2px}
+.chat-result-tag{font-weight:800;color:var(--ink-soft);font-variant-numeric:tabular-nums;font-size:11px;align-self:center;text-transform:uppercase;letter-spacing:.3px}
+.chat-no-results{font-style:italic;color:var(--ink-mute);padding:14px;text-align:center;background:var(--paper);border-radius:6px;font-size:11.5px;border:1px dashed var(--rule)}
+
+/* Suggested query cards — replaces flat button list */
+.chat-suggestions{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.chat-suggest-section{display:flex;flex-direction:column;gap:6px}
+.chat-suggest-label{font-size:9px;letter-spacing:1.6px;color:var(--ink-mute);text-transform:uppercase;font-weight:800;padding:0 2px;align-self:flex-end}
+.chat-suggest-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chat-suggest-card{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start;padding:10px 12px 11px;background:#fff;border:1px solid var(--rule);border-radius:10px;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink);transition:all .14s;line-height:1.3}
+.chat-suggest-card:hover{border-color:var(--hf-red);background:linear-gradient(135deg,#FFFAF6 0%,#FFFDF8 100%);transform:translateY(-1px);box-shadow:0 4px 12px rgba(217,83,79,.1)}
+.chat-suggest-icon{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#FFFFFF 0%,#FCE4E4 70%);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .14s}
+.chat-suggest-card:hover .chat-suggest-icon{background:radial-gradient(circle at 30% 30%,#FFFFFF 0%,#F8C9C4 70%)}
+.chat-suggest-icon svg{width:16px;height:16px;color:var(--hf-red)}
+.chat-suggest-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.chat-suggest-title{font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.3}
+.chat-suggest-sub{font-size:10px;color:var(--ink-mute);font-weight:500;letter-spacing:.1px}
+.chat-fallback{background:#FAF3EA;border-left:3px solid var(--warm);padding:10px 12px;border-radius:0 6px 6px 0;font-size:11.5px;color:var(--ink);line-height:1.45;margin-top:8px}
+.chat-fallback b{color:var(--ink)}
+.chat-fallback code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-size:10.5px}
+
+/* Input bar */
+.chat-input-bar{border-top:1px solid var(--rule);background:#fff;padding:12px 14px 8px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.chat-input-row{display:flex;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:24px;padding:4px 6px 4px 14px;transition:border-color .12s}
+.chat-input-row:focus-within{border-color:var(--hf-red);background:#fff}
+.chat-input-bar input{flex:1;padding:8px 0;border:none;font-size:13px;font-family:inherit;background:transparent;color:var(--ink);outline:none}
+.chat-input-bar input::placeholder{color:var(--ink-mute);font-style:italic}
+.chat-send-btn{background:var(--hf-red);color:#fff;border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-family:inherit;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
+.chat-send-btn:hover{background:var(--hf-red-deep);transform:scale(1.05)}
+.chat-send-btn:disabled{background:var(--rule);cursor:not-allowed;transform:none}
+.chat-send-btn svg{width:14px;height:14px}
+.chat-input-hint{display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:10px;color:var(--ink-mute);font-weight:500}
+.chat-input-hint b{color:var(--ink-soft);font-weight:700}
+.chat-input-hint kbd{font-family:inherit;background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:1px 6px;font-size:9.5px;font-weight:700;color:var(--ink-soft);box-shadow:0 1px 0 var(--rule)}
 
 /* PIPELINE KANBAN */
 .kb-shell{padding:18px 24px 60px;background:var(--off-white);min-height:calc(100vh - 60px)}
@@ -5038,17 +5079,52 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 <!-- Floating help button — re-opens the onboarding tour -->
 <button class="help-fab" id="help-fab" onclick="startOnboarding()" title="Re-open the tour" aria-label="Re-open tour">?</button>
 
-<!-- Chat-with-your-data: floating action button + slide-up panel -->
-<button class="chat-fab" id="chat-fab" onclick="openChat()" title="Ask the platform" aria-label="Open chat">&#x2728;</button>
+<!-- Mira — AI assistant. Floating action button + slide-up panel. -->
+<!-- Avatar SVG: stylized 4-pointed sparkle, gradient-filled. Same glyph
+     reused in the FAB (white-on-navy) and panel header (red-on-pink). -->
+<button class="chat-fab" id="chat-fab" onclick="openChat()" title="Ask Mira — your H-FARM AI assistant" aria-label="Open Mira chat">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M12 2 C12 7.5, 12 7.5, 17 9 C12 10.5, 12 10.5, 12 16 C12 10.5, 12 10.5, 7 9 C12 7.5, 12 7.5, 12 2 Z"
+          fill="currentColor"/>
+    <path d="M19 14 C19 16.5, 19 16.5, 21.5 17 C19 17.5, 19 17.5, 19 20 C19 17.5, 19 17.5, 16.5 17 C19 16.5, 19 16.5, 19 14 Z"
+          fill="currentColor" opacity="0.7"/>
+  </svg>
+</button>
 <aside class="chat-panel" id="chat-panel" aria-hidden="true">
   <div class="chat-head">
-    <div class="chat-title"><span class="chat-spark">&#x2728;</span> Ask the platform <span class="chat-demo-pill">DEMO</span></div>
+    <div class="chat-head-left">
+      <div class="chat-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--hf-red)">
+          <path d="M12 2 C12 7.5, 12 7.5, 17 9 C12 10.5, 12 10.5, 12 16 C12 10.5, 12 10.5, 7 9 C12 7.5, 12 7.5, 12 2 Z"
+                fill="currentColor"/>
+          <path d="M19 14 C19 16.5, 19 16.5, 21.5 17 C19 17.5, 19 17.5, 19 20 C19 17.5, 19 17.5, 16.5 17 C19 16.5, 19 16.5, 19 14 Z"
+                fill="currentColor" opacity="0.7"/>
+        </svg>
+      </div>
+      <div class="chat-head-text">
+        <div class="chat-title">
+          <span class="chat-title-name">Ask Mira</span>
+          <span class="chat-demo-pill">DEMO</span>
+        </div>
+        <div class="chat-scope" id="chat-scope">Loading scope…</div>
+      </div>
+    </div>
     <button class="chat-close" onclick="closeChat()" aria-label="Close chat">&times;</button>
   </div>
   <div class="chat-body" id="chat-body"></div>
   <form class="chat-input-bar" onsubmit="event.preventDefault();chatSendInput()">
-    <input type="text" id="chat-input" placeholder="Ask anything about your partnerships…" autocomplete="off"/>
-    <button type="submit" class="chat-send-btn">Send</button>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Ask Mira anything about your partnerships or sponsors…" autocomplete="off"/>
+      <button type="submit" class="chat-send-btn" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M5 12 L19 12 M13 6 L19 12 L13 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="chat-input-hint">
+      <span>Tip: try <b>"Top sponsors this year"</b> or <b>"Untapped Italian unis"</b></span>
+      <span><kbd>Enter</kbd> to send</span>
+    </div>
   </form>
 </aside>
 
@@ -13032,6 +13108,48 @@ function pitchedSet(programId) {
   return s;
 }
 
+// Inline SVG icons for the suggested-query cards. Monoline strokes,
+// 16x16 viewBox, color via currentColor (CSS owns the hue). Kept as a
+// shared table so adding a new query just references a key.
+const CHAT_QUERY_ICONS = {
+  compass:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+  target:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
+  refresh:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 3 16 3"/><path d="M21 8a9 9 0 1 0-2.7 6.4"/><polyline points="3 16 3 21 8 21"/><path d="M3 16a9 9 0 0 0 2.7-6.4"/></svg>',
+  clock:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+  star:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  sun:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></svg>',
+  envelope: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4 L20 4 Q22 4 22 6 L22 18 Q22 20 20 20 L4 20 Q2 20 2 18 L2 6 Q2 4 4 4 Z"/><polyline points="22 6 12 13 2 6"/></svg>',
+  rocket:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/></svg>',
+};
+
+// Section grouping — the order here determines panel sequence.
+// 'sub' is the descriptive line shown under the title in the card.
+const CHAT_DEMO_CATEGORIES = [
+  {
+    label: "Discover",
+    queries: [
+      { id: "stuck-discovery",   icon: "compass",  sub: "Stalled 30+ days" },
+      { id: "best-startup-fit",  icon: "target",   sub: "Match by track" },
+      { id: "untapped-fashion",  icon: "rocket",   sub: "Top 5 unpitched" },
+    ],
+  },
+  {
+    label: "Re-warm & follow up",
+    queries: [
+      { id: "rewarming-europe",  icon: "refresh",  sub: "Cold-storage 40+" },
+      { id: "not-contacted-6mo", icon: "clock",    sub: "Dormant 180+ days" },
+      { id: "critical-no-email", icon: "envelope", sub: "Missing contact" },
+    ],
+  },
+  {
+    label: "Score & rank",
+    queries: [
+      { id: "top-italy-uni",        icon: "star", sub: "Ranked output" },
+      { id: "engaged-no-proposal",  icon: "sun",  sub: "Conversion gap" },
+    ],
+  },
+];
+
 const CHAT_DEMO_QUERIES = [
   {
     id: "untapped-fashion",
@@ -13138,11 +13256,32 @@ const CHAT_DEMO_QUERIES = [
 function chatInit() {
   if (CHAT_STATE.opened) return;
   CHAT_STATE.opened = true;
+  // Personalized greeting + scope summary. The full intro renders inside
+  // a single bot message that ALSO carries the suggested-query cards.
+  const myName = (typeof getDisplayName === "function" ? (getDisplayName() || "").split(" ")[0] : "") || "there";
+  const sponsorN = (typeof SPONSORS !== "undefined" && Array.isArray(SPONSORS)) ? SPONSORS.length : 0;
+  const greeting = `<div class="chat-greeting">Hi ${escape(myName)} 👋</div>`;
   const intro = AI_ENABLED
-    ? `Ask me anything about your <b>${UNIS.length}</b> partners — I'll surface the ones that matter and explain why. Try a quick query below or type your own.`
-    : `Hi! Pick a query below — each runs a real filter over your <b>${UNIS.length}</b> entities. Free-form questions become live once <code>GEMINI_API_KEY</code> is set in <code>.env</code>.`;
-  CHAT_STATE.history.push({ role: "bot", html: intro, examples: true });
+    ? `I can search and rank across <b>${UNIS.length}</b> partnerships${sponsorN ? ` and <b>${sponsorN}</b> sponsors` : ""} in your tracker — universities, agencies, schools, organisations${sponsorN ? ", and Career Day sponsors" : ""}. Try one of these, or type your own.`
+    : `Pick a query below — each runs a real filter over your <b>${UNIS.length}</b> entities${sponsorN ? ` + <b>${sponsorN}</b> sponsors` : ""}. Free-form questions become live once <code>GEMINI_API_KEY</code> is configured.`;
+  CHAT_STATE.history.push({ role: "bot", html: greeting + intro, examples: true });
   renderChat();
+  _updateChatScope();
+}
+
+// Update the green-dot subtitle under the Mira name with live counts.
+function _updateChatScope() {
+  const el = document.getElementById("chat-scope");
+  if (!el) return;
+  const unisN = (typeof UNIS !== "undefined" && Array.isArray(UNIS)) ? UNIS.length : 0;
+  const sponsorN = (typeof SPONSORS !== "undefined" && Array.isArray(SPONSORS)) ? SPONSORS.length : 0;
+  if (unisN === 0 && sponsorN === 0) {
+    el.textContent = "No data loaded yet";
+  } else if (sponsorN > 0) {
+    el.textContent = `Searches across ${unisN} partners + ${sponsorN} sponsors`;
+  } else {
+    el.textContent = `Searches across all ${unisN} entities`;
+  }
 }
 
 function openChat() {
@@ -13151,6 +13290,9 @@ function openChat() {
   panel.classList.add("open");
   panel.setAttribute("aria-hidden", "false");
   chatInit();
+  // Refresh the scope subtitle each open in case data loaded between
+  // page boot and the user actually opening the chat.
+  if (typeof _updateChatScope === "function") _updateChatScope();
   setTimeout(() => document.getElementById("chat-input")?.focus(), 100);
 }
 function closeChat() {
@@ -13219,7 +13361,7 @@ async function chatSendInput() {
       if (!r.ok) {
         CHAT_STATE.history[idx] = {
           role: "bot",
-          html: `<em>${escape(out.error || "Couldn't reach the assistant.")}</em>`,
+          html: `<em>${escape(out.error || "Couldn't reach Mira.")}</em>`,
           fallback: !!out.error && /key/i.test(out.error),
         };
       } else {
@@ -13236,7 +13378,7 @@ async function chatSendInput() {
     if (idx >= 0) {
       CHAT_STATE.history[idx] = {
         role: "bot",
-        html: `<em>Couldn't reach the assistant — ${escape(e.message)}.</em>`,
+        html: `<em>Couldn't reach Mira — ${escape(e.message)}.</em>`,
       };
     }
   }
@@ -13289,9 +13431,29 @@ function renderChat() {
       }
     }
     if (m.examples) {
-      inner += `<div class="chat-examples">${CHAT_DEMO_QUERIES.map(q =>
-        `<button class="chat-example" type="button" onclick="chatExampleClick('${q.id}')">${escape(q.label)}</button>`
-      ).join("")}</div>`;
+      // Categorized suggestion cards: DISCOVER / RE-WARM / SCORE & RANK.
+      // Each card = icon + title + sub-label. Pulls metadata from
+      // CHAT_DEMO_CATEGORIES and joins with CHAT_DEMO_QUERIES for the
+      // label + run handler.
+      const queryById = Object.fromEntries(CHAT_DEMO_QUERIES.map(q => [q.id, q]));
+      inner += `<div class="chat-suggestions">${CHAT_DEMO_CATEGORIES.map(cat => `
+        <div class="chat-suggest-section">
+          <div class="chat-suggest-label">${escape(cat.label)}</div>
+          <div class="chat-suggest-grid">
+            ${cat.queries.map(c => {
+              const q = queryById[c.id];
+              if (!q) return "";
+              const icon = CHAT_QUERY_ICONS[c.icon] || CHAT_QUERY_ICONS.target;
+              return `<button class="chat-suggest-card" type="button" onclick="chatExampleClick('${escapeAttr(q.id)}')">
+                <div class="chat-suggest-icon">${icon}</div>
+                <div class="chat-suggest-body">
+                  <div class="chat-suggest-title">${escape(q.label)}</div>
+                  ${c.sub ? `<div class="chat-suggest-sub">${escape(c.sub)}</div>` : ''}
+                </div>
+              </button>`;
+            }).join("")}
+          </div>
+        </div>`).join("")}</div>`;
     }
     if (m.fallback) {
       inner += `<div class="chat-fallback"><b>AI is not configured.</b> Set <code>GEMINI_API_KEY</code> in <code>.env</code> and restart Flask. The chat endpoint at <code>POST /api/chat-query</code> is already wired — the moment a key is present, free-form questions start working.</div>`;
