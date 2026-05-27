@@ -5080,14 +5080,23 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 <button class="help-fab" id="help-fab" onclick="startOnboarding()" title="Re-open the tour" aria-label="Re-open tour">?</button>
 
 <!-- Mira — AI assistant. Floating action button + slide-up panel. -->
-<!-- Avatar SVG: stylized 4-pointed sparkle, gradient-filled. Same glyph
-     reused in the FAB (white-on-navy) and panel header (red-on-pink). -->
+<!-- Avatar SVG: cute monoline robot — round-square head, antenna, two
+     dot eyes, gentle smile. Single-color (currentColor) so the SAME
+     glyph reads cleanly in both contexts: white-on-navy FAB and
+     red-on-pink panel-header avatar. Reviewer's note that the prior
+     sparkle wasn't legible drove the redesign. -->
 <button class="chat-fab" id="chat-fab" onclick="openChat()" title="Ask Mira — your H-FARM AI assistant" aria-label="Open Mira chat">
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M12 2 C12 7.5, 12 7.5, 17 9 C12 10.5, 12 10.5, 12 16 C12 10.5, 12 10.5, 7 9 C12 7.5, 12 7.5, 12 2 Z"
-          fill="currentColor"/>
-    <path d="M19 14 C19 16.5, 19 16.5, 21.5 17 C19 17.5, 19 17.5, 19 20 C19 17.5, 19 17.5, 16.5 17 C19 16.5, 19 16.5, 19 14 Z"
-          fill="currentColor" opacity="0.7"/>
+    <!-- Antenna: ball on top + stem dropping into head -->
+    <circle cx="12" cy="3" r="1.3" fill="currentColor"/>
+    <line x1="12" y1="4.3" x2="12" y2="6.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    <!-- Head: rounded square outline -->
+    <rect x="4.5" y="6.3" width="15" height="13.5" rx="4.5" ry="4.5" stroke="currentColor" stroke-width="1.7" fill="none"/>
+    <!-- Eyes: filled dots, generously sized for personality -->
+    <circle cx="9" cy="12" r="1.5" fill="currentColor"/>
+    <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+    <!-- Smile: gentle arc -->
+    <path d="M9 15.6 Q12 17.2 15 15.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
   </svg>
 </button>
 <aside class="chat-panel" id="chat-panel" aria-hidden="true">
@@ -5095,10 +5104,12 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
     <div class="chat-head-left">
       <div class="chat-avatar" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--hf-red)">
-          <path d="M12 2 C12 7.5, 12 7.5, 17 9 C12 10.5, 12 10.5, 12 16 C12 10.5, 12 10.5, 7 9 C12 7.5, 12 7.5, 12 2 Z"
-                fill="currentColor"/>
-          <path d="M19 14 C19 16.5, 19 16.5, 21.5 17 C19 17.5, 19 17.5, 19 20 C19 17.5, 19 17.5, 16.5 17 C19 16.5, 19 16.5, 19 14 Z"
-                fill="currentColor" opacity="0.7"/>
+          <circle cx="12" cy="3" r="1.3" fill="currentColor"/>
+          <line x1="12" y1="4.3" x2="12" y2="6.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <rect x="4.5" y="6.3" width="15" height="13.5" rx="4.5" ry="4.5" stroke="currentColor" stroke-width="1.7" fill="none"/>
+          <circle cx="9" cy="12" r="1.5" fill="currentColor"/>
+          <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+          <path d="M9 15.6 Q12 17.2 15 15.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
         </svg>
       </div>
       <div class="chat-head-text">
