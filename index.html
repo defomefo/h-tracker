@@ -563,8 +563,16 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
    PARTNER HEALTH TRAJECTORY — sparkline + velocity arrow.
    Used in detail panel, database rows, and home briefing.
    ============================================================ */
-.spark{display:inline-block;vertical-align:middle}
+.spark{display:inline-block;vertical-align:middle;overflow:visible}
 .spark-empty{opacity:.6}
+/* Per-bar hover: invisible hit-target rect covers the bar's full height
+   so even tiny zero-month bars can be hovered. CSS-only label reveal —
+   instant feedback, no JS event delegation needed. */
+.spark .spark-bar{cursor:default}
+.spark .spark-bar-hit{cursor:default}
+.spark .spark-bar-lbl{font-size:8px;font-weight:800;fill:var(--ink);font-variant-numeric:tabular-nums;opacity:0;transition:opacity 80ms;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:2px;stroke-linejoin:round}
+.spark .spark-bar:hover .spark-bar-lbl{opacity:1}
+.spark .spark-bar:hover rect:first-child{fill-opacity:.65}
 .trj-vel{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:9px;font-variant-numeric:tabular-nums;vertical-align:middle;white-space:nowrap}
 /* Detail panel: bigger trajectory card under metrics */
 .dp-trajectory{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:10px 14px 11px;margin:0 0 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
@@ -593,6 +601,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .rh-stat.rh-pos b{color:#1F6E48}
 .rh-stat.rh-warn b{color:#C97A1A}
 .rh-stat.rh-bad b{color:#B0322E}
+/* Actionable recommendation — what to actually do next, color-matched
+   to the verdict severity. Replaces "Healthy" label-only verdicts with
+   real cadence advice. */
+.rh-rec{font-size:11.5px;line-height:1.5;color:var(--ink);margin-top:6px;padding:8px 10px;background:var(--paper);border-left:2px solid var(--rule);border-radius:0 4px 4px 0}
 /* Home briefing cooling cluster */
 .briefing-cooling{color:var(--crit);font-weight:800}
 
@@ -2310,9 +2322,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .asp-modal-close{position:absolute;top:14px;right:14px;background:transparent;border:none;font-size:24px;color:var(--ink-mute);cursor:pointer;padding:4px 10px;border-radius:5px;line-height:1;font-family:inherit;transition:all .12s}
 .asp-modal-close:hover{background:rgba(0,0,0,.06);color:var(--ink)}
 .asp-modal-body{padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:18px}
-/* Mini-map showing current → target position */
-.asp-minimap{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:16px}
-.asp-minimap-svg{background:#FBF8F2;border:1px solid var(--rule);border-radius:5px;width:200px;height:200px}
+/* Mini-map showing current → target position. Bumped from 200→280 so
+   quadrant labels + axis end labels are actually readable. */
+.asp-minimap{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.asp-minimap-svg{background:#FBF8F2;border:1px solid var(--rule);border-radius:5px;width:280px;height:280px}
 .asp-minimap-meta{display:flex;flex-direction:column;gap:8px}
 .asp-minimap-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft)}
 .asp-minimap-row b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
@@ -16456,12 +16469,22 @@ function renderActivityPulseSparkline(entityId, opts) {
   const padY = 2;
   const bars = series.map((b, i) => {
     const x = i * barW + gap / 2;
+    const barInnerW = barW - gap;
     // Empty month → thin baseline tick so the timeline reads continuously
     const hRaw = (b.count / maxCount) * (h - padY * 2);
     const barH = b.count === 0 ? 1.5 : Math.max(2, hRaw);
     const y = h - padY - barH;
     const opacity = b.count === 0 ? 0.25 : 1;
-    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW - gap).toFixed(1)}" height="${barH.toFixed(1)}" fill="${color}" fill-opacity="${opacity}" rx="1"><title>${escape(b.label)}: ${b.count} outreach</title></rect>`;
+    // Each bar is a <g> with a rect + an invisible-by-default count label
+    // that appears on hover via CSS (.spark-bar:hover .spark-bar-lbl).
+    // Native <title> kept as a fallback for screen readers + slow browsers.
+    const labelX = x + barInnerW / 2;
+    return `<g class="spark-bar">
+      <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barInnerW.toFixed(1)}" height="${barH.toFixed(1)}" fill="${color}" fill-opacity="${opacity}" rx="1"/>
+      <rect class="spark-bar-hit" x="${x.toFixed(1)}" y="0" width="${barInnerW.toFixed(1)}" height="${h}" fill="transparent"/>
+      <text class="spark-bar-lbl" x="${labelX.toFixed(1)}" y="${(y - 3).toFixed(1)}" text-anchor="middle">${b.count}</text>
+      <title>${escape(b.label)}: ${b.count} outreach</title>
+    </g>`;
   }).join("");
   return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Activity pulse — ${v.label}">${bars}</svg>`;
 }
@@ -16481,16 +16504,37 @@ function renderReplyHealthCard(entityId) {
   if (r.sent === 0) {
     return `<div class="rh-card rh-empty">
       <div class="rh-head"><span class="rh-label">Reply health · 60 days</span></div>
-      <div class="rh-empty-msg">No outreach sent in the last 60 days.</div>
+      <div class="rh-empty-msg">No outreach sent in the last 60 days. Open <b>+ Log outreach</b> below to start the conversation.</div>
     </div>`;
   }
-  // Severity classification — drives the card's left border color
+  // Severity + verdict + ACTIONABLE recommendation. The old card just
+  // labeled the situation ("Healthy"); now it tells you what to do next.
+  // sev drives the left-border color; rec is the operator's next step.
   const sev = r.ghosting ? "danger" : r.weak_reply ? "warn" : (r.reply_rate >= 40 ? "good" : "neutral");
   const sevColor = sev === "danger" ? "#B0322E" : sev === "warn" ? "#C97A1A" : sev === "good" ? "#1F6E48" : "var(--ink-soft)";
-  const verdict = r.ghosting ? `⚠ Ghosting — ${r.sent} sent, 0 replies`
-                : r.weak_reply ? `⚠ Weak reply rate — ${r.reply_rate}%`
-                : r.reply_rate >= 40 ? `Healthy reply rate · ${r.reply_rate}%`
-                : `${r.reply_rate}% reply rate`;
+  // Days since last reply (if any) — drives the "send next" cadence advice
+  const daysSinceReply = r.lastReplyDate ? Math.floor((Date.now() - r.lastReplyDate) / 86400000) : null;
+  let verdict, rec;
+  if (r.ghosting) {
+    verdict = `⚠ Ghosting · ${r.sent} sent, 0 replies`;
+    rec = "Pause cold sequence — switch channel (LinkedIn intro, in-person at event) or escalate to a senior contact. More email = more silence.";
+  } else if (r.weak_reply) {
+    verdict = `⚠ Weak reply rate · ${r.reply_rate}%`;
+    rec = `Only ${r.replied}/${r.sent} replied. Rewrite subject + opening, or find a warmer contact in the org.`;
+  } else if (r.reply_rate >= 60) {
+    verdict = `Strong reply rate · ${r.reply_rate}%`;
+    rec = daysSinceReply !== null && daysSinceReply > 21
+      ? `Last reply was ${daysSinceReply}d ago — send follow-up to maintain momentum.`
+      : "Channel is open — keep cadence and propose a concrete next step.";
+  } else if (r.reply_rate >= 40) {
+    verdict = `Healthy reply rate · ${r.reply_rate}%`;
+    rec = daysSinceReply !== null && daysSinceReply > 21
+      ? `Last reply ${daysSinceReply}d ago — re-engage before it cools.`
+      : "Cadence is working — continue and surface a programme fit.";
+  } else {
+    verdict = `${r.reply_rate}% reply rate`;
+    rec = `${r.no_reply} sent message${r.no_reply === 1 ? '' : 's'} sat 14+ days without reply. Send a short bump email or change angle.`;
+  }
   return `<div class="rh-card" style="border-left-color:${sevColor}">
     <div class="rh-head">
       <span class="rh-label">Reply health · 60 days</span>
@@ -16502,6 +16546,7 @@ function renderReplyHealthCard(entityId) {
       <span class="rh-stat ${r.no_reply > 0 ? 'rh-warn' : ''}"><b>${r.no_reply}</b> <small>14d no reply</small></span>
       ${r.bounced > 0 ? `<span class="rh-stat rh-bad"><b>${r.bounced}</b> <small>bounced</small></span>` : ''}
     </div>
+    <div class="rh-rec" style="border-left-color:${sevColor}">${escape(rec)}</div>
   </div>`;
 }
 
@@ -16888,30 +16933,59 @@ function _renderAspirationModal() {
     return;
   }
 
-  // Mini-map SVG — 200×200, shows the 2×2 grid + current dot + target dot + arrow
-  const miniW = 200, miniH = 200, miniPad = 14;
+  // Mini-map SVG — 280×280 (was 200, bumped per reviewer to make the
+  // labels actually readable). Shows the 2×2 grid + quadrant names +
+  // axis end labels + current dot + target reticle + arrow.
+  const miniW = 280, miniH = 280, miniPad = 28;
   const innerW = miniW - miniPad*2, innerH = miniH - miniPad*2;
   const cx1 = miniPad + (o.current_x / 100) * innerW;
   const cy1 = miniPad + (1 - o.current_y / 100) * innerH;
   const cx2 = miniPad + (o.target_x / 100) * innerW;
   const cy2 = miniPad + (1 - o.target_y / 100) * innerH;
   const ddx = cx2 - cx1, ddy = cy2 - cy1, ddist = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
-  const ahx = cx2 - (ddx/ddist) * 6, ahy = cy2 - (ddy/ddist) * 6;
+  const ahx = cx2 - (ddx/ddist) * 7, ahy = cy2 - (ddy/ddist) * 7;
   const ux = ddx/ddist, uy = ddy/ddist;
-  const aL1x = ahx - ux*7 + uy*4, aL1y = ahy - uy*7 - ux*4;
-  const aL2x = ahx - ux*7 - uy*4, aL2y = ahy - uy*7 + ux*4;
+  const aL1x = ahx - ux*8 + uy*5, aL1y = ahy - uy*8 - ux*5;
+  const aL2x = ahx - ux*8 - uy*5, aL2y = ahy - uy*8 + ux*5;
+  // Hero quadrant gets the strong tint, ignore the muted ignore tint
+  const heroQ = ASPIRATION_HERO_CELL[o.axisKey];
+  const ignoreQ = ASPIRATION_IGNORE_CELL[o.axisKey];
+  const quadFill = (q) => q === heroQ ? "rgba(31,110,72,.12)" :
+                          q === ignoreQ ? "rgba(176,50,46,.06)" :
+                          "rgba(122,82,21,.04)";
+  const quadTextColor = (q) => q === heroQ ? "#1F6E48" :
+                                q === ignoreQ ? "#B0322E" :
+                                "var(--ink-soft)";
+  // Quadrant label positions (centered in each quadrant)
+  const halfW = innerW/2, halfH = innerH/2;
+  const qPos = {
+    tl: { x: miniPad + halfW/2,           y: miniPad + halfH/2 },
+    tr: { x: miniPad + halfW + halfW/2,   y: miniPad + halfH/2 },
+    bl: { x: miniPad + halfW/2,           y: miniPad + halfH + halfH/2 },
+    br: { x: miniPad + halfW + halfW/2,   y: miniPad + halfH + halfH/2 },
+  };
+  const quadLabels = ["tl", "tr", "bl", "br"].map(q => {
+    const label = ({ tl: ax.tl, tr: ax.tr, bl: ax.bl, br: ax.br })[q] || q;
+    const pos = qPos[q];
+    const fontWeight = q === heroQ ? "800" : "700";
+    return `<text x="${pos.x}" y="${pos.y}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="${fontWeight}" fill="${quadTextColor(q)}" style="text-transform:uppercase;letter-spacing:.4px;pointer-events:none">${escape(label)}</text>`;
+  }).join("");
   const minimapSvg = `
     <svg class="asp-minimap-svg" viewBox="0 0 ${miniW} ${miniH}">
-      <rect x="${miniPad}" y="${miniPad}" width="${innerW/2}" height="${innerH/2}" fill="rgba(31,111,180,.06)"/>
-      <rect x="${miniPad + innerW/2}" y="${miniPad}" width="${innerW/2}" height="${innerH/2}" fill="rgba(217,83,79,.06)"/>
-      <rect x="${miniPad}" y="${miniPad + innerH/2}" width="${innerW/2}" height="${innerH/2}" fill="rgba(31,110,72,.06)"/>
-      <rect x="${miniPad + innerW/2}" y="${miniPad + innerH/2}" width="${innerW/2}" height="${innerH/2}" fill="rgba(122,82,21,.06)"/>
-      <line x1="${miniPad + innerW/2}" y1="${miniPad}" x2="${miniPad + innerW/2}" y2="${miniPad + innerH}" stroke="#ccc" stroke-dasharray="3,3"/>
-      <line x1="${miniPad}" y1="${miniPad + innerH/2}" x2="${miniPad + innerW}" y2="${miniPad + innerH/2}" stroke="#ccc" stroke-dasharray="3,3"/>
-      ${ddist > 4 ? `<line x1="${cx1.toFixed(1)}" y1="${cy1.toFixed(1)}" x2="${cx2.toFixed(1)}" y2="${cy2.toFixed(1)}" stroke="${feasMeta.color}" stroke-width="2" stroke-dasharray="4,3"/>
+      <rect x="${miniPad}" y="${miniPad}" width="${halfW}" height="${halfH}" fill="${quadFill('tl')}"/>
+      <rect x="${miniPad + halfW}" y="${miniPad}" width="${halfW}" height="${halfH}" fill="${quadFill('tr')}"/>
+      <rect x="${miniPad}" y="${miniPad + halfH}" width="${halfW}" height="${halfH}" fill="${quadFill('bl')}"/>
+      <rect x="${miniPad + halfW}" y="${miniPad + halfH}" width="${halfW}" height="${halfH}" fill="${quadFill('br')}"/>
+      <line x1="${miniPad + halfW}" y1="${miniPad}" x2="${miniPad + halfW}" y2="${miniPad + innerH}" stroke="#ccc" stroke-dasharray="3,3"/>
+      <line x1="${miniPad}" y1="${miniPad + halfH}" x2="${miniPad + innerW}" y2="${miniPad + halfH}" stroke="#ccc" stroke-dasharray="3,3"/>
+      ${quadLabels}
+      <!-- Axis end labels around the chart so user knows orientation -->
+      <text x="${miniPad - 6}" y="${miniPad + innerH/2}" text-anchor="end" dominant-baseline="middle" font-size="8" fill="var(--ink-mute)" font-weight="700" style="text-transform:uppercase;letter-spacing:.6px">↑ ${escape(ax.yLabel)}</text>
+      <text x="${miniPad + innerW/2}" y="${miniPad + innerH + 14}" text-anchor="middle" font-size="8" fill="var(--ink-mute)" font-weight="700" style="text-transform:uppercase;letter-spacing:.6px">${escape(ax.xLabel)} →</text>
+      ${ddist > 4 ? `<line x1="${cx1.toFixed(1)}" y1="${cy1.toFixed(1)}" x2="${cx2.toFixed(1)}" y2="${cy2.toFixed(1)}" stroke="${feasMeta.color}" stroke-width="2.5" stroke-dasharray="5,3"/>
       <polygon points="${ahx.toFixed(1)},${ahy.toFixed(1)} ${aL1x.toFixed(1)},${aL1y.toFixed(1)} ${aL2x.toFixed(1)},${aL2y.toFixed(1)}" fill="${feasMeta.color}"/>` : ''}
-      <circle cx="${cx1.toFixed(1)}" cy="${cy1.toFixed(1)}" r="7" fill="#1A1A1A" stroke="#fff" stroke-width="2"/>
-      <circle cx="${cx2.toFixed(1)}" cy="${cy2.toFixed(1)}" r="9" fill="none" stroke="${feasMeta.color}" stroke-width="2.5" stroke-dasharray="3,3"/>
+      <circle cx="${cx1.toFixed(1)}" cy="${cy1.toFixed(1)}" r="8" fill="#1A1A1A" stroke="#fff" stroke-width="2.5"/>
+      <circle cx="${cx2.toFixed(1)}" cy="${cy2.toFixed(1)}" r="11" fill="none" stroke="${feasMeta.color}" stroke-width="2.5" stroke-dasharray="3,3"/>
       <circle cx="${cx2.toFixed(1)}" cy="${cy2.toFixed(1)}" r="3" fill="${feasMeta.color}"/>
     </svg>`;
 
@@ -19028,7 +19102,11 @@ function renderDatabaseView() {
     strategic: scoped.filter(_DB_SAVED_VIEWS.strategic).length,
     unowned:  scoped.filter(_DB_SAVED_VIEWS.unowned).length,
   };
-  // Sort same as before — DB_SORT is the single source of truth
+  // Sort same as before — DB_SORT is the single source of truth.
+  // Activity sort: composite key (recent 30d outreach count * 1000 + delta
+  // vs prior 30d). Descending = most active + warming first; ascending =
+  // coldest/most-ghosted first. Designed so "sort desc" surfaces your
+  // healthiest partners and "sort asc" surfaces who needs attention.
   const sorted = filtered.slice().sort((a, b) => {
     const dir = DB_SORT.dir === "desc" ? -1 : 1;
     const getter = {
@@ -19041,6 +19119,14 @@ function renderDatabaseView() {
       score:    u => u.partnership_score,
       dormant:  u => u.days_dormant ?? 9999,
       lc:       u => u.last_contacted || "",
+      activity: u => {
+        if (typeof activityVelocity !== "function") return 0;
+        const v = activityVelocity(u.id);
+        // composite key:
+        //   recent_count * 1000 — primary signal (volume)
+        //   + delta         — tiebreaker (warming vs cooling within same volume)
+        return (v.recent || 0) * 1000 + (v.delta || 0);
+      },
     }[DB_SORT.col] || (u => 0);
     const va = getter(a), vb = getter(b);
     if (va < vb) return -1 * dir;
@@ -19173,7 +19259,7 @@ function renderDatabaseView() {
       ${dbSortHead("priority", "Priority")}
       ${dbSortHead("strategic", "Strategic")}
       ${dbSortHead("score", "Score", { right: true })}
-      <th title="6-month outreach activity · last 30d vs prior 30d · ↑ re-engaging, ↓ cooling">Activity</th>
+      ${dbSortHead("activity", "Activity")}
       ${dbSortHead("dormant", "Dormant", { right: true })}
       ${dbSortHead("lc", "Last contacted", { right: true })}
       <th>Owner</th>
@@ -19237,7 +19323,12 @@ function dbNewEntityComingSoon() {
 }
 function dbSort(col) {
   if (DB_SORT.col === col) DB_SORT.dir = DB_SORT.dir === "desc" ? "asc" : "desc";
-  else { DB_SORT.col = col; DB_SORT.dir = ["score","dormant"].includes(col) ? "desc" : "asc"; }
+  // Default direction per column: numeric columns descend (highest first);
+  // dormant/activity also descend so the most-engaged surfaces first on
+  // first click (you usually want "who's busiest?" not "who's quietest?").
+  // ASC on activity surfaces ghosting/cooling partners — same column,
+  // opposite sort, two distinct workflows.
+  else { DB_SORT.col = col; DB_SORT.dir = ["score","dormant","activity"].includes(col) ? "desc" : "asc"; }
   renderDatabaseView();
 }
 function exportDbCsv() {
