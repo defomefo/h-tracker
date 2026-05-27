@@ -2629,7 +2629,13 @@ def sponsors_import():
             existing = db.execute("SELECT 1 FROM sponsors WHERE id = ?", (sid,)).fetchone()
             payload = (
                 sid, event_year, "Career Day", company, normalized,
-                (r.get("area_tematica") or r.get("industry_sector") or "").strip() or None,
+                # Accept any of: area_tematica (canonical Italian source),
+                # industry_sector (cleaned column name), Industry, industry,
+                # Sector, sector (common user-added column variants).
+                (r.get("area_tematica") or r.get("industry_sector")
+                 or r.get("Industry") or r.get("industry")
+                 or r.get("Sector") or r.get("sector")
+                 or "").strip() or None,
                 (r.get("sponsorship_tier") or "").strip() or None,
                 _int(r.get("value_no_iva_eur") or r.get("value_no_iva")),
                 _int(r.get("value_with_iva_eur")),
