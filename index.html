@@ -8493,10 +8493,140 @@ function _pkgSparkleBurst(originEl) {
 
 // ---- Live fit + revenue analysis -------------------------------------------
 
+// ----------------------------------------------------------------------------
+// SECTOR_EXPANSIONS — bucket label → expanded keyword list.
+// Operators typically write short bucket labels in the Sheet's Industry
+// column ("Finance, Banking & Insurance") instead of the long keyword
+// lists the matcher wants ("finance banking insurance insurtech wealth
+// management financial services audit"). This map auto-expands the
+// bucket before matching so the UI stays clean AND the matcher gets
+// rich signal. Lowercased, substring-matched against the bucket text.
+// ----------------------------------------------------------------------------
+const SECTOR_EXPANSIONS = {
+  "technology & consulting":     "technology tech ICT it services software engineering cloud computing digital transformation IT infrastructure platform integration",
+  "finance, banking & insurance":"finance banking insurance financial services insurtech wealth management audit risk management capital markets fintech",
+  "marketing & communication":   "marketing communication advertising branding PR media martech adtech creative content campaign customer experience",
+  "manufacturing & innovation":  "manufacturing industrial engineering production automation industry 4.0 supply chain operations process innovation",
+  "fashion & lifestyle":         "fashion apparel luxury premium lifestyle made in italy design consumer goods retail",
+  "food & beverage":             "food beverage FMCG consumer goods made in italy hospitality",
+  "consulting":                  "consulting advisory professional services strategy transformation",
+  "education":                   "education learning training development academy",
+};
+
+// ----------------------------------------------------------------------------
+// KNOWN_COMPANY_KEYWORDS — for major sponsors whose specialty isn't fully
+// captured by their bucket label (e.g. EY is in "Finance, Banking &
+// Insurance" but their core 2026 specialty is AI consulting + audit).
+// Adds keywords to the matcher blob so well-known brands match the
+// programs that actually fit their strategic positioning.
+// Match is on normalized company name (lowercase, alphanumeric).
+// ----------------------------------------------------------------------------
+const KNOWN_COMPANY_KEYWORDS = {
+  // Big 4 / consulting — heavy AI investments, audit + advisory
+  "ey":               "consulting advisory audit big 4 AI strategy AI consulting generative AI EY.ai professional services M&A transformation",
+  "ernst young":      "consulting advisory audit big 4 AI strategy AI consulting generative AI",
+  "pwc":              "consulting advisory audit big 4 AI strategy professional services transformation",
+  "kpmg":             "consulting advisory audit big 4 AI strategy professional services",
+  "protiviti":        "consulting advisory risk management AI transformation",
+  // ICT / networking giants
+  "cisco":            "ICT networking IoT industrial IoT IIoT edge computing AI cybersecurity wireless security IT/OT AI-ready infrastructure",
+  "cisco italy":      "ICT networking IoT industrial IoT IIoT edge computing AI cybersecurity wireless security",
+  "vodafone":         "telecommunications 5G connectivity digital services IoT cloud edge",
+  "agic":             "technology consulting cloud Microsoft IT services digital transformation",
+  // Martech / AI
+  "jakala":           "martech adtech data AI customer experience generative AI loyalty engagement Salesforce",
+  "akqa":             "digital agency creative marketing brand experience advertising",
+  "h-farm ai":        "AI EdTech innovation generative AI",
+  // Insurance / FinServ
+  "allianz":          "insurance financial services InsurTech AI transformation agentic AI responsible AI risk management wealth management",
+  "allianz bank financial advisors": "insurance financial services wealth management InsurTech AI",
+  "generali":         "insurance financial services InsurTech risk management",
+  // Banking
+  "banca ifis":       "banking financial services specialty finance",
+  "sella":            "banking FinTech financial services",
+  "cherry bank":      "banking FinTech financial services",
+  "gruppo bcc iccrea":"banking cooperative credit financial services",
+  // Industrial / Manufacturing
+  "danieli":          "steel industrial engineering manufacturing automation",
+  "carraro":          "industrial automotive engineering drivetrain manufacturing",
+  "scm group":        "industrial machinery woodworking manufacturing",
+  "sicon":            "power electronics energy storage industrial tech",
+  "socomec":          "power electronics energy storage industrial tech",
+  "stiga":            "outdoor power equipment manufacturing",
+  "irinox":           "refrigeration food tech industrial appliances",
+  "simeon":           "industrial manufacturing AI transformation",
+  // Consumer / Lifestyle / Made in Italy
+  "de'longhi":        "consumer appliances premium lifestyle coffee made in italy design brand storytelling",
+  "delonghi":         "consumer appliances premium lifestyle coffee made in italy",
+  "hugo boss":        "fashion luxury apparel premium brand",
+  "moncler":          "luxury fashion outerwear premium brand made in italy",
+  "diadora":          "sportswear footwear lifestyle made in italy",
+  "autry":            "fashion footwear sneakers premium brand",
+  "tecnica":          "sportswear outdoor footwear made in italy",
+  "ovs":              "fashion retail apparel consumer goods",
+  "thélios":          "luxury eyewear made in italy LVMH",
+  "thelios":          "luxury eyewear made in italy LVMH",
+  "varaschin":        "outdoor furniture design made in italy",
+  "pettenon":         "cosmetics beauty consumer goods made in italy",
+  "ferrero":          "food confectionery FMCG consumer goods made in italy",
+  "bauli":            "food bakery FMCG made in italy",
+  "fiorital":         "food seafood distribution",
+  "gottardo":         "retail drugstore consumer goods",
+  // Automotive
+  "volkswagen":       "automotive manufacturing mobility",
+  // Marketing / Creative
+  "shado":            "media production content brand storytelling",
+  "ottozerouno":      "marketing branding creative agency",
+  "storeis":          "retail tech visual merchandising brand activation",
+  "pixartprinting":   "printing digital manufacturing e-commerce",
+  // Public / Aerospace
+  "infocamere":       "govtech digital identity public sector data services",
+  "european space agency": "aerospace research space tech engineering",
+  "italian exhibition group": "events exhibitions hospitality",
+  // Construction
+  "fassa bortolo":    "construction materials manufacturing sustainability",
+  "san marco":        "paints coatings industrial chemicals",
+  // Other
+  "let's co":         "coworking real estate business services",
+  "lets co":          "coworking real estate business services",
+  "bios management":  "consulting healthcare management advisory",
+};
+
+// Build the keyword-rich blob for one sponsor by combining (a) their
+// raw fields, (b) sector bucket expansion, (c) known-company keyword
+// injection. The result is what _pkgSponsorProgramFit matches against.
+function _pkgSponsorBlob(sponsor) {
+  const name      = String(sponsor.company_name || "").toLowerCase().trim();
+  const sector    = String(sponsor.industry_sector || "").toLowerCase().trim();
+  const notes     = String(sponsor.notes || "").toLowerCase().trim();
+  // Sector bucket expansion: for each known bucket key found as a
+  // substring in the sector field, append its expanded keywords.
+  let sectorExpanded = sector;
+  for (const [bucket, expanded] of Object.entries(SECTOR_EXPANSIONS)) {
+    if (sector.includes(bucket)) sectorExpanded += " " + expanded;
+  }
+  // Known-company override: normalize the name and look it up.
+  const normName = name.replace(/[^a-z0-9' ]/g, "").replace(/\s+/g, " ").trim();
+  let companyExpanded = "";
+  // Exact match first
+  if (KNOWN_COMPANY_KEYWORDS[normName]) {
+    companyExpanded = " " + KNOWN_COMPANY_KEYWORDS[normName];
+  } else {
+    // Substring match — pick the first key that appears IN the normalized name.
+    // Handles cases like "Cisco Italy" → matches "cisco italy" first, then
+    // "cisco" if specific isn't there.
+    for (const key of Object.keys(KNOWN_COMPANY_KEYWORDS)) {
+      if (normName.includes(key)) { companyExpanded = " " + KNOWN_COMPANY_KEYWORDS[key]; break; }
+    }
+  }
+  return (name + " " + sectorExpanded + " " + notes + companyExpanded).toLowerCase();
+}
+
 // Compute keyword fit between this sponsor and ONE programme. Uses the
 // same primary +25 / secondary +5 engine as parseEntityRow, but feeds it
-// the sponsor's name + industry_sector + notes (sponsors aren't in UNIS
-// so they don't carry program_matches pre-computed).
+// the sponsor's name + EXPANDED industry_sector + notes + known-company
+// keywords (sponsors aren't in UNIS so they don't carry program_matches
+// pre-computed).
 //
 // Returns { score, primary_hits, secondary_hits, primary_matched,
 // secondary_matched } — we keep the actual matched-keyword arrays so
@@ -8505,11 +8635,7 @@ function _pkgSparkleBurst(originEl) {
 // can see the evidence behind the algorithm and override it with
 // judgment when the keyword surface misses context.
 function _pkgSponsorProgramFit(sponsor, prog) {
-  const blob = [
-    sponsor.company_name || "",
-    sponsor.industry_sector || "",
-    sponsor.notes || "",
-  ].join(" ").toLowerCase();
+  const blob = _pkgSponsorBlob(sponsor);
   const primary_matched = [];
   const secondary_matched = [];
   (prog.primary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) primary_matched.push(kw); });
