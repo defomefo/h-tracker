@@ -13317,6 +13317,32 @@ function chatExampleClick(qid) {
   const q = CHAT_DEMO_QUERIES.find(x => x.id === qid);
   if (q) chatRunQuery(q, q.label);
 }
+// Short conversational filler — "thanks", "ok", "perfect" etc. — that
+// shouldn't trigger a Gemini round-trip + re-search. Without this gate,
+// saying "thank you" to Mira re-runs the previous query (Gemini sees
+// the recent history, thinks the topic is still active, and dumps the
+// last result list again). Multi-language since operators may be Turkish-
+// speaking. Matched on lowercased, trimmed input; exact match only so
+// "thanks for the list of Italian unis" still goes to Gemini.
+const _CHAT_ACK_PHRASES = new Set([
+  // English
+  "thanks", "thank you", "thanks!", "thank you!", "thx", "ty", "tysm",
+  "ok", "okay", "k", "kk", "got it", "gotcha", "alright",
+  "perfect", "great", "awesome", "nice", "cool", "amazing", "excellent",
+  "good", "fine",
+  // Turkish
+  "teşekkürler", "tesekkurler", "teşekkür ederim", "tesekkur ederim",
+  "sağol", "sagol", "sağ ol", "sag ol", "eyvallah",
+  "tamam", "tmm", "ok tamam", "anladım", "anladim",
+  "süper", "super", "harika", "mükemmel", "mukemmel", "güzel", "guzel",
+]);
+const _CHAT_ACK_REPLIES = [
+  "You're welcome — what else?",
+  "Glad it helped. Another query?",
+  "Anytime. Anything else you'd like to dig into?",
+  "Happy to help. Try another card or type a new question.",
+];
+
 async function chatSendInput() {
   const input = document.getElementById("chat-input");
   const text = input.value.trim();
@@ -13325,6 +13351,18 @@ async function chatSendInput() {
 
   // Render user turn + typing placeholder immediately
   CHAT_STATE.history.push({ role: "user", html: escape(text), text });
+
+  // Short-circuit: pure acknowledgments get a canned 1-line reply
+  // without re-hitting the API. Saves a Gemini call AND prevents the
+  // "thanks → re-runs last query" regression.
+  const normalized = text.toLowerCase().replace(/[!.?,;]+$/, "").trim();
+  if (_CHAT_ACK_PHRASES.has(normalized)) {
+    const reply = _CHAT_ACK_REPLIES[Math.floor(Math.random() * _CHAT_ACK_REPLIES.length)];
+    CHAT_STATE.history.push({ role: "bot", html: escape(reply) });
+    renderChat();
+    return;
+  }
+
   const pending = { role: "bot", html: "<em>Thinking…</em>", pending: true };
   CHAT_STATE.history.push(pending);
   renderChat();

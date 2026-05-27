@@ -4755,6 +4755,7 @@ CRITICAL CONCEPTS — read carefully before answering:
    - Only include them if the user EXPLICITLY asks about internal/in-house entities.
 
 Rules:
+- CONVERSATIONAL FILLER: if the current question is a pure acknowledgment with no actual data request ('thanks', 'thank you', 'ok', 'got it', 'perfect', 'great', 'awesome', 'cool', 'teşekkürler', 'sağol', 'tamam', 'süper', 'harika', or close variants), reply with a brief one-line acknowledgment ('Happy to help — what else?' / 'Anytime. Another query?') and return EMPTY entity_ids AND EMPTY sponsor_ids. DO NOT re-run the previous search or list anything. The frontend has a short-circuit for the common cases but this rule is the backup.
 - The `intro` field: 1-3 short sentences in plain English. ANSWER the user's actual question — don't just describe the row. If they ask "top 3 sponsors" rank by value_no_iva_eur desc and name them. If they ask for a contact, give name + email. If they ask for unsigned contracts, list which ones. No hedging, no "I would suggest", no "Based on the data".
 - The `entity_ids` array: IDs from the ENTITY (partnership) dataset that match.
 - The `sponsor_ids` array: IDs from the SPONSOR dataset that match. Use this when the question is clearly about sponsors ("top sponsors", "who paid for Career Day", "which sponsor", "Gold tier", etc.).
