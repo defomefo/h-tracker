@@ -8597,10 +8597,30 @@ const KNOWN_COMPANY_KEYWORDS = {
 // 2-3 meaningful keywords and prettifies them. Used by the sponsor table
 // + detail modal as a fallback display so blank Industry cells in the
 // Sheet don't show as "—" for well-known brands.
+// Normalize a company name for KNOWN_COMPANY_KEYWORDS lookup:
+//   1. Lowercase
+//   2. Strip diacritics ("Thélios" → "thelios", "Université" → "universite")
+//      via Unicode NFD decomposition + combining-mark removal. WITHOUT this
+//      step "thélios" stayed as "thelios" with the é literally stripped to
+//      nothing → "thlios" → no match. Critical for any accented brand.
+//   3. Drop everything except letters/digits/apostrophe/space
+//   4. Collapse whitespace
+function _normalizeCompanyName(name) {
+  return String(name || "")
+    .toLowerCase()
+    // NFD decomposes "é" → "e" + U+0301 (combining acute). We then strip
+    // the combining marks (U+0300..U+036F) so "thélios" becomes "thelios".
+    // Without this, "thélios".replace(/[^a-z0-9' ]/g, "") drops the é
+    // entirely → "thlios" → no match against KNOWN_COMPANY_KEYWORDS.
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9' ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function _sponsorDerivedSector(sponsor) {
   if (!sponsor || !sponsor.company_name) return "";
-  const normName = String(sponsor.company_name).toLowerCase()
-    .replace(/[^a-z0-9' ]/g, "").replace(/\s+/g, " ").trim();
+  const normName = _normalizeCompanyName(sponsor.company_name);
   if (!normName) return "";
   // Find a matching key (exact first, then substring)
   let kw = KNOWN_COMPANY_KEYWORDS[normName];
@@ -8631,8 +8651,9 @@ function _pkgSponsorBlob(sponsor) {
   for (const [bucket, expanded] of Object.entries(SECTOR_EXPANSIONS)) {
     if (sector.includes(bucket)) sectorExpanded += " " + expanded;
   }
-  // Known-company override: normalize the name and look it up.
-  const normName = name.replace(/[^a-z0-9' ]/g, "").replace(/\s+/g, " ").trim();
+  // Known-company override: normalize the name (diacritic-aware) and
+  // look it up.
+  const normName = _normalizeCompanyName(name);
   let companyExpanded = "";
   // Exact match first
   if (KNOWN_COMPANY_KEYWORDS[normName]) {
