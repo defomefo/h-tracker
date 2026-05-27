@@ -13339,6 +13339,50 @@ async function chatSendInput() {
     }
   } catch {}
 
+  // Augment each sponsor with COMPUTED strategic-fit scores against
+  // every H-FARM College programme + an is_internal flag. Without
+  // this, the AI conflates "fit" with "sponsorship tier / paid free"
+  // (e.g. labels Cisco low-fit because they did a free Talent Hub).
+  // We compute it once here using the same keyword engine the package
+  // composer uses; Gemini then has REAL fit scores per sponsor.
+  const sponsorsAugmented = (typeof SPONSORS !== "undefined" && Array.isArray(SPONSORS))
+    ? SPONSORS.map(s => {
+        const augmented = { ...s };
+        // 1. Flag H-FARM internal entities so the AI excludes them from
+        //    sponsor-fit comparisons. Internal = company name contains
+        //    "H-FARM" OR contact email is @h-farm.com / @h-farm.ai.
+        const nm = String(s.company_name || "").toLowerCase();
+        const em = String(s.primary_contact_email || "").toLowerCase();
+        const isInternal = nm.includes("h-farm") || nm.includes("hfarm")
+          || em.endsWith("@h-farm.com") || em.endsWith("@h-farm.ai")
+          || nm === "business school";  // H-FARM in-house business school
+        augmented.is_internal = isInternal;
+        // 2. Compute per-programme fit + best-fit summary. Skip for
+        //    internal entities — they're not real sponsors to rank.
+        if (!isInternal && typeof _pkgSponsorProgramFit === "function"
+            && typeof PROGRAMS !== "undefined" && Array.isArray(PROGRAMS)) {
+          const fits = PROGRAMS.map(p => {
+            const f = _pkgSponsorProgramFit(s, p);
+            return { program_id: p.id, program_name: p.name, score: f.score };
+          }).filter(f => f.score > 0).sort((a, b) => b.score - a.score);
+          if (fits.length) {
+            augmented.fit_top_program_id    = fits[0].program_id;
+            augmented.fit_top_program_name  = fits[0].program_name;
+            augmented.fit_top_score         = fits[0].score;
+            // Average across all programmes that scored > 0 — gives a
+            // sense of breadth ("fits many programmes" vs "fits just one")
+            augmented.fit_avg_score = Math.round(fits.reduce((a, b) => a + b.score, 0) / fits.length);
+            augmented.fit_programme_count = fits.length;
+          } else {
+            augmented.fit_top_score = 0;
+            augmented.fit_avg_score = 0;
+            augmented.fit_programme_count = 0;
+          }
+        }
+        return augmented;
+      })
+    : [];
+
   try {
     const r = await apiFetch("/api/chat-query", {
       method: "POST",
@@ -13349,9 +13393,10 @@ async function chatSendInput() {
         entities: scope,
         // Sponsors live in a separate table from the partnership pipeline.
         // Pass them alongside `entities` so questions like "top 3 sponsors"
-        // can be answered. The backend's CHAT_SYSTEM_PROMPT knows about
-        // both datasets and decides which to query per question.
-        sponsors: (typeof SPONSORS !== "undefined" && Array.isArray(SPONSORS)) ? SPONSORS : [],
+        // can be answered. Each sponsor now carries fit_top_score +
+        // fit_top_program + fit_avg_score + is_internal so the AI can
+        // answer strategic-fit questions with real numbers (not hallucinate).
+        sponsors: sponsorsAugmented,
       }),
     });
     const out = await r.json();

@@ -4731,15 +4731,40 @@ SPONSOR fields (Career Day):
   amount_paid_eur (what they've actually paid),
   contract_signed_by_us (0/1), contract_signed_by_them (0/1),
   primary_contact_name, primary_contact_email, notes,
-  attendee_count (number of company reps coming)
+  attendee_count (number of company reps coming),
+  is_internal (true if this is an H-FARM in-house entity, NOT a real third-party sponsor — e.g. 'H-FARM AI', 'Business School'),
+  fit_top_program_name (best-matching H-FARM College summer programme),
+  fit_top_score (0-100, computed strategic fit with that programme),
+  fit_avg_score (0-100, average across all matching programmes),
+  fit_programme_count (how many programmes scored > 0)
+
+CRITICAL CONCEPTS — read carefully before answering:
+
+1. STRATEGIC FIT vs SPONSORSHIP TIER vs PAYMENT
+   - "Fit" means how well a sponsor's industry/business matches H-FARM College's summer programmes (Startup, IoT/AI, Cybersecurity, AI Marketing, Brand Building, AI Fashion Lab, Finance, Game, etc.).
+   - It is COMPUTED for you in `fit_top_score` / `fit_avg_score`. Use those numbers — do NOT infer fit from other fields.
+   - "High fit" = fit_top_score >= 50 (sponsor's industry strongly overlaps a programme).
+   - "Low fit" = fit_top_score < 25 (industry doesn't map cleanly).
+   - Sponsorship tier (Gold/Bronze/Base) is a PRICE TIER — Gold means they paid more or contributed more (e.g. running a Talent Hub). It has NOTHING to do with strategic fit.
+   - "Free" sponsorship (notes contains "FREE") means they did not pay cash — but the relationship can still be valuable AND high-fit. Example: Cisco Italy is "free" because they run the Talent Hub, but they are a Gold sponsor AND a high-fit IoT/cybersecurity partner.
+   - NEVER conflate price/payment with fit. They are independent axes.
+
+2. INTERNAL H-FARM ENTITIES
+   - Sponsors with `is_internal: true` (Business School, H-FARM AI, etc.) are H-FARM College's own in-house brands, not external sponsors.
+   - EXCLUDE them from ANY "fit", "ranking", "top/bottom sponsors", "which sponsors should I pursue" answer — they're not real sponsors.
+   - Only include them if the user EXPLICITLY asks about internal/in-house entities.
 
 Rules:
 - The `intro` field: 1-3 short sentences in plain English. ANSWER the user's actual question — don't just describe the row. If they ask "top 3 sponsors" rank by value_no_iva_eur desc and name them. If they ask for a contact, give name + email. If they ask for unsigned contracts, list which ones. No hedging, no "I would suggest", no "Based on the data".
 - The `entity_ids` array: IDs from the ENTITY (partnership) dataset that match.
 - The `sponsor_ids` array: IDs from the SPONSOR dataset that match. Use this when the question is clearly about sponsors ("top sponsors", "who paid for Career Day", "which sponsor", "Gold tier", etc.).
 - Each query usually returns rows from ONE dataset only — pick the right one based on the question. If the question genuinely spans both (e.g. "which Italian companies are both partners and sponsors?"), populate both arrays.
-- For sponsor questions: rank by sponsorship_tier (Gold > Bronze > Base) then value_no_iva_eur desc, unless the user specified another sort.
-- For "top N sponsors": ALWAYS sort by value_no_iva_eur desc, return at most N.
+- For "top N sponsors by value": rank by value_no_iva_eur desc, return at most N. Exclude is_internal=true.
+- For "top/highest fit sponsors": rank by fit_top_score desc. Exclude is_internal=true.
+- For "lowest/worst fit sponsors": rank by fit_top_score asc, ONLY include sponsors with fit_top_score < 25 AND fit_programme_count <= 1. Exclude is_internal=true. If fewer than 3 sponsors truly meet the low-fit bar, say so plainly — don't pad the list with internal entities or with mid-fit sponsors.
+- For "which sponsor fits programme X": rank by per-programme score (use fit_top_program_name as a hint; sponsors where fit_top_program_name == X are obvious top fits).
+- For "Gold tier" / "Bronze tier": filter by sponsorship_tier exactly.
+- For unsigned contracts: filter by contract_signed_by_us=0 OR contract_signed_by_them=0.
 - When a contact is asked: pull the actual name + email from primary_contact_name/primary_contact_email (sponsors) or contacts array (entities). If empty, say so plainly.
 - Never invent ids, names, emails, or any field values. Only quote what's in the provided lists.
 
@@ -4782,12 +4807,24 @@ def _slim_entities(entities):
 
 # Fields we send to Gemini per SPONSOR. Keep tight — there are ~50 sponsors
 # per event so the payload stays small even with multiple years.
+# The fit_* fields are pre-computed client-side using the same keyword
+# engine the package composer uses, so the AI has REAL strategic-fit
+# numbers instead of having to infer them (which it does badly — see
+# the regression where Mira labelled Cisco low-fit because their
+# sponsorship was free).
 _SPONSOR_CHAT_FIELDS = (
     "id", "company_name", "event_year", "sponsorship_tier", "industry_sector",
     "value_no_iva_eur", "amount_paid_eur",
     "contract_signed_by_us", "contract_signed_by_them",
     "primary_contact_name", "primary_contact_email",
     "notes", "attendee_count",
+    # Pre-computed strategic fit (client-side, same engine as package composer)
+    "is_internal",            # H-FARM in-house sponsors (Business School, H-FARM AI, etc.)
+    "fit_top_program_id",
+    "fit_top_program_name",
+    "fit_top_score",          # 0-100, best programme match
+    "fit_avg_score",          # 0-100, avg across non-zero programmes
+    "fit_programme_count",    # how many programmes match at all
 )
 
 
