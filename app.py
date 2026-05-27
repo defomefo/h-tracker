@@ -2727,14 +2727,36 @@ def sponsors_import():
                 else:
                     inserted += 1
                 continue
-            # Upsert (same SQL as PUT endpoint, but with proper created_at handling)
+            # Upsert. On UPDATE: use COALESCE so empty (NULL) values in the
+            # incoming row PRESERVE existing DB values instead of overwriting
+            # them with NULL. Otherwise a CSV re-upload where some Industry
+            # cells happen to be blank would silently wipe out previously-
+            # populated sectors.
+            # Required fields (event_year, event_name, company_name,
+            # normalized_name, updated_at) always overwrite. Money/bool fields
+            # likewise overwrite — if you cleared a value you meant to.
+            # Text fields that operators populate manually (industry_sector,
+            # notes, invoice_no, dates, attendees, contacts) use COALESCE.
             if existing:
                 db.execute(
                     "UPDATE sponsors SET event_year=?, event_name=?, company_name=?, normalized_name=?, "
-                    "industry_sector=?, sponsorship_tier=?, value_no_iva_eur=?, value_with_iva_eur=?, "
-                    "amount_paid_eur=?, contract_signed_by_us=?, contract_signed_by_them=?, invoice_no=?, "
-                    "invoice_date=?, payment_date=?, participation_days=?, attendee_count=?, attendees=?, "
-                    "primary_contact_name=?, primary_contact_email=?, notes=?, linked_entity_id=?, updated_at=? "
+                    "industry_sector=COALESCE(NULLIF(?, ''), industry_sector), "
+                    "sponsorship_tier=COALESCE(NULLIF(?, ''), sponsorship_tier), "
+                    "value_no_iva_eur=COALESCE(?, value_no_iva_eur), "
+                    "value_with_iva_eur=COALESCE(?, value_with_iva_eur), "
+                    "amount_paid_eur=COALESCE(?, amount_paid_eur), "
+                    "contract_signed_by_us=?, contract_signed_by_them=?, "
+                    "invoice_no=COALESCE(NULLIF(?, ''), invoice_no), "
+                    "invoice_date=COALESCE(NULLIF(?, ''), invoice_date), "
+                    "payment_date=COALESCE(NULLIF(?, ''), payment_date), "
+                    "participation_days=COALESCE(NULLIF(?, ''), participation_days), "
+                    "attendee_count=COALESCE(?, attendee_count), "
+                    "attendees=COALESCE(NULLIF(?, '[]'), attendees), "
+                    "primary_contact_name=COALESCE(NULLIF(?, ''), primary_contact_name), "
+                    "primary_contact_email=COALESCE(NULLIF(?, ''), primary_contact_email), "
+                    "notes=COALESCE(NULLIF(?, ''), notes), "
+                    "linked_entity_id=COALESCE(NULLIF(?, ''), linked_entity_id), "
+                    "updated_at=? "
                     "WHERE id=?",
                     payload[1:13] + payload[13:22] + (payload[23],) + (sid,),
                 )

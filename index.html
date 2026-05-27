@@ -8592,6 +8592,32 @@ const KNOWN_COMPANY_KEYWORDS = {
   "bios management":  "consulting healthcare management advisory",
 };
 
+// Derive a short, human-friendly sector label from KNOWN_COMPANY_KEYWORDS
+// when the sponsor's industry_sector field is empty. Looks at the first
+// 2-3 meaningful keywords and prettifies them. Used by the sponsor table
+// + detail modal as a fallback display so blank Industry cells in the
+// Sheet don't show as "—" for well-known brands.
+function _sponsorDerivedSector(sponsor) {
+  if (!sponsor || !sponsor.company_name) return "";
+  const normName = String(sponsor.company_name).toLowerCase()
+    .replace(/[^a-z0-9' ]/g, "").replace(/\s+/g, " ").trim();
+  if (!normName) return "";
+  // Find a matching key (exact first, then substring)
+  let kw = KNOWN_COMPANY_KEYWORDS[normName];
+  if (!kw) {
+    for (const key of Object.keys(KNOWN_COMPANY_KEYWORDS)) {
+      if (normName.includes(key)) { kw = KNOWN_COMPANY_KEYWORDS[key]; break; }
+    }
+  }
+  if (!kw) return "";
+  // Pick the first 2 distinctive words/phrases, prettify case.
+  const tokens = kw.split(/\s+/).filter(t => t && t.length > 2);
+  const pretty = tokens.slice(0, 3)
+    .map(t => t.charAt(0).toUpperCase() + t.slice(1))
+    .join(" · ");
+  return pretty;
+}
+
 // Build the keyword-rich blob for one sponsor by combining (a) their
 // raw fields, (b) sector bucket expansion, (c) known-company keyword
 // injection. The result is what _pkgSponsorProgramFit matches against.
@@ -20297,7 +20323,7 @@ function renderSponsorsView() {
             </td>
             <td><span class="sponsor-tier" style="background:${tierColor}">${escape(s.sponsorship_tier || "—")}</span></td>
             <td class="num-col">${_fmtMoneyShort(s.value_no_iva_eur)}</td>
-            <td class="st-meta-cell">${escape(s.industry_sector || "—")}</td>
+            <td class="st-meta-cell">${escape(s.industry_sector || _sponsorDerivedSector(s) || "—")}</td>
             <td><span class="sponsor-status ${status.cls}">${status.label}</span></td>
             <td class="st-meta-cell">${escape(s.invoice_no || "—")}</td>
             <td class="st-meta-cell">${s.attendee_count || "—"}</td>
@@ -20354,7 +20380,7 @@ function openSponsorDetail(sponsorId) {
       <h4>Parties</h4>
       <div class="cd-grid">
         <div class="cd-field"><span class="cd-k">Company</span><span class="cd-v">${escape(s.company_name)}</span></div>
-        <div class="cd-field"><span class="cd-k">Industry sector</span><span class="cd-v ${s.industry_sector ? "" : "muted"}">${escape(s.industry_sector || "Not classified")}</span></div>
+        <div class="cd-field"><span class="cd-k">Industry sector</span><span class="cd-v ${s.industry_sector ? "" : "muted"}">${escape(s.industry_sector || _sponsorDerivedSector(s) || "Not classified")}${(!s.industry_sector && _sponsorDerivedSector(s)) ? ' <span style="font-size:9px;color:var(--ink-mute);font-style:italic;letter-spacing:.4px;text-transform:uppercase;margin-left:4px">auto · fill in Sheet</span>' : ''}</span></div>
         <div class="cd-field"><span class="cd-k">Primary contact</span><span class="cd-v ${s.primary_contact_name ? "" : "muted"}">${escape(s.primary_contact_name || "—")}</span></div>
         <div class="cd-field"><span class="cd-k">Email</span><span class="cd-v ${s.primary_contact_email ? "" : "muted"}">${s.primary_contact_email ? `<a href="mailto:${escape(s.primary_contact_email)}" style="color:var(--hf-red);text-decoration:none">${escape(s.primary_contact_email)}</a>` : "—"}</span></div>
       </div>
