@@ -5115,6 +5115,64 @@ async function apiFetch(path, opts = {}) {
   return r;
 }
 
+// ----------------------------------------------------------------------------
+// _apiError — extract the most useful message from a non-OK API response.
+//
+// Our backend's @app.errorhandler(500) returns:
+//   { error: "internal server error",
+//     detail: "<actual Python exception message>",
+//     exception_type: "<ExceptionClassName>",
+//     traceback_tail: "<last 8 lines>",
+//     path: "<request path>" }
+//
+// 4xx endpoints return:
+//   { error: "<human message>" }   (e.g. "entity_id is required")
+//
+// The old pattern `err.error || HTTP-N` swallowed the most useful field
+// (detail) and showed the generic "internal server error" label, leaving
+// the operator (and us) with nothing to debug. This helper:
+//   1. Prefers detail > error > status text > "HTTP N"
+//   2. console.error()s the full traceback so devtools shows it for free
+//   3. Returns an Error instance ready to throw or display
+//
+// Usage:
+//   const r = await apiFetch("/api/...", {...});
+//   if (!r.ok) throw await _apiError(r, "Could not save X");
+// ----------------------------------------------------------------------------
+async function _apiError(response, prefix) {
+  let err = {};
+  try { err = await response.json(); }
+  catch {
+    // Non-JSON response (rare — usually Flask is happy to JSON 500s)
+    try { err = { error: (await response.text()).slice(0, 200) }; }
+    catch { err = {}; }
+  }
+  const detail   = err.detail   || "";
+  const error    = err.error    || "";
+  const excType  = err.exception_type || "";
+  const tracetail = err.traceback_tail || "";
+  const path     = err.path || (response.url || "").replace(/^https?:\/\/[^/]+/, "");
+  // Surface the full traceback to devtools so we can debug from logs
+  // alone. Group it so it collapses in the console.
+  if (tracetail || detail) {
+    console.groupCollapsed(`%c[api ${response.status}] ${prefix || "request failed"}: ${detail || error || response.statusText}`, "color:#B0322E;font-weight:bold");
+    if (path)      console.log("path:", path);
+    if (excType)   console.log("exception:", excType);
+    if (detail)    console.log("detail:", detail);
+    if (tracetail) console.log("traceback:\n" + tracetail);
+    console.groupEnd();
+  }
+  // User-facing message — most informative thing we have, with the
+  // exception type appended so support can grep
+  const msg = (detail || error || response.statusText || ("HTTP " + response.status));
+  const typedMsg = excType ? `${msg} (${excType})` : msg;
+  const e = new Error(prefix ? `${prefix}: ${typedMsg}` : typedMsg);
+  e.status = response.status;
+  e.detail = detail;
+  e.exception_type = excType;
+  return e;
+}
+
 // ============================================================================
 // CONSTANTS - same as Python normalizer
 // ============================================================================
@@ -5775,11 +5833,11 @@ function submitAdminEdit() {
 // ONBOARDING TOUR — 10-step guided walkthrough on first visit.
 // Re-trigger any time from the floating "?" help button.
 // ========================================================================
-// Bump to v2 after the May 2026 dashboard-strip + sentiment + fit-warnings
-// shipment so existing users get re-onboarded once and see the new
-// affordances (their priority-grid muscle memory still applies; the tour
-// just adds 2 new steps).
-const LS_ONBOARDING_KEY = "hfarm_onboarded_v2";
+// Bump to v3 after the killer-feature wave: aspirational drag (drag a sphere
+// → AI action plan → one-click follow-ups), activity pulse (real cooling
+// signal, not cumulative depth), sponsor package composer, ignore-quadrant
+// guard, hover-X dismiss. Existing v2 users get re-onboarded once.
+const LS_ONBOARDING_KEY = "hfarm_onboarded_v3";
 const ONBOARDING_STEPS = [
   {
     target: null,
@@ -5836,11 +5894,27 @@ const ONBOARDING_STEPS = [
     view: "strategy",
   },
   {
+    target: '.sm-asp-toggle',
+    placement: 'bottom',
+    eyebrow: "v3 · Killer feature · Aspirational drag",
+    title: "Drag a partner where you WANT them to be",
+    body: "Click <strong>🎯 Aspiration mode</strong> on, then drag any sphere from its current position to where you want it to be — Gemini drafts a <b>4-6 step action plan</b> specific to that partner, and each action can be one-click promoted to a follow-up. Shift+drag also works without flipping the mode. Goal auto-archives when the partner actually reaches the target quadrant. No CRM in the market does this.",
+    view: "strategy",
+  },
+  {
     target: '.db-table-wrap',
     placement: 'top',
     eyebrow: "Database & Outreach log",
     title: "Every entity, one table",
     body: "Sortable, searchable, CSV-exportable. Click any row to open the full detail panel — score breakdown, contacts, programme fit, and the <em>Outreach log</em> where you record every email/call/meeting with PDF export. The <b>Last Contacted</b> column shows a sentiment dot (green/amber/red) and flips to a red <em>'no resp · Nd'</em> badge when a sent email has been quiet for 14+ days.",
+    view: "database",
+  },
+  {
+    target: '.db-spark-cell',
+    placement: 'top',
+    eyebrow: "v3 · Activity pulse",
+    title: "Spot cooling partners at a glance",
+    body: "The <b>Activity</b> column shows each partner's last 6 months of outreach as a bar sparkline + a velocity pill (<em>↑ re-engaging · 5 vs 1</em>, <em>↓ cooling · 2 vs 8</em>, <em>→ steady</em>). Unlike a cumulative depth score, this <b>can</b> drop — so a partner going quiet is visible without opening anything. The Home morning briefing also surfaces Hot/Critical partners that are cooling or ghosting (5+ emails sent, 0 replies).",
     view: "database",
   },
   {
@@ -5856,6 +5930,14 @@ const ONBOARDING_STEPS = [
     eyebrow: "What's new · Reply sentiment",
     title: "Capture the outcome, not just the reply",
     body: "When you flip outreach <b>Status</b> to <em>Replied</em>, a new <b>Reply sentiment</b> selector appears: <em>Positive · Neutral · Negative · Rejected</em>. The sentiment shows as a colored pill on the outreach log and a dot in the Database last-contacted column — so a 200-row scan answers 'are they answering?' and 'is the answer negative?' without opening anything.",
+  },
+  {
+    target: 'button[data-view="sponsors"]',
+    placement: 'right',
+    eyebrow: "v3 · Sponsor packages",
+    title: "Bundle programmes into sponsor proposals",
+    body: "Open any sponsor → <strong>+ Add package</strong> opens an animated composer. The 📦 swells as you tick programmes, chips fly in, sparkles burst on save. Below the form: <b>live fit analysis</b> (sponsor's industry vs. each programme's keywords, with the evidence shown) and a <b>revenue projection</b> (baseline €/student × cohort × √programmes, derived from past Career Day data) — every formula chip-by-chip transparent.",
+    view: "sponsors",
   },
   {
     target: 'button[data-view="brochures"]',
@@ -15688,10 +15770,7 @@ async function createAspiration(payload) {
     headers: { "Content-Type": "application/json", ..._identityHeaders() },
     body:    JSON.stringify(payload),
   });
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}));
-    throw new Error(err.error || ("HTTP " + r.status));
-  }
+  if (!r.ok) throw await _apiError(r, "create aspiration");
   const j = await r.json();
   await loadAspirations();  // refresh cache so overlay updates
   return j;
@@ -15703,7 +15782,7 @@ async function setAspirationStatus(aspirationId, status) {
     headers: { "Content-Type": "application/json", ..._identityHeaders() },
     body:    JSON.stringify({ status }),
   });
-  if (!r.ok) throw new Error("HTTP " + r.status);
+  if (!r.ok) throw await _apiError(r, "update aspiration status");
   await loadAspirations();
   return r.json();
 }
@@ -15713,7 +15792,7 @@ async function deleteAspiration(aspirationId) {
     method:  "DELETE",
     headers: _identityHeaders(),
   });
-  if (!r.ok) throw new Error("HTTP " + r.status);
+  if (!r.ok) throw await _apiError(r, "delete aspiration");
   await loadAspirations();
   return r.json();
 }
@@ -15729,10 +15808,7 @@ async function restoreAspiration(snapshot) {
     headers: { "Content-Type": "application/json", ..._identityHeaders() },
     body:    JSON.stringify(snapshot),
   });
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}));
-    throw new Error(err.error || ("HTTP " + r.status));
-  }
+  if (!r.ok) throw await _apiError(r, "restore aspiration");
   await loadAspirations();
   return r.json();
 }
@@ -15743,10 +15819,7 @@ async function generateAspirationActions(aspirationId, entity, force) {
     headers: { "Content-Type": "application/json", ..._identityHeaders() },
     body:    JSON.stringify({ entity, force: !!force }),
   });
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}));
-    throw new Error(err.error || ("HTTP " + r.status));
-  }
+  if (!r.ok) throw await _apiError(r, "generate action plan");
   return r.json();
 }
 
