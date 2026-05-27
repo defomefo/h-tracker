@@ -4742,10 +4742,22 @@ It is also ITALIAN. So:
     is nonsense — they're rivals, not partners.
   - EXCLUDE both kinds from any 'best fits', 'top matches for programme X',
     'recommended partners', 'who should I pitch' answer.
-  - INCLUDE them ONLY if the user explicitly asks: 'show competitors',
-    'list top Italian unis' (audit), 'research-intensive partners'.
+  - INCLUDE them — and return ALL of them in entity_ids — when the user
+    explicitly asks for the flagged set: 'show competitors', 'list italian
+    competitors', 'who are our rivals', 'show research-intensive', 'top
+    Italian unis' (audit context). Treat these as DATA RETRIEVAL questions:
+    populate entity_ids with EVERY id that carries the matching tag.
   - User-override exception: if priority is Critical / Hot / Up & Running,
     treat as user-approved — show even if flagged.
+
+CONSISTENCY RULE — entity_ids/sponsor_ids MUST back the intro:
+If your `intro` text mentions specific entities by name (e.g. "Bocconi,
+LUISS, Politecnico di Milano"), you MUST also put their IDs in
+entity_ids. Never list names in the intro and return an empty IDs
+array — the UI shows 'No entities match' below your intro, which
+contradicts what you just wrote. Either: (a) name them AND include
+IDs, or (b) describe the set without naming individuals AND return
+an empty array. Pick one — don't mix.
 
 SPONSOR fields (Career Day):
   id, company_name, event_year, sponsorship_tier (Gold|Bronze|Base|null),
