@@ -2595,6 +2595,71 @@ def sponsors_import():
     if not rows:
         return jsonify({"error": "no rows; send multipart 'file' or JSON {rows:[...]}"}), 400
 
+    # Header normalization — map raw Italian Excel column names (and other
+    # common variants) to the canonical names the downstream code uses.
+    # Without this step, uploading the raw Sheet export errors with
+    # "no company_name / display_name" on every row because the actual
+    # header is "AZIENDA".
+    # Aliases are applied only when the canonical key isn't already set,
+    # so a hand-cleaned CSV with proper headers still works untouched.
+    _HEADER_ALIASES = {
+        # company name
+        "AZIENDA":                                  "display_name",
+        "Azienda":                                  "display_name",
+        # tier
+        "Sponsorship":                              "sponsorship_tier",
+        "sponsorship":                              "sponsorship_tier",
+        # money
+        "Tot dovuto senza IVA":                     "value_no_iva_eur",
+        "Tot dovuto con IVA":                       "value_with_iva_eur",
+        "INCASSATO":                                "amount_paid_eur",
+        "Incassato":                                "amount_paid_eur",
+        # contracts (note typo "sponsorhip" in the source file)
+        "Contratto sponsorship firmato da noi":     "contract_signed_by_us",
+        "Contratto sponsorhip firmato da azienda":  "contract_signed_by_them",
+        "Contratto sponsorship firmato da azienda": "contract_signed_by_them",
+        # invoice
+        "N. fattura / N. ricevuta":                 "invoice_no",
+        "N. fattura":                               "invoice_no",
+        "data fattura":                             "invoice_date",
+        "Data fattura":                             "invoice_date",
+        # dates / participation
+        "DATA PAGAMENTO":                           "payment_date",
+        "Data pagamento":                           "payment_date",
+        "Partecipazione":                           "participation_days",
+        # contact
+        "Mail Ref Aziendale":                       "primary_contact_email",
+        "Mail":                                     "primary_contact_email",
+        # notes (both NOTE and Notes — user may add a second "Notes" column)
+        "NOTE":                                     "notes",
+        "Note":                                     "notes",
+        "Notes":                                    "notes",
+        # industry (also handled in the per-field fallback below — kept here
+        # too so a single normalization pass covers everything)
+        "Industry":                                 "industry_sector",
+        "industry":                                 "industry_sector",
+        "Sector":                                   "industry_sector",
+        "sector":                                   "industry_sector",
+    }
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        for raw_key, canonical_key in _HEADER_ALIASES.items():
+            if raw_key in r and not r.get(canonical_key):
+                val = r[raw_key]
+                # Strip currency symbols + spaces from money fields so the
+                # downstream _int() helper can parse them. "€ 3.000,00" → "3000"
+                if canonical_key in ("value_no_iva_eur", "value_with_iva_eur", "amount_paid_eur"):
+                    if val:
+                        s = str(val).replace("€", "").replace(" ", "").replace("\xa0", "")
+                        # Italian number format: 3.000,00 → 3000.00 (US format)
+                        if "," in s and "." in s:
+                            s = s.replace(".", "").replace(",", ".")
+                        elif "," in s:
+                            s = s.replace(",", ".")
+                        val = s
+                r[canonical_key] = val
+
     db = get_db()
     inserted, updated, errors = 0, 0, []
     now = _now_iso()
