@@ -4723,7 +4723,29 @@ ENTITY fields (partnership pipeline):
   days_dormant (int|null), last_contacted (date string|null),
   focus_areas (string), notes (string), website (string),
   top_program_id (id of best-fit H-FARM College offering), top_program_score (0-100),
-  contacts (array of {name, role, email} — may be empty)
+  contacts (array of {name, role, email} — may be empty),
+  fit_tags (array of strings — when present, marks the entity as either
+            'research_intensive' (Harvard, MIT, Stanford, Oxford, Cambridge,
+            INSEAD, HEC, etc.) OR 'italian_competitor' (Bocconi, LUISS,
+            Politecnico di Milano, Università di Bologna, Sapienza, etc.).
+            Most entities have NO fit_tags — only flagged ones carry them.)
+
+ENTITY FILTERING — CRITICAL RULE about fit_tags:
+H-FARM College is an APPLIED, hands-on institution (not research-intensive).
+It is also ITALIAN. So:
+  - Entities tagged 'research_intensive' = top global research universities.
+    They're not realistic pitch targets — they don't need H-FARM. They go
+    in our database for AUDIT context but NOT in 'best fits / top matches /
+    who to pitch' answers.
+  - Entities tagged 'italian_competitor' = Italian universities directly
+    competing with H-FARM. Listing them as "Italian partner candidates"
+    is nonsense — they're rivals, not partners.
+  - EXCLUDE both kinds from any 'best fits', 'top matches for programme X',
+    'recommended partners', 'who should I pitch' answer.
+  - INCLUDE them ONLY if the user explicitly asks: 'show competitors',
+    'list top Italian unis' (audit), 'research-intensive partners'.
+  - User-override exception: if priority is Critical / Hot / Up & Running,
+    treat as user-approved — show even if flagged.
 
 SPONSOR fields (Career Day):
   id, company_name, event_year, sponsorship_tier (Gold|Bronze|Base|null),
@@ -4780,6 +4802,13 @@ _CHAT_FIELDS = (
     "priority", "strategic_tier", "partnership_score",
     "partnership_readiness", "days_dormant", "last_contacted",
     "focus_areas", "top_program_id", "top_program_score", "notes", "website",
+    # Fit warnings — when populated, the entity is flagged as either
+    # 'research_intensive' (Harvard, MIT, Stanford…) or 'italian_competitor'
+    # (Bocconi, LUISS, Politecnico…). H-FARM College is APPLIED + ITALIAN,
+    # so these are NOT realistic pitch targets — Mira excludes them from
+    # 'best fit / top match / who to pitch' answers. The Database view
+    # still shows them (audit context) but candidate surfaces don't.
+    "fit_tags",
 )
 
 
@@ -4802,6 +4831,15 @@ def _slim_entities(entities):
             ]
             if slim_contacts:
                 row["contacts"] = slim_contacts
+        # Compress fit_tags to just the tag strings (drop the label/pattern
+        # noise) so the prompt stays tight. e.g. ["italian_competitor"]
+        # or ["research_intensive"]. Most entities have no tags → field
+        # absent in the slim row.
+        ft = u.get("fit_tags")
+        if isinstance(ft, list) and ft:
+            tags = [t.get("tag") for t in ft if isinstance(t, dict) and t.get("tag")]
+            if tags:
+                row["fit_tags"] = tags
         out.append(row)
     return out
 

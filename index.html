@@ -13161,6 +13161,16 @@ const CHAT_DEMO_CATEGORIES = [
   },
 ];
 
+// _candidateUnis() helper — every "best fit / top match / suggested partner"
+// demo query routes through this so research-intensive (Harvard, MIT) and
+// italian_competitor (Bocconi, LUISS) entities are EXCLUDED by default.
+// 'Top 10 Italian unis' explicitly INCLUDES them since it's an audit
+// question, not a pitch-target question — the user wants to see who's
+// out there even if H-FARM wouldn't pursue.
+function _candidateUnis() {
+  return (typeof unisForCandidates === "function") ? unisForCandidates() : UNIS;
+}
+
 const CHAT_DEMO_QUERIES = [
   {
     id: "untapped-fashion",
@@ -13169,7 +13179,7 @@ const CHAT_DEMO_QUERIES = [
     intro: "Five highest-fit candidates for the <b>AI Fashion Lab</b> summer programme that haven't been pitched yet:",
     run: () => {
       const pitched = pitchedSet("fashion");
-      return UNIS
+      return _candidateUnis()
         .filter(u => (u.program_matches?.fashion || 0) >= 50 && !pitched.has(u.id))
         .sort((a,b) => (b.program_matches.fashion||0) - (a.program_matches.fashion||0))
         .slice(0, 5);
@@ -13207,7 +13217,7 @@ const CHAT_DEMO_QUERIES = [
     label: "Re-warming opportunities in Europe",
     keywords: ["re-warm", "rewarm", "warm", "europe", "european", "cold-storage", "cold storage"],
     intro: "European <b>Cold-storage</b> entities with a meaningful partnership score (40+) — worth a re-warming touch:",
-    run: () => UNIS
+    run: () => _candidateUnis()
       .filter(u => u.continent === "Europe" && u.priority === "Cold-storage" && u.partnership_score >= 40)
       .sort((a,b) => b.partnership_score - a.partnership_score)
       .slice(0, 10),
@@ -13218,8 +13228,8 @@ const CHAT_DEMO_QUERIES = [
     id: "best-startup-fit",
     label: "Best fits for Startup Summer programme",
     keywords: ["startup", "entrepreneur", "venture", "summer"],
-    intro: "Highest-scoring matches for <b>Startup Summer (AD)Venture</b> across the whole portfolio:",
-    run: () => UNIS
+    intro: "Highest-scoring matches for <b>Startup Summer (AD)Venture</b> across the whole portfolio (research-intensive + Italian competitor schools excluded — they're not pitch targets):",
+    run: () => _candidateUnis()
       .filter(u => (u.program_matches?.startup || 0) >= 50)
       .sort((a,b) => (b.program_matches.startup||0) - (a.program_matches.startup||0))
       .slice(0, 10),
@@ -13242,7 +13252,9 @@ const CHAT_DEMO_QUERIES = [
     id: "top-italy-uni",
     label: "Top 10 Italian universities by partnership score",
     keywords: ["italy", "italian", "university", "universities"],
-    intro: "Italian universities ranked by partnership readiness score:",
+    intro: "Italian universities ranked by partnership readiness score (audit view — includes competitor schools like Bocconi/LUISS that we wouldn't pitch but should know about):",
+    // NOT filtered through _candidateUnis — this is an audit question.
+    // Operator wants to see EVERYTHING in the market.
     run: () => UNIS
       .filter(u => u.type === "university")
       .filter(u => (u.country_canonical || u.country || "").toLowerCase().includes("ital"))
