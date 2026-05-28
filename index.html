@@ -14167,7 +14167,77 @@ function submitOutreachFormAndMailto() {
 }
 
 // ---- PDF export ------------------------------------------------------
-function generateOutreachPdf(entityId, entryId) {
+async function generateOutreachPdf(entityId, entryId) {
+  const entity = UNIS.find(u => u.id === entityId);
+  const entry  = (OUTREACH[entityId] || []).find(e => e.id === entryId);
+  if (!entity || !entry) return;
+
+  // Server-side WeasyPrint rendering — replaces the old jsPDF client-
+  // side approach which used Helvetica (Latin-1 only) and corrupted
+  // every Turkish character in the body (İ→0, ı→1, ş→_, ğ→space, ...).
+  // WeasyPrint + DejaVu Sans (installed in the Docker image) handles
+  // the full Unicode range correctly. Same renderer the partnership
+  // brief PDF uses — one font pipeline, one Turkish problem solved
+  // for both surfaces.
+  try {
+    const r = await apiFetch("/api/outreach-pdf", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body:    JSON.stringify({
+        entity: {
+          id: entity.id,
+          name: entity.name,
+          country: entity.country_canonical || entity.country || "",
+          continent: entity.continent || "",
+          type: entity.type || "",
+        },
+        entry: {
+          id: entry.id,
+          channel: entry.channel || "email",
+          subject: entry.subject || "",
+          body: entry.body || "",
+          date: entry.date || "",
+          status: entry.status || "",
+          sentiment: entry.sentiment || "",
+          sender: entry.sender || "",
+          senderEmail: entry.senderEmail || "",
+          recipientName: entry.recipientName || "",
+          recipientEmail: entry.recipientEmail || "",
+          notes: entry.notes || "",
+          programs: (entry.programs || []).map(pid => {
+            const p = (PROGRAMS || []).find(x => x.id === pid);
+            return p ? p.name : pid;
+          }),
+        },
+        generated_by: getDisplayName() || "",
+      }),
+    });
+    if (!r.ok) {
+      const ctype = (r.headers.get("content-type") || "").toLowerCase();
+      if (ctype.includes("application/json")) {
+        throw await _apiError(r, "generate PDF");
+      }
+      throw new Error("HTTP " + r.status);
+    }
+    // Stream the PDF back to a blob → trigger browser download
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const safeName = (entity.name || "entity").replace(/[^A-Za-z0-9]+/g, "_").slice(0, 40);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `outreach_${safeName}_${(entry.date || "undated").replace(/-/g, "")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+    if (typeof showSyncToast === "function") showSyncToast("📄 PDF downloaded", "ok");
+  } catch (e) {
+    alert("Could not generate PDF: " + (e.message || e));
+  }
+}
+
+// Old jsPDF generator kept below for reference / future inspection, but
+// no longer called from anywhere. Safe to delete in a future cleanup.
+function _generateOutreachPdf_LEGACY_jspdf(entityId, entryId) {
   const entity = UNIS.find(u => u.id === entityId);
   const entry  = (OUTREACH[entityId] || []).find(e => e.id === entryId);
   if (!entity || !entry) return;

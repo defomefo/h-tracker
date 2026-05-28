@@ -4697,6 +4697,67 @@ def brief_pdf(entity_id):
     )
 
 
+@app.route("/api/outreach-pdf", methods=["POST"])
+@auth_required
+def outreach_pdf():
+    """Render a single outreach entry as a PDF email — server-side WeasyPrint
+    so Turkish characters render correctly (the old client-side jsPDF used
+    Helvetica which only supports Latin-1, corrupting İ→0, ı→1, ş→_,
+    ğ→space etc. on every Turkish email).
+
+    Body shape (frontend posts what it has in-memory):
+        {
+          "entity": { name, country, ... },
+          "entry":  { id, channel, subject, body, date, status, sentiment,
+                      sender, senderEmail, recipientName, recipientEmail,
+                      notes, programs[] },
+          "generated_by": "Defne Tuncer"   // optional
+        }
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    entity = body.get("entity") or {}
+    entry  = body.get("entry")  or {}
+    if not entity.get("name"):
+        return jsonify({"error": "entity.name required"}), 400
+    if not entry:
+        return jsonify({"error": "entry required"}), 400
+
+    now = _dt.datetime.now(_dt.timezone.utc)
+    generated_at = now.strftime("%Y-%m-%d · %H:%M UTC")
+
+    html_str = render_template(
+        "outreach.html",
+        entity=entity,
+        entry=entry,
+        generated_at=generated_at,
+        generated_by=(body.get("generated_by") or "").strip() or None,
+    )
+
+    try:
+        WP_HTML = _get_weasyprint()
+        pdf_bytes = WP_HTML(string=html_str).write_pdf()
+    except ImportError:
+        return jsonify({
+            "error": "weasyprint not installed",
+            "detail": "Run pip install -r requirements.txt or rebuild the Docker image.",
+        }), 500
+    except Exception as e:
+        print(f"[outreach-pdf] render failed: {e}")
+        return jsonify({"error": "pdf render failed", "detail": str(e)}), 500
+
+    safe_entity = re.sub(r"[^A-Za-z0-9._-]+", "_", entity.get("name") or "entity").strip("_")[:40]
+    safe_date   = (entry.get("date") or now.strftime("%Y-%m-%d"))[:10].replace("-", "")
+    filename = f"outreach_{safe_entity}_{safe_date}.pdf"
+
+    _record_edit("outreach-pdf", "render", entry.get("id") or "")
+
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 # ============================================================================
 # CHAT ASSISTANT — read-only Q&A grounded on the live UNIS array
 # ----------------------------------------------------------------------------

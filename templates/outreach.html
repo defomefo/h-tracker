@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Outreach · {{ entity.name }} · {{ entry.date or "" }}</title>
+<style>
+  /* WeasyPrint full-Unicode pipeline — DejaVu fonts (installed in the
+     Docker image per CLAUDE.md) handle Turkish characters correctly.
+     This replaces the old jsPDF client-side renderer which used Helvetica
+     (Latin-1 only) and corrupted İ → 0, ı → 1, ş → _, ğ → space etc. */
+  @page {
+    size: A4;
+    margin: 18mm 18mm 16mm 18mm;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'DejaVu Sans', sans-serif;
+    color: #1A1A1A;
+    font-size: 10pt;
+    line-height: 1.5;
+  }
+
+  /* Header band — navy with gold accent rule */
+  .head {
+    background: #0A2540;
+    color: #fff;
+    padding: 12pt 16pt;
+    margin: -18mm -18mm 0 -18mm;
+    border-bottom: 2pt solid #C9A961;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .head .brand {
+    font-size: 13pt;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+  }
+  .head .url {
+    font-size: 7.5pt;
+    color: #DCC8A0;
+    letter-spacing: .3px;
+  }
+
+  /* Metadata strip */
+  .meta {
+    margin-top: 22pt;
+    padding-bottom: 6pt;
+    border-bottom: 0.5pt solid #C9A961;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #5A5A5A;
+  }
+  .meta .right { color: #1A1A1A; font-variant-numeric: tabular-nums; }
+
+  /* Subject — large, navy */
+  h1.subject {
+    font-size: 18pt;
+    font-weight: 800;
+    color: #0A2540;
+    margin: 14pt 0 12pt;
+    letter-spacing: -0.4px;
+    line-height: 1.25;
+  }
+
+  /* To / From rows */
+  .addr {
+    font-size: 9pt;
+    line-height: 1.55;
+    margin: 0 0 16pt;
+    color: #1A1A1A;
+  }
+  .addr .label {
+    display: inline-block;
+    width: 44pt;
+    color: #5A5A5A;
+    font-weight: 700;
+  }
+  .addr .email {
+    font-family: 'DejaVu Sans Mono', monospace;
+    color: #1A1A1A;
+    font-size: 8.5pt;
+  }
+
+  /* Body — preserves blank-line paragraphs from the source */
+  .body {
+    font-size: 10pt;
+    line-height: 1.6;
+    color: #1A1A1A;
+    white-space: pre-wrap;
+    margin-bottom: 18pt;
+  }
+
+  /* Programs mentioned */
+  .programs {
+    border-top: 0.5pt solid #C9A961;
+    padding-top: 10pt;
+    margin-top: 10pt;
+  }
+  .programs h3 {
+    font-size: 7.5pt;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: #5A5A5A;
+    margin-bottom: 6pt;
+  }
+  .programs .pill {
+    display: inline-block;
+    background: #FAF3EA;
+    border: 0.5pt solid #C9A961;
+    color: #1A1A1A;
+    font-size: 8.5pt;
+    padding: 3pt 8pt;
+    border-radius: 9pt;
+    margin: 0 4pt 4pt 0;
+  }
+
+  /* Notes block — only when present */
+  .notes {
+    background: #F4F1E8;
+    padding: 8pt 12pt;
+    border-radius: 3pt;
+    font-size: 8.5pt;
+    line-height: 1.55;
+    color: #1A1A1A;
+    border-left: 2pt solid #C9A961;
+    margin-top: 14pt;
+  }
+  .notes .label {
+    font-size: 7pt;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: #5A5A5A;
+    margin-bottom: 3pt;
+  }
+
+  /* Footer at page bottom */
+  .footer {
+    position: running(footer);
+    font-size: 6.5pt;
+    color: #8A8A8A;
+    text-align: center;
+    letter-spacing: .3px;
+    padding-top: 6pt;
+    border-top: 0.3pt solid #DDD;
+  }
+  @page { @bottom-center { content: element(footer); } }
+
+  /* Status pill in metadata */
+  .status-pill {
+    display: inline-block;
+    padding: 1pt 6pt;
+    border-radius: 8pt;
+    font-size: 7pt;
+    font-weight: 800;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    margin-left: 4pt;
+    color: #fff;
+  }
+  .status-pill.sent     { background: #4A6B8A; }
+  .status-pill.replied  { background: #2E7D5B; }
+  .status-pill.bounced  { background: #8B1A1A; }
+  .status-pill.draft    { background: #8A8A8A; }
+  .sentiment-pill {
+    display: inline-block;
+    padding: 1pt 6pt;
+    border-radius: 8pt;
+    font-size: 7pt;
+    font-weight: 800;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    margin-left: 3pt;
+  }
+  .sentiment-pill.positive  { background: #DCEFE3; color: #1F6E48; }
+  .sentiment-pill.neutral   { background: #E7ECF1; color: #4A6B8A; }
+  .sentiment-pill.negative  { background: #FAEFD8; color: #7A5215; }
+  .sentiment-pill.rejected  { background: #FBEAEA; color: #8B1A1A; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="brand">H-FARM College</div>
+  <div class="url">Roncade (Treviso) · college.h-farm.com</div>
+</div>
+
+<div class="meta">
+  <div>
+    Outreach log · {{ (entry.channel or 'email')|upper }}
+    {% if entry.status %}<span class="status-pill {{ entry.status }}">{{ entry.status }}</span>{% endif %}
+    {% if entry.status == 'replied' and entry.sentiment %}<span class="sentiment-pill {{ entry.sentiment }}">{{ entry.sentiment }}</span>{% endif %}
+  </div>
+  <div class="right">{{ entry.date or '' }}</div>
+</div>
+
+<h1 class="subject">{{ entry.subject or '(no subject)' }}</h1>
+
+<div class="addr">
+  <div><span class="label">To:</span> {{ entity.name }}{% if entry.recipientName %} · {{ entry.recipientName }}{% endif %}{% if entry.recipientEmail %} <span class="email">&lt;{{ entry.recipientEmail }}&gt;</span>{% endif %}</div>
+  <div><span class="label">From:</span> H-FARM College{% if entry.sender %} · {{ entry.sender }}{% endif %}{% if entry.senderEmail %} <span class="email">&lt;{{ entry.senderEmail }}&gt;</span>{% endif %}</div>
+</div>
+
+<div class="body">{{ entry.body or '' }}</div>
+
+{% if entry.programs %}
+<div class="programs">
+  <h3>Programmes referenced</h3>
+  {% for p in entry.programs %}<span class="pill">{{ p }}</span>{% endfor %}
+</div>
+{% endif %}
+
+{% if entry.notes %}
+<div class="notes">
+  <div class="label">Notes</div>
+  {{ entry.notes }}
+</div>
+{% endif %}
+
+<div class="footer">
+  H-FARM College Global Partnerships Tracker · Generated {{ generated_at }}{% if generated_by %} by {{ generated_by }}{% endif %}
+</div>
+
+</body>
+</html>
