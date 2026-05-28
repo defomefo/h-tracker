@@ -575,6 +575,23 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .spark .spark-bar:hover rect:first-child{fill-opacity:.65}
 .trj-vel{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:9px;font-variant-numeric:tabular-nums;vertical-align:middle;white-space:nowrap}
 /* Detail panel: bigger trajectory card under metrics */
+/* Collapsible engagement-signals card — wraps Activity Pulse + Reply
+   Health so they don't dominate the detail panel by default. Click the
+   summary header to expand. */
+.dp-signals{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;margin:0 0 14px;overflow:hidden}
+.dp-signals-summary{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;background:transparent;border:none;width:100%;font-family:inherit;text-align:left}
+.dp-signals-summary:hover{background:var(--paper)}
+.dp-signals-label{font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:800;flex-shrink:0}
+.dp-signals-summary-bits{flex:1;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink);min-width:0}
+.dp-signals-sep{color:var(--ink-mute)}
+.dp-signals-caret{font-size:14px;color:var(--ink-soft);font-weight:700;flex-shrink:0;transition:transform .15s}
+.dp-signals-summary:hover .dp-signals-caret{color:var(--hf-red)}
+.dp-signals-detail{display:none;padding:0 14px 12px;border-top:1px solid var(--rule)}
+.dp-signals.expanded .dp-signals-detail{display:block;animation:dp-signals-in .22s ease-out}
+@keyframes dp-signals-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.dp-signals.expanded .dp-signals-detail .dp-trajectory{margin-top:12px;margin-bottom:10px}
+.dp-signals.expanded .dp-signals-detail .rh-card{margin-bottom:0}
+
 .dp-trajectory{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:10px 14px 11px;margin:0 0 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
 .dp-trj-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
 .dp-trj-label{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:800}
@@ -7310,13 +7327,26 @@ async function saveFollowup(followup) {
   else          FOLLOWUPS.push(followup);
   _writeLocalFollowups(FOLLOWUPS);
   try {
-    await apiFetch("/api/followups/" + encodeURIComponent(followup.id), {
+    const r = await apiFetch("/api/followups/" + encodeURIComponent(followup.id), {
       method:  "PUT",
       headers: { "Content-Type": "application/json", ..._identityHeaders() },
       body:    JSON.stringify(followup),
     });
+    // Non-2xx that didn't throw — backend rejected the payload. Surface so
+    // operator knows the follow-up is local-only + might not survive a
+    // browser cache clear.
+    if (!r.ok) {
+      const detail = await r.text().catch(() => "");
+      console.warn("[followups] backend rejected:", r.status, detail);
+      if (typeof showSyncToast === "function") {
+        showSyncToast(`⚠ Follow-up saved locally only — backend returned ${r.status}. Re-sync at next focus.`, "warn");
+      }
+    }
   } catch (e) {
     console.warn("[followups] save deferred (offline):", e.message);
+    if (typeof showSyncToast === "function") {
+      showSyncToast(`⚠ Follow-up saved locally — server unreachable (${e.message || "offline"}). Will retry on next sync.`, "warn");
+    }
   }
 }
 
@@ -11380,7 +11410,7 @@ function _dpNextStepHtml(u) {
     return `<div class="dp-next">
       <span class="dp-next-lbl">Next step</span>
       <span class="dp-next-empty">No follow-up set</span>
-      <button type="button" class="dp-next-cta" onclick="dpSwitchTab('followups')">+ Add</button>
+      <button type="button" class="dp-next-cta" onclick="openFollowupModalForEntity('${escapeAttr(u.id)}')">+ Add</button>
     </div>`;
   }
   // Format due date as relative
@@ -11533,13 +11563,27 @@ function _dpHeaderHtml(u) {
 //      Catches "we're pushing into the void" — different signal from
 //      activity drop ("nobody is talking to them").
 // Both compute locally from OUTREACH so they're instant; no API calls.
+// Per-entity collapsed-state. Default = collapsed so the tab content
+// below (Profile / Outreach / Contracts / Follow-ups) gets the visual
+// priority. Reviewer's complaint: the two cards together pushed the
+// scrollable area into a tiny window.
+let _DP_SIGNALS_EXPANDED = {};
+
+function dpToggleSignals(entityId) {
+  _DP_SIGNALS_EXPANDED[entityId] = !_DP_SIGNALS_EXPANDED[entityId];
+  // In-place expand/collapse to avoid re-rendering the whole panel
+  // (which would lose form focus, scroll position, etc.)
+  const card = document.getElementById(`dp-signals-${entityId}`);
+  if (card) {
+    card.classList.toggle("expanded", _DP_SIGNALS_EXPANDED[entityId]);
+  }
+}
+
 function _dpTrajectoryHtml(u) {
   const sparkSvg = (typeof renderActivityPulseSparkline === "function")
-    ? renderActivityPulseSparkline(u.id, { width: 420, height: 48, months: 6 })
+    ? renderActivityPulseSparkline(u.id, { width: 420, height: 40, months: 6 })
     : "";
-  const velPill  = (typeof renderActivityVelocityPill === "function")
-    ? renderActivityVelocityPill(u.id) : "";
-  const v        = (typeof activityVelocity === "function") ? activityVelocity(u.id) : { tone: "flat" };
+  const v        = (typeof activityVelocity === "function") ? activityVelocity(u.id) : { tone: "flat", label: "no activity" };
   const series   = (typeof _activityPulseSeries === "function") ? _activityPulseSeries(u.id, 6) : [];
   const totalAct = series.reduce((s, b) => s + b.count, 0);
   const isCooling = (v.tone === "down") && (u.priority === "Hot" || u.priority === "Critical");
@@ -11548,20 +11592,50 @@ function _dpTrajectoryHtml(u) {
     ? "No outreach in the last 6 months"
     : `Last 6 months · ${totalAct} total · ${escape(monthLabels)}`;
   const replyCard = (typeof renderReplyHealthCard === "function") ? renderReplyHealthCard(u.id) : "";
-  return `<div class="dp-trajectory">
-    <div>
-      <div class="dp-trj-head">
-        <span class="dp-trj-label">Activity pulse</span>
-        <span class="dp-trj-window">${escape(windowLbl)}</span>
+  const reply = (typeof replyHealth === "function") ? replyHealth(u.id, 60) : { sent: 0, replied: 0, reply_rate: null, ghosting: false };
+
+  // Compact one-line summary visible when collapsed: velocity arrow +
+  // reply-rate + cooling/ghosting flag. Gives the operator the bottom
+  // line at a glance without taking 200px of vertical space.
+  const velTone = v.tone === "up" ? "#1F6E48" : v.tone === "down" ? "#B0322E" : v.tone === "muted" ? "#999" : "#7A5215";
+  const velArrow = v.arrow || "→";
+  const replyBit = reply.sent === 0
+    ? `<span style="color:var(--ink-mute)">no replies tracked</span>`
+    : reply.ghosting
+      ? `<span style="color:#B0322E">⚠ ghosting (${reply.sent} sent, 0 replies)</span>`
+      : `<span style="color:${reply.reply_rate >= 40 ? '#1F6E48' : '#7A5215'}">${reply.reply_rate}% reply rate</span>`;
+  const flagBit = isCooling ? `<span style="color:#B0322E;font-weight:800;margin-left:6px">⚠ Cooling</span>` : "";
+
+  const expanded = !!_DP_SIGNALS_EXPANDED[u.id];
+
+  return `<div id="dp-signals-${u.id}" class="dp-signals ${expanded ? 'expanded' : ''}">
+    <button type="button" class="dp-signals-summary" onclick="dpToggleSignals('${escapeAttr(u.id)}')" title="Click to ${expanded ? 'collapse' : 'expand'} engagement signals">
+      <span class="dp-signals-label">Engagement signals</span>
+      <span class="dp-signals-summary-bits">
+        <span style="color:${velTone};font-weight:800">${escape(velArrow)} ${escape(v.label || 'no activity')}</span>
+        <span class="dp-signals-sep">·</span>
+        ${replyBit}
+        ${flagBit}
+      </span>
+      <span class="dp-signals-caret">${expanded ? '▴' : '▾'}</span>
+    </button>
+    <div class="dp-signals-detail">
+      <div class="dp-trajectory">
+        <div>
+          <div class="dp-trj-head">
+            <span class="dp-trj-label">Activity pulse</span>
+            <span class="dp-trj-window">${escape(windowLbl)}</span>
+          </div>
+          ${sparkSvg}
+        </div>
+        <div class="dp-trj-side">
+          ${(typeof renderActivityVelocityPill === "function") ? renderActivityVelocityPill(u.id) : ""}
+          ${isCooling ? `<span class="dp-trj-cooling show" title="A ${u.priority} partner cooling — high priority for re-engagement">⚠ Cooling</span>` : ''}
+        </div>
       </div>
-      ${sparkSvg}
+      ${replyCard}
     </div>
-    <div class="dp-trj-side">
-      ${velPill}
-      ${isCooling ? `<span class="dp-trj-cooling show" title="A ${u.priority} partner cooling — high priority for re-engagement">⚠ Cooling</span>` : ''}
-    </div>
-  </div>
-  ${replyCard}`;
+  </div>`;
 }
 
 function _dpScoreBreakdownHtml(u) {
