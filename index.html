@@ -12562,6 +12562,62 @@ const SEED_OUTREACH_BATCHES = [
   },
 ];
 
+// Per-entity individual follow-up entries — stamped on TOP of any batch
+// entries the same entity already has. Used for real follow-up
+// activity (meetings, campus visits, MOU sends) that varies per
+// partner and can't be expressed via batch audience filters.
+// Entity is fuzzy-matched by name pattern (case-insensitive regex);
+// the first UNIS row whose name matches gets the entry.
+const SEED_OUTREACH_INDIVIDUAL = [
+  {
+    id: "seed-eduscala-campus-visit-2026-04-04",
+    name_patterns: [/eduscala/i],
+    channel: "event",
+    subject: "Campus visit · EduScala at H-FARM College",
+    body: "EduScala team visited our 55-hectare innovation campus in Roncade for a tour of the facilities and summer programmes preview. Positive engagement — in-person visit signals real interest.",
+    date: "2026-04-04",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Silvia",
+    notes: "Auto-seeded. Campus visit follow-up to the 19 Mar 2026 bilingual outreach. Strong positive signal.",
+  },
+  {
+    id: "seed-edunita-meeting-mou-2026-03-28",
+    name_patterns: [/edunita/i],
+    channel: "meeting",
+    subject: "Meeting + MOU sent · Edunita — 1 student interested in Startup Summer",
+    body: "Meeting held with Edunita team. MOU contract sent for review. One student has expressed interest in the Startup Summer (AD)Venture programme — concrete lead to pursue.",
+    date: "2026-03-28",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Silvia",
+    notes: "Auto-seeded. MOU sent — should be tracked separately in Contracts tab. One student lead for Startup Summer (AD)Venture 2026.",
+  },
+  {
+    id: "seed-vera-edu-tugce-meeting-2026-03-25",
+    name_patterns: [/vera\s*edu/i, /veraedu/i],
+    channel: "meeting",
+    subject: "Meeting with Tuğçe Özgen · Vera Edu — initial interest, no follow-up since",
+    body: "Meeting held with Tuğçe Özgen of Vera Edu. Initial interest expressed in H-FARM College programmes. No follow-up response since the meeting — consider a re-engagement touch.",
+    date: "2026-03-25",
+    status: "replied",
+    sentiment: "neutral",
+    sender: "Silvia",
+    recipientName: "Tuğçe Özgen",
+    notes: "Auto-seeded. Showed initial interest but went quiet — flag for re-engagement campaign.",
+  },
+];
+
+function _findEntityByNamePatterns(patterns) {
+  if (!Array.isArray(patterns) || !patterns.length) return null;
+  if (typeof UNIS === "undefined") return null;
+  for (const u of UNIS) {
+    const nm = String(u.name || "");
+    if (patterns.some(re => re.test(nm))) return u;
+  }
+  return null;
+}
+
 function _matchesSeedAudience(u, aud) {
   if (!u || !aud) return false;
   if (aud.types && aud.types.length && !aud.types.includes(u.type)) return false;
@@ -12617,6 +12673,42 @@ async function _applySeedOutreach() {
       }
     }
   }
+  // Individual per-entity seed entries (campus visits, meetings, MOU sends,
+  // anything that doesn't fit a batch audience filter). Each entry
+  // fuzzy-matches its target by name regex.
+  if (Array.isArray(SEED_OUTREACH_INDIVIDUAL)) {
+    for (const seed of SEED_OUTREACH_INDIVIDUAL) {
+      const u = _findEntityByNamePatterns(seed.name_patterns);
+      if (!u) { console.warn("[seed] no entity matched", seed.name_patterns, "for", seed.id); continue; }
+      const existing = (OUTREACH[u.id] || []).find(e => e.id === seed.id);
+      if (existing) continue;
+      const entry = {
+        id: seed.id,
+        entityId: u.id,
+        channel: seed.channel || "email",
+        subject: seed.subject || "",
+        body: seed.body || "",
+        date: seed.date,
+        status: seed.status || "sent",
+        sentiment: seed.sentiment || null,
+        sender: seed.sender || "",
+        senderEmail: seed.senderEmail || "",
+        senderTeamId: null,
+        recipientName: seed.recipientName || "",
+        recipientEmail: seed.recipientEmail || "",
+        notes: seed.notes || "",
+        createdAt: new Date().toISOString(),
+        seeded: true,
+      };
+      try {
+        await upsertOutreach(entry);
+        created++;
+      } catch (e) {
+        console.warn("[seed-individual] failed for", u.id, e.message);
+      }
+    }
+  }
+
   if (created > 0) {
     console.log(`[seed] auto-stamped ${created} historical outreach entries`);
     if (typeof showSyncToast === "function") {
