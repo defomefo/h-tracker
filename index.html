@@ -19960,27 +19960,148 @@ function renderOutreachView() {
 // flow (operator opens the entity, flips status to Replied + sentiment).
 // ============================================================================
 
+// Real templates Silvia sent to Turkish agencies. Pasted from the
+// operator's outreach history — preserved verbatim so backfilled rows
+// match what was actually delivered. Three variants:
+//   - bilingual (default): full EN + TR — the actual form sent
+//   - en: English-only excerpt
+//   - tr: Turkish-only excerpt
+// If the operator used a different template for different audiences
+// (universities vs schools vs agencies), use Custom paste for the
+// variant instead of editing this constant.
 const BULK_BACKFILL_TEMPLATES = {
-  tr: {
-    flag: "🇹🇷 TR",
-    name: "Türkçe template",
-    subject: "H-FARM College — İşbirliği fırsatı",
-    body: "Merhaba,\n\nH-FARM College adına size yazıyorum. Üniversiteniz/kurumunuz ile potansiyel bir işbirliği imkânını görüşmek istiyoruz...\n\n[Operator's actual Turkish template]",
+  bilingual: {
+    flag: "🌐 EN+TR",
+    name: "Bilingual (EN + TR)",
+    subject: "H-FARM College — The Right Partnership, The Right Future / Doğru Ortaklık, Doğru Gelecek",
+    body: `We are reaching out from H-FARM College.
+
+The Right Partnership, The Right Future: Why H-FARM College?
+
+As H-FARM College one of the largest entrepreneurship and educational hubs in Italy and Europe, we are looking to explore the possibility of setting up a partnership with your institution; since we consider Turkey as a natural interlocutor when it comes to digital transformation and innovation.
+
+We are building the future on our 55-hectare innovation campus located in the heart of Europe, just a few kilometers from Venice. H-FARM College is a leading educational center shaping Europe's entrepreneurship ecosystem, as the Financial Times has stated.
+
+We believe that in the eyes of Turkish students and their families, H-FARM College can stand out as an innovative academic institution because of following features:
+
+1. Prestigious University Degrees (Ca' Foscari & Chichester)
+We offer students world-renowned academic degrees. Depending on their program, students graduate with diplomas certified by Ca' Foscari University of Venice (one of Italy's most established state universities) or the University of Chichester (a prestigious UK institution).
+
+2. Certified Success
+We are ranked #1 in Italy and in the Top 5 in Europe's Leading Start-Up Hubs Ranking for innovation and entrepreneurship according to the Financial Times.
+
+3. Real-World Experience
+Through our "learning by doing" model, students receive an education integrated with global companies and the startup ecosystem directly on our Campus.
+
+What could be our first step: Summer Programs 2026 and Bachelors/Masters AY 2026/2027
+
+Let's focus on our Summer Programs 2026 centered around "Entrepreneurship" and "Digital Transformation":
+
+Entrepreneurship:
+- Start Up Adventure Program: 12-day summer programme for ages 16–25, innovation + AI + entrepreneurship in the H-FARM ecosystem.
+
+Digital Transformation:
+- AI Fashion Lab: 2-week intensive on AI + digital tech reshaping the fashion industry.
+- Designing Connected Futures (IoT & AI): with Cisco — Cisco Networking Academy curriculum + H-FARM project-based approach.
+- Defending Digital Worlds (Cybersecurity & AI): with Cisco — train next-generation Digital Defenders.
+
+---
+
+Doğru Ortaklık, Doğru Gelecek: Neden H-FARM College?
+
+İtalya'nın ve Avrupa'nın en büyük girişimcilik ve eğitim merkezlerinden biri olan H-FARM College olarak, kurumunuzla bir işbirliği kurma olasılığını değerlendirmek istiyoruz; çünkü dijital dönüşüm ve inovasyon söz konusu olduğunda Türkiye'yi doğal bir paydaş olarak görüyoruz.
+
+Geleceği, Avrupa'nın kalbinde, Venedik'e sadece birkaç kilometre uzaklıkta bulunan 55 hektarlık inovasyon kampüsümüzde inşa ediyoruz. Financial Times'ın da belirttiği üzere H-FARM College, Avrupa'nın girişimcilik ekosistemini şekillendiren öncü bir eğitim merkezidir.
+
+Türk öğrencilerin ve ailelerinin gözünde H-FARM College'ın aşağıdaki özellikleri sayesinde yenilikçi bir akademik kurum olarak öne çıkacağına inanıyoruz:
+
+1. Prestijli Üniversite Dereceleri (Ca' Foscari ve Chichester)
+2. Onaylanmış Başarı (FT'ye göre İtalya'da 1., Avrupa'da Top 5)
+3. Gerçek Dünya Deneyimi ("Yaparak öğrenme" modeli)
+
+İş birliğimizin ilk adımı olarak "Girişimcilik" ve "Dijital Dönüşüm" odaklı 2026 Yaz Programlarımıza odaklanabiliriz:
+- Start Up Adventure Programı
+- AI Fashion Lab
+- IoT & AI ile Bağlantılı Gelecekleri Tasarlamak (Cisco ortaklığında)
+- Dijital Dünyaları Savunmak (Cisco ortaklığında)
+
+Paylaştığımız bu bilgiler ışığında, 27 Mart'a kadar bir ön görüşme gerçekleştirmemiz mümkün müdür?
+
+Bu yazdan itibaren yeni bir işbirliğinin temellerini atabilirsek çok seviniriz.
+
+Şimdiden teşekkür ederiz.
+
+Saygılarımızla,
+Silvia`,
   },
   en: {
     flag: "🇬🇧 EN",
-    name: "English template",
-    subject: "H-FARM College — Partnership opportunity",
-    body: "Hello,\n\nI'm writing on behalf of H-FARM College. We'd like to explore a potential partnership with your institution...\n\n[Operator's actual English template]",
+    name: "English only",
+    subject: "H-FARM College — The Right Partnership, The Right Future",
+    body: `We are reaching out from H-FARM College.
+
+The Right Partnership, The Right Future: Why H-FARM College?
+
+As H-FARM College one of the largest entrepreneurship and educational hubs in Italy and Europe, we are looking to explore the possibility of setting up a partnership with your institution; since we consider Turkey as a natural interlocutor when it comes to digital transformation and innovation.
+
+We are building the future on our 55-hectare innovation campus located in the heart of Europe, just a few kilometers from Venice. H-FARM College is a leading educational center shaping Europe's entrepreneurship ecosystem, as the Financial Times has stated.
+
+We believe that in the eyes of Turkish students and their families, H-FARM College can stand out as an innovative academic institution because of:
+  1. Prestigious University Degrees (Ca' Foscari & Chichester)
+  2. Certified Success — #1 in Italy, Top 5 in Europe (FT)
+  3. Real-World Experience — "learning by doing" model with global companies
+
+What could be our first step: Summer Programs 2026 and Bachelors/Masters AY 2026/2027.
+
+Summer 2026 programmes focused on Entrepreneurship + Digital Transformation:
+  - Start Up Adventure Program (12-day, ages 16-25)
+  - AI Fashion Lab (2-week intensive)
+  - Designing Connected Futures (IoT & AI) — with Cisco
+  - Defending Digital Worlds (Cybersecurity & AI) — with Cisco
+
+Looking forward to a first call.
+
+Best regards,
+Silvia`,
+  },
+  tr: {
+    flag: "🇹🇷 TR",
+    name: "Türkçe only",
+    subject: "H-FARM College — Doğru Ortaklık, Doğru Gelecek",
+    body: `Doğru Ortaklık, Doğru Gelecek: Neden H-FARM College?
+
+İtalya'nın ve Avrupa'nın en büyük girişimcilik ve eğitim merkezlerinden biri olan H-FARM College olarak, kurumunuzla bir işbirliği kurma olasılığını değerlendirmek istiyoruz; çünkü dijital dönüşüm ve inovasyon söz konusu olduğunda Türkiye'yi doğal bir paydaş olarak görüyoruz.
+
+Geleceği, Avrupa'nın kalbinde, Venedik'e sadece birkaç kilometre uzaklıkta bulunan 55 hektarlık inovasyon kampüsümüzde inşa ediyoruz. Financial Times'ın da belirttiği üzere H-FARM College, Avrupa'nın girişimcilik ekosistemini şekillendiren öncü bir eğitim merkezidir.
+
+Türk öğrencilerin ve ailelerinin gözünde H-FARM College'ın aşağıdaki özellikleri sayesinde yenilikçi bir akademik kurum olarak öne çıkacağına inanıyoruz:
+  1. Prestijli Üniversite Dereceleri (Ca' Foscari ve Chichester)
+  2. Onaylanmış Başarı (FT: İtalya'da 1., Avrupa'da Top 5)
+  3. Gerçek Dünya Deneyimi ("Yaparak öğrenme" modeli)
+
+İlk Adımımız Ne Olabilir: 2026 Yaz Programları ve 2026/2027 Akademik Yılı Lisans/Yüksek Lisans Programları
+
+"Girişimcilik" ve "Dijital Dönüşüm" odaklı 2026 Yaz Programları:
+  - Start Up Adventure Programı (16-25 yaş, 12 gün)
+  - AI Fashion Lab (2 hafta yoğun)
+  - IoT & AI ile Bağlantılı Gelecekleri Tasarlamak (Cisco ortaklığında)
+  - Dijital Dünyaları Savunmak (Cisco ortaklığında)
+
+Paylaştığımız bu bilgiler ışığında, 27 Mart'a kadar bir ön görüşme gerçekleştirmemiz mümkün müdür?
+
+Şimdiden teşekkür ederiz.
+
+Saygılarımızla,
+Silvia`,
   },
 };
 
 let _bulkBackfillState = {
-  template: "tr",      // 'tr' | 'en' | 'custom'
+  template: "bilingual",  // 'bilingual' | 'en' | 'tr' | 'custom'
   customSubject: "",
   customBody: "",
   date: "",            // YYYY-MM-DD
-  status: "sent",      // 'sent' | 'replied'
+  status: "sent",      // 'sent' | 'replied' | 'bounced'
   sentiment: "",       // when status=replied
   channel: "email",
   selectedIds: new Set(),
@@ -20027,8 +20148,8 @@ function _renderBulkBackfillBody() {
         <input type="text" id="bb-custom-subject" value="${escape(st.customSubject)}" placeholder="e.g. H-FARM College — Bahar dönemi işbirliği" oninput="_bulkBackfillState.customSubject = this.value"/>
       </div>
       <div class="bb-row">
-        <label>Body (first 500 chars saved)</label>
-        <textarea id="bb-custom-body" placeholder="Paste your full email body. Only the first 500 chars are stored." oninput="_bulkBackfillState.customBody = this.value">${escape(st.customBody)}</textarea>
+        <label>Body</label>
+        <textarea id="bb-custom-body" placeholder="Paste your full email body here." oninput="_bulkBackfillState.customBody = this.value">${escape(st.customBody)}</textarea>
       </div>
     </div>`;
 
@@ -20180,15 +20301,17 @@ async function _bulkBackfillConfirm() {
   if (st.status === "replied" && !st.sentiment) {
     if (!confirm("You marked status as Replied but no sentiment is selected. Continue with no sentiment?")) return;
   }
-  // Resolve the template subject + body
+  // Resolve the template subject + body. Predefined templates keep
+  // their full text (Silvia's actual emails are long-form bilingual);
+  // custom paste is capped at 5000 chars to protect against absurd dumps.
   let subject, body;
   if (st.template === "custom") {
     subject = (st.customSubject || "").trim() || "(custom outreach — no subject)";
-    body    = (st.customBody    || "").trim().slice(0, 500);
+    body    = (st.customBody    || "").trim().slice(0, 5000);
   } else {
-    const t = BULK_BACKFILL_TEMPLATES[st.template] || BULK_BACKFILL_TEMPLATES.tr;
+    const t = BULK_BACKFILL_TEMPLATES[st.template] || BULK_BACKFILL_TEMPLATES.bilingual;
     subject = t.subject;
-    body    = (t.body || "").slice(0, 500);
+    body    = t.body || "";   // full text — no truncation
   }
   // Build a deterministic-ish entry ID so re-running this exact combo
   // updates the same row instead of creating a duplicate.
