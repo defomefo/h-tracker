@@ -20196,7 +20196,12 @@ function _renderBulkBackfillBody() {
 
   body.innerHTML = `
     <div class="bb-section">
-      <div class="bb-section-label">1 · Pick the template you sent <span class="bb-section-sub">— same template across all selected partners</span></div>
+      <div class="bb-section-label">
+        1 · Pick the template you sent <span class="bb-section-sub">— same template across all selected partners</span>
+        <button type="button" onclick="_bulkBackfillApplyAgencyPreset()" style="font-size:10px;background:var(--gold-light);border:1px solid var(--gold);color:var(--hf-red-deep);padding:4px 10px;border-radius:5px;cursor:pointer;font-family:inherit;font-weight:800;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap" title="Sets bilingual template + 19 Mar 2026 date + selects all agencies in one click">
+          🎯 Apply agency preset
+        </button>
+      </div>
       <div class="bb-template-choices">${templateCards}</div>
       ${customFields}
     </div>
@@ -20292,6 +20297,29 @@ function _bulkBackfillSelectVisible() {
 function _bulkBackfillClear() {
   _bulkBackfillState.selectedIds.clear();
   _renderBulkBackfillBody();
+}
+
+// One-click preset for Silvia's 19-Mar-2026 Turkish-agency batch.
+// Sets template + date + selects every UNIS row whose type is 'agency'.
+// User can refine the selection (uncheck non-Turkish agencies, etc.)
+// before hitting Confirm — preset is a starting point, not a lock.
+function _bulkBackfillApplyAgencyPreset() {
+  _bulkBackfillState.template = "bilingual";
+  _bulkBackfillState.date = "2026-03-19";
+  _bulkBackfillState.status = "sent";
+  _bulkBackfillState.sentiment = "";
+  _bulkBackfillState.search = "";
+  _bulkBackfillState.selectedIds.clear();
+  // Select every agency in UNIS — the original batch went to agencies.
+  // Operator unticks any non-Turkish or wrong ones before confirming.
+  (UNIS || []).forEach(u => {
+    if (u && u.type === "agency") _bulkBackfillState.selectedIds.add(u.id);
+  });
+  const n = _bulkBackfillState.selectedIds.size;
+  _renderBulkBackfillBody();
+  if (typeof showSyncToast === "function") {
+    showSyncToast(`🎯 Preset applied · ${n} ${n === 1 ? 'agency' : 'agencies'} selected · bilingual template · 19 Mar 2026 — review then confirm`, "ok");
+  }
 }
 
 async function _bulkBackfillConfirm() {
