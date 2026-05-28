@@ -3190,7 +3190,12 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .db-toolbar .db-count{font-size:11px;color:var(--ink-soft);font-weight:700;margin-left:auto}
 .db-table-wrap{padding:0 28px 60px;overflow-x:auto}
 .db-table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
-.db-table thead th{background:var(--navy);color:#fff;padding:10px 8px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;user-select:none;white-space:nowrap}
+/* Sticky header — Excel-style frozen top row. The .db-table-wrap below
+   sets max-height + overflow:auto so the table body scrolls; the thead
+   sits at top:0 inside that scroll container. z-index keeps it above
+   any cell content (sentiment dots, sparklines) that might overlap. */
+.db-table thead{position:sticky;top:0;z-index:5}
+.db-table thead th{background:var(--navy);color:#fff;padding:10px 8px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;user-select:none;white-space:nowrap;box-shadow:0 2px 0 var(--hf-red)}
 .db-table thead th:hover{background:var(--navy-light)}
 .db-table thead .sort-arrow{color:var(--gold);font-size:9px;margin-left:3px}
 .db-table tbody td{padding:8px 8px;border-bottom:1px solid var(--rule);vertical-align:middle}
