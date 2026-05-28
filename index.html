@@ -1488,6 +1488,56 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .program-row .pr-reason strong{color:var(--navy)}
 .program-row .pr-reason em{color:var(--gold);font-style:normal;font-weight:600;background:var(--paper);padding:0 4px;border-radius:3px}
 
+/* ============================================================
+   BULK BACKFILL — one-time historical-outreach import tool.
+   Pick template (TR/EN/custom) + date + N entities → stamps an
+   outreach entry on each. Replies marked separately.
+   ============================================================ */
+.bb-section{margin-bottom:18px}
+.bb-section-label{font-size:9px;letter-spacing:1.4px;color:var(--ink-soft);text-transform:uppercase;font-weight:800;margin-bottom:8px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.bb-section-label .bb-section-sub{font-size:10px;color:var(--ink-mute);font-weight:500;letter-spacing:.2px;text-transform:none;font-style:italic}
+.bb-template-choices{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.bb-template-card{background:#fff;border:1.5px solid var(--rule);border-radius:8px;padding:11px 13px;cursor:pointer;text-align:left;font-family:inherit;transition:all .14s;display:flex;flex-direction:column;gap:4px}
+.bb-template-card:hover{border-color:var(--ink-soft)}
+.bb-template-card.active{border-color:var(--hf-red);background:linear-gradient(135deg,#FFFAF6,#fff);box-shadow:0 2px 8px rgba(217,83,79,.12)}
+.bb-template-flag{font-size:14px;letter-spacing:1.5px;font-weight:800;color:var(--hf-red);text-transform:uppercase;line-height:1}
+.bb-template-name{font-size:12px;font-weight:700;color:var(--ink);line-height:1.3}
+.bb-template-preview{font-size:10.5px;color:var(--ink-soft);line-height:1.5;font-style:italic}
+.bb-custom-fields{display:none;margin-top:10px;padding:12px;background:var(--paper);border:1px dashed var(--rule);border-radius:6px;gap:8px;flex-direction:column}
+.bb-custom-fields.show{display:flex}
+.bb-row{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center}
+.bb-row label{font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.3px}
+.bb-row input,.bb-row select,.bb-row textarea{font-family:inherit;font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:5px;background:#fff;color:var(--ink);width:100%}
+.bb-row input:focus,.bb-row select:focus,.bb-row textarea:focus{outline:none;border-color:var(--gold)}
+.bb-row textarea{min-height:60px;resize:vertical;font-family:inherit;line-height:1.45}
+.bb-meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.bb-meta-field{display:flex;flex-direction:column;gap:4px}
+.bb-meta-field label{font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--ink-soft);text-transform:uppercase}
+.bb-meta-field input,.bb-meta-field select{font-family:inherit;font-size:12px;padding:7px 10px;border:1px solid var(--rule);border-radius:5px;background:#fff;color:var(--ink)}
+.bb-entity-search{width:100%;padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-family:inherit;font-size:12px;margin-bottom:8px;background:var(--paper)}
+.bb-entity-search:focus{outline:none;border-color:var(--gold);background:#fff}
+.bb-entity-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px;color:var(--ink-soft)}
+.bb-entity-toolbar button{font-size:10px;font-family:inherit;background:var(--paper);border:1px solid var(--rule);color:var(--ink-soft);padding:4px 9px;border-radius:5px;cursor:pointer;letter-spacing:.3px;font-weight:700;text-transform:uppercase}
+.bb-entity-toolbar button:hover{border-color:var(--hf-red);color:var(--hf-red)}
+.bb-entity-toolbar .bb-count{margin-left:auto;font-weight:700;color:var(--ink)}
+.bb-entity-list{max-height:280px;overflow-y:auto;border:1px solid var(--rule);border-radius:6px;background:#fff}
+.bb-entity-row{display:grid;grid-template-columns:24px 1fr auto;gap:10px;padding:7px 12px;align-items:center;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .1s;font-size:12px}
+.bb-entity-row:last-child{border-bottom:none}
+.bb-entity-row:hover{background:var(--paper)}
+.bb-entity-row.checked{background:rgba(217,83,79,.06)}
+.bb-entity-row .bb-check{width:16px;height:16px;border:1.8px solid var(--rule);border-radius:3px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;transition:all .12s}
+.bb-entity-row.checked .bb-check{background:var(--hf-red);border-color:var(--hf-red)}
+.bb-entity-row .bb-check::after{content:"✓";opacity:0}
+.bb-entity-row.checked .bb-check::after{opacity:1}
+.bb-entity-name{font-weight:600;color:var(--ink);font-size:12px}
+.bb-entity-meta{font-size:10px;color:var(--ink-mute);font-weight:500;margin-top:1px}
+.bb-entity-tag{font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:2px 7px;border-radius:9px}
+.bb-preview-banner{background:linear-gradient(135deg,rgba(31,110,72,.06),rgba(31,110,72,.02));border:1px solid rgba(31,110,72,.3);border-left:3px solid #1F6E48;border-radius:6px;padding:11px 14px;margin-top:14px;font-size:12px;line-height:1.55;color:var(--ink)}
+.bb-preview-banner b{color:#1F6E48;font-weight:800}
+.bb-foot{display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;margin-top:18px;border-top:1px solid var(--rule);gap:12px}
+.bb-foot-info{font-size:11px;color:var(--ink-mute);line-height:1.4}
+.bb-foot-actions{display:flex;gap:8px}
+
 .compare-modal{position:fixed;inset:0;background:rgba(10,37,64,.45);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
 .compare-modal.open{display:flex;animation:modalBackdropIn var(--motion-base) var(--ease-elegant)}
 .compare-box{background:#fff;border-radius:10px;width:100%;max-width:1200px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
@@ -4599,6 +4649,17 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
       <div class="lo-meta" id="lo-meta"></div>
     </div>
     <div class="lo-foot" id="lo-foot"></div>
+  </div>
+</div>
+
+<!-- Bulk backfill outreach modal — apply a fixed template (TR or EN) across N partners at once. One-time historical backfill tool. -->
+<div class="compare-modal" id="bulk-backfill-modal" style="z-index:425">
+  <div class="compare-box" style="max-width:780px">
+    <div class="compare-head">
+      <h2>📥 Bulk backfill outreach</h2>
+      <button class="compare-close" onclick="closeBulkBackfillModal()">&times;</button>
+    </div>
+    <div class="compare-body" id="bulk-backfill-body"></div>
   </div>
 </div>
 
@@ -19850,7 +19911,15 @@ function renderOutreachView() {
     list.forEach(e => all.push({...e, entityId: eid}));
   });
   all.sort((a,b) => (b.date || "").localeCompare(a.date || ""));
-  let html = `<div class="view-header"><h1>Outreach log</h1><p>Every email, call and meeting logged across the portfolio, newest first.</p></div>`;
+  let html = `<div class="view-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap">
+    <div>
+      <h1>Outreach log</h1>
+      <p>Every email, call and meeting logged across the portfolio, newest first.</p>
+    </div>
+    <button class="btn gold" type="button" onclick="openBulkBackfillModal()" style="white-space:nowrap;margin-top:6px" title="Backfill historical emails — apply a fixed template across multiple partners in one go">
+      📥 Bulk backfill
+    </button>
+  </div>`;
   if (!all.length) {
     html += '<div class="empty" style="margin:30px 24px">No outreach logged yet. Open any entity (Globe or Database) and click "+ Log outreach".</div>';
   } else {
@@ -19877,6 +19946,297 @@ function renderOutreachView() {
     html += `</div>`;
   }
   el.innerHTML = html;
+}
+
+// ============================================================================
+// BULK BACKFILL — historical outreach import tool.
+// ----------------------------------------------------------------------------
+// Real-world flow: an operator has been sending one of 2 fixed templates
+// (Turkish or English) to dozens of partners outside the platform. None
+// of that history is logged, so the reviewer's "no outreach for partners
+// we've actually contacted" complaint is valid. This tool lets them
+// stamp a fixed template across N partners in one go, no per-entity
+// retyping. Reply marking happens separately via the existing per-entity
+// flow (operator opens the entity, flips status to Replied + sentiment).
+// ============================================================================
+
+const BULK_BACKFILL_TEMPLATES = {
+  tr: {
+    flag: "🇹🇷 TR",
+    name: "Türkçe template",
+    subject: "H-FARM College — İşbirliği fırsatı",
+    body: "Merhaba,\n\nH-FARM College adına size yazıyorum. Üniversiteniz/kurumunuz ile potansiyel bir işbirliği imkânını görüşmek istiyoruz...\n\n[Operator's actual Turkish template]",
+  },
+  en: {
+    flag: "🇬🇧 EN",
+    name: "English template",
+    subject: "H-FARM College — Partnership opportunity",
+    body: "Hello,\n\nI'm writing on behalf of H-FARM College. We'd like to explore a potential partnership with your institution...\n\n[Operator's actual English template]",
+  },
+};
+
+let _bulkBackfillState = {
+  template: "tr",      // 'tr' | 'en' | 'custom'
+  customSubject: "",
+  customBody: "",
+  date: "",            // YYYY-MM-DD
+  status: "sent",      // 'sent' | 'replied'
+  sentiment: "",       // when status=replied
+  channel: "email",
+  selectedIds: new Set(),
+  search: "",
+};
+
+function openBulkBackfillModal() {
+  // Default date to today; preserve other state on re-open
+  if (!_bulkBackfillState.date) {
+    _bulkBackfillState.date = new Date().toISOString().slice(0, 10);
+  }
+  _renderBulkBackfillBody();
+  document.getElementById("bulk-backfill-modal").classList.add("open");
+}
+
+function closeBulkBackfillModal() {
+  document.getElementById("bulk-backfill-modal").classList.remove("open");
+}
+
+function _renderBulkBackfillBody() {
+  const body = document.getElementById("bulk-backfill-body");
+  if (!body) return;
+  const st = _bulkBackfillState;
+  const tplKey = st.template;
+
+  // Templates: 2 fixed (TR/EN) + a 'custom' card if operator wants different
+  const templateCards = [
+    { key: "tr", ...BULK_BACKFILL_TEMPLATES.tr },
+    { key: "en", ...BULK_BACKFILL_TEMPLATES.en },
+    { key: "custom", flag: "✏️", name: "Custom paste", subject: "Paste your own subject + body", body: "" },
+  ].map(t => `
+    <button type="button" class="bb-template-card ${tplKey === t.key ? 'active' : ''}" onclick="_bulkBackfillPickTemplate('${t.key}')">
+      <span class="bb-template-flag">${escape(t.flag)}</span>
+      <span class="bb-template-name">${escape(t.name)}</span>
+      <span class="bb-template-preview">${escape((t.subject || "").slice(0, 70))}</span>
+    </button>`).join("");
+
+  // Custom paste fields (only show when 'custom' selected)
+  const customShow = tplKey === "custom" ? "show" : "";
+  const customFields = `
+    <div class="bb-custom-fields ${customShow}" id="bb-custom-fields">
+      <div class="bb-row">
+        <label>Subject</label>
+        <input type="text" id="bb-custom-subject" value="${escape(st.customSubject)}" placeholder="e.g. H-FARM College — Bahar dönemi işbirliği" oninput="_bulkBackfillState.customSubject = this.value"/>
+      </div>
+      <div class="bb-row">
+        <label>Body (first 500 chars saved)</label>
+        <textarea id="bb-custom-body" placeholder="Paste your full email body. Only the first 500 chars are stored." oninput="_bulkBackfillState.customBody = this.value">${escape(st.customBody)}</textarea>
+      </div>
+    </div>`;
+
+  // Entity selection — searchable + select all/none controls.
+  // Filter to UNIS only (partners pipeline); sponsors not included here.
+  const searchQ = (st.search || "").toLowerCase();
+  const visible = UNIS.filter(u => {
+    if (!searchQ) return true;
+    const blob = `${u.name || ""} ${u.country || ""} ${u.country_canonical || ""} ${u.priority || ""}`.toLowerCase();
+    return blob.includes(searchQ);
+  });
+  const entityRows = visible.slice(0, 200).map(u => {
+    const checked = st.selectedIds.has(u.id) ? "checked" : "";
+    const ctry = u.country_canonical || u.country || "—";
+    const prio = u.priority || "";
+    return `<div class="bb-entity-row ${checked}" onclick="_bulkBackfillToggle('${escapeAttr(u.id)}')">
+      <div class="bb-check"></div>
+      <div>
+        <div class="bb-entity-name">${escape(u.name)}</div>
+        <div class="bb-entity-meta">${escape(ctry)} · ${escape(ENTITY_LABELS[u.type] || u.type)}</div>
+      </div>
+      ${prio ? `<span class="bb-entity-tag" style="background:${PRIO_COLORS[prio] || '#ccc'}22;color:${PRIO_COLORS[prio] || '#666'}">${escape(prio)}</span>` : '<span></span>'}
+    </div>`;
+  }).join("");
+  const overflow = visible.length > 200 ? `<div style="padding:10px;text-align:center;font-size:11px;color:var(--ink-mute);font-style:italic">Showing first 200 of ${visible.length} matches — refine your search</div>` : "";
+
+  const pickedCount = st.selectedIds.size;
+  const pickedIds = [...st.selectedIds];
+  const allVisibleIds = visible.map(u => u.id);
+  const allVisibleSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => st.selectedIds.has(id));
+
+  // Reply sentiment dropdown (only when status=replied)
+  const sentimentRow = st.status === "replied" ? `
+    <div class="bb-meta-field">
+      <label>Reply sentiment</label>
+      <select id="bb-sentiment" onchange="_bulkBackfillState.sentiment = this.value">
+        <option value="">— pick one —</option>
+        <option value="positive" ${st.sentiment === "positive" ? "selected" : ""}>Positive</option>
+        <option value="neutral"  ${st.sentiment === "neutral"  ? "selected" : ""}>Neutral</option>
+        <option value="negative" ${st.sentiment === "negative" ? "selected" : ""}>Negative</option>
+        <option value="rejected" ${st.sentiment === "rejected" ? "selected" : ""}>Rejected</option>
+      </select>
+    </div>` : "";
+
+  body.innerHTML = `
+    <div class="bb-section">
+      <div class="bb-section-label">1 · Pick the template you sent <span class="bb-section-sub">— same template across all selected partners</span></div>
+      <div class="bb-template-choices">${templateCards}</div>
+      ${customFields}
+    </div>
+
+    <div class="bb-section">
+      <div class="bb-section-label">2 · When + how you sent it</div>
+      <div class="bb-meta-grid">
+        <div class="bb-meta-field">
+          <label>Date sent</label>
+          <input type="date" id="bb-date" value="${escape(st.date)}" onchange="_bulkBackfillState.date = this.value" max="${new Date().toISOString().slice(0,10)}"/>
+        </div>
+        <div class="bb-meta-field">
+          <label>Status to mark</label>
+          <select id="bb-status" onchange="_bulkBackfillState.status = this.value; _renderBulkBackfillBody()">
+            <option value="sent"    ${st.status === "sent"    ? "selected" : ""}>Sent (no reply yet)</option>
+            <option value="replied" ${st.status === "replied" ? "selected" : ""}>Replied</option>
+            <option value="bounced" ${st.status === "bounced" ? "selected" : ""}>Bounced</option>
+          </select>
+        </div>
+        ${sentimentRow || `<div></div>`}
+      </div>
+    </div>
+
+    <div class="bb-section">
+      <div class="bb-section-label">3 · Pick partners <span class="bb-section-sub">— search to filter, click rows to toggle</span></div>
+      <input type="text" class="bb-entity-search" id="bb-search" placeholder="Search by name, country, priority…" value="${escape(st.search)}" oninput="_bulkBackfillSearch(this.value)" autocomplete="off"/>
+      <div class="bb-entity-toolbar">
+        <button type="button" onclick="_bulkBackfillSelectVisible()">${allVisibleSelected ? "Deselect" : "Select"} all visible</button>
+        <button type="button" onclick="_bulkBackfillClear()">Clear selection</button>
+        <span class="bb-count">${pickedCount} selected · ${visible.length} ${searchQ ? 'matching' : 'total'}</span>
+      </div>
+      <div class="bb-entity-list">
+        ${entityRows || '<div style="padding:30px;text-align:center;font-size:11px;color:var(--ink-mute);font-style:italic">No partners match.</div>'}
+        ${overflow}
+      </div>
+    </div>
+
+    ${pickedCount > 0 ? `<div class="bb-preview-banner">
+      Will create <b>${pickedCount} outreach ${pickedCount === 1 ? 'entry' : 'entries'}</b> dated <b>${escape(st.date)}</b>, marked as <b>${escape(st.status)}</b>${st.status === "replied" && st.sentiment ? ` with sentiment <b>${escape(st.sentiment)}</b>` : ""}, using the <b>${escape(tplKey === "custom" ? "custom" : BULK_BACKFILL_TEMPLATES[tplKey].name)}</b> template.
+    </div>` : ""}
+
+    <div class="bb-foot">
+      <div class="bb-foot-info">
+        Idempotent: re-running with the same date + template + partner doesn't duplicate — it updates the existing entry.<br>
+        For replies later: open each partner individually and use the existing "+ Log outreach" flow to flip status / set sentiment.
+      </div>
+      <div class="bb-foot-actions">
+        <button class="btn outline" type="button" onclick="closeBulkBackfillModal()">Cancel</button>
+        <button class="btn gold" type="button" id="bb-confirm-btn" onclick="_bulkBackfillConfirm()" ${pickedCount === 0 ? "disabled" : ""} style="${pickedCount === 0 ? 'opacity:.5;cursor:not-allowed' : ''}">
+          ✓ Create ${pickedCount} ${pickedCount === 1 ? 'entry' : 'entries'}
+        </button>
+      </div>
+    </div>`;
+
+  // Restore search input focus + caret if user was typing
+  if (searchQ) {
+    const s = document.getElementById("bb-search");
+    if (s) { s.focus(); try { s.setSelectionRange(searchQ.length, searchQ.length); } catch {} }
+  }
+}
+
+function _bulkBackfillPickTemplate(key) {
+  _bulkBackfillState.template = key;
+  _renderBulkBackfillBody();
+}
+function _bulkBackfillSearch(v) {
+  _bulkBackfillState.search = v;
+  _renderBulkBackfillBody();
+}
+function _bulkBackfillToggle(entityId) {
+  if (_bulkBackfillState.selectedIds.has(entityId)) {
+    _bulkBackfillState.selectedIds.delete(entityId);
+  } else {
+    _bulkBackfillState.selectedIds.add(entityId);
+  }
+  _renderBulkBackfillBody();
+}
+function _bulkBackfillSelectVisible() {
+  const searchQ = (_bulkBackfillState.search || "").toLowerCase();
+  const visible = UNIS.filter(u => {
+    if (!searchQ) return true;
+    const blob = `${u.name || ""} ${u.country || ""} ${u.country_canonical || ""} ${u.priority || ""}`.toLowerCase();
+    return blob.includes(searchQ);
+  }).slice(0, 200);
+  const allSelected = visible.every(u => _bulkBackfillState.selectedIds.has(u.id));
+  if (allSelected) {
+    visible.forEach(u => _bulkBackfillState.selectedIds.delete(u.id));
+  } else {
+    visible.forEach(u => _bulkBackfillState.selectedIds.add(u.id));
+  }
+  _renderBulkBackfillBody();
+}
+function _bulkBackfillClear() {
+  _bulkBackfillState.selectedIds.clear();
+  _renderBulkBackfillBody();
+}
+
+async function _bulkBackfillConfirm() {
+  const st = _bulkBackfillState;
+  if (st.selectedIds.size === 0) return;
+  if (!st.date) { alert("Please pick a date sent."); return; }
+  if (st.status === "replied" && !st.sentiment) {
+    if (!confirm("You marked status as Replied but no sentiment is selected. Continue with no sentiment?")) return;
+  }
+  // Resolve the template subject + body
+  let subject, body;
+  if (st.template === "custom") {
+    subject = (st.customSubject || "").trim() || "(custom outreach — no subject)";
+    body    = (st.customBody    || "").trim().slice(0, 500);
+  } else {
+    const t = BULK_BACKFILL_TEMPLATES[st.template] || BULK_BACKFILL_TEMPLATES.tr;
+    subject = t.subject;
+    body    = (t.body || "").slice(0, 500);
+  }
+  // Build a deterministic-ish entry ID so re-running this exact combo
+  // updates the same row instead of creating a duplicate.
+  // Format: bulk-<entityId>-<YYYYMMDD>-<templateKey>
+  const dateCompact = st.date.replace(/-/g, "");
+  const btn = document.getElementById("bb-confirm-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Creating…"; btn.style.opacity = ".6"; }
+
+  let okCount = 0, failCount = 0;
+  for (const entityId of st.selectedIds) {
+    const id = `bulk-${entityId}-${dateCompact}-${st.template}`;
+    const entry = {
+      id,
+      entityId,
+      channel:    st.channel || "email",
+      subject,
+      body,
+      date:       st.date,
+      status:     st.status,
+      sentiment:  st.status === "replied" ? (st.sentiment || null) : null,
+      sender:     getDisplayName() || "Anonymous",
+      senderEmail:getUserEmail() || "",
+      senderTeamId: null,
+      recipientName: "",
+      recipientEmail: "",
+      notes: `Bulk-backfilled via the historical-import tool (template: ${st.template}).`,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      await upsertOutreach(entry);
+      okCount++;
+    } catch (e) {
+      console.warn("[bulk-backfill] failed for", entityId, e.message);
+      failCount++;
+    }
+  }
+
+  if (typeof showSyncToast === "function") {
+    showSyncToast(`✓ Backfilled ${okCount} outreach ${okCount === 1 ? 'entry' : 'entries'}${failCount ? ` · ${failCount} failed` : ''}`, failCount ? "warn" : "ok");
+  }
+  // Reset selection but keep template/date in case user wants to do another batch
+  _bulkBackfillState.selectedIds.clear();
+  closeBulkBackfillModal();
+  // Refresh the outreach feed if user is on that view
+  if (STATE.view === "outreach" && typeof renderOutreachView === "function") {
+    renderOutreachView();
+  }
+  if (typeof renderHomeView === "function" && STATE.view === "home") renderHomeView();
 }
 
 // BROCHURES — list loaded from data/brochures.json (editable in Admin view)
