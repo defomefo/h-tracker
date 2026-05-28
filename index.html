@@ -12516,13 +12516,19 @@ async function syncOutreachFromServer() {
     _writeLocalOutreach(remote);   // refresh cache for offline next-load
     OUTREACH_BACKEND = "remote";
     if (STATE.detailId && document.getElementById("detail-panel").classList.contains("open")) openDetail(STATE.detailId);  // refresh visible panel
-    // After sync, apply any code-embedded seed batches that don't yet
-    // exist in the backend. UNIS must be loaded — _applySeedOutreach
-    // is idempotent and bails early if either prereq is missing, so
-    // racing UNIS/OUTREACH load order is harmless.
-    if (typeof _applySeedOutreach === "function") {
-      _applySeedOutreach().catch(() => null);
-    }
+    // After sync, run two passes in order:
+    //   1. Delete any phantom entries flagged in SEED_OUTREACH_DELETIONS
+    //      (AI drafts the reviewer never actually sent, etc.)
+    //   2. Apply any seed batches not yet in the backend
+    // Both are idempotent and bail early if UNIS isn't loaded yet.
+    (async () => {
+      if (typeof _applySeedOutreachDeletions === "function") {
+        await _applySeedOutreachDeletions();
+      }
+      if (typeof _applySeedOutreach === "function") {
+        await _applySeedOutreach();
+      }
+    })().catch(() => null);
     return true;
   } catch (e) {
     OUTREACH_BACKEND = "local";
@@ -12632,6 +12638,53 @@ function _findEntityByNamePatterns(patterns) {
   return null;
 }
 
+// Entries reviewer flagged as 'I never sent this' — auto-delete on every
+// boot until removed from the list. Matches by entity name + subject
+// substring (both case-insensitive) so AI-drafted phantom emails get
+// scrubbed without operator action. Add an entry here when a stray
+// outreach turns out to be an AI draft someone accidentally saved.
+const SEED_OUTREACH_DELETIONS = [
+  {
+    reason: "Reviewer flagged as never-sent — AI draft accidentally saved",
+    entity_name_pattern: /kimep/i,
+    subject_pattern: /one week h-farm.*one week home/i,
+  },
+];
+
+async function _applySeedOutreachDeletions() {
+  if (typeof UNIS === "undefined" || !UNIS.length) return;
+  if (typeof OUTREACH === "undefined") return;
+  let removed = 0;
+  for (const rule of SEED_OUTREACH_DELETIONS) {
+    const u = _findEntityByNamePatterns([rule.entity_name_pattern]);
+    if (!u) continue;
+    const entries = OUTREACH[u.id] || [];
+    const matches = entries.filter(e =>
+      rule.subject_pattern ? rule.subject_pattern.test(String(e.subject || "")) : true
+    );
+    for (const e of matches) {
+      // Mirror the delete-via-API flow: remove from local cache + tell server
+      OUTREACH[u.id] = (OUTREACH[u.id] || []).filter(x => x.id !== e.id);
+      try {
+        await apiFetch("/api/state/outreach/" + encodeURIComponent(e.id), {
+          method: "DELETE",
+          headers: _identityHeaders(),
+        });
+        removed++;
+        console.log(`[seed-delete] removed '${e.subject}' from ${u.name} (${rule.reason})`);
+      } catch (err) {
+        console.warn("[seed-delete] failed for", e.id, err.message);
+      }
+    }
+  }
+  if (removed > 0) {
+    _writeLocalOutreach(OUTREACH);
+    if (typeof showSyncToast === "function") {
+      showSyncToast(`🧹 Removed ${removed} flagged outreach ${removed === 1 ? 'entry' : 'entries'} (AI drafts)`, "ok");
+    }
+  }
+}
+
 function _matchesSeedAudience(u, aud) {
   if (!u || !aud) return false;
   if (aud.types && aud.types.length && !aud.types.includes(u.type)) return false;
@@ -12651,8 +12704,15 @@ async function _applySeedOutreach() {
   for (const batch of SEED_OUTREACH_BATCHES) {
     const tpl = BULK_BACKFILL_TEMPLATES[batch.template];
     if (!tpl) { console.warn("[seed] missing template:", batch.template); continue; }
-    for (const u of UNIS) {
-      if (!_matchesSeedAudience(u, batch.audience)) continue;
+    // Diagnostic: count how many UNIS rows match this batch's audience.
+    // Helps reviewer debug 'why isn't the school batch firing?' — if 0
+    // matches, the audience filter is too narrow or data is missing.
+    const matchedEntities = UNIS.filter(u => _matchesSeedAudience(u, batch.audience));
+    console.log(`[seed] batch '${batch.id}' matches ${matchedEntities.length} entities (audience: ${JSON.stringify(batch.audience)})`);
+    if (matchedEntities.length > 0 && matchedEntities.length <= 5) {
+      console.log(`[seed]   →`, matchedEntities.map(u => `${u.name} (${u.type}, ${u.country})`).join(" / "));
+    }
+    for (const u of matchedEntities) {
       const entryId = `seed-${batch.id}-${u.id}`;
       // Idempotent: if entry with this ID already exists in OUTREACH
       // (loaded from backend on this boot), skip. Preserves operator
