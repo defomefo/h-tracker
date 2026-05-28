@@ -12516,11 +12516,116 @@ async function syncOutreachFromServer() {
     _writeLocalOutreach(remote);   // refresh cache for offline next-load
     OUTREACH_BACKEND = "remote";
     if (STATE.detailId && document.getElementById("detail-panel").classList.contains("open")) openDetail(STATE.detailId);  // refresh visible panel
+    // After sync, apply any code-embedded seed batches that don't yet
+    // exist in the backend. UNIS must be loaded — _applySeedOutreach
+    // is idempotent and bails early if either prereq is missing, so
+    // racing UNIS/OUTREACH load order is harmless.
+    if (typeof _applySeedOutreach === "function") {
+      _applySeedOutreach().catch(() => null);
+    }
     return true;
   } catch (e) {
     OUTREACH_BACKEND = "local";
     console.warn("[outreach] server unreachable, using local cache:", e.message);
     return false;
+  }
+}
+
+// ============================================================================
+// SEED OUTREACH — code-embedded historical-outreach batches.
+// ----------------------------------------------------------------------------
+// Real emails the operator sent OUTSIDE the platform (before it existed
+// or before they started logging here). Embedded directly in code so:
+//   - Operator does ZERO work — entries appear automatically on first load
+//   - Click any entry → see full template body that was actually sent
+//   - Entries persist to backend via standard upsertOutreach → survive
+//     reboots, appear in PDF briefs, count toward last-contacted dates
+//
+// Idempotent on entry ID: re-applying skips entries already in backend,
+// so operator edits (status flipped to replied, sentiment added) are
+// preserved. Add a new batch by appending to SEED_OUTREACH_BATCHES.
+// ============================================================================
+const SEED_OUTREACH_BATCHES = [
+  {
+    id: "tr-agency-bilingual-2026-03-19",
+    template: "bilingual",          // resolved against BULK_BACKFILL_TEMPLATES
+    date: "2026-03-19",
+    status: "sent",
+    channel: "email",
+    sender: "Silvia",
+    senderEmail: "",                // leave blank if unknown
+    notes: "Auto-seeded from the bilingual outreach campaign Silvia sent to Turkish agencies on 19 March 2026. To mark as replied, click + Edit on this entry and set status + sentiment — your changes persist.",
+    audience: {
+      types: ["agency"],
+      country_patterns: [/turk|türk/i],
+    },
+  },
+];
+
+function _matchesSeedAudience(u, aud) {
+  if (!u || !aud) return false;
+  if (aud.types && aud.types.length && !aud.types.includes(u.type)) return false;
+  if (aud.country_patterns && aud.country_patterns.length) {
+    const c = `${u.country || ""} ${u.country_canonical || ""}`.toLowerCase();
+    if (!aud.country_patterns.some(re => re.test(c))) return false;
+  }
+  if (aud.entity_ids && aud.entity_ids.length && !aud.entity_ids.includes(u.id)) return false;
+  return true;
+}
+
+async function _applySeedOutreach() {
+  if (typeof UNIS === "undefined" || !UNIS.length) return;
+  if (typeof OUTREACH === "undefined") return;
+  if (typeof BULK_BACKFILL_TEMPLATES === "undefined") return;
+  let created = 0;
+  for (const batch of SEED_OUTREACH_BATCHES) {
+    const tpl = BULK_BACKFILL_TEMPLATES[batch.template];
+    if (!tpl) { console.warn("[seed] missing template:", batch.template); continue; }
+    for (const u of UNIS) {
+      if (!_matchesSeedAudience(u, batch.audience)) continue;
+      const entryId = `seed-${batch.id}-${u.id}`;
+      // Idempotent: if entry with this ID already exists in OUTREACH
+      // (loaded from backend on this boot), skip. Preserves operator
+      // edits — status flipped to replied, sentiment added, notes
+      // appended — they all live under the same ID.
+      const existing = (OUTREACH[u.id] || []).find(e => e.id === entryId);
+      if (existing) continue;
+      const entry = {
+        id: entryId,
+        entityId: u.id,
+        channel: batch.channel || "email",
+        subject: tpl.subject,
+        body: tpl.body,
+        date: batch.date,
+        status: batch.status || "sent",
+        sentiment: null,
+        sender: batch.sender || "",
+        senderEmail: batch.senderEmail || "",
+        senderTeamId: null,
+        recipientName: "",
+        recipientEmail: "",
+        notes: batch.notes || "",
+        createdAt: new Date().toISOString(),
+        seeded: true,    // visual badge hook for future UI
+      };
+      // Local cache + backend persistence in one shot
+      try {
+        await upsertOutreach(entry);
+        created++;
+      } catch (e) {
+        console.warn("[seed] failed for", u.id, e.message);
+      }
+    }
+  }
+  if (created > 0) {
+    console.log(`[seed] auto-stamped ${created} historical outreach entries`);
+    if (typeof showSyncToast === "function") {
+      showSyncToast(`📜 Loaded ${created} historical outreach ${created === 1 ? 'entry' : 'entries'} from embedded seed`, "ok");
+    }
+    // Refresh open surfaces
+    if (STATE && STATE.view === "outreach" && typeof renderOutreachView === "function") renderOutreachView();
+    if (STATE && STATE.detailId && typeof openDetail === "function") openDetail(STATE.detailId);
+    if (STATE && STATE.view === "home" && typeof renderHomeView === "function") renderHomeView();
   }
 }
 
