@@ -6577,6 +6577,29 @@ const PRIO_SCORE = {"Critical":100,"Hot":90,"Warm":70,"Cold":45,"Cold-storage":2
 // ============================================================================
 // NORMALIZER: CSV row → entity record (mirrors the Python build)
 // ============================================================================
+// Word-boundary keyword matcher. Returns true if `kw` appears as a
+// standalone token in `blob` (which must already be lowercased). We
+// switched from blob.includes(kw) to this because 2-letter primary
+// keywords like "it" (Information Technology), "pr" (Public Relations),
+// "cs" (Computer Science), "ai" (Artificial Intelligence) used to
+// false-positive on substring matches: Turkish "eğitim" contains "it",
+// "profil" contains "pr", etc. — surfacing unrelated H-FARM programmes
+// as top fits for entities whose only crime was having Turkish notes.
+//
+// JS \b is ASCII-only, which is actually what we want here: in
+// "eğitim" the chars i-t are surrounded by ğ (non-word) and i (word),
+// so \bit\b doesn't match — the silent false positive goes away.
+function _kwMatchesBlob(blob, kw) {
+  if (!kw || !blob) return false;
+  const k = String(kw).toLowerCase();
+  const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  try {
+    return new RegExp(`\\b${escaped}\\b`).test(blob);
+  } catch {
+    return blob.includes(k);
+  }
+}
+
 function normalizeRow(row, idx) {
   const country = row.country || "";
   const regionLabel = row.region_label || "";
@@ -6637,8 +6660,8 @@ function normalizeRow(row, idx) {
       continue;
     }
     let primaryHits = [], secondaryHits = [];
-    p.primary_kw.forEach(kw => { if (blob.includes(kw.toLowerCase())) primaryHits.push(kw); });
-    p.secondary_kw.forEach(kw => { if (blob.includes(kw.toLowerCase())) secondaryHits.push(kw); });
+    p.primary_kw.forEach(kw => { if (_kwMatchesBlob(blob, kw)) primaryHits.push(kw); });
+    p.secondary_kw.forEach(kw => { if (_kwMatchesBlob(blob, kw)) secondaryHits.push(kw); });
     const primaryScore   = Math.min(75, primaryHits.length * 25);
     const secondaryScore = Math.min(25, secondaryHits.length * 5);
     const score = Math.min(100, primaryScore + secondaryScore);
@@ -7082,6 +7105,37 @@ function recomputeEntityDerived(u) {
     last_contacted: u.last_contacted || null,
     has_contact: !!(contacts[0] && (contacts[0].name || contacts[0].email)),
   });
+}
+
+// Hover-tooltip text for any list view that shows partnership_score
+// without the full breakdown card. Reads u.partnership_breakdown (set
+// by recomputeEntityDerived) and turns it into a multi-line title=
+// attribute so the operator can hover any number anywhere in the app
+// and see WHICH component contributed what — no need to open the
+// detail panel for every "why is this number what it is" question.
+const _SCORE_BD_LABELS = {
+  priority:     "Pipeline priority",
+  namedContact: "Named contact",
+  email:        "Email captured",
+  programFit:   "Programme fit",
+  recency:      "Recency of contact",
+};
+function _scoreBreakdownTooltip(u) {
+  if (!u) return "";
+  const total = u.partnership_score;
+  const b = u.partnership_breakdown;
+  if (!b) return `Score ${total ?? "—"}/100`;
+  const order = ["priority", "namedContact", "email", "programFit", "recency"];
+  const lines = order.map(k => {
+    const e = b[k];
+    if (!e) return null;
+    const contrib = Math.round((e.contrib || 0) * 10) / 10;
+    const wPct = Math.round((e.weight || 0) * 100);
+    const raw = Math.round(e.raw || 0);
+    const sign = contrib > 0 ? "+" : "";
+    return `${sign}${contrib.toFixed(1)}  · ${_SCORE_BD_LABELS[k]} (${wPct}% weight · raw ${raw}/100)`;
+  }).filter(Boolean);
+  return `Partnership score · ${total}/100\n──────────────\n${lines.join("\n")}`;
 }
 
 // Apply every saved override on top of UNIS. Called after CSV ingest and
@@ -8930,8 +8984,8 @@ function _pkgSponsorProgramFit(sponsor, prog) {
   const blob = _pkgSponsorBlob(sponsor);
   const primary_matched = [];
   const secondary_matched = [];
-  (prog.primary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) primary_matched.push(kw); });
-  (prog.secondary_kw || []).forEach(kw => { if (blob.includes(kw.toLowerCase())) secondary_matched.push(kw); });
+  (prog.primary_kw || []).forEach(kw => { if (_kwMatchesBlob(blob, kw)) primary_matched.push(kw); });
+  (prog.secondary_kw || []).forEach(kw => { if (_kwMatchesBlob(blob, kw)) secondary_matched.push(kw); });
   const score = Math.min(100,
     Math.min(75, primary_matched.length * 25)
   + Math.min(25, secondary_matched.length * 5)
@@ -19216,7 +19270,7 @@ function renderStrategicView() {
       html += `<div class="sm-quad-empty">No entities in this quadrant.</div>`;
     } else {
       items.forEach(u => {
-        html += `<div class="sm-quad-row" onclick="openDetail('${u.id}')">
+        html += `<div class="sm-quad-row" onclick="openDetail('${u.id}')" title="${escapeAttr(_scoreBreakdownTooltip(u))}">
           <div class="text">
             <div class="nm">${escape(u.name)}</div>
             <div class="meta">${escape(u.country_canonical || u.country || "—")} · ${escape(u.priority || "Unclassified")}</div>
@@ -20701,10 +20755,21 @@ function renderDatabaseView() {
       activity: u => {
         if (typeof activityVelocity !== "function") return 0;
         const v = activityVelocity(u.id);
-        // composite key:
-        //   recent_count * 1000 — primary signal (volume)
-        //   + delta         — tiebreaker (warming vs cooling within same volume)
-        return (v.recent || 0) * 1000 + (v.delta || 0);
+        // Composite key — TOTAL activity in the 60-day window is the
+        // primary signal so this column ranks by engagement intensity
+        // (matches operator mental model of an "activity" column).
+        // Delta is the tiebreaker so partners with the same total
+        // sort by trend — warming above cooling on desc, cooling
+        // above steady on asc.
+        //
+        // Old formula used (recent * 1000 + delta) which surfaced
+        // cooling partners (e.g. -2 for "silent · 0 vs 2 prev 30d")
+        // BELOW steady-empty partners (0 + 0) on ASC, even though
+        // the cooling partner has MORE total activity. That ranked
+        // a partner that had 2 outreach last cycle as "less active"
+        // than one that had 0 in both — unintuitive.
+        const total = (v.recent || 0) + (v.prior || 0);
+        return total * 1000 + (v.delta || 0);
       },
     }[DB_SORT.col] || (u => 0);
     const va = getter(a), vb = getter(b);
@@ -20744,7 +20809,7 @@ function renderDatabaseView() {
     const tierCell = u.strategic_tier
       ? `<span class="db-tier" style="background:${STRAT_COLORS[u.strategic_tier] || 'var(--ink)'};color:#fff">${escape(u.strategic_tier)}</span>`
       : `<span class="db-dash">—</span>`;
-    const scoreCell = `<div class="db-score">
+    const scoreCell = `<div class="db-score" title="${escapeAttr(_scoreBreakdownTooltip(u))}">
       <div class="db-score-bar"><span style="width:${Math.max(2, u.partnership_score)}%"></span></div>
       <div class="db-score-num">${u.partnership_score}</div>
     </div>`;
