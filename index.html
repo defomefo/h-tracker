@@ -12779,6 +12779,78 @@ const SEED_OUTREACH_INDIVIDUAL = [
     recipientName: "Defne Tuncer",
     notes: "Auto-seeded inbound reply that led to the 4 Apr campus visit (already seeded separately). Ulvi proactively asked to come in person while travelling through Italy — top-of-funnel intent signal.",
   },
+
+  // ── Edunita follow-up thread (Apr–May 2026) ────────────────────────
+  // Second-touch Bachelor/Master focused outreach after the 28 Mar
+  // meeting + MOU. Lara accepted a Zoom for 27 Apr same-day; one
+  // month later Dila (their Education Coach) reached out to actually
+  // register a student for Summer Adventure — the conversion signal.
+  {
+    id: "seed-edunita-defne-followup-2026-04-22",
+    name_patterns: [/edunita/i],
+    channel: "email",
+    subject: "H-FARM College · Bachelor + Master collaboration follow-up",
+    body:
+      "Sayın Edunita Danışmanlık Ekibi,\n\n" +
+      "Umarız iyisinizdir.\n\n" +
+      "H-FARM College olarak sizinle özellikle lisans ve yüksek lisans programlarımız odağında bir iş birliği imkânını değerlendirmek isteriz.\n\n" +
+      "İtalya'nın önde gelen inovasyon ve girişimcilik ekosistemlerinden biri içinde yer alan H-FARM College, öğrencilere uluslararası vizyon, uygulamalı öğrenme modeli ve güçlü akademik iş birlikleri sunmaktadır. Programlarımıza bağlı olarak öğrencilerimiz Ca' Foscari University of Venice ve University of Chichester onaylı derecelerle mezun olmaktadır.\n\n" +
+      "Yaz programlarımız da iş birliği kapsamında ayrıca değerlendirilebilir; ancak bu aşamada öncelikle bachelor ve master programlarımızı daha kapsamlı şekilde paylaşmanın daha verimli olacağına inanıyoruz.\n\n" +
+      "Bu doğrultuda, size programlarımızı daha detaylı tanıtabilmek adına kısa bir online görüşme planlamaktan memnuniyet duyarız.\n\n" +
+      "Uygun olduğunuz tarihleri paylaşırsanız, toplantıyı organize edebiliriz.\n\n" +
+      "Teşekkür ederiz,\n\n" +
+      "Saygılarımızla,\n\n" +
+      "Defne Tuncer\n" +
+      "H-FARM College",
+    date: "2026-04-22",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Defne Tuncer",
+    recipientName: "Edunita Danışmanlık Ekibi",
+    notes: "Auto-seeded outbound follow-up — second touch after the 28 Mar meeting + MOU. Refocuses the conversation on Bachelor + Master (Ca' Foscari + Chichester degrees) instead of summer programmes. Lara replied same day.",
+  },
+  {
+    id: "seed-edunita-lara-reply-2026-04-22",
+    name_patterns: [/edunita/i],
+    channel: "email",
+    subject: "RE: H-FARM College · Reply from Lara Curabeyoğlu (Edunita Director)",
+    body:
+      "Merhaba Defne Hanım,\n\n" +
+      "Nazik mesajınız için teşekkür ederiz.\n\n" +
+      "H-FARM College ile olası iş birliği fırsatlarını değerlendirmekten memnuniyet duyarız. Programlarınız hakkında daha detaylı bilgi almak için bir görüşme gerçekleştirmek isteriz.\n\n" +
+      "Bu hafta ben ve kurucumuz Gloria Hanım Roma'dayız. Sizin için de uygun olması halinde, 27 Nisan Pazartesi günü saat 12:00 (İtalya saati ile 11:00) görüşme planlayabilir miyiz?\n\n" +
+      "Uygunluğunuzu teyit ederseniz, toplantıyı organize etmekten memnuniyet duyarız.\n\n" +
+      "Teşekkür eder, iyi çalışmalar dileriz.\n\n" +
+      "Saygılarımla,\n\n" +
+      "Lara Curabeyoğlu\n" +
+      "Direktör / Director",
+    date: "2026-04-22",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Lara Curabeyoğlu",
+    recipientName: "Defne Tuncer",
+    notes: "Auto-seeded inbound reply (same day as Defne's follow-up). Lara is the Director and was in Rome that week with their co-founder Gloria. Proposed Zoom on Mon 27 Apr 12:00 TR / 11:00 IT. Top-of-funnel — director-level engagement.",
+  },
+  {
+    id: "seed-edunita-dila-summer-registration-2026-05-20",
+    name_patterns: [/edunita/i],
+    channel: "email",
+    subject: "Summer Adventure registration enquiry · Dila Çınar (Edunita Education Coach)",
+    body:
+      "Selamlar Defne Hanım,\n\n" +
+      "Umuyorum haftanız keyifli geçiyordur 🌷\n\n" +
+      "H-Farm summer adventure yaz okulu programı için bir öğrencimizin kaydını tamamlamak istiyoruz. Kayıt için özellikle kullanmamız gereken ayrı bir agent portal veya başvuru esnasında portala eklememiz gereken bir agent code var mıdır? Kaydı geçmeden önce size danışmak istedim.\n\n" +
+      "Kolaylıklar dilerim.\n\n" +
+      "Sevgiler,\n" +
+      "Dila Çınar\n" +
+      "Education Coach · Edunita",
+    date: "2026-05-20",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Dila Çınar",
+    recipientName: "Defne Tuncer",
+    notes: "Auto-seeded — CONVERSION signal. Dila (Edunita Education Coach) is actively trying to register a student for Summer Adventure and asked about agent-portal / agent-code workflow. This is the operational follow-through of the 28 Mar 'one student interested' lead and the 22 Apr Bachelor/Master meeting cycle. Action item: confirm the agent portal flow and provide an agent code so the registration can complete.",
+  },
 ];
 
 function _findEntityByNamePatterns(patterns) {
