@@ -12710,6 +12710,75 @@ const SEED_OUTREACH_INDIVIDUAL = [
     recipientName: "Tuğçe Özgen",
     notes: "Auto-seeded. Showed initial interest but went quiet — flag for re-engagement campaign.",
   },
+
+  // ── Inbound replies (verbatim) ──────────────────────────────────────
+  // Auto-seeded raw text of the agency replies received in response to
+  // the 19 Mar 2026 bilingual outreach. Status = "replied" + the actual
+  // message body preserved so the operator can read what the counterpart
+  // actually wrote, not just a summary.
+  {
+    id: "seed-vera-edu-tugce-reply-2026-03-25",
+    name_patterns: [/vera\s*edu/i, /veraedu/i],
+    channel: "email",
+    subject: "RE: H-FARM College — Reply from Tuğçe Özgen (Vera Edu)",
+    body:
+      "Merhaba Defne Hanım,\n" +
+      "Geç cevabım için özür diliyorum.\n" +
+      "Hemen şimdi İtalyanca olarak emailinizi yanıtlıyorum.\n\n" +
+      "Gentile Silvia dell'Acqua,\n" +
+      "Spero che stia bene.\n" +
+      "Mi ha fatto molto piacere ricevere la sua email. Prima di tutto vorrei chiedere scusa per aver risposto in ritardo.\n" +
+      "La settimana scorsa in Turchia era la festa di Ramadan, coincisa questo anno con il spring break delle scuole elementari, medie e secondari e questa settimana abbiamo le fiere. Sono giorni straordinari.\n\n" +
+      "Noi siamo un'agenzia fondata nel 2007 e diamo consulenza solo per le università e scuole italiane, private (non pubbliche) facendo la loro rappresentanza ufficiale, senza chiedere nessun fee dagli studenti.\n" +
+      "Siamo il partner ufficiale delle tre università del Gruppo Galileo (Marangoni, Domus Academy e NABA).\n" +
+      "Nel loro meeting annuale, in Dicembre, prima di Natale ho incontrato il mio collega Dimiter dalla Bulgaria, che lo voglio tanto bene e gli ho parlato della mia volontà di fare collaborazione con un liceo (con \"uno solo\") in italia, un boarding school, perchè ormai abbiamo cominciato ad avere richieste anche per i licei e lui che è esperto e specializzato nei corsi estivi, le fiere e licei in Europa per i minorenni.\n" +
+      "Mi aveva consigliato la vostra scuola H-Farm International School.\n" +
+      "Da molto tempo avevo in mente di conttattarvi, ma non riuscivo perchè sono periodi molto intensivi.\n" +
+      "Cosi sono diventata molto molto contenta di ricevere la sua email. È stata una bella sorpresa per me.\n\n" +
+      "Mi piacerebbe molto parlare con voi sullo Zoom. Se siete disponibili mi va bene domani pomeriggio dopo pranzo, o anche come ha scritto la sua collega Defne il 2 Aprile, ma prima vorrei leggere dettagliamente le cose che mi ha inviato. Ho dei dubbi, forse mi contattate dalla parte dell'università. Comunque sarà un piacere per me conoscervi e parlare delle possibili collaborazioni.\n" +
+      "Tanti saluti, e a presto\n" +
+      "Buona giornata\n\n" +
+      "Tugce",
+    date: "2026-03-25",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Tuğçe Özgen",
+    senderEmail: "",
+    recipientName: "Silvia dell'Acqua",
+    notes: "Auto-seeded inbound reply to the 19 Mar bilingual outreach. Vera Edu (founded 2007) is the official Italian rep of the Galileo Group — Marangoni, Domus Academy, NABA — and consults only for Italian private (non-state) institutions, charging no fee to students. Their colleague Dimiter (BG) referred them to H-FARM International School after Tuğçe asked him for ONE boarding-school partner in Italy. She wants a Zoom call and proposed her availability for 2 April. Slight ambiguity: she asks whether we're contacting her from the university side vs the school side — worth clarifying in the call.",
+  },
+  {
+    id: "seed-eduscala-ulvi-reply-zoom-2026-03-20",
+    name_patterns: [/eduscala/i],
+    channel: "email",
+    subject: "RE: H-FARM College — Reply from Ulvi Uslu (EduScala)",
+    body:
+      "Dear Silvia and Defne,\n\n" +
+      "Thanks for your mail. I know H-Farm and we have students who actually study there now. I would like to have a meeting, too. Tomorrow between 10-13 (Italian time) is convenient for me.\n\n" +
+      "Kind regards",
+    date: "2026-03-20",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Ulvi Uslu",
+    recipientName: "Silvia / Defne",
+    notes: "Auto-seeded inbound reply to the 19 Mar bilingual outreach. Already familiar with H-FARM — has current students enrolled here. Accepted a Zoom meeting for the next day, 10-13 Italian time. Strong warm-lead signal.",
+  },
+  {
+    id: "seed-eduscala-ulvi-reply-campus-visit-2026-04-01",
+    name_patterns: [/eduscala/i],
+    channel: "email",
+    subject: "RE: Campus visit request from Ulvi Uslu (EduScala)",
+    body:
+      "Dear Defne,\n\n" +
+      "I added my mail to the CC but I'll respond to you here. I'll be in Italy from tomorrow to sunday. If available I would like to visit the campus and meet you in person. I'm looking forward to hearing from you.\n\n" +
+      "Kind regards",
+    date: "2026-04-01",
+    status: "replied",
+    sentiment: "positive",
+    sender: "Ulvi Uslu",
+    recipientName: "Defne Tuncer",
+    notes: "Auto-seeded inbound reply that led to the 4 Apr campus visit (already seeded separately). Ulvi proactively asked to come in person while travelling through Italy — top-of-funnel intent signal.",
+  },
 ];
 
 function _findEntityByNamePatterns(patterns) {
