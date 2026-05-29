@@ -597,6 +597,22 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .dp-signals.expanded .dp-signals-detail .dp-trj-side{display:none}
 .dp-signals.expanded .dp-signals-detail .rh-card{margin:0;border-left-width:2px}
 
+/* Turkey Market Intel card — reuses .dp-signals wrapper for the
+   collapsible mechanic; these rules style the contents (positioning
+   paragraph, differentiator pills, key-fact grid, risk callout). */
+.dp-trintel-positioning{font-size:12px;line-height:1.55;color:var(--ink);margin:0 0 10px;font-style:italic}
+.dp-trintel-section{margin:8px 0 0}
+.dp-trintel-h{font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:800;margin-bottom:4px}
+.dp-trintel-pills{display:flex;flex-wrap:wrap;gap:4px}
+.dp-trintel-pill{display:inline-block;background:#FAF3EA;border:0.5px solid var(--gold);color:var(--ink);font-size:10.5px;padding:2px 7px;border-radius:9px;line-height:1.4}
+.dp-trintel-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px 12px;font-size:11px;color:var(--ink)}
+.dp-trintel-k{font-weight:700;color:var(--ink-soft);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;margin-right:3px}
+.dp-trintel-v{color:var(--ink)}
+.dp-trintel-risk{background:#FBEAEA;border-left:2px solid #8B1A1A;padding:6px 10px;border-radius:3px;margin-top:10px}
+.dp-trintel-risk .dp-trintel-h{color:#8B1A1A}
+.dp-trintel-risk-body{font-size:11px;line-height:1.5;color:#5C1010}
+.dp-trintel-foot{margin-top:10px;font-size:9px;color:var(--ink-mute);text-align:right;font-style:italic}
+
 .dp-trajectory{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:10px 14px 11px;margin:0 0 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
 .dp-trj-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
 .dp-trj-label{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:800}
@@ -7162,6 +7178,9 @@ async function syncEntityOverridesFromServer() {
     ENTITY_OVERRIDES = remote;
     _writeLocalEntityOverrides(remote);
     if (applyEntityOverridesToUnis()) {
+      // Re-apply TR market intel after server overrides land so the
+      // intel-derived floors + fit_tags survive an override sync cycle.
+      if (typeof _applyTrAgencyIntel === "function") _applyTrAgencyIntel();
       // Re-render every visible surface so cross-browser edits land everywhere
       if (typeof renderFilterChips === "function")    renderFilterChips();
       if (typeof renderRegionAnalysis === "function") renderRegionAnalysis();
@@ -9665,6 +9684,10 @@ async function parseAndRender(csvText) {
     .map((row, i) => normalizeRow(row, i));
   // Apply saved per-entity field overrides on top of the fresh CSV data
   if (typeof applyEntityOverridesToUnis === "function") applyEntityOverridesToUnis();
+  // Apply Turkey market intel (playbook-derived) on top of overrides so
+  // operator-set values win where they're already stronger. Side effects:
+  // sets u._tr_intel, appends u.fit_tags, floors u.top_program_score.
+  if (typeof _applyTrAgencyIntel === "function") _applyTrAgencyIntel();
   document.getElementById("loading-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
   document.getElementById("data-status").textContent = `${UNIS.length} entities · synced ${new Date().toLocaleTimeString()}`;
@@ -11589,6 +11612,65 @@ function dpToggleSignals(entityId) {
   }
 }
 
+// Parallel toggle state for the TR market intel card (separate from
+// engagement signals so the two cards expand independently). Reuses
+// the .dp-signals CSS for visual consistency — the wrapper element
+// gets the same class so all collapsible styling applies for free.
+let _DP_TR_INTEL_EXPANDED = {};
+
+function dpToggleTrIntel(entityId) {
+  _DP_TR_INTEL_EXPANDED[entityId] = !_DP_TR_INTEL_EXPANDED[entityId];
+  const card = document.getElementById(`dp-trintel-${entityId}`);
+  if (card) {
+    card.classList.toggle("expanded", _DP_TR_INTEL_EXPANDED[entityId]);
+  }
+}
+
+// Renders the collapsible "Türkiye Pazar İstihbaratı" card if the
+// entity has TR intel attached (set by _applyTrAgencyIntel on boot).
+// Returns empty string for entities without intel — safe to include
+// unconditionally in the profile-tab template.
+function _dpTrIntelHtml(u) {
+  const intel = u._tr_intel;
+  if (!intel) return "";
+  const expanded = !!_DP_TR_INTEL_EXPANDED[u.id];
+  const stars = "⭐".repeat(Math.max(0, Math.min(5, intel.italy_focus || 0)));
+  const prio = String(intel.intel_priority || "").toUpperCase();
+  const prioColor = prio === "TOP" ? "#8B1A1A" : (prio === "HIGH" ? "#A87A20" : "#5A5A5A");
+  const diffs = Array.isArray(intel.differentiators) ? intel.differentiators : [];
+  const diffPills = diffs.map(d => `<span class="dp-trintel-pill">${escape(d)}</span>`).join("");
+  // Summary line shows the at-a-glance facts so the operator can read
+  // the card's value without expanding it.
+  const summaryBits = [
+    `<strong style="color:${prioColor}">${escape(prio)}</strong>`,
+    `<span class="dp-signals-sep">·</span>`,
+    `<span title="Italy focus">${stars || "—"}</span>`,
+    `<span class="dp-signals-sep">·</span>`,
+    `<span>intel ${intel.intel_score || "—"}/100</span>`,
+  ].join(" ");
+  const factsRow = [
+    intel.founded ? `<div><span class="dp-trintel-k">Founded</span> <span class="dp-trintel-v">${intel.founded}</span></div>` : "",
+    intel.headcount ? `<div><span class="dp-trintel-k">Team</span> <span class="dp-trintel-v">${escape(intel.headcount)}</span></div>` : "",
+    intel.branches ? `<div><span class="dp-trintel-k">Branches</span> <span class="dp-trintel-v">${escape(intel.branches)}</span></div>` : "",
+    intel.intl_office ? `<div><span class="dp-trintel-k">Intl office</span> <span class="dp-trintel-v">${escape(intel.intl_office)}</span></div>` : "",
+    intel.contact_persona ? `<div><span class="dp-trintel-k">Lead persona</span> <span class="dp-trintel-v">${escape(intel.contact_persona)}</span></div>` : "",
+  ].filter(Boolean).join("");
+  return `<div class="dp-signals${expanded ? " expanded" : ""}" id="dp-trintel-${escapeAttr(u.id)}">
+    <button type="button" class="dp-signals-summary" onclick="dpToggleTrIntel('${escapeAttr(u.id)}')" title="Click to ${expanded ? 'collapse' : 'expand'} Turkey market intel">
+      <span class="dp-signals-label">🇹🇷 Türkiye Pazar İstihbaratı</span>
+      <span class="dp-signals-summary-bits">${summaryBits}</span>
+      <span class="dp-signals-caret">${expanded ? "▴" : "▾"}</span>
+    </button>
+    <div class="dp-signals-detail">
+      <div class="dp-trintel-positioning">${escape(intel.positioning || "")}</div>
+      ${diffPills ? `<div class="dp-trintel-section"><div class="dp-trintel-h">Differentiators</div><div class="dp-trintel-pills">${diffPills}</div></div>` : ""}
+      ${factsRow ? `<div class="dp-trintel-section"><div class="dp-trintel-h">Key facts</div><div class="dp-trintel-facts">${factsRow}</div></div>` : ""}
+      ${intel.risk ? `<div class="dp-trintel-section dp-trintel-risk"><div class="dp-trintel-h">Risk</div><div class="dp-trintel-risk-body">${escape(intel.risk)}</div></div>` : ""}
+      <div class="dp-trintel-foot">Source: H-FARM Turkey Market Playbook · auto-applied</div>
+    </div>
+  </div>`;
+}
+
 function _dpTrajectoryHtml(u) {
   const sparkSvg = (typeof renderActivityPulseSparkline === "function")
     ? renderActivityPulseSparkline(u.id, { width: 420, height: 40, months: 6 })
@@ -12045,6 +12127,7 @@ function _dpProfileTabHtml(u) {
     ${teamHtml}
     ${fitAuditHtml}
     ${progHtml}
+    ${_dpTrIntelHtml(u)}
     ${u.notes ? `<div class="dp-sec">
       <div class="dp-sec-head"><div class="dp-sec-title">Notes</div></div>
       <div class="dp-notes">${escape(u.notes)}</div>
@@ -12892,6 +12975,289 @@ function _findEntityByNamePatterns(patterns) {
     if (patterns.some(re => re.test(nm))) return u;
   }
   return null;
+}
+
+// ── TR market intel (TOP + HIGH priority agencies) ─────────────────────
+// Extracted from the H-FARM Playbook (2026-04-17), Turkey market deep-
+// dive. Auto-applied to matching UNIS entries on every boot:
+//   1. Surfaces in the detail panel as a collapsible
+//      "Türkiye Pazar İstihbaratı" card (positioning, differentiators,
+//      risk, key facts)
+//   2. Feeds fit_tags so Mira's reasoning has Turkey-specific signals
+//      ("tr-italy-only", "tr-italian-bilingual-founder", etc.)
+//   3. Floors top_program_score by italy_focus rating so 5⭐ Italy-only
+//      agencies land in the Quick Wins quadrant on Effort × Fit
+//   4. Sent to the chat backend as part of the entity context so Mira
+//      can quote positioning/differentiators in TR-market questions
+//
+// Source-of-truth is the playbook HTML. If the playbook is refreshed,
+// re-extract — no auto-sync. Italy-focus rating is the master signal:
+// 5 = Italy-only specialist; 4 = Italy primary; 3 = Italy included.
+const TR_AGENCY_INTEL = [
+  {
+    name_patterns: [/pisa\s*edu/i, /pisa\s*educazione/i],
+    founded: 2012, headcount: "20–35",
+    italy_focus: 5,
+    branches: "5 (Istanbul ×2, Izmir, Ankara, Bursa, Fethiye)",
+    intl_office: "Turin + Milan (Italy)",
+    programmes_fit: ["SS","BA","MA","EX"],
+    intel_score: 95, intel_priority: "TOP",
+    positioning: "Turkey's highest-volume Italy pipeline. Turin office is geographically close to H-FARM Treviso campus — joint site visits feasible.",
+    differentiators: [
+      "Turin office near H-FARM Treviso campus",
+      "31K Instagram followers",
+      "IMAT prep + summer school integration",
+      "italyadaegitim.com SEO domain (same firm)",
+    ],
+    risk: "Small team; scaling capacity may be limited",
+    contact_persona: "Founder / General Manager",
+    fit_tags: ["tr-italy-only", "tr-high-volume", "tr-near-treviso", "tr-imat-prep"],
+  },
+  {
+    name_patterns: [/edunita/i],
+    founded: 2005, headcount: "5–10",
+    italy_focus: 5,
+    branches: "1 (Istanbul Kadıköy, boutique)",
+    intl_office: "Italy network via founder",
+    programmes_fit: ["SS","BA","MA"],
+    intel_score: 90, intel_priority: "TOP",
+    positioning: "HIDDEN GEM. 100% Italy-focused boutique with Italian-Turkish bilingual founder. Architecture & Engineering prep aligned with H-FARM profile. Zero complaints.",
+    differentiators: [
+      "Founder Gloria Day — Italian-Turkish bilingual, Italian high-school alumna",
+      "Polimi / Polito / Bologna testimonials",
+      "Director-level engagement (Lara Curabeyoğlu, Apr 2026)",
+      "Edunita Education Coach already attempting Summer Adventure registration (May 2026)",
+    ],
+    risk: "Very small team; not scalable alone — best positioned as quality referral partner",
+    contact_persona: "Founder (Gloria Day) + Director (Lara Curabeyoğlu)",
+    fit_tags: ["tr-italy-only", "tr-italian-bilingual-founder", "tr-boutique-quality", "tr-warm-engagement"],
+  },
+  {
+    name_patterns: [/aktif\s*edu|aktif\s*yurt/i],
+    founded: 2008, headcount: "30–50",
+    italy_focus: 4,
+    branches: "5+ (Istanbul, Adana, Bodrum, Izmir ×2)",
+    intl_office: null,
+    programmes_fit: ["SS","BA","MA"],
+    intel_score: 82, intel_priority: "HIGH",
+    positioning: "Strong Italy content depth across Bocconi / Polimi / Polito / Sapienza / Florence / Pisa / Trento — each with a dedicated page. Active Italy focus (Feb 2026 Bocconi blog post).",
+    differentiators: [
+      "IMAT prep content",
+      "Multi-city Turkey reach",
+      "Dedicated page per Italian destination",
+    ],
+    risk: "Italy is one of 3 target destinations (UK + US also covered); H-FARM needs dedicated Italy bandwidth",
+    contact_persona: "YEDAB HQ contact",
+    fit_tags: ["tr-italy-strong", "tr-multi-city", "tr-imat-prep"],
+  },
+  {
+    name_patterns: [/itebs/i],
+    founded: 2001, headcount: "30–50",
+    italy_focus: 4,
+    branches: "2 (Istanbul Şişli — Trump Towers, Antalya)",
+    intl_office: "European representative network",
+    programmes_fit: ["BA","MA"],
+    intel_score: 78, intel_priority: "HIGH",
+    positioning: "YEDAB founding member — strong prestige signal. Active Italy student flow + ICEF/IEFT fair presence creates H-FARM co-marketing opportunity.",
+    differentiators: [
+      "YEDAB founder",
+      "ICEF + IEFT fair presence",
+      "WYSETC / British Council / PABA top-7 memberships",
+    ],
+    risk: "Risk of conflict with existing Italian partners",
+    contact_persona: "General Manager / Overseas Education Coordinator",
+    fit_tags: ["tr-italy-included", "tr-prestige", "tr-fair-active"],
+  },
+  {
+    name_patterns: [/ices\s*turkey|icesturkey/i],
+    founded: 2005, headcount: "30–50",
+    italy_focus: 3,
+    branches: "5+ (Istanbul, Adana, Ankara, Izmir)",
+    intl_office: "16-country direct agreements",
+    programmes_fit: ["BA","MA"],
+    intel_score: 70, intel_priority: "HIGH",
+    positioning: "AI-powered university matching platform — aligns naturally with H-FARM's innovation narrative. Opportunity to add H-FARM to the AI matching tool itself.",
+    differentiators: [
+      "AI university matching tool",
+      "YEDAB member",
+      "Multi-city Turkey + 16-country direct agreements",
+    ],
+    risk: "No Italy-specific focus; risk of H-FARM being lost in a broad portfolio",
+    contact_persona: "Marketing / Technology Team",
+    fit_tags: ["tr-italy-included", "tr-multi-city", "tr-ai-aligned"],
+  },
+  {
+    name_patterns: [/ngglobal|ng\s*global/i],
+    founded: 2010, headcount: "20–40",
+    italy_focus: 4,
+    branches: "2–3 (Istanbul)",
+    intl_office: null,
+    programmes_fit: ["SS","BA"],
+    intel_score: 72, intel_priority: "HIGH",
+    positioning: "Italy listed first on website. Small team, fast decisions — strong pilot-partner candidate for H-FARM summer school.",
+    differentiators: [
+      "Italy as primary destination on website",
+      "Fast decision-making (small team)",
+      "Summer school pilot candidate",
+    ],
+    risk: "Limited corporate structure; accreditation data absent",
+    contact_persona: "General Advisor",
+    fit_tags: ["tr-italy-primary", "tr-pilot-ready"],
+  },
+  {
+    name_patterns: [/eduscala/i],
+    founded: 2019, headcount: "5–10",
+    italy_focus: 5,
+    branches: "1 (Istanbul Kadıköy) + Italy team (Milano, Bologna, Pavia, Torino)",
+    intl_office: "Italy-based consultants in Milano / Bologna / Pavia / Torino",
+    programmes_fit: ["BA","MA"],
+    intel_score: 84, intel_priority: "HIGH",
+    positioning: "Italy-only since 2019. Official Turkey representative of Domus Academy, NABA, Marangoni and UniCamillus. 1,000+ student references. Already converted to warm engagement (Apr 4 2026 campus visit).",
+    differentiators: [
+      "Official Domus / NABA / Marangoni / UniCamillus Turkey rep",
+      "1,000+ student references",
+      "IMAT, TIL-I, Bocconi Test, TOLC prep courses",
+      "UED member (Uluslararası Eğitim Danışmanları Derneği)",
+      "Italy on-the-ground team for operational support",
+    ],
+    risk: "Young brand (2019); limited team capacity; moderate scaling potential",
+    contact_persona: "Founder / General Manager (Ulvi Uslu)",
+    fit_tags: ["tr-italy-only", "tr-italy-onground", "tr-imat-tolc-prep", "tr-warm-engagement"],
+  },
+  {
+    name_patterns: [/vera\s*edu|vera\s*eğitim|veraedu/i],
+    founded: 2000, headcount: "5–10",
+    italy_focus: 5,
+    branches: "1 (Istanbul Kadıköy — Bostancı)",
+    intl_office: "24 Italian school representations (incl. Humanitas, MIP Politecnico di Milano)",
+    programmes_fit: ["SS","BA","MA","EX"],
+    intel_score: 86, intel_priority: "HIGH",
+    positioning: "Italy-focused since 1992; education advisory since 2000. Architecture, design, fashion and medicine portfolio — complementary to H-FARM's innovation & business programmes.",
+    differentiators: [
+      "24 Italian school / university Turkey-rep",
+      "Only Turkish firm awarded the 2012 Domus Academy invitation for record student flow",
+      "italyada.net strong SEO blog",
+      "Bilingual Italian-Turkish team",
+      "Initial reply already in (Tuğçe Özgen, 25 Mar 2026)",
+    ],
+    risk: "Boutique team; capacity limited for high-volume ops — best as quality referral partner",
+    contact_persona: "Founder / General Manager (Tuğçe Özgen as initial contact)",
+    fit_tags: ["tr-italy-only", "tr-architecture-design-fashion", "tr-boutique-quality", "tr-warm-engagement"],
+  },
+  {
+    name_patterns: [/firenze/i],
+    founded: 1995, headcount: "10–20",
+    italy_focus: 5,
+    branches: "1 (Istanbul Kadıköy — Şaşkınbakkal) + MEB-affiliated language centre",
+    intl_office: "30+ Italian university partners (claims world record)",
+    programmes_fit: ["SS","BA","MA"],
+    intel_score: 88, intel_priority: "HIGH",
+    positioning: "Turkey's most established Italy-focused education advisory (30+ years). World-leading 30+ Italian university partner count. CILS official exam centre + MEB-approved language school.",
+    differentiators: [
+      "30+ Italian university partners — world record claim",
+      "MEB-approved Italian + Spanish language centre",
+      "CILS official exam centre",
+      "Istituto Marangoni / NABA / Domus Academy rep",
+      "10,000+ students sent over 30 years",
+      "27K Instagram followers",
+      "Hosts Italian university officials on Turkey tour",
+    ],
+    risk: "Website freshness limited; large-scale campaigns may need coordination",
+    contact_persona: "General Manager / Senior Advisor",
+    fit_tags: ["tr-italy-only", "tr-established", "tr-30plus-italian-partners", "tr-cils-center"],
+  },
+  {
+    name_patterns: [/pianeta\s*italia/i],
+    founded: 2005, headcount: "5–10",
+    italy_focus: 5,
+    branches: "1–2 (Istanbul)",
+    intl_office: null,
+    programmes_fit: ["SS","BA","MA"],
+    intel_score: 72, intel_priority: "HIGH",
+    positioning: "Claims to be the only firm consulting on ALL Italian state universities. Specialised in architecture / medicine / design / fashion / gastronomy / cinema.",
+    differentiators: [
+      "Claims coverage of all Italian state universities",
+      "IED Milano fashion department Turkey rep",
+      "MEB Italian language courses",
+      "Active blog content",
+    ],
+    risk: "Small team, limited corporate capacity; accreditation data uncertain",
+    contact_persona: "Founder / Director",
+    fit_tags: ["tr-italy-only", "tr-fashion-design-niche"],
+  },
+  {
+    name_patterns: [/pava\s*edu|pavaedu/i],
+    founded: 2018, headcount: "5–15",
+    italy_focus: 5,
+    branches: "3 (Istanbul Kadıköy + Izmir + Milano HQ)",
+    intl_office: "Milano (Italy) HQ",
+    programmes_fit: ["BA","MA"],
+    intel_score: 82, intel_priority: "HIGH",
+    positioning: "Italy-HQ'd (Milan) with Turkey offices. Founder Dr. Hakan Bilici is a Pavia University medicine graduate with full mastery of Italian bureaucracy.",
+    differentiators: [
+      "Founder Dr. Hakan Bilici — Pavia Üniversitesi medicine graduate",
+      "Claims 93% acceptance rate (2023–2024)",
+      "Medicine / engineering / architecture focus",
+      "Milan-side operational base",
+    ],
+    risk: "Relatively young brand; limited corporate capacity; not yet tested for high-volume ops",
+    contact_persona: "Dr. Hakan Bilici (Founder)",
+    fit_tags: ["tr-italy-only", "tr-italy-onground", "tr-medicine-engineering-niche"],
+  },
+];
+
+// Boot-time application: walks TR_AGENCY_INTEL, matches each entry to a
+// UNIS row by name_patterns, and attaches the intel object + injects
+// fit_tags + floors top_program_score by italy_focus rating. The score
+// floor is the *Quick Wins quadrant* hook — 5⭐ Italy-only agencies get
+// a top_program_score floor of 80, which keeps them on the Fit axis
+// above 75 even if the programme-keyword match landed soft.
+function _applyTrAgencyIntel() {
+  if (typeof UNIS === "undefined" || !UNIS.length) return;
+  if (typeof TR_AGENCY_INTEL === "undefined" || !TR_AGENCY_INTEL.length) return;
+  const fitFloors = { 5: 80, 4: 70, 3: 55 };
+  let touched = 0;
+  for (const intel of TR_AGENCY_INTEL) {
+    const u = _findEntityByNamePatterns(intel.name_patterns);
+    if (!u) continue;
+
+    // Stash full intel object on the entity (internal-only, never
+    // persisted — recreated each boot from this constant).
+    u._tr_intel = {
+      founded: intel.founded,
+      headcount: intel.headcount,
+      italy_focus: intel.italy_focus,
+      branches: intel.branches,
+      intl_office: intel.intl_office,
+      programmes_fit: intel.programmes_fit,
+      positioning: intel.positioning,
+      differentiators: intel.differentiators || [],
+      risk: intel.risk,
+      contact_persona: intel.contact_persona,
+      intel_score: intel.intel_score,
+      intel_priority: intel.intel_priority,
+    };
+
+    // Inject fit_tags (additive, deduped — won't overwrite operator tags).
+    if (Array.isArray(intel.fit_tags) && intel.fit_tags.length) {
+      const existing = new Set(u.fit_tags || []);
+      intel.fit_tags.forEach(t => existing.add(t));
+      u.fit_tags = Array.from(existing);
+    }
+
+    // Score impact via top_program_score floor (drives the Fit axis on
+    // Effort × Fit). Max with existing so operator overrides + strong
+    // programme matches win when they're already higher.
+    const floor = fitFloors[intel.italy_focus] || 0;
+    if (floor > 0) {
+      u.top_program_score = Math.max(u.top_program_score || 0, floor);
+      u.top_program_score_adjusted = Math.max(u.top_program_score_adjusted || 0, floor);
+    }
+
+    if (typeof recomputeEntityDerived === "function") recomputeEntityDerived(u);
+    touched++;
+  }
+  if (touched > 0) console.log(`[tr-intel] applied to ${touched} TR agencies`);
 }
 
 // Entries reviewer flagged as 'I never sent this' — auto-delete on every

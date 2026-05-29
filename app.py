@@ -4849,6 +4849,27 @@ CRITICAL CONCEPTS — read carefully before answering:
    - EXCLUDE them from ANY "fit", "ranking", "top/bottom sponsors", "which sponsors should I pursue" answer — they're not real sponsors.
    - Only include them if the user EXPLICITLY asks about internal/in-house entities.
 
+3. TURKEY MARKET INTEL — the `tr_intel` field on entities
+   - 11 Turkish education agencies (Pisa Edu, Edunita, Aktifedu, ITEBS,
+     ICES Turkey, NGGlobal, EduScala, Vera Edu, Firenze, Pianeta Italia,
+     Pava Education) carry a `tr_intel` object extracted from H-FARM's
+     Turkey Market Playbook. Fields: positioning, differentiators,
+     risk, italy_focus (1-5 stars; 5 = Italy-only specialist), intel_priority
+     (TOP|HIGH), intel_score (0-100), contact_persona, programmes_fit.
+   - When the user asks ANY question about Turkish agencies, the Turkish
+     market, Italian-pipeline agencies, agent commission strategy, or
+     which TR agency fits programme X — YOU MUST quote the actual
+     positioning + differentiators verbatim. Do NOT generalise; the
+     intel is the answer.
+   - Use italy_focus to RANK: 5⭐ Italy-only beats 4⭐ Italy-primary
+     beats 3⭐ Italy-included. intel_priority TOP beats HIGH.
+   - When the user asks "which TR agency for [programme/student-type]",
+     match the programme to `programmes_fit` AND the niche to
+     `differentiators` (e.g. fashion/design → Vera Edu, Pianeta Italia;
+     medicine/engineering → Pava Education; high-volume → Pisa Edu;
+     boutique-quality → Edunita, Vera Edu).
+   - Surface `risk` honestly when ranking — do not hide it.
+
 Rules:
 - CONVERSATIONAL FILLER: if the current question is a pure acknowledgment with no actual data request ('thanks', 'thank you', 'ok', 'got it', 'perfect', 'great', 'awesome', 'cool', 'teşekkürler', 'sağol', 'tamam', 'süper', 'harika', or close variants), reply with a brief one-line acknowledgment ('Happy to help — what else?' / 'Anytime. Another query?') and return EMPTY entity_ids AND EMPTY sponsor_ids. DO NOT re-run the previous search or list anything. The frontend has a short-circuit for the common cases but this rule is the backup.
 - The `intro` field: 1-3 short sentences in plain English. ANSWER the user's actual question — don't just describe the row. If they ask "top 3 sponsors" rank by value_no_iva_eur desc and name them. If they ask for a contact, give name + email. If they ask for unsigned contracts, list which ones. No hedging, no "I would suggest", no "Based on the data".
@@ -4913,6 +4934,26 @@ def _slim_entities(entities):
             tags = [t.get("tag") for t in ft if isinstance(t, dict) and t.get("tag")]
             if tags:
                 row["fit_tags"] = tags
+            else:
+                # fit_tags can also arrive as a flat list of strings (the
+                # injection path from _applyTrAgencyIntel). Keep those too.
+                str_tags = [t for t in ft if isinstance(t, str)]
+                if str_tags:
+                    row["fit_tags"] = str_tags
+        # Turkey market intel — playbook-derived signal for TR agencies.
+        # Pass through so Mira can quote positioning + differentiators in
+        # TR-market questions. Drop the verbose `branches` / `headcount`
+        # fields to keep the payload small; positioning + differentiators
+        # + italy_focus + intel_priority are the load-bearing ones.
+        tri = u.get("_tr_intel")
+        if isinstance(tri, dict) and tri:
+            row["tr_intel"] = {
+                k: tri.get(k) for k in (
+                    "positioning", "differentiators", "risk",
+                    "italy_focus", "intel_priority", "intel_score",
+                    "contact_persona", "programmes_fit",
+                ) if tri.get(k) not in (None, "", [])
+            }
         out.append(row)
     return out
 
