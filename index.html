@@ -13149,7 +13149,10 @@ const TR_AGENCY_INTEL = [
     fit_tags: ["tr-italy-only", "tr-architecture-design-fashion", "tr-boutique-quality", "tr-warm-engagement"],
   },
   {
-    name_patterns: [/firenze/i],
+    // Tightened: must include "yurt", "eğitim", "edu" or the .com.tr
+    // domain so it doesn't collide with AEGEE-Firenze or ESN Firenze
+    // (Italian student orgs that also contain the city name).
+    name_patterns: [/firenze\s*(yurt|eğitim|edu|com\.tr)/i],
     founded: 1995, headcount: "10–20",
     italy_focus: 5,
     branches: "1 (Istanbul Kadıköy — Şaşkınbakkal) + MEB-affiliated language centre",
@@ -13252,7 +13255,12 @@ function _applyTrAgencyIntel() {
   let touched = 0;
   for (const intel of TR_AGENCY_INTEL) {
     const u = _findEntityByNamePatterns(intel.name_patterns);
-    if (!u) continue;
+    // Defensive guard: TR intel is for AGENCIES only. If a regex
+    // accidentally matches a non-agency (e.g. AEGEE-Firenze student
+    // org), skip rather than poisoning an unrelated entity with
+    // agency intel. Catches future pattern collisions before they
+    // cause silent mis-application.
+    if (!u || u.type !== "agency") continue;
 
     // Stash full intel object on the entity (internal-only, never
     // persisted — recreated each boot from this constant).
