@@ -12082,12 +12082,16 @@ function _dpProfileTabHtml(u) {
       ${fitTagsList.length ? `
         <div style="display:flex;flex-direction:column;gap:6px">
           ${fitTagsList.map(t => {
-            const isPositive = (t.tag === "applied_signal");
-            const tone = isPositive ? "color:#1F6E48;background:#DCEFE3;border-color:#B7DCC5"
-              : t.tag === "italian_competitor" ? "color:#5F6B7C;background:#ECEEF1;border-color:#D2D8E0"
+            const tagId = (t && t.tag) || "";
+            const isApplied = (tagId === "applied_signal");
+            const isTrIntel = typeof tagId === "string" && tagId.startsWith("tr-");
+            const tone = isApplied ? "color:#1F6E48;background:#DCEFE3;border-color:#B7DCC5"
+              : isTrIntel ? "color:#0A2540;background:#F4F1E8;border-color:#C9A961"
+              : tagId === "italian_competitor" ? "color:#5F6B7C;background:#ECEEF1;border-color:#D2D8E0"
               : "color:#B0322E;background:#FCE4E4;border-color:#F2C9C9";
+            const icon = isApplied ? "✓" : isTrIntel ? "🇹🇷" : "⚠";
             return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 11px;border-radius:6px;border:1px solid;${tone}">
-              <div style="font-size:14px;line-height:1;margin-top:1px">${isPositive ? "✓" : "⚠"}</div>
+              <div style="font-size:14px;line-height:1;margin-top:1px">${icon}</div>
               <div style="flex:1;min-width:0">
                 <div style="font-size:12px;font-weight:800;letter-spacing:.2px">${escape(t.label || t.tag)}</div>
                 <div style="font-size:10px;opacity:.8;margin-top:2px;font-family:'Consolas',monospace">matched: ${escape(t.pattern || "—")}</div>
@@ -13206,6 +13210,35 @@ const TR_AGENCY_INTEL = [
   },
 ];
 
+// Human-readable labels for every TR intel tag — surfaced in the Fit
+// Signals card so each tr-* entry shows a meaningful row instead of
+// a bare slug. Keep in sync with fit_tags arrays in TR_AGENCY_INTEL.
+const _TR_TAG_LABELS = {
+  "tr-italy-only":                    "Italy-only specialist",
+  "tr-italy-strong":                  "Italy primary focus",
+  "tr-italy-primary":                 "Italy as primary destination",
+  "tr-italy-included":                "Italy in mixed portfolio",
+  "tr-italy-onground":                "Italy on-the-ground team",
+  "tr-high-volume":                   "High-volume Italy pipeline",
+  "tr-near-treviso":                  "Office geographically near H-FARM Treviso",
+  "tr-italian-bilingual-founder":     "Italian-Turkish bilingual founder",
+  "tr-boutique-quality":              "Boutique-quality positioning",
+  "tr-warm-engagement":               "Active warm engagement in-flight",
+  "tr-multi-city":                    "Multi-city Turkey footprint",
+  "tr-prestige":                      "Prestige signal (YEDAB / fair memberships)",
+  "tr-fair-active":                   "Active in education fairs",
+  "tr-ai-aligned":                    "AI / innovation narrative aligned",
+  "tr-pilot-ready":                   "Pilot-partner ready",
+  "tr-imat-prep":                     "IMAT preparation specialist",
+  "tr-imat-tolc-prep":                "IMAT + TOLC + Bocconi-Test prep",
+  "tr-architecture-design-fashion":   "Architecture / design / fashion focus",
+  "tr-established":                   "Long-established (15+ years)",
+  "tr-30plus-italian-partners":       "30+ Italian university partners",
+  "tr-cils-center":                   "CILS official Italian exam centre",
+  "tr-fashion-design-niche":          "Fashion / design niche",
+  "tr-medicine-engineering-niche":    "Medicine / engineering niche",
+};
+
 // Boot-time application: walks TR_AGENCY_INTEL, matches each entry to a
 // UNIS row by name_patterns, and attaches the intel object + injects
 // fit_tags + floors top_program_score by italy_focus rating. The score
@@ -13238,11 +13271,26 @@ function _applyTrAgencyIntel() {
       intel_priority: intel.intel_priority,
     };
 
-    // Inject fit_tags (additive, deduped — won't overwrite operator tags).
+    // Inject fit_tags as OBJECTS (shape: {tag, label, pattern}) so they
+    // render correctly in the Fit Signals card. The renderer iterates
+    // each entry and reads .label / .pattern — flat strings would show
+    // up as empty rows. Dedupe against existing entries (both string
+    // and object shapes) so an override-sync cycle stays idempotent.
     if (Array.isArray(intel.fit_tags) && intel.fit_tags.length) {
-      const existing = new Set(u.fit_tags || []);
-      intel.fit_tags.forEach(t => existing.add(t));
-      u.fit_tags = Array.from(existing);
+      const existing = Array.isArray(u.fit_tags) ? u.fit_tags.slice() : [];
+      const seen = new Set(
+        existing.map(t => (typeof t === "string" ? t : (t && t.tag) || ""))
+      );
+      intel.fit_tags.forEach(tagSlug => {
+        if (seen.has(tagSlug)) return;
+        seen.add(tagSlug);
+        existing.push({
+          tag: tagSlug,
+          label: _TR_TAG_LABELS[tagSlug] || tagSlug.replace(/^tr-/, "").replace(/-/g, " "),
+          pattern: "TR Market Playbook (2026-04-17)",
+        });
+      });
+      u.fit_tags = existing;
     }
 
     // Score impact via top_program_score floor (drives the Fit axis on
