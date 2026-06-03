@@ -1321,8 +1321,13 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 /* TIMELINE + SPINE */
 .ov-timeline{position:relative;margin-top:50px;padding-left:74px}
 .ov-spine-svg{position:absolute;left:0;top:0;width:74px;height:100%;overflow:visible;pointer-events:none;z-index:0}
+.ov-spine-area{fill:var(--hf-red);opacity:.085}
 .ov-spine-line{fill:none;stroke:#D2CFC2;stroke-width:2}
 .ov-spine-curve{fill:none;stroke:var(--hf-red);stroke-width:2.2;stroke-linecap:round}
+/* The whole spine (rail + curve + pink fill) reveals top-to-bottom by
+   growing this clip rect's height on scroll — so they animate in unison
+   and never look "cut off" the way a half-drawn line over a full fill did. */
+.ov-spine-clip-rect{transition:height .14s linear}
 .ov-node .ov-ring{fill:none;stroke:var(--hf-red);stroke-width:1.4;transform-box:fill-box;transform-origin:center;transform:scale(0);opacity:0;transition:transform .8s var(--ov-ease),opacity .8s ease}
 .ov-node.ov-on .ov-ring{transform:scale(1);opacity:.4}
 .ov-node .ov-core{transform-box:fill-box;transform-origin:center;transform:scale(.5);transition:transform .55s var(--ov-ease),fill .55s ease;fill:#D2CFC2;stroke:var(--off-white);stroke-width:2.5}
@@ -24037,8 +24042,14 @@ function renderOperationalValueView() {
 
       <div class="ov-timeline" id="ov-timeline">
         <svg class="ov-spine-svg" preserveAspectRatio="none" aria-hidden="true">
-          <path class="ov-spine-line"></path>
-          <path class="ov-spine-curve"></path>
+          <defs><clipPath id="ov-spine-clip" clipPathUnits="userSpaceOnUse">
+            <rect class="ov-spine-clip-rect" x="0" y="0" width="74" height="0"></rect>
+          </clipPath></defs>
+          <g class="ov-spine-draw" clip-path="url(#ov-spine-clip)">
+            <path class="ov-spine-area"></path>
+            <path class="ov-spine-line"></path>
+            <path class="ov-spine-curve"></path>
+          </g>
           <g class="ov-spine-nodes"></g>
         </svg>
 
@@ -24161,22 +24172,24 @@ function _initOperationalValueAnimations(root) {
 
   // ---- Compounding spine ----
   // Grey straight rail = the linear baseline; red bulging curve = the
-  // compounding path diverging from it through the Long-Term Wins. Both
-  // draw progressively and complete at the LAST card's centre (not the
-  // timeline's bottom edge) — otherwise the last ~20% never drew because
-  // you can't scroll the timeline bottom past the trigger line, which is
-  // what made the red line look "cut off" mid-section.
-  const region = root.querySelector("#ov-timeline");
-  const secB   = root.querySelector("#ov-secB");
-  const svg    = root.querySelector(".ov-spine-svg");
-  const line   = root.querySelector(".ov-spine-line");
-  const curve  = root.querySelector(".ov-spine-curve");
-  const nodesG = root.querySelector(".ov-spine-nodes");
-  const cards  = Array.prototype.slice.call(root.querySelectorAll(".ov-card"));
+  // compounding path diverging from it through the Long-Term Wins; the
+  // pink lens between them is the "accumulated value" fill. The whole
+  // group lives inside a clip rect whose height grows on scroll, so the
+  // rail + curve + fill all reveal top-to-bottom IN UNISON — fixing both
+  // the old "red line cut off over a full pink block" mismatch and the
+  // "only the rings show" regression. Completes at the LAST card centre.
+  const region   = root.querySelector("#ov-timeline");
+  const secB     = root.querySelector("#ov-secB");
+  const svg      = root.querySelector(".ov-spine-svg");
+  const line     = root.querySelector(".ov-spine-line");
+  const curve    = root.querySelector(".ov-spine-curve");
+  const areaPath = root.querySelector(".ov-spine-area");
+  const clipRect = root.querySelector(".ov-spine-clip-rect");
+  const nodesG   = root.querySelector(".ov-spine-nodes");
+  const cards    = Array.prototype.slice.call(root.querySelectorAll(".ov-card"));
 
-  const RAIL_X = 36, MAXB = 26, NS = 28;
+  const RAIL_X = 36, MAXB = 26, NS = 28, SVGW = 74;
   let H = 0, regionTop = 0, bStartRel = 0, bHcurve = 1, endRel = 1;
-  let lineLen = 0, curveLen = 0;
   let active = true;
 
   function bulge(t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return MAXB * Math.pow(t, 1.7); }
@@ -24195,7 +24208,7 @@ function _initOperationalValueAnimations(root) {
     bStartRel = bAbsTop - regionTop;
 
     // Pre-pass: measure every card centre relative to the region so we
-    // know where the LAST node sits — both the rail + curve terminate
+    // know where the LAST node sits — rail + curve + fill terminate
     // there, and section-B nodes ride the curve using the same span.
     const metrics = cards.map(card => {
       const top = card.getBoundingClientRect().top + window.pageYOffset;
@@ -24204,13 +24217,12 @@ function _initOperationalValueAnimations(root) {
     endRel = metrics.length ? metrics[metrics.length - 1].cy : H;
     bHcurve = Math.max(1, endRel - bStartRel);
 
-    svg.setAttribute("viewBox", "0 0 74 " + H);
+    svg.setAttribute("viewBox", "0 0 " + SVGW + " " + H);
     svg.setAttribute("height", H);
+    clipRect.setAttribute("width", SVGW);
 
     // Straight rail: top to the last node.
     line.setAttribute("d", "M" + RAIL_X + " 0 L" + RAIL_X + " " + endRel.toFixed(1));
-    lineLen = endRel;
-    line.style.strokeDasharray = endRel;
 
     // Bulging curve: from section B start to the last node.
     let d = "M" + RAIL_X + " " + bStartRel.toFixed(1);
@@ -24221,8 +24233,8 @@ function _initOperationalValueAnimations(root) {
       d += " L" + x.toFixed(2) + " " + y.toFixed(1);
     }
     curve.setAttribute("d", d);
-    curveLen = curve.getTotalLength();
-    curve.style.strokeDasharray = curveLen;
+    // Pink lens: the curve, then back along the rail to close the region.
+    areaPath.setAttribute("d", d + " L" + RAIL_X + " " + endRel.toFixed(1) + " Z");
 
     nodesG.innerHTML = "";
     nodeEls = [];
@@ -24250,24 +24262,20 @@ function _initOperationalValueAnimations(root) {
       nodeEls.push({ g: g, card: mtr.card });
     });
 
-    if (RM) {
-      line.style.strokeDashoffset = 0;
-      curve.style.strokeDashoffset = 0;
-    }
+    if (RM) clipRect.setAttribute("height", H);
     updateNodes();
     onScroll();
   }
 
   function onScroll() {
     if (!active || RM) return;
-    // Trigger line at 62% of the viewport — both rail + curve reach 100%
-    // when the last card's centre passes it, which is scrollable because
-    // the summary section sits below the timeline.
+    // Trigger line at 62% of the viewport — the spine reaches 100% when
+    // the last card's centre passes it, which is scrollable because the
+    // summary section sits below the timeline. The clip rect grows from
+    // 0 to full H so rail + curve + fill reveal together.
     const refRel = window.pageYOffset + window.innerHeight * 0.62 - regionTop;
     let p = refRel / endRel; p = p < 0 ? 0 : (p > 1 ? 1 : p);
-    line.style.strokeDashoffset = (lineLen * (1 - p)).toFixed(1);
-    let pb = (refRel - bStartRel) / bHcurve; pb = pb < 0 ? 0 : (pb > 1 ? 1 : pb);
-    curve.style.strokeDashoffset = (curveLen * (1 - pb)).toFixed(1);
+    clipRect.setAttribute("height", (p * H).toFixed(1));
   }
 
   let ticking = false;
