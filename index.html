@@ -1292,6 +1292,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ov-eyebrow{display:flex;align-items:center;gap:14px;font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--hf-red);margin-bottom:18px}
 .ov-eyebrow .ov-bar{width:32px;height:2px;background:var(--hf-red);display:inline-block}
 .ov-h1{font-family:var(--ov-serif);font-weight:700;font-size:40px;line-height:1.06;letter-spacing:-.018em;margin:0 0 16px;max-width:20ch;color:var(--ink)}
+.ov-h1 .ov-nowrap{white-space:nowrap}
 .ov-lede{font-size:15.5px;line-height:1.62;color:#2C2B28;max-width:74ch;margin:0}
 .ov-lede strong{font-weight:700;color:var(--ink)}
 /* Framing statement — the one-line thesis. Wide so 'H-Tracker' never
@@ -24019,7 +24020,7 @@ function renderOperationalValueView() {
     <div class="ov-shell">
       <header class="ov-hero">
         <div class="ov-eyebrow" data-ov-reveal><span class="ov-bar"></span>Why this platform exists</div>
-        <h1 class="ov-h1" data-ov-reveal>Operational Value of H-Tracker</h1>
+        <h1 class="ov-h1" data-ov-reveal>Operational Value of <span class="ov-nowrap">H-Tracker</span></h1>
         <p class="ov-lede" data-ov-reveal>H-Tracker is not a visual alternative to a spreadsheet. It is an automation infrastructure that transforms a static partnership database into an operational decision-support system. The biggest measurable gain is <strong>operational efficiency</strong>, which translates into three concrete dimensions.</p>
         <p class="ov-statement" data-ov-reveal><span class="ov-statement-a">Excel stores the data.</span> <span class="ov-statement-b">H-Tracker turns the data into <em>actions, decisions, follow-ups, reports,</em> and <em>institutional memory</em>.</span></p>
       </header>
