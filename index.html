@@ -2471,6 +2471,21 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .asp-feas-copy{font-size:12px;line-height:1.5;color:var(--ink)}
 .asp-feas-copy b{color:var(--ink);font-weight:700}
 /* AI action plan */
+/* Just-saved confirmation banner — shows in-modal after an action is
+   promoted to a follow-up. Toast alone wasn't enough; operators tend to
+   focus on the modal sheet not the corner. Auto-fades after 8s via the
+   timestamp check in _renderAspirationModal. */
+.asp-saved-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(31,110,72,.12) 0%,rgba(31,110,72,.04) 100%);border:1px solid rgba(31,110,72,.4);border-left:3px solid #1F6E48;border-radius:7px;padding:10px 14px;animation:asp-saved-in .3s ease-out}
+.asp-saved-banner-icon{width:24px;height:24px;border-radius:50%;background:#1F6E48;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.asp-saved-banner-body{flex:1;min-width:0}
+.asp-saved-banner-title{font-size:12px;font-weight:800;color:#1F6E48;letter-spacing:-.1px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asp-saved-banner-meta{font-size:10.5px;color:var(--ink-soft);margin-top:2px;letter-spacing:.1px}
+.asp-saved-banner-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.asp-saved-banner-link{background:#1F6E48;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;letter-spacing:.4px;font-family:inherit;white-space:nowrap;transition:background .15s}
+.asp-saved-banner-link:hover{background:#155235}
+.asp-saved-banner-link.secondary{background:transparent;color:#1F6E48;border:1px solid #1F6E48}
+.asp-saved-banner-link.secondary:hover{background:rgba(31,110,72,.1)}
+@keyframes asp-saved-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .asp-actions-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
 .asp-actions-title{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.1px}
 .asp-actions-headline{background:linear-gradient(135deg,var(--ink) 0%, #2a2a2a 100%);color:#fff;padding:12px 16px;border-radius:7px;border-left:4px solid var(--gold);font-size:13px;line-height:1.5;font-weight:500;letter-spacing:.1px}
@@ -4389,7 +4404,11 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .reset-undo-toast .rut-dismiss:hover{color:#fff}
 
 /* SYNC TOAST (Google Sheets write-back feedback) */
-.sync-toast{position:fixed;bottom:80px;right:14px;padding:10px 16px;border-radius:6px;font-size:12px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:400;opacity:0;transform:translateY(8px);transition:opacity .22s ease,transform .22s ease;max-width:340px;letter-spacing:.2px;font-family:inherit;color:#fff;pointer-events:none}
+/* z-index 10000 so the toast clears any modal backdrop (asp-modal at 9000,
+   detail panel etc). Without this the success toast was rendering behind
+   the aspiration modal — operators thought "+ Follow-up" did nothing
+   because the only feedback was hidden under the modal sheet. */
+.sync-toast{position:fixed;bottom:80px;right:14px;padding:10px 16px;border-radius:6px;font-size:12px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:10000;opacity:0;transform:translateY(8px);transition:opacity .22s ease,transform .22s ease;max-width:340px;letter-spacing:.2px;font-family:inherit;color:#fff;pointer-events:none}
 .sync-toast.ok{background:var(--ur)}
 .sync-toast.warn{background:var(--hot);color:var(--ink)}
 .sync-toast.show{opacity:1;transform:translateY(0)}
@@ -18665,7 +18684,28 @@ function _renderAspirationModal() {
       </div>`;
   } else if (m.stage === "ready" && m.actionsResp) {
     const r = m.actionsResp;
+    // Inline "just saved" banner — show for ~8s after the operator
+    // clicks "+ Save as Follow-up" so they get unambiguous feedback
+    // (where it was saved + how to reach it) without depending on the
+    // corner toast (which can be visually missed even at z-index 10000).
+    let savedBanner = '';
+    if (m.lastSavedFollowup && (Date.now() - m.lastSavedFollowup.at < 8000)) {
+      const lsf = m.lastSavedFollowup;
+      const ownerLbl = lsf.ownerHandle || 'you';
+      savedBanner = `<div class="asp-saved-banner" role="status">
+        <div class="asp-saved-banner-icon">✓</div>
+        <div class="asp-saved-banner-body">
+          <div class="asp-saved-banner-title">Saved as Follow-up · ${escape(lsf.title.slice(0, 70))}</div>
+          <div class="asp-saved-banner-meta">Owner <b>${escape(ownerLbl)}</b> · due <b>${escape(lsf.dueIso)}</b> · status <b>open</b></div>
+        </div>
+        <div class="asp-saved-banner-actions">
+          <button type="button" class="asp-saved-banner-link" onclick="closeAspirationModal();switchView('followups')">Open Follow-ups view →</button>
+          <button type="button" class="asp-saved-banner-link secondary" onclick="closeAspirationModal();openDetail('${escape(m.opts.entity.id)}')">View on entity</button>
+        </div>
+      </div>`;
+    }
     bodyHtml += `
+      ${savedBanner}
       ${r.headline ? `<div class="asp-actions-headline">${escape(r.headline)}</div>` : ''}
       <div class="asp-actions-head">
         <div class="asp-actions-title">Action plan · ${r.actions.length} step${r.actions.length === 1 ? '' : 's'}</div>
@@ -18685,8 +18725,8 @@ function _renderAspirationModal() {
                 ${a.evidence ? `<span class="asp-action-tag evidence">${escape(a.evidence)}</span>` : ''}
               </div>
             </div>
-            <button class="asp-action-add" type="button" onclick="promoteAspActionToFollowup(${i})" ${committed ? 'disabled' : ''}>
-              ${committed ? '✓ Added' : '+ Follow-up'}
+            <button class="asp-action-add" type="button" onclick="promoteAspActionToFollowup(${i})" ${committed ? 'disabled' : ''} title="${committed ? 'Already saved as a follow-up — click below to view' : 'Save this action as a follow-up (lives in Follow-ups view + entity Follow-ups tab)'}">
+              ${committed ? '✓ Saved to Follow-ups' : '+ Save as Follow-up'}
             </button>
           </div>`;
         }).join('')}
@@ -18843,8 +18883,19 @@ async function promoteAspActionToFollowup(actionIdx) {
     await saveFollowup(followup);
     await linkAspirationFollowup(m.asp.id, followupId, actionIdx);
     m.committedActions.add(actionIdx);
+    // Stash the most-recent save so the modal can flash a banner — toast
+    // alone wasn't enough (it was rendering behind the modal backdrop
+    // before the z-index bump, and operators tend to look at the modal
+    // not the corner). Banner clears on next action or modal close.
+    m.lastSavedFollowup = {
+      followupId,
+      title: action.title,
+      dueIso,
+      ownerHandle,
+      at: Date.now(),
+    };
     _renderAspirationModal();
-    showSyncToast(`✓ Added to follow-ups · "${action.title.slice(0, 60)}"`, "ok");
+    showSyncToast(`✓ Saved to Follow-ups · "${action.title.slice(0, 60)}"`, "ok");
   } catch (e) {
     alert("Could not create follow-up: " + e.message);
   }
