@@ -2420,10 +2420,13 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
    The reticle's hover state and this badge's visibility share the same
    group, so hover anywhere in the group keeps the × visible. */
 .sm-asp-group{}
-.sm-asp-dismiss-bg{fill:var(--ink);opacity:0;cursor:pointer;pointer-events:none;transition:opacity .15s}
-.sm-asp-dismiss-x{fill:#fff;font-size:13px;font-weight:800;opacity:0;cursor:pointer;pointer-events:none;transition:opacity .15s;font-family:inherit;user-select:none}
-.sm-asp-group:hover .sm-asp-dismiss-bg{opacity:.92;pointer-events:auto}
-.sm-asp-group:hover .sm-asp-dismiss-x{opacity:1;pointer-events:auto}
+/* Saved-aspiration × dismiss — baseline always-faintly-visible so the
+   operator discovers it without needing to know "hover to reveal".
+   Goes opaque + always-clickable when the group is hovered. */
+.sm-asp-dismiss-bg{fill:var(--ink);opacity:.32;cursor:pointer;pointer-events:auto;transition:opacity .15s,fill .15s}
+.sm-asp-dismiss-x{fill:#fff;font-size:13px;font-weight:800;opacity:.7;cursor:pointer;pointer-events:auto;transition:opacity .15s;font-family:inherit;user-select:none}
+.sm-asp-group:hover .sm-asp-dismiss-bg{opacity:.95}
+.sm-asp-group:hover .sm-asp-dismiss-x{opacity:1}
 .sm-asp-dismiss-bg:hover{opacity:1;fill:var(--crit)}
 .sm-chart-svg .sm-asp-feas{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;fill:#fff;paint-order:stroke;stroke:var(--hf-red);stroke-width:8px;stroke-linejoin:round}
 @keyframes sm-asp-march { to { stroke-dashoffset: -18; } }
@@ -19104,10 +19107,34 @@ function renderStrategicView() {
 
     // Bubbles — radial gradient gives a "sphere" feel even in 2D. The
     // data-priority attr lets the story orchestrator reveal them by category.
-    cohort.forEach(u => {
+    //
+    // Collision avoidance: two entities with identical computed (x,y) — e.g.
+    // Edunita + Vera (both TR agencies, Up & Running, italy_focus 5 intel
+    // floor → same score → same coords) — used to stack perfectly so only
+    // the last-rendered one was visible / clickable. We bucket by rounded
+    // 2D coord and apply a small deterministic spiral offset to duplicates
+    // so every bubble is reachable. Same pattern as the globe-view jitter
+    // for duplicate city coords.
+    const _coordBuckets = {};
+    const _stratPositions = cohort.map(u => {
       const { x, y, override } = stratComputeXY(u, axisKey);
-      const cx = plotL + (x / 100) * plotW;
-      const cy = plotT + (1 - y / 100) * plotH;
+      const cxRaw = plotL + (x / 100) * plotW;
+      const cyRaw = plotT + (1 - y / 100) * plotH;
+      const bucketKey = `${Math.round(cxRaw)}_${Math.round(cyRaw)}`;
+      (_coordBuckets[bucketKey] = _coordBuckets[bucketKey] || []).push(u.id);
+      return { u, x, y, override, cxRaw, cyRaw, bucketKey };
+    });
+    _stratPositions.forEach(p => {
+      const { u, override, cxRaw, cyRaw, bucketKey } = p;
+      const bucket = _coordBuckets[bucketKey];
+      const idx = bucket.indexOf(u.id);
+      // Spiral offset for duplicates: radius grows with dup count, angle
+      // walks around the circle. 0th entity stays at exact computed coord;
+      // 1st gets a small offset; subsequent ones spiral outward.
+      const dupRadius = idx === 0 ? 0 : 6 + Math.floor((idx - 1) / 6) * 4;
+      const dupAngle  = idx === 0 ? 0 : (idx - 1) * (Math.PI / 3);  // 60° per step
+      const cx = cxRaw + Math.cos(dupAngle) * dupRadius;
+      const cy = cyRaw + Math.sin(dupAngle) * dupRadius;
       const r  = Math.max(5, Math.min(14, 5 + Math.sqrt(u.partnership_score) * 0.75));
       const stroke = PRIO_COLORS[u.priority] || "#999";
       const fillUrl = `url(#${_bubbleGradId(u.priority || "default")})`;
