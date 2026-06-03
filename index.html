@@ -1283,98 +1283,97 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
   --ov-blue:#1F6FB4; --ov-orange:#C97A1A; --ov-green:#1F6E48;
   --ov-serif:Georgia,'Times New Roman',Times,serif;
   --ov-ease:cubic-bezier(.2,.7,.2,1);
-  max-width:1000px;margin:0 auto;padding:8px 40px 140px;color:var(--ink);line-height:1.55;
+  max-width:1120px;margin:0 auto;padding:4px 44px 120px;color:var(--ink);line-height:1.55;
 }
 .ov-shell ::selection{background:var(--hf-red-soft)}
 
-/* HERO */
-.ov-hero{padding:64px 0 8px}
-.ov-eyebrow{display:flex;align-items:center;gap:16px;font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--hf-red);margin-bottom:26px}
-.ov-eyebrow .ov-bar{width:36px;height:2px;background:var(--hf-red);display:inline-block}
-.ov-h1{font-family:var(--ov-serif);font-weight:700;font-size:60px;line-height:1.04;letter-spacing:-.018em;margin:0 0 26px;max-width:16ch;color:var(--ink)}
-.ov-lede{font-size:19px;line-height:1.6;color:#2C2B28;max-width:62ch;margin:0}
+/* HERO — compact so a couple of cards peek into the first viewport */
+.ov-hero{padding:26px 0 6px}
+.ov-eyebrow{display:flex;align-items:center;gap:14px;font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--hf-red);margin-bottom:18px}
+.ov-eyebrow .ov-bar{width:32px;height:2px;background:var(--hf-red);display:inline-block}
+.ov-h1{font-family:var(--ov-serif);font-weight:700;font-size:40px;line-height:1.06;letter-spacing:-.018em;margin:0 0 16px;max-width:20ch;color:var(--ink)}
+.ov-lede{font-size:15.5px;line-height:1.62;color:#2C2B28;max-width:74ch;margin:0}
 .ov-lede strong{font-weight:700;color:var(--ink)}
-/* Framing statement — the one-line thesis. Serif, large, with the
-   'Excel stores' clause muted and the 'H-Tracker turns' clause in full
-   ink so the contrast reads at a glance. */
-.ov-statement{font-family:var(--ov-serif);font-size:27px;line-height:1.32;letter-spacing:-.01em;margin:34px 0 0;max-width:24ch;padding-left:20px;border-left:3px solid var(--hf-red)}
+/* Framing statement — the one-line thesis. Wide so 'H-Tracker' never
+   breaks across lines; 'Excel stores' muted, 'H-Tracker turns' in ink. */
+.ov-statement{font-family:var(--ov-serif);font-size:20px;line-height:1.38;letter-spacing:-.01em;margin:24px 0 0;max-width:62ch;padding-left:18px;border-left:3px solid var(--hf-red)}
 .ov-statement-a{color:var(--ink-mute);font-weight:400}
 .ov-statement-b{color:var(--ink);font-weight:700}
 .ov-statement-b em{font-style:italic;color:var(--hf-red);font-weight:700}
-@media (max-width:860px){.ov-statement{font-size:21px;max-width:none}}
+@media (max-width:860px){.ov-statement{font-size:18px;max-width:none}}
 
 /* PILLARS */
-.ov-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:48px 0 28px}
-.ov-pillar{position:relative;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:26px 24px 24px;overflow:hidden}
+.ov-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0 20px}
+.ov-pillar{position:relative;background:#fff;border:1px solid var(--rule);border-radius:9px;padding:18px 20px 16px;overflow:hidden}
 .ov-pillar .ov-edge{position:absolute;top:0;left:0;height:3px;width:100%;transform-origin:left;transform:scaleX(0)}
 .ov-pillar.ov-in .ov-edge{transform:scaleX(1);transition:transform 1s var(--ov-ease)}
 .ov-pillar.p-time .ov-edge{background:var(--ov-blue)}
 .ov-pillar.p-effort .ov-edge{background:var(--ov-orange)}
 .ov-pillar.p-quality .ov-edge{background:var(--ov-green)}
-.ov-pillar .ov-pk{font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px}
+.ov-pillar .ov-pk{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin:0 0 9px}
 .ov-pillar.p-time .ov-pk{color:var(--ov-blue)}
 .ov-pillar.p-effort .ov-pk{color:var(--ov-orange)}
 .ov-pillar.p-quality .ov-pk{color:var(--ov-green)}
-.ov-pillar p{margin:0;font-size:15px;line-height:1.58;color:#39382F}
-.ov-bridge{font-family:var(--ov-serif);font-style:italic;font-size:18px;color:var(--ink-soft);margin:28px 0 0}
+.ov-pillar p{margin:0;font-size:13px;line-height:1.55;color:#39382F}
+.ov-bridge{font-family:var(--ov-serif);font-style:italic;font-size:14.5px;color:var(--ink-soft);margin:20px 0 0}
 .ov-bridge strong{font-style:normal;font-weight:700;color:var(--ink)}
 
 /* TIMELINE + SPINE */
-.ov-timeline{position:relative;margin-top:88px;padding-left:96px}
-.ov-spine-svg{position:absolute;left:0;top:0;width:96px;height:100%;overflow:visible;pointer-events:none;z-index:0}
+.ov-timeline{position:relative;margin-top:50px;padding-left:74px}
+.ov-spine-svg{position:absolute;left:0;top:0;width:74px;height:100%;overflow:visible;pointer-events:none;z-index:0}
 .ov-spine-line{fill:none;stroke:#D2CFC2;stroke-width:2}
-.ov-spine-curve{fill:none;stroke:var(--hf-red);stroke-width:2.4;stroke-linecap:round}
-.ov-node .ov-ring{fill:none;stroke:var(--hf-red);stroke-width:1.5;transform-box:fill-box;transform-origin:center;transform:scale(0);opacity:0;transition:transform .8s var(--ov-ease),opacity .8s ease}
-.ov-node.ov-on .ov-ring{transform:scale(1);opacity:.42}
+.ov-spine-curve{fill:none;stroke:var(--hf-red);stroke-width:2.2;stroke-linecap:round}
+.ov-node .ov-ring{fill:none;stroke:var(--hf-red);stroke-width:1.4;transform-box:fill-box;transform-origin:center;transform:scale(0);opacity:0;transition:transform .8s var(--ov-ease),opacity .8s ease}
+.ov-node.ov-on .ov-ring{transform:scale(1);opacity:.4}
 .ov-node .ov-core{transform-box:fill-box;transform-origin:center;transform:scale(.5);transition:transform .55s var(--ov-ease),fill .55s ease;fill:#D2CFC2;stroke:var(--off-white);stroke-width:2.5}
 .ov-node.ov-on .ov-core{transform:scale(1)}
 .ov-node.ov-on.ov-na .ov-core{fill:var(--ink)}
 .ov-node.ov-on.ov-nb .ov-core{fill:var(--hf-red)}
 
 /* SECTION HEADERS */
-.ov-sec-head{display:flex;gap:24px;align-items:flex-start;margin:0 0 6px}
-#ov-secB .ov-sec-head{margin-top:108px}
-.ov-dropcap{font-family:var(--ov-serif);font-weight:700;font-size:96px;line-height:.78;color:var(--hf-red);flex:none;margin-top:-4px}
-.ov-sec-kicker{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin:8px 0 4px}
-.ov-sec-title{font-family:var(--ov-serif);font-weight:700;font-size:40px;line-height:1.05;letter-spacing:-.01em;margin:0 0 12px;color:var(--ink)}
-.ov-sec-sub{font-family:var(--ov-serif);font-style:italic;font-size:18px;color:var(--ink-soft);margin:0;max-width:56ch}
-.ov-sec-rule{height:1px;background:var(--rule);margin:26px 0 28px}
+.ov-sec-head{display:flex;gap:18px;align-items:flex-start;margin:0 0 4px}
+#ov-secB .ov-sec-head{margin-top:64px}
+.ov-dropcap{font-family:var(--ov-serif);font-weight:700;font-size:56px;line-height:.78;color:var(--hf-red);flex:none;margin-top:-2px}
+.ov-sec-kicker{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin:6px 0 3px}
+.ov-sec-title{font-family:var(--ov-serif);font-weight:700;font-size:27px;line-height:1.08;letter-spacing:-.01em;margin:0 0 9px;color:var(--ink)}
+.ov-sec-sub{font-family:var(--ov-serif);font-style:italic;font-size:14.5px;color:var(--ink-soft);margin:0;max-width:62ch}
+.ov-sec-rule{height:1px;background:var(--rule);margin:18px 0 22px}
 
 /* CARDS */
-.ov-cards{display:flex;flex-direction:column;gap:20px;position:relative;z-index:1}
-.ov-card{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:26px 30px 24px}
-.ov-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:13px}
-.ov-card-title{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0;line-height:1.3;color:var(--ink)}
-.ov-card-title .ov-n{color:var(--hf-red);font-variant-numeric:tabular-nums;margin-right:10px}
-.ov-tags{display:flex;gap:7px;flex:none;padding-top:3px;flex-wrap:wrap}
-.ov-tag{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;border:1px solid;white-space:nowrap}
+.ov-cards{display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+.ov-card{background:#fff;border:1px solid var(--rule);border-radius:9px;padding:18px 24px 17px}
+.ov-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:9px}
+.ov-card-title{font-size:16px;font-weight:800;letter-spacing:-.01em;margin:0;line-height:1.3;color:var(--ink)}
+.ov-card-title .ov-n{color:var(--hf-red);font-variant-numeric:tabular-nums;margin-right:9px}
+.ov-tags{display:flex;gap:6px;flex:none;padding-top:2px;flex-wrap:wrap}
+.ov-tag{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;white-space:nowrap}
 .ov-tag.t-time{color:var(--ov-blue);border-color:rgba(31,111,180,.35);background:rgba(31,111,180,.07)}
 .ov-tag.t-effort{color:var(--ov-orange);border-color:rgba(201,122,26,.4);background:rgba(201,122,26,.08)}
 .ov-tag.t-quality{color:var(--ov-green);border-color:rgba(31,110,72,.38);background:rgba(31,110,72,.08)}
-.ov-how{font-size:15px;line-height:1.62;color:#2E2D29;margin:0}
+.ov-how{font-size:13.5px;line-height:1.6;color:#2E2D29;margin:0}
 .ov-how .ov-lbl{color:var(--hf-red);font-weight:800;letter-spacing:.04em;margin-right:6px}
-.ov-card-foot{margin-top:16px;padding-top:15px;border-top:1px dashed var(--rule);font-family:var(--ov-serif);font-style:italic;font-size:14px;color:var(--ink-soft);line-height:1.5}
+.ov-card-foot{margin-top:13px;padding-top:12px;border-top:1px dashed var(--rule);font-family:var(--ov-serif);font-style:italic;font-size:12.5px;color:var(--ink-soft);line-height:1.5}
 
 /* TIME-COLLAPSE METER */
-.ov-meter{margin-top:18px;padding-top:16px;border-top:1px dashed var(--rule)}
-.ov-meter-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:10px}
-.ov-meter-cap{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute)}
-.ov-meter-mult{font-size:12.5px;font-weight:800;letter-spacing:.04em;color:var(--hf-red);font-variant-numeric:tabular-nums}
-.ov-meter-track{position:relative;height:9px;border-radius:6px;background:rgba(27,26,24,.07);overflow:hidden}
+.ov-meter{margin-top:14px;padding-top:13px;border-top:1px dashed var(--rule)}
+.ov-meter-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:9px}
+.ov-meter-cap{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute)}
+.ov-meter-mult{font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--hf-red);font-variant-numeric:tabular-nums}
+.ov-meter-track{position:relative;height:8px;border-radius:6px;background:rgba(27,26,24,.07);overflow:hidden}
 .ov-meter-fill{position:absolute;left:0;top:0;height:100%;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--hf-red),var(--hf-red-deep))}
-.ov-meter-labels{display:flex;justify-content:space-between;margin-top:9px;font-size:12.5px;gap:14px}
+.ov-meter-labels{display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;gap:14px}
 .ov-meter-labels .ov-before{color:var(--ink-soft)}
 .ov-meter-labels .ov-before b{font-weight:700;color:#46453E;font-style:normal}
 .ov-meter-labels .ov-after{color:var(--ov-green);font-weight:700;text-align:right}
 
 /* SUMMARY */
-.ov-summary{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:10px;padding:28px 32px;margin-top:96px}
-.ov-summary-eyebrow{font-size:11px;letter-spacing:.2em;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:10px}
-.ov-summary .ov-sec-title{font-size:30px;margin-bottom:14px}
-.ov-summary p{font-size:15px;line-height:1.65;color:var(--ink);margin:10px 0}
-.ov-summary-list{margin:16px 0 16px 22px;padding:0;font-size:15px;line-height:1.65;color:var(--ink)}
-.ov-summary-list li{margin-bottom:11px}
-.ov-summary-close{font-size:15px;line-height:1.7;color:var(--ink);margin-top:16px;padding-top:16px;border-top:1px solid var(--rule)}
+.ov-summary{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:9px;padding:22px 26px;margin-top:60px}
+.ov-summary-eyebrow{font-size:10.5px;letter-spacing:.2em;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:9px}
+.ov-summary .ov-sec-title{font-size:23px;margin-bottom:12px}
+.ov-summary p{font-size:13.5px;line-height:1.62;color:var(--ink);margin:9px 0}
+.ov-summary-list{margin:13px 0 13px 22px;padding:0;font-size:13.5px;line-height:1.62;color:var(--ink)}
+.ov-summary-list li{margin-bottom:10px}
+.ov-summary-close{font-size:13.5px;line-height:1.65;color:var(--ink);margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)}
 .ov-summary-close b{color:var(--hf-red)}
 
 /* REVEAL (scoped, scroll-triggered) */
@@ -1389,18 +1388,18 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 }
 
 @media (max-width:860px){
-  .ov-shell{padding:8px 22px 90px}
-  .ov-h1{font-size:42px}
-  .ov-lede{font-size:17px}
-  .ov-pillars{grid-template-columns:1fr;gap:14px}
-  .ov-timeline{padding-left:0;margin-top:56px}
+  .ov-shell{padding:6px 20px 80px}
+  .ov-h1{font-size:32px}
+  .ov-lede{font-size:15px}
+  .ov-pillars{grid-template-columns:1fr;gap:12px}
+  .ov-timeline{padding-left:0;margin-top:44px}
   .ov-spine-svg{display:none}
-  #ov-secB .ov-sec-head{margin-top:64px}
-  .ov-sec-head{gap:16px}
-  .ov-dropcap{font-size:64px}
-  .ov-sec-title{font-size:30px}
-  .ov-card{padding:22px 20px;border-left:4px solid var(--hf-red)}
-  .ov-card-top{flex-direction:column;gap:12px}
+  #ov-secB .ov-sec-head{margin-top:48px}
+  .ov-sec-head{gap:14px}
+  .ov-dropcap{font-size:46px}
+  .ov-sec-title{font-size:24px}
+  .ov-card{padding:18px 18px;border-left:4px solid var(--hf-red)}
+  .ov-card-top{flex-direction:column;gap:10px}
   .ov-tags{padding-top:0}
 }
 
@@ -24175,7 +24174,7 @@ function _initOperationalValueAnimations(root) {
   const nodesG = root.querySelector(".ov-spine-nodes");
   const cards  = Array.prototype.slice.call(root.querySelectorAll(".ov-card"));
 
-  const RAIL_X = 48, MAXB = 40, NS = 28;
+  const RAIL_X = 36, MAXB = 26, NS = 28;
   let H = 0, regionTop = 0, bStartRel = 0, bHcurve = 1, endRel = 1;
   let lineLen = 0, curveLen = 0;
   let active = true;
@@ -24205,7 +24204,7 @@ function _initOperationalValueAnimations(root) {
     endRel = metrics.length ? metrics[metrics.length - 1].cy : H;
     bHcurve = Math.max(1, endRel - bStartRel);
 
-    svg.setAttribute("viewBox", "0 0 96 " + H);
+    svg.setAttribute("viewBox", "0 0 74 " + H);
     svg.setAttribute("height", H);
 
     // Straight rail: top to the last node.
@@ -24229,11 +24228,11 @@ function _initOperationalValueAnimations(root) {
     nodeEls = [];
     let bIdx = 0;
     metrics.forEach(mtr => {
-      let cx = RAIL_X, ringR = 11;
+      let cx = RAIL_X, ringR = 9;
       if (mtr.inB) {
         const t = (mtr.cy - bStartRel) / bHcurve;
         cx = RAIL_X - bulge(t);
-        ringR = 12 + bIdx * 5;   // rings grow down section B = accumulation
+        ringR = 9 + bIdx * 3;   // rings grow down section B = accumulation
         bIdx++;
       }
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
