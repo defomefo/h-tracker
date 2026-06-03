@@ -1272,55 +1272,130 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 
 /* Hero */
 /* ============================================================
-   OPERATIONAL VALUE view — FT/McKinsey-style typography for the
-   defence document. Dense but readable, narrow column for scan
-   comfort, pillar cards up top, then Quick Wins / Long-Term Wins.
+   OPERATIONAL VALUE view — editorial defence document with
+   scroll-triggered reveals, a drawing "compounding spine" SVG,
+   and time-collapse meters. Adapted from a standalone design but
+   re-skinned to the platform's font + colour tokens. Everything is
+   scoped under .ov-shell so the animations never leak into other
+   views. Honours prefers-reduced-motion.
    ============================================================ */
-.ov-shell{max-width:920px;margin:0 auto;padding:32px 28px 80px;font-family:inherit;color:var(--ink);line-height:1.55}
-.ov-hero{margin-bottom:48px}
-.ov-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;display:inline-flex;align-items:center;gap:12px;margin-bottom:14px}
-.ov-eyebrow::before{content:'';width:24px;height:1px;background:var(--hf-red);display:inline-block}
-.ov-h1{font-size:38px;font-weight:800;letter-spacing:-1.1px;line-height:1.08;color:var(--navy);margin:0 0 18px;font-family:Georgia,'Times New Roman',serif}
-.ov-h2{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.2;color:var(--navy);margin:0 0 8px;font-family:Georgia,'Times New Roman',serif}
-.ov-lede{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 24px;max-width:760px}
-.ov-lede-tail{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:20px 0 0;font-style:italic}
-.ov-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
-.ov-pillar{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 16px;border-top:3px solid var(--rule)}
-.ov-pillar-time{border-top-color:#1F6FB4}
-.ov-pillar-effort{border-top-color:#C97A1A}
-.ov-pillar-quality{border-top-color:#1F6E48}
-.ov-pillar-label{font-size:9.5px;font-weight:800;letter-spacing:1.6px;color:var(--ink-soft);margin-bottom:6px}
-.ov-pillar-time .ov-pillar-label{color:#1F6FB4}
-.ov-pillar-effort .ov-pillar-label{color:#C97A1A}
-.ov-pillar-quality .ov-pillar-label{color:#1F6E48}
-.ov-pillar-body{font-size:12.5px;line-height:1.55;color:var(--ink)}
+.ov-shell{
+  --ov-blue:#1F6FB4; --ov-orange:#C97A1A; --ov-green:#1F6E48;
+  --ov-serif:Georgia,'Times New Roman',Times,serif;
+  --ov-ease:cubic-bezier(.2,.7,.2,1);
+  max-width:1000px;margin:0 auto;padding:8px 40px 140px;color:var(--ink);line-height:1.55;
+}
+.ov-shell ::selection{background:var(--hf-red-soft)}
 
-.ov-sec{margin-bottom:56px}
-.ov-sec-head{display:flex;gap:18px;align-items:flex-start;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--rule)}
-.ov-sec-letter{font-size:48px;font-weight:800;line-height:.9;color:var(--hf-red);font-family:Georgia,'Times New Roman',serif;flex-shrink:0;width:56px;text-align:center}
-.ov-sec-eyebrow{font-size:10px;letter-spacing:2px;color:var(--ink-soft);font-weight:800;text-transform:uppercase;margin-bottom:4px}
-.ov-sec-sub{font-size:13px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5;font-style:italic}
+/* HERO */
+.ov-hero{padding:64px 0 8px}
+.ov-eyebrow{display:flex;align-items:center;gap:16px;font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--hf-red);margin-bottom:26px}
+.ov-eyebrow .ov-bar{width:36px;height:2px;background:var(--hf-red);display:inline-block}
+.ov-h1{font-family:var(--ov-serif);font-weight:700;font-size:60px;line-height:1.04;letter-spacing:-.018em;margin:0 0 26px;max-width:16ch;color:var(--ink)}
+.ov-lede{font-size:19px;line-height:1.6;color:#2C2B28;max-width:62ch;margin:0}
+.ov-lede strong{font-weight:700;color:var(--ink)}
 
-.ov-items{display:flex;flex-direction:column;gap:18px}
-.ov-item{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:16px 20px}
-.ov-item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
-.ov-item-title{font-size:15px;font-weight:800;color:var(--navy);margin:0;line-height:1.35;letter-spacing:-.2px}
-.ov-item-n{color:var(--hf-red);font-weight:800;margin-right:6px}
-.ov-item-tags{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
-.ov-tag{font-size:9px;letter-spacing:.8px;font-weight:800;padding:3px 7px;border-radius:9px;text-transform:uppercase;border:1px solid}
-.ov-tag-time{color:#1F6FB4;background:#E8F1F9;border-color:#B9D4ED}
-.ov-tag-effort{color:#C97A1A;background:#FAF1E3;border-color:#EAD6B5}
-.ov-tag-quality{color:#1F6E48;background:#E5F0EB;border-color:#B9D6C8}
-.ov-item-how{font-size:13px;line-height:1.6;color:var(--ink);margin:0}
-.ov-item-how b{color:var(--hf-red);letter-spacing:.5px}
-.ov-item-vs{font-size:12px;line-height:1.5;color:var(--ink-soft);margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--rule);font-style:italic}
+/* PILLARS */
+.ov-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:48px 0 28px}
+.ov-pillar{position:relative;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:26px 24px 24px;overflow:hidden}
+.ov-pillar .ov-edge{position:absolute;top:0;left:0;height:3px;width:100%;transform-origin:left;transform:scaleX(0)}
+.ov-pillar.ov-in .ov-edge{transform:scaleX(1);transition:transform 1s var(--ov-ease)}
+.ov-pillar.p-time .ov-edge{background:var(--ov-blue)}
+.ov-pillar.p-effort .ov-edge{background:var(--ov-orange)}
+.ov-pillar.p-quality .ov-edge{background:var(--ov-green)}
+.ov-pillar .ov-pk{font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px}
+.ov-pillar.p-time .ov-pk{color:var(--ov-blue)}
+.ov-pillar.p-effort .ov-pk{color:var(--ov-orange)}
+.ov-pillar.p-quality .ov-pk{color:var(--ov-green)}
+.ov-pillar p{margin:0;font-size:15px;line-height:1.58;color:#39382F}
+.ov-bridge{font-family:var(--ov-serif);font-style:italic;font-size:18px;color:var(--ink-soft);margin:28px 0 0}
+.ov-bridge strong{font-style:normal;font-weight:700;color:var(--ink)}
 
-.ov-summary{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:8px;padding:24px 28px;margin-top:24px}
-.ov-summary-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:10px}
-.ov-summary p{font-size:13.5px;line-height:1.65;color:var(--ink);margin:8px 0}
-.ov-summary-list{margin:14px 0 14px 22px;padding:0;font-size:13.5px;line-height:1.65;color:var(--ink)}
-.ov-summary-list li{margin-bottom:10px}
-.ov-summary-close{font-size:13.5px;line-height:1.7;color:var(--ink);margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)}
+/* TIMELINE + SPINE */
+.ov-timeline{position:relative;margin-top:88px;padding-left:96px}
+.ov-spine-svg{position:absolute;left:0;top:0;width:96px;height:100%;overflow:visible;pointer-events:none;z-index:0}
+.ov-spine-line{fill:none;stroke:#D2CFC2;stroke-width:2}
+.ov-spine-curve{fill:none;stroke:var(--hf-red);stroke-width:2.4}
+.ov-spine-area{fill:var(--hf-red);opacity:0}
+.ov-node .ov-ring{fill:none;stroke:var(--hf-red);stroke-width:1.5;transform-box:fill-box;transform-origin:center;transform:scale(0);opacity:0;transition:transform .8s var(--ov-ease),opacity .8s ease}
+.ov-node.ov-on .ov-ring{transform:scale(1);opacity:.42}
+.ov-node .ov-core{transform-box:fill-box;transform-origin:center;transform:scale(.5);transition:transform .55s var(--ov-ease),fill .55s ease;fill:#D2CFC2;stroke:var(--off-white);stroke-width:2.5}
+.ov-node.ov-on .ov-core{transform:scale(1)}
+.ov-node.ov-on.ov-na .ov-core{fill:var(--ink)}
+.ov-node.ov-on.ov-nb .ov-core{fill:var(--hf-red)}
+
+/* SECTION HEADERS */
+.ov-sec-head{display:flex;gap:24px;align-items:flex-start;margin:0 0 6px}
+#ov-secB .ov-sec-head{margin-top:108px}
+.ov-dropcap{font-family:var(--ov-serif);font-weight:700;font-size:96px;line-height:.78;color:var(--hf-red);flex:none;margin-top:-4px}
+.ov-sec-kicker{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin:8px 0 4px}
+.ov-sec-title{font-family:var(--ov-serif);font-weight:700;font-size:40px;line-height:1.05;letter-spacing:-.01em;margin:0 0 12px;color:var(--ink)}
+.ov-sec-sub{font-family:var(--ov-serif);font-style:italic;font-size:18px;color:var(--ink-soft);margin:0;max-width:56ch}
+.ov-sec-rule{height:1px;background:var(--rule);margin:26px 0 28px}
+
+/* CARDS */
+.ov-cards{display:flex;flex-direction:column;gap:20px;position:relative;z-index:1}
+.ov-card{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:26px 30px 24px}
+.ov-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:13px}
+.ov-card-title{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0;line-height:1.3;color:var(--ink)}
+.ov-card-title .ov-n{color:var(--hf-red);font-variant-numeric:tabular-nums;margin-right:10px}
+.ov-tags{display:flex;gap:7px;flex:none;padding-top:3px;flex-wrap:wrap}
+.ov-tag{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;border:1px solid;white-space:nowrap}
+.ov-tag.t-time{color:var(--ov-blue);border-color:rgba(31,111,180,.35);background:rgba(31,111,180,.07)}
+.ov-tag.t-effort{color:var(--ov-orange);border-color:rgba(201,122,26,.4);background:rgba(201,122,26,.08)}
+.ov-tag.t-quality{color:var(--ov-green);border-color:rgba(31,110,72,.38);background:rgba(31,110,72,.08)}
+.ov-how{font-size:15px;line-height:1.62;color:#2E2D29;margin:0}
+.ov-how .ov-lbl{color:var(--hf-red);font-weight:800;letter-spacing:.04em;margin-right:6px}
+.ov-card-foot{margin-top:16px;padding-top:15px;border-top:1px dashed var(--rule);font-family:var(--ov-serif);font-style:italic;font-size:14px;color:var(--ink-soft);line-height:1.5}
+
+/* TIME-COLLAPSE METER */
+.ov-meter{margin-top:18px;padding-top:16px;border-top:1px dashed var(--rule)}
+.ov-meter-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:10px}
+.ov-meter-cap{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute)}
+.ov-meter-mult{font-size:12.5px;font-weight:800;letter-spacing:.04em;color:var(--hf-red);font-variant-numeric:tabular-nums}
+.ov-meter-track{position:relative;height:9px;border-radius:6px;background:rgba(27,26,24,.07);overflow:hidden}
+.ov-meter-fill{position:absolute;left:0;top:0;height:100%;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--hf-red),var(--hf-red-deep))}
+.ov-meter-labels{display:flex;justify-content:space-between;margin-top:9px;font-size:12.5px;gap:14px}
+.ov-meter-labels .ov-before{color:var(--ink-soft)}
+.ov-meter-labels .ov-before b{font-weight:700;color:#46453E;font-style:normal}
+.ov-meter-labels .ov-after{color:var(--ov-green);font-weight:700;text-align:right}
+
+/* SUMMARY */
+.ov-summary{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:10px;padding:28px 32px;margin-top:96px}
+.ov-summary-eyebrow{font-size:11px;letter-spacing:.2em;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:10px}
+.ov-summary .ov-sec-title{font-size:30px;margin-bottom:14px}
+.ov-summary p{font-size:15px;line-height:1.65;color:var(--ink);margin:10px 0}
+.ov-summary-list{margin:16px 0 16px 22px;padding:0;font-size:15px;line-height:1.65;color:var(--ink)}
+.ov-summary-list li{margin-bottom:11px}
+.ov-summary-close{font-size:15px;line-height:1.7;color:var(--ink);margin-top:16px;padding-top:16px;border-top:1px solid var(--rule)}
+.ov-summary-close b{color:var(--hf-red)}
+
+/* REVEAL (scoped, scroll-triggered) */
+.ov-shell.ov-anim [data-ov-reveal]{opacity:0;transform:translateY(26px);transition:opacity 1s var(--ov-ease),transform 1s var(--ov-ease)}
+.ov-shell.ov-anim [data-ov-reveal].ov-in{opacity:1;transform:none}
+.ov-shell.ov-anim .ov-pillars [data-ov-reveal]:nth-child(2){transition-delay:.08s}
+.ov-shell.ov-anim .ov-pillars [data-ov-reveal]:nth-child(3){transition-delay:.16s}
+
+@media (prefers-reduced-motion: reduce){
+  .ov-shell.ov-anim [data-ov-reveal]{opacity:1!important;transform:none!important;transition:none!important}
+  .ov-pillar .ov-edge{transform:scaleX(1)!important}
+}
+
+@media (max-width:860px){
+  .ov-shell{padding:8px 22px 90px}
+  .ov-h1{font-size:42px}
+  .ov-lede{font-size:17px}
+  .ov-pillars{grid-template-columns:1fr;gap:14px}
+  .ov-timeline{padding-left:0;margin-top:56px}
+  .ov-spine-svg{display:none}
+  #ov-secB .ov-sec-head{margin-top:64px}
+  .ov-sec-head{gap:16px}
+  .ov-dropcap{font-size:64px}
+  .ov-sec-title{font-size:30px}
+  .ov-card{padding:22px 20px;border-left:4px solid var(--hf-red)}
+  .ov-card-top{flex-direction:column;gap:12px}
+  .ov-tags{padding-top:0}
+}
 
 /* Small CTA pill placed in About view header to discover this view. */
 .ov-cta-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(217,83,79,.12);color:var(--hf-red);border:1px solid rgba(217,83,79,.35);border-radius:18px;padding:6px 14px;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:inherit;text-transform:uppercase;transition:all .15s}
@@ -23776,8 +23851,12 @@ function renderOperationalValueView() {
   const el = document.getElementById("view-operational-value");
   if (!el) return;
 
-  // Each item: { n, title, tags, how, vs? }
-  // tags = subset of ["TIME","EFFORT","QUALITY"]
+  // Each item: { n, title, tags, how, vs?, meter? }
+  //   tags  = subset of ["TIME","EFFORT","QUALITY"]
+  //   vs    = italic "spreadsheet equivalent" foot note (no meter)
+  //   meter = { before, after, beforeLbl, afterLbl, mult?, frame? }
+  //           before/after are seconds; mult shows "Nx faster" counting up,
+  //           frame shows a static "minutes -> seconds" label instead.
   const quickWins = [
     {
       n: 1, title: "Single source of truth", tags: ["TIME","QUALITY"],
@@ -23786,28 +23865,28 @@ function renderOperationalValueView() {
     },
     {
       n: 2, title: "AI chat assistant (Mira)", tags: ["TIME"],
-      how: "Natural-language queries like \"which 5 Turkish agencies fit AI Fashion Lab and are Italy-only specialists?\" are answered in seconds, by reading the full entity set + outreach history + embedded market intel.",
-      vs: "Estimated: equivalent manual filtering 15–30 minutes; here ~5 seconds.",
+      how: "Natural-language queries like “which 5 Turkish agencies fit AI Fashion Lab and are Italy-only specialists?” are answered in seconds, by reading the full entity set + outreach history + embedded market intel.",
+      meter: { before: 1350, after: 5, frame: "minutes → seconds", beforeLbl: "Manual filtering · 15–30 min", afterLbl: "Mira · ~5 sec" },
     },
     {
       n: 3, title: "AI-assisted outreach drafting", tags: ["TIME","EFFORT"],
       how: "A '+ Draft email' button generates a personalised draft per entity using programmes, recipient context, and prior interactions. The operator reviews and sends.",
-      vs: "Estimated: personalised emails to 19 agencies ≈ 6 hours → ~10 minutes.",
+      meter: { before: 21600, after: 600, mult: 36, beforeLbl: "Manual drafting, 19 agencies · ~6 hours", afterLbl: "AI drafts · ~10 min" },
     },
     {
       n: 4, title: "One-click PDF brief", tags: ["TIME","QUALITY"],
-      how: "Server-rendered 1-page typographic brief (FT/McKinsey style) per partner: profile + score breakdown + last 3 interactions + contracts + next steps.",
-      vs: "Estimated: manual brief preparation 20+ minutes → ~30 seconds.",
+      how: "Server-rendered 1-page typographic brief (FT / McKinsey style) per partner: profile + score breakdown + last 3 interactions + contracts + next steps.",
+      meter: { before: 1200, after: 30, mult: 40, beforeLbl: "Manual brief prep · 20+ min", afterLbl: "One click · ~30 sec" },
     },
     {
-      n: 5, title: "Automatic scoring, ranking, and fit calculation", tags: ["EFFORT","QUALITY"],
+      n: 5, title: "Automatic scoring, ranking & fit", tags: ["EFFORT","QUALITY"],
       how: "For every entity, continuously recomputed: a weighted partnership score (priority, named contact, email, programme fit, recency), a readiness band (Ready / Warming / Early / Cold / Dormant), automatic fit against 9 summer programmes, and positions on 3 strategic 2×2 maps.",
       vs: "Spreadsheet equivalent requires 5+ pivot tables and manual monthly recalculation. Here it refreshes on every sync.",
     },
     {
       n: 6, title: "Faster management reporting", tags: ["TIME"],
       how: "A Home dashboard surfaces at a glance: active conversations (last 14 days), Hot partners cooling, overdue follow-ups, 90-day signing forecast, KPI tiles, live activity stream.",
-      vs: "Estimated: 'How many Hot partners do we have right now?' — spreadsheet ~5 minutes filter; here, instant.",
+      meter: { before: 300, after: 1, frame: "minutes → instant", beforeLbl: "Manual filter · ~5 min", afterLbl: "Dashboard · instant" },
     },
     {
       n: 7, title: "Faster problem detection — automated alarms", tags: ["EFFORT","QUALITY"],
@@ -23816,7 +23895,7 @@ function renderOperationalValueView() {
     },
     {
       n: 8, title: "Multi-user parallel work", tags: ["TIME","QUALITY"],
-      how: "Live presence indicator + attribution on every edit. Two operators work the database simultaneously without merge conflicts or version confusion.",
+      how: "A live presence indicator + attribution on every edit. Two operators work the database simultaneously without merge conflicts or version confusion.",
     },
     {
       n: 9, title: "Better team alignment", tags: ["QUALITY"],
@@ -23863,7 +23942,7 @@ function renderOperationalValueView() {
     {
       n: 7, title: "Faster onboarding for new team members", tags: ["TIME"],
       how: "A new operator joining gets 285 entity profiles + 11 Turkey-market intel cards + full outreach history + score breakdowns + recent activity + current aspirations — all ready, all searchable.",
-      vs: "Estimated: 'Where are we with Edunita?' — spreadsheet 1–2 hours (multiple files + verbal handoff); here ~30 seconds.",
+      meter: { before: 5400, after: 30, mult: 180, beforeLbl: "Multiple files + verbal handoff · 1–2 hrs", afterLbl: "Ready in platform · ~30 sec" },
     },
     {
       n: 8, title: "Scalable partnership management", tags: ["EFFORT"],
@@ -23898,69 +23977,95 @@ function renderOperationalValueView() {
 
   const tagPill = (t) => {
     const cls = ({ TIME: "time", EFFORT: "effort", QUALITY: "quality" })[t] || "";
-    return `<span class="ov-tag ov-tag-${cls}">${escape(t)}</span>`;
+    const lbl = ({ TIME: "Time", EFFORT: "Effort", QUALITY: "Quality" })[t] || t;
+    return `<span class="ov-tag t-${cls}">${escape(lbl)}</span>`;
   };
 
-  const itemHtml = (it) => `
-    <article class="ov-item">
-      <div class="ov-item-head">
-        <h3 class="ov-item-title"><span class="ov-item-n">${it.n}.</span> ${escape(it.title)}</h3>
-        <div class="ov-item-tags">${(it.tags || []).map(tagPill).join("")}</div>
+  const meterHtml = (m) => {
+    // data-before / data-after in seconds drive the fill width; either
+    // data-mult (count up "Nx faster") or data-frame (static label).
+    const attrs = `data-before="${m.before}" data-after="${m.after}"`
+      + (m.mult ? ` data-mult="${m.mult}"` : "")
+      + (m.frame ? ` data-frame="${escapeAttr(m.frame)}"` : "");
+    return `<div class="ov-meter" ${attrs}>
+      <div class="ov-meter-row"><span class="ov-meter-cap">Time collapse</span><span class="ov-meter-mult"></span></div>
+      <div class="ov-meter-track"><span class="ov-meter-fill"></span></div>
+      <div class="ov-meter-labels"><span class="ov-before"><b>${escape(m.beforeLbl)}</b></span><span class="ov-after">${escape(m.afterLbl)}</span></div>
+    </div>`;
+  };
+
+  const cardHtml = (it) => `
+    <article class="ov-card" data-ov-reveal>
+      <div class="ov-card-top">
+        <h3 class="ov-card-title"><span class="ov-n">${it.n}.</span>${escape(it.title)}</h3>
+        <div class="ov-tags">${(it.tags || []).map(tagPill).join("")}</div>
       </div>
-      <p class="ov-item-how"><b>HOW?</b> ${escape(it.how)}</p>
-      ${it.vs ? `<p class="ov-item-vs">${escape(it.vs)}</p>` : ""}
+      <p class="ov-how"><span class="ov-lbl">HOW?</span>${escape(it.how)}</p>
+      ${it.meter ? meterHtml(it.meter) : (it.vs ? `<p class="ov-card-foot">${escape(it.vs)}</p>` : "")}
     </article>`;
 
   el.innerHTML = `
     <div class="ov-shell">
       <header class="ov-hero">
-        <div class="ov-eyebrow">Why this platform exists</div>
-        <h1 class="ov-h1">Operational Value of H-Tracker</h1>
-        <p class="ov-lede">H-Tracker is not a visual alternative to a spreadsheet. It is an automation infrastructure that transforms a static partnership database into an operational decision-support system. The biggest measurable gain is <b>operational efficiency</b>, which translates into three concrete dimensions.</p>
-        <div class="ov-pillars">
-          <div class="ov-pillar ov-pillar-time">
-            <div class="ov-pillar-label">TIME SAVED</div>
-            <div class="ov-pillar-body">Manual filtering, reporting, and follow-up preparation drop from minutes/hours to seconds.</div>
-          </div>
-          <div class="ov-pillar ov-pillar-effort">
-            <div class="ov-pillar-label">EFFORT REDUCED</div>
-            <div class="ov-pillar-body">Repetitive operational tasks (score calculation, alarm scanning, sorting, brief writing) move from human to machine.</div>
-          </div>
-          <div class="ov-pillar ov-pillar-quality">
-            <div class="ov-pillar-label">QUALITY IMPROVED</div>
-            <div class="ov-pillar-body">Follow-up, communication, decision history, and service standards become consistent, auditable, and retained over time.</div>
-          </div>
-        </div>
-        <p class="ov-lede-tail">Every gain below maps to one or more of these pillars and answers a single question — <b>HOW?</b></p>
+        <div class="ov-eyebrow" data-ov-reveal><span class="ov-bar"></span>Why this platform exists</div>
+        <h1 class="ov-h1" data-ov-reveal>Operational Value of H-Tracker</h1>
+        <p class="ov-lede" data-ov-reveal>H-Tracker is not a visual alternative to a spreadsheet. It is an automation infrastructure that transforms a static partnership database into an operational decision-support system. The biggest measurable gain is <strong>operational efficiency</strong>, which translates into three concrete dimensions.</p>
       </header>
 
-      <section class="ov-sec">
-        <div class="ov-sec-head">
-          <div class="ov-sec-letter">A</div>
-          <div>
-            <div class="ov-sec-eyebrow">Quick Wins</div>
-            <h2 class="ov-h2">Immediate gains</h2>
-            <p class="ov-sec-sub">Felt daily and hourly. Tasks that take minutes in a spreadsheet happen in seconds here.</p>
-          </div>
+      <section class="ov-pillars">
+        <div class="ov-pillar p-time" data-ov-reveal><span class="ov-edge"></span>
+          <p class="ov-pk">Time saved</p>
+          <p>Manual filtering, reporting, and follow-up preparation drop from minutes / hours to seconds.</p>
         </div>
-        <div class="ov-items">${quickWins.map(itemHtml).join("")}</div>
-      </section>
-
-      <section class="ov-sec">
-        <div class="ov-sec-head">
-          <div class="ov-sec-letter">B</div>
-          <div>
-            <div class="ov-sec-eyebrow">Long-Term Wins</div>
-            <h2 class="ov-h2">Compounding gains</h2>
-            <p class="ov-sec-sub">Not one-time gains. These grow in value over time.</p>
-          </div>
+        <div class="ov-pillar p-effort" data-ov-reveal><span class="ov-edge"></span>
+          <p class="ov-pk">Effort reduced</p>
+          <p>Repetitive operational tasks — score calculation, alarm scanning, sorting, brief writing — move from human to machine.</p>
         </div>
-        <div class="ov-items">${longTermWins.map(itemHtml).join("")}</div>
+        <div class="ov-pillar p-quality" data-ov-reveal><span class="ov-edge"></span>
+          <p class="ov-pk">Quality improved</p>
+          <p>Follow-up, communication, decision history, and service standards become consistent, auditable, and retained over time.</p>
+        </div>
       </section>
+      <p class="ov-bridge" data-ov-reveal>Every gain below maps to one or more of these pillars and answers a single question — <strong>HOW?</strong></p>
 
-      <section class="ov-summary">
+      <div class="ov-timeline" id="ov-timeline">
+        <svg class="ov-spine-svg" preserveAspectRatio="none" aria-hidden="true">
+          <path class="ov-spine-area"></path>
+          <path class="ov-spine-line"></path>
+          <path class="ov-spine-curve"></path>
+          <g class="ov-spine-nodes"></g>
+        </svg>
+
+        <section id="ov-secA">
+          <div class="ov-sec-head" data-ov-reveal>
+            <div class="ov-dropcap">A</div>
+            <div>
+              <p class="ov-sec-kicker">Quick wins</p>
+              <h2 class="ov-sec-title">Immediate gains</h2>
+              <p class="ov-sec-sub">Felt daily and hourly. Tasks that take minutes in a spreadsheet happen in seconds here.</p>
+            </div>
+          </div>
+          <div class="ov-sec-rule" data-ov-reveal></div>
+          <div class="ov-cards">${quickWins.map(cardHtml).join("")}</div>
+        </section>
+
+        <section id="ov-secB">
+          <div class="ov-sec-head" data-ov-reveal>
+            <div class="ov-dropcap">B</div>
+            <div>
+              <p class="ov-sec-kicker">Long-term wins</p>
+              <h2 class="ov-sec-title">Compounding gains</h2>
+              <p class="ov-sec-sub">Not one-time gains. These grow in value over time.</p>
+            </div>
+          </div>
+          <div class="ov-sec-rule" data-ov-reveal></div>
+          <div class="ov-cards">${longTermWins.map(cardHtml).join("")}</div>
+        </section>
+      </div>
+
+      <section class="ov-summary" data-ov-reveal>
         <div class="ov-summary-eyebrow">Summary for the reviewer</div>
-        <h2 class="ov-h2">From passive database to active automation tool</h2>
+        <h2 class="ov-sec-title">From passive database to active automation tool</h2>
         <p>H-Tracker is not a more visual version of a spreadsheet. It is an automation infrastructure that does what a static file cannot:</p>
         <ol class="ov-summary-list">
           <li><b>A spreadsheet is static</b> — it stores information but does not calculate, alert, or generate answers. This platform continuously computes 4 scores, 3 map positions, and 5 alarm bands for every entity.</li>
@@ -23970,6 +24075,197 @@ function renderOperationalValueView() {
         <p class="ov-summary-close">The platform takes the operational workload of running a 285-entity partnership pipeline — filtering, reporting, follow-up tracking, prioritisation, communication drafting, brief preparation — and shifts a substantial portion from human to machine. The result is a measurable gain in time and effort, plus a sustained improvement in service quality and decision continuity. <b>This is, fundamentally, an automation project.</b></p>
       </section>
     </div>`;
+
+  _initOperationalValueAnimations(el);
+}
+
+// Scroll-triggered animation engine for the Operational Value view:
+// reveal-on-scroll, time-collapse meters, and a "compounding spine" SVG
+// that draws a straight rail through the Quick Wins and bulges into an
+// accumulating curve through the Long-Term Wins (rings grow downward to
+// signal compounding). Re-entrant: tears down the prior instance's
+// observer + listeners before wiring fresh ones, so switching away and
+// back never double-binds. Honours prefers-reduced-motion.
+function _initOperationalValueAnimations(root) {
+  // Tear down any previous instance (SPA re-render / re-entry).
+  if (window._ovAnim) {
+    try { window._ovAnim.io && window._ovAnim.io.disconnect(); } catch {}
+    try { window.removeEventListener("scroll", window._ovAnim.onScroll); } catch {}
+    try { window.removeEventListener("resize", window._ovAnim.onResize); } catch {}
+    window._ovAnim = null;
+  }
+  const shell = root.querySelector(".ov-shell");
+  if (!shell) return;
+  const RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  shell.classList.add("ov-anim");
+
+  let nodeEls = [];
+
+  function updateNodes() {
+    nodeEls.forEach(n => { if (n.card.classList.contains("ov-in")) n.g.classList.add("ov-on"); });
+  }
+
+  function runMeter(card) {
+    const m = card.querySelector(".ov-meter");
+    if (!m || m.dataset.done) return;
+    m.dataset.done = "1";
+    const fill = m.querySelector(".ov-meter-fill");
+    const before = parseFloat(m.dataset.before), after = parseFloat(m.dataset.after);
+    const frac = Math.max(after / before, 0.018);
+    const badge = m.querySelector(".ov-meter-mult");
+    const mult = m.dataset.mult;
+    if (RM) {
+      fill.style.width = (frac * 100) + "%";
+      if (badge) badge.innerHTML = mult ? (mult + "× faster") : (m.dataset.frame || "");
+      return;
+    }
+    fill.style.transition = "none";
+    fill.style.width = "100%";
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fill.style.transition = "width 1.15s cubic-bezier(.4,0,.1,1) .3s";
+      fill.style.width = (frac * 100) + "%";
+    }));
+    if (badge) {
+      if (!mult) { badge.innerHTML = m.dataset.frame || ""; return; }
+      const target = parseFloat(mult), dur = 1150; let t0 = 0;
+      function step(now) {
+        if (!t0) t0 = now;
+        const p = Math.min(1, (now - t0) / dur);
+        const v = Math.round(target * (1 - Math.pow(1 - p, 3)));
+        badge.textContent = v + "× faster";
+        if (p < 1) requestAnimationFrame(step);
+      }
+      setTimeout(() => requestAnimationFrame(step), 380);
+    }
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add("ov-in");
+      if (e.target.classList.contains("ov-card")) runMeter(e.target);
+      io.unobserve(e.target);
+      updateNodes();
+    });
+  }, { threshold: 0.16, rootMargin: "0px 0px -8% 0px" });
+
+  root.querySelectorAll("[data-ov-reveal]").forEach(node => {
+    if (RM) node.classList.add("ov-in"); else io.observe(node);
+  });
+
+  // ---- Compounding spine ----
+  const region = root.querySelector("#ov-timeline");
+  const secB   = root.querySelector("#ov-secB");
+  const svg    = root.querySelector(".ov-spine-svg");
+  const line   = root.querySelector(".ov-spine-line");
+  const curve  = root.querySelector(".ov-spine-curve");
+  const area   = root.querySelector(".ov-spine-area");
+  const nodesG = root.querySelector(".ov-spine-nodes");
+  const cards  = Array.prototype.slice.call(root.querySelectorAll(".ov-card"));
+
+  const RAIL_X = 48, MAXB = 40, NS = 28;
+  let H = 0, regionTop = 0, bAbsTop = 0, bStartRel = 0, bH = 1, lineLen = 0, curveLen = 0;
+  let active = true;
+
+  function bulge(t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return MAXB * Math.pow(t, 1.7); }
+
+  function build() {
+    if (!region || !svg) return;
+    active = window.innerWidth >= 860;
+    if (!active) { svg.style.display = "none"; return; }
+    svg.style.display = "";
+
+    const rRect = region.getBoundingClientRect();
+    regionTop = rRect.top + window.pageYOffset;
+    H = region.offsetHeight;
+    const bRect = secB.getBoundingClientRect();
+    bAbsTop = bRect.top + window.pageYOffset;
+    bStartRel = bAbsTop - regionTop;
+    bH = Math.max(1, H - bStartRel);
+
+    svg.setAttribute("viewBox", "0 0 96 " + H);
+    svg.setAttribute("height", H);
+
+    line.setAttribute("d", "M" + RAIL_X + " 0 L" + RAIL_X + " " + H);
+    lineLen = H;
+    line.style.strokeDasharray = H;
+
+    let d = "M" + RAIL_X + " " + bStartRel.toFixed(1);
+    for (let i = 1; i <= NS; i++) {
+      const t = i / NS;
+      const y = bStartRel + t * bH;
+      const x = RAIL_X - bulge(t);
+      d += " L" + x.toFixed(2) + " " + y.toFixed(1);
+    }
+    curve.setAttribute("d", d);
+    curveLen = curve.getTotalLength();
+    curve.style.strokeDasharray = curveLen;
+    area.setAttribute("d", d + " L" + RAIL_X + " " + H + " Z");
+
+    nodesG.innerHTML = "";
+    nodeEls = [];
+    let bIdx = 0;
+    cards.forEach(card => {
+      const cr = card.getBoundingClientRect();
+      const top = cr.top + window.pageYOffset;
+      const cy = top - regionTop + card.offsetHeight / 2;
+      const inB = top >= bAbsTop - 6;
+      let cx = RAIL_X, ringR = 11;
+      if (inB) {
+        const t = (cy - bStartRel) / bH;
+        cx = RAIL_X - bulge(t);
+        ringR = 12 + bIdx * 5;   // rings grow down section B = accumulation
+        bIdx++;
+      }
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "ov-node " + (inB ? "ov-nb" : "ov-na"));
+      g.setAttribute("transform", "translate(" + cx.toFixed(2) + " " + cy.toFixed(1) + ")");
+      if (inB) {
+        const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        ring.setAttribute("class", "ov-ring"); ring.setAttribute("r", ringR);
+        g.appendChild(ring);
+      }
+      const core = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      core.setAttribute("class", "ov-core"); core.setAttribute("r", "4.5");
+      g.appendChild(core);
+      nodesG.appendChild(g);
+      nodeEls.push({ g: g, card: card });
+    });
+
+    if (RM) {
+      line.style.strokeDashoffset = 0;
+      curve.style.strokeDashoffset = 0;
+      area.style.opacity = 0.15;
+    }
+    updateNodes();
+    onScroll();
+  }
+
+  function onScroll() {
+    if (!active || RM) return;
+    const ref = window.pageYOffset + window.innerHeight * 0.78;
+    let p = (ref - regionTop) / H; p = p < 0 ? 0 : (p > 1 ? 1 : p);
+    line.style.strokeDashoffset = (lineLen * (1 - p)).toFixed(1);
+    let pb = (ref - bAbsTop) / bH; pb = pb < 0 ? 0 : (pb > 1 ? 1 : pb);
+    curve.style.strokeDashoffset = (curveLen * (1 - pb)).toFixed(1);
+    area.style.opacity = (0.15 * pb).toFixed(3);
+  }
+
+  let ticking = false;
+  function onScrollRaf() {
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => { onScroll(); ticking = false; });
+  }
+  let rz;
+  function onResize() { clearTimeout(rz); rz = setTimeout(build, 160); }
+
+  window.addEventListener("scroll", onScrollRaf, { passive: true });
+  window.addEventListener("resize", onResize);
+  window._ovAnim = { io: io, onScroll: onScrollRaf, onResize: onResize };
+
+  // Build after layout settles (view just became visible).
+  requestAnimationFrame(() => requestAnimationFrame(build));
+  setTimeout(build, 300);
 }
 
 function renderAboutView() {
