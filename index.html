@@ -1271,6 +1271,61 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ab-shell{padding:28px 32px 60px;display:flex;flex-direction:column;gap:22px;background:var(--off-white);min-height:calc(100vh - 60px)}
 
 /* Hero */
+/* ============================================================
+   OPERATIONAL VALUE view — FT/McKinsey-style typography for the
+   defence document. Dense but readable, narrow column for scan
+   comfort, pillar cards up top, then Quick Wins / Long-Term Wins.
+   ============================================================ */
+.ov-shell{max-width:920px;margin:0 auto;padding:32px 28px 80px;font-family:inherit;color:var(--ink);line-height:1.55}
+.ov-hero{margin-bottom:48px}
+.ov-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;display:inline-flex;align-items:center;gap:12px;margin-bottom:14px}
+.ov-eyebrow::before{content:'';width:24px;height:1px;background:var(--hf-red);display:inline-block}
+.ov-h1{font-size:38px;font-weight:800;letter-spacing:-1.1px;line-height:1.08;color:var(--navy);margin:0 0 18px;font-family:Georgia,'Times New Roman',serif}
+.ov-h2{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.2;color:var(--navy);margin:0 0 8px;font-family:Georgia,'Times New Roman',serif}
+.ov-lede{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 24px;max-width:760px}
+.ov-lede-tail{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:20px 0 0;font-style:italic}
+.ov-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+.ov-pillar{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 16px;border-top:3px solid var(--rule)}
+.ov-pillar-time{border-top-color:#1F6FB4}
+.ov-pillar-effort{border-top-color:#C97A1A}
+.ov-pillar-quality{border-top-color:#1F6E48}
+.ov-pillar-label{font-size:9.5px;font-weight:800;letter-spacing:1.6px;color:var(--ink-soft);margin-bottom:6px}
+.ov-pillar-time .ov-pillar-label{color:#1F6FB4}
+.ov-pillar-effort .ov-pillar-label{color:#C97A1A}
+.ov-pillar-quality .ov-pillar-label{color:#1F6E48}
+.ov-pillar-body{font-size:12.5px;line-height:1.55;color:var(--ink)}
+
+.ov-sec{margin-bottom:56px}
+.ov-sec-head{display:flex;gap:18px;align-items:flex-start;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--rule)}
+.ov-sec-letter{font-size:48px;font-weight:800;line-height:.9;color:var(--hf-red);font-family:Georgia,'Times New Roman',serif;flex-shrink:0;width:56px;text-align:center}
+.ov-sec-eyebrow{font-size:10px;letter-spacing:2px;color:var(--ink-soft);font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.ov-sec-sub{font-size:13px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5;font-style:italic}
+
+.ov-items{display:flex;flex-direction:column;gap:18px}
+.ov-item{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:16px 20px}
+.ov-item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+.ov-item-title{font-size:15px;font-weight:800;color:var(--navy);margin:0;line-height:1.35;letter-spacing:-.2px}
+.ov-item-n{color:var(--hf-red);font-weight:800;margin-right:6px}
+.ov-item-tags{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
+.ov-tag{font-size:9px;letter-spacing:.8px;font-weight:800;padding:3px 7px;border-radius:9px;text-transform:uppercase;border:1px solid}
+.ov-tag-time{color:#1F6FB4;background:#E8F1F9;border-color:#B9D4ED}
+.ov-tag-effort{color:#C97A1A;background:#FAF1E3;border-color:#EAD6B5}
+.ov-tag-quality{color:#1F6E48;background:#E5F0EB;border-color:#B9D6C8}
+.ov-item-how{font-size:13px;line-height:1.6;color:var(--ink);margin:0}
+.ov-item-how b{color:var(--hf-red);letter-spacing:.5px}
+.ov-item-vs{font-size:12px;line-height:1.5;color:var(--ink-soft);margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--rule);font-style:italic}
+
+.ov-summary{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:8px;padding:24px 28px;margin-top:24px}
+.ov-summary-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:10px}
+.ov-summary p{font-size:13.5px;line-height:1.65;color:var(--ink);margin:8px 0}
+.ov-summary-list{margin:14px 0 14px 22px;padding:0;font-size:13.5px;line-height:1.65;color:var(--ink)}
+.ov-summary-list li{margin-bottom:10px}
+.ov-summary-close{font-size:13.5px;line-height:1.7;color:var(--ink);margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)}
+
+/* Small CTA pill placed in About view header to discover this view. */
+.ov-cta-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(217,83,79,.12);color:var(--hf-red);border:1px solid rgba(217,83,79,.35);border-radius:18px;padding:6px 14px;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:inherit;text-transform:uppercase;transition:all .15s}
+.ov-cta-pill:hover{background:var(--hf-red);color:#fff;border-color:var(--hf-red);transform:translateY(-1px);box-shadow:0 4px 10px rgba(217,83,79,.25)}
+
 .ab-hero{background:linear-gradient(120deg,var(--ink) 0%,#2A2A30 60%,#1A1A20 100%);color:#fff;padding:28px 36px;border-radius:14px;border-bottom:3px solid var(--hf-red);display:grid;grid-template-columns:1.4fr 1fr;gap:36px;align-items:center;position:relative;overflow:hidden;animation:ab-fade-up 600ms cubic-bezier(.22,.61,.36,1)}
 .ab-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 95% 30%,rgba(217,83,79,.14),transparent 70%);pointer-events:none}
 .ab-eyebrow{font-size:10px;letter-spacing:2.4px;color:var(--hf-red);font-weight:800;text-transform:uppercase;display:inline-flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -4992,6 +5047,12 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
     <!-- ABOUT H-FARM College VIEW -->
     <section id="view-tailor-made" class="view hidden"></section>
     <section id="view-about" class="view hidden"></section>
+
+    <!-- OPERATIONAL VALUE — the "what does this platform give you
+         beyond a spreadsheet" defence doc, accessible from a small
+         pill in the About view header rather than the main sidebar
+         (sidebar at cognitive-load cap per CLAUDE.md). -->
+    <section id="view-operational-value" class="view hidden"></section>
 
     <!-- ADMIN VIEW -->
     <section id="view-admin" class="view hidden"></section>
@@ -9831,6 +9892,7 @@ function renderCurrentView() {
   if (viewId === "teams")     renderTeamsView();
   if (viewId === "tailor-made") renderTailorMadeView();
   if (viewId === "about")     renderAboutView();
+  if (viewId === "operational-value") renderOperationalValueView();
   if (viewId === "admin")     renderAdminView();
 }
 
@@ -23702,6 +23764,214 @@ function _abAudienceMatchesProgram(audience, prog) {
   return true;
 }
 
+// =====================================================================
+// OPERATIONAL VALUE — the defence-doc view (the answer to "what does
+// this platform give us operationally vs an Excel file?"). Accessed
+// from a small pill in the About view header and a footer chip on Home
+// — NOT a sidebar item, because sidebar is at cognitive-load cap per
+// CLAUDE.md non-goal list. FT/McKinsey-style typography keeps it dense
+// but readable; shareable URL state makes it forwardable to reviewers.
+// =====================================================================
+function renderOperationalValueView() {
+  const el = document.getElementById("view-operational-value");
+  if (!el) return;
+
+  // Each item: { n, title, tags, how, vs? }
+  // tags = subset of ["TIME","EFFORT","QUALITY"]
+  const quickWins = [
+    {
+      n: 1, title: "Single source of truth", tags: ["TIME","QUALITY"],
+      how: "285 entities + all outreach + contracts + sponsors + follow-ups + decisions live in one central database. Multiple operators edit concurrently; every change is attributed automatically.",
+      vs: "Spreadsheet versioning ('v3-FINAL-defne.xlsx' vs 'v3-FINAL-silvia.xlsx') and merge conflicts disappear.",
+    },
+    {
+      n: 2, title: "AI chat assistant (Mira)", tags: ["TIME"],
+      how: "Natural-language queries like \"which 5 Turkish agencies fit AI Fashion Lab and are Italy-only specialists?\" are answered in seconds, by reading the full entity set + outreach history + embedded market intel.",
+      vs: "Estimated: equivalent manual filtering 15–30 minutes; here ~5 seconds.",
+    },
+    {
+      n: 3, title: "AI-assisted outreach drafting", tags: ["TIME","EFFORT"],
+      how: "A '+ Draft email' button generates a personalised draft per entity using programmes, recipient context, and prior interactions. The operator reviews and sends.",
+      vs: "Estimated: personalised emails to 19 agencies ≈ 6 hours → ~10 minutes.",
+    },
+    {
+      n: 4, title: "One-click PDF brief", tags: ["TIME","QUALITY"],
+      how: "Server-rendered 1-page typographic brief (FT/McKinsey style) per partner: profile + score breakdown + last 3 interactions + contracts + next steps.",
+      vs: "Estimated: manual brief preparation 20+ minutes → ~30 seconds.",
+    },
+    {
+      n: 5, title: "Automatic scoring, ranking, and fit calculation", tags: ["EFFORT","QUALITY"],
+      how: "For every entity, continuously recomputed: a weighted partnership score (priority, named contact, email, programme fit, recency), a readiness band (Ready / Warming / Early / Cold / Dormant), automatic fit against 9 summer programmes, and positions on 3 strategic 2×2 maps.",
+      vs: "Spreadsheet equivalent requires 5+ pivot tables and manual monthly recalculation. Here it refreshes on every sync.",
+    },
+    {
+      n: 6, title: "Faster management reporting", tags: ["TIME"],
+      how: "A Home dashboard surfaces at a glance: active conversations (last 14 days), Hot partners cooling, overdue follow-ups, 90-day signing forecast, KPI tiles, live activity stream.",
+      vs: "Estimated: 'How many Hot partners do we have right now?' — spreadsheet ~5 minutes filter; here, instant.",
+    },
+    {
+      n: 7, title: "Faster problem detection — automated alarms", tags: ["EFFORT","QUALITY"],
+      how: "Always-on checks raise red flags on app open: Hot partner cooling (30+ days), contracts expiring (30/60/90-day bands), stuck negotiations (60+ days), outreach awaiting reply (14+ days), unsigned Gold sponsor.",
+      vs: "Spreadsheet equivalent: weekly manual audits with material risk of missing items.",
+    },
+    {
+      n: 8, title: "Multi-user parallel work", tags: ["TIME","QUALITY"],
+      how: "Live presence indicator + attribution on every edit. Two operators work the database simultaneously without merge conflicts or version confusion.",
+    },
+    {
+      n: 9, title: "Better team alignment", tags: ["QUALITY"],
+      how: "Everyone operates from the same structured source of truth — same priority labels, same readiness bands, same scoring criteria. The platform standardises the operational vocabulary.",
+      vs: "Spreadsheet equivalent: each person interprets the file differently; duplicated effort and conflicting assessments accumulate.",
+    },
+    {
+      n: 10, title: "Aspirational drag → AI action plan → Follow-up loop", tags: ["TIME","EFFORT","QUALITY"],
+      how: "Drag a partner on the strategic map to its desired position → AI generates 4–6 specific actions (who, when, evidence) → one-click into the Follow-ups list with a 90-day tracking window. The end-to-end 'see current → aspire → act → track' loop is built in.",
+    },
+    {
+      n: 11, title: "Coexistence with Google Sheets", tags: ["QUALITY"],
+      how: "Every change made in the UI is written back to the source Sheet automatically. Spreadsheet-first users keep working in Sheets; the platform reads their data. Hybrid use is supported, so adoption is gradual.",
+    },
+  ];
+
+  const longTermWins = [
+    {
+      n: 1, title: "Historical trajectory analytics", tags: ["QUALITY"],
+      how: "Daily snapshots capture each entity's position. 'Where was Vera 3 months ago?' is answerable from the data. Cooling-Hot-partner alarms come from these trend deltas.",
+      vs: "Spreadsheet equivalent: only the current state exists.",
+    },
+    {
+      n: 2, title: "Decision audit trail", tags: ["QUALITY"],
+      how: "Every priority / tier / stage / score change records who, when, old value, new value. A 60-second undo is available. 'Why did we mark this partner Hot three months ago?' — answered immediately.",
+    },
+    {
+      n: 3, title: "Institutional memory — operator leaves, knowledge stays", tags: ["EFFORT","QUALITY"],
+      how: "All market intel, outreach history, contacts, decisions, notes are in the platform. When team members change, the next person doesn't start from zero.",
+      vs: "Spreadsheet equivalent: context lives in individual heads and emails — usually lost.",
+    },
+    {
+      n: 4, title: "Service quality — context-aware outreach", tags: ["QUALITY"],
+      how: "AI drafts use each entity's specific context. Instead of generic templates, every partner receives a tailored message. Response rates become measurable and improvable over time.",
+    },
+    {
+      n: 5, title: "Portfolio-level thinking — three strategic maps", tags: ["TIME","QUALITY"],
+      how: "Instead of reviewing 285 entities one by one, three lenses surface what matters: Effort × Fit (which Quick Wins this week?), Reach × Readiness (which Active Wins to lock in?), Cost × ROI (which Star Deals to double down on, which Money Pits to cut?). Each map auto-generates a decision suggestion.",
+    },
+    {
+      n: 6, title: "Conversation quality — sentiment + reply tracking", tags: ["QUALITY"],
+      how: "Each outreach entry carries a sentiment tag (positive / neutral / negative / rejected) and is aggregated automatically. Metrics like 'EduScala: 100% positive reply rate' combine with trajectory to make service quality measurable.",
+    },
+    {
+      n: 7, title: "Faster onboarding for new team members", tags: ["TIME"],
+      how: "A new operator joining gets 285 entity profiles + 11 Turkey-market intel cards + full outreach history + score breakdowns + recent activity + current aspirations — all ready, all searchable.",
+      vs: "Estimated: 'Where are we with Edunita?' — spreadsheet 1–2 hours (multiple files + verbal handoff); here ~30 seconds.",
+    },
+    {
+      n: 8, title: "Scalable partnership management", tags: ["EFFORT"],
+      how: "As the database grows from 285 to 500 to 1000+ entities, a spreadsheet becomes harder to manage proportionally. The platform's searchable, filterable, action-oriented workflows handle larger volumes without proportionally more manual work.",
+    },
+    {
+      n: 9, title: "Better data quality over time", tags: ["QUALITY"],
+      how: "Because data is used operationally (in dashboards, filters, alarm thresholds, scoring), missing or inconsistent values become immediately visible. This creates natural pressure to keep records clean and complete.",
+      vs: "Spreadsheet equivalent: stale data accumulates silently.",
+    },
+    {
+      n: 10, title: "Reproducible processes", tags: ["EFFORT","QUALITY"],
+      how: "7 outreach templates → consistent quality every time. Sponsor CSV import → identical clean data flow each year. PDF brief generation → identical format for every partner. Market intel auto-apply → one-edit refresh. Processes are coded, not stored in individual knowledge.",
+    },
+    {
+      n: 11, title: "Data-supported decisions (decision intelligence)", tags: ["QUALITY"],
+      how: "Aspirational drag + intel injection + AI reasoning combine into something a static spreadsheet cannot offer: evidence-based, auditable strategic decisions. A clear differentiator in management and partner presentations.",
+    },
+    {
+      n: 12, title: "Open infrastructure — ready for future integrations", tags: ["TIME","EFFORT"],
+      how: "All operations go through REST endpoints; the database is directly queryable. Future additions: Gmail integration (automatic outreach logging), Calendar integration (pre-meeting briefs), BI/analytics tools (direct dashboards), mobile clients (same backend). A spreadsheet is a closed container; this is open.",
+    },
+    {
+      n: 13, title: "Compliance + auditability", tags: ["QUALITY"],
+      how: "Every action is timestamped and tied to a user identity. The full edit log + presence + outreach + contracts can be queried for 'who did what, when'. Suitable for internal or external audit.",
+    },
+    {
+      n: 14, title: "Data security + device independence", tags: ["QUALITY"],
+      how: "Data lives on a central server with automatic backups; accessible from any device. Local browser cache loss does not affect data. No single point of failure on someone's laptop.",
+    },
+  ];
+
+  const tagPill = (t) => {
+    const cls = ({ TIME: "time", EFFORT: "effort", QUALITY: "quality" })[t] || "";
+    return `<span class="ov-tag ov-tag-${cls}">${escape(t)}</span>`;
+  };
+
+  const itemHtml = (it) => `
+    <article class="ov-item">
+      <div class="ov-item-head">
+        <h3 class="ov-item-title"><span class="ov-item-n">${it.n}.</span> ${escape(it.title)}</h3>
+        <div class="ov-item-tags">${(it.tags || []).map(tagPill).join("")}</div>
+      </div>
+      <p class="ov-item-how"><b>HOW?</b> ${escape(it.how)}</p>
+      ${it.vs ? `<p class="ov-item-vs">${escape(it.vs)}</p>` : ""}
+    </article>`;
+
+  el.innerHTML = `
+    <div class="ov-shell">
+      <header class="ov-hero">
+        <div class="ov-eyebrow">Why this platform exists</div>
+        <h1 class="ov-h1">Operational Value of H-Tracker</h1>
+        <p class="ov-lede">H-Tracker is not a visual alternative to a spreadsheet. It is an automation infrastructure that transforms a static partnership database into an operational decision-support system. The biggest measurable gain is <b>operational efficiency</b>, which translates into three concrete dimensions.</p>
+        <div class="ov-pillars">
+          <div class="ov-pillar ov-pillar-time">
+            <div class="ov-pillar-label">TIME SAVED</div>
+            <div class="ov-pillar-body">Manual filtering, reporting, and follow-up preparation drop from minutes/hours to seconds.</div>
+          </div>
+          <div class="ov-pillar ov-pillar-effort">
+            <div class="ov-pillar-label">EFFORT REDUCED</div>
+            <div class="ov-pillar-body">Repetitive operational tasks (score calculation, alarm scanning, sorting, brief writing) move from human to machine.</div>
+          </div>
+          <div class="ov-pillar ov-pillar-quality">
+            <div class="ov-pillar-label">QUALITY IMPROVED</div>
+            <div class="ov-pillar-body">Follow-up, communication, decision history, and service standards become consistent, auditable, and retained over time.</div>
+          </div>
+        </div>
+        <p class="ov-lede-tail">Every gain below maps to one or more of these pillars and answers a single question — <b>HOW?</b></p>
+      </header>
+
+      <section class="ov-sec">
+        <div class="ov-sec-head">
+          <div class="ov-sec-letter">A</div>
+          <div>
+            <div class="ov-sec-eyebrow">Quick Wins</div>
+            <h2 class="ov-h2">Immediate gains</h2>
+            <p class="ov-sec-sub">Felt daily and hourly. Tasks that take minutes in a spreadsheet happen in seconds here.</p>
+          </div>
+        </div>
+        <div class="ov-items">${quickWins.map(itemHtml).join("")}</div>
+      </section>
+
+      <section class="ov-sec">
+        <div class="ov-sec-head">
+          <div class="ov-sec-letter">B</div>
+          <div>
+            <div class="ov-sec-eyebrow">Long-Term Wins</div>
+            <h2 class="ov-h2">Compounding gains</h2>
+            <p class="ov-sec-sub">Not one-time gains. These grow in value over time.</p>
+          </div>
+        </div>
+        <div class="ov-items">${longTermWins.map(itemHtml).join("")}</div>
+      </section>
+
+      <section class="ov-summary">
+        <div class="ov-summary-eyebrow">Summary for the reviewer</div>
+        <h2 class="ov-h2">From passive database to active automation tool</h2>
+        <p>H-Tracker is not a more visual version of a spreadsheet. It is an automation infrastructure that does what a static file cannot:</p>
+        <ol class="ov-summary-list">
+          <li><b>A spreadsheet is static</b> — it stores information but does not calculate, alert, or generate answers. This platform continuously computes 4 scores, 3 map positions, and 5 alarm bands for every entity.</li>
+          <li><b>A spreadsheet is solitary</b> — one person opens the file, others wait. Multi-user concurrent editing with attribution is native here.</li>
+          <li><b>A spreadsheet loses information</b> — when operators change roles, knowledge leaves with them and past trends are unrecorded. Here, everything is persistent, searchable, and attributed.</li>
+        </ol>
+        <p class="ov-summary-close">The platform takes the operational workload of running a 285-entity partnership pipeline — filtering, reporting, follow-up tracking, prioritisation, communication drafting, brief preparation — and shifts a substantial portion from human to machine. The result is a measurable gain in time and effort, plus a sustained improvement in service quality and decision continuity. <b>This is, fundamentally, an automation project.</b></p>
+      </section>
+    </div>`;
+}
+
 function renderAboutView() {
   const el = document.getElementById("view-about");
   if (!el) return;
@@ -23720,6 +23990,7 @@ function renderAboutView() {
         <div class="ab-eyebrow">Knowledge base · What we offer</div>
         <div class="ab-title">About H-FARM College</div>
         <div class="ab-lede">The full catalogue embedded in this platform — every team, every programme, every collaboration format. Use this to pitch the right thing to the right partner.</div>
+        <button type="button" class="ov-cta-pill" style="margin-top:14px" onclick="switchView('operational-value')" title="What does this platform give you operationally vs a spreadsheet?">📊 Operational Value of this Platform →</button>
       </div>
       <div class="ab-hero-kpis">
         <div class="ab-kpi"><div class="ab-kpi-num">${TEAMS.length}</div><div class="ab-kpi-lbl">Internal Teams</div></div>
