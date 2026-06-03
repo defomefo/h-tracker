@@ -20529,6 +20529,19 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
     let dragKind = "noop";    // "noop" | "aspiration" | "override"
     let origCx = 0, origCy = 0;  // snapshot for snap-back on plain drag
     let aspGhost = null;      // <g> with ghost target reticle + connecting line
+
+    // Centralized cleanup so every "drag is over" path (pointerup,
+    // pointercancel, lostpointercapture) goes through the same code.
+    // Without this, an interrupted drag (browser context menu, modal
+    // pre-empt, multi-touch gesture) would leave the .sm-asp-ghost
+    // element in the SVG forever — visible as a stuck reticle + label
+    // — and the next drag would render ANOTHER ghost on top, giving
+    // the appearance of "multiple drags at once".
+    const _killGhost = () => {
+      if (aspGhost && aspGhost.parentNode) aspGhost.parentNode.removeChild(aspGhost);
+      aspGhost = null;
+    };
+
     b.addEventListener("pointerdown", (ev) => {
       dragging = true;
       moved = 0;
@@ -20546,6 +20559,11 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       else                                           dragKind = "noop";
       b.classList.add("dragging");
       b.setPointerCapture(ev.pointerId);
+      // Defensive sweep: kill any orphan ghosts left by previously
+      // interrupted drags. Each bubble has its own aspGhost closure
+      // variable so cross-bubble cleanup needs a DOM-level sweep.
+      svg.querySelectorAll(".sm-asp-ghost").forEach(g => g.remove());
+      aspGhost = null;
     });
     b.addEventListener("pointermove", (ev) => {
       if (!dragging) return;
@@ -20608,14 +20626,28 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
       tip.style.top  = (ev.clientY + 14) + "px";
       tip.style.display = "block";
     });
+    // Pointer interrupted (browser context menu, modal pre-empt, gesture
+    // collision). No modal — just clean up the ghost + state silently.
+    // Without this handler, the .sm-asp-ghost element stayed forever
+    // and the next drag stacked another ghost on top (user saw 3+
+    // reticles + feasibility labels at once and couldn't dismiss any).
+    const _onPointerAbort = (ev) => {
+      if (!dragging) return;
+      dragging = false;
+      b.classList.remove("dragging");
+      try { b.releasePointerCapture(ev.pointerId); } catch {}
+      _killGhost();
+      tip.style.display = "none";
+    };
+    b.addEventListener("pointercancel", _onPointerAbort);
+    b.addEventListener("lostpointercapture", _onPointerAbort);
+
     b.addEventListener("pointerup", (ev) => {
       if (!dragging) return;
       dragging = false;
       b.classList.remove("dragging");
       b.releasePointerCapture(ev.pointerId);
-      // Clean up the aspiration ghost (drag-preview)
-      if (aspGhost && aspGhost.parentNode) aspGhost.parentNode.removeChild(aspGhost);
-      aspGhost = null;
+      _killGhost();
       tip.style.display = "none";
 
       if (moved < 3) {
