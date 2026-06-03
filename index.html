@@ -1323,8 +1323,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ov-timeline{position:relative;margin-top:88px;padding-left:96px}
 .ov-spine-svg{position:absolute;left:0;top:0;width:96px;height:100%;overflow:visible;pointer-events:none;z-index:0}
 .ov-spine-line{fill:none;stroke:#D2CFC2;stroke-width:2}
-.ov-spine-curve{fill:none;stroke:var(--hf-red);stroke-width:2.4}
-.ov-spine-area{fill:var(--hf-red);opacity:0}
+.ov-spine-curve{fill:none;stroke:var(--hf-red);stroke-width:2.4;stroke-linecap:round}
 .ov-node .ov-ring{fill:none;stroke:var(--hf-red);stroke-width:1.5;transform-box:fill-box;transform-origin:center;transform:scale(0);opacity:0;transition:transform .8s var(--ov-ease),opacity .8s ease}
 .ov-node.ov-on .ov-ring{transform:scale(1);opacity:.42}
 .ov-node .ov-core{transform-box:fill-box;transform-origin:center;transform:scale(.5);transition:transform .55s var(--ov-ease),fill .55s ease;fill:#D2CFC2;stroke:var(--off-white);stroke-width:2.5}
@@ -24039,7 +24038,6 @@ function renderOperationalValueView() {
 
       <div class="ov-timeline" id="ov-timeline">
         <svg class="ov-spine-svg" preserveAspectRatio="none" aria-hidden="true">
-          <path class="ov-spine-area"></path>
           <path class="ov-spine-line"></path>
           <path class="ov-spine-curve"></path>
           <g class="ov-spine-nodes"></g>
@@ -24163,17 +24161,23 @@ function _initOperationalValueAnimations(root) {
   });
 
   // ---- Compounding spine ----
+  // Grey straight rail = the linear baseline; red bulging curve = the
+  // compounding path diverging from it through the Long-Term Wins. Both
+  // draw progressively and complete at the LAST card's centre (not the
+  // timeline's bottom edge) — otherwise the last ~20% never drew because
+  // you can't scroll the timeline bottom past the trigger line, which is
+  // what made the red line look "cut off" mid-section.
   const region = root.querySelector("#ov-timeline");
   const secB   = root.querySelector("#ov-secB");
   const svg    = root.querySelector(".ov-spine-svg");
   const line   = root.querySelector(".ov-spine-line");
   const curve  = root.querySelector(".ov-spine-curve");
-  const area   = root.querySelector(".ov-spine-area");
   const nodesG = root.querySelector(".ov-spine-nodes");
   const cards  = Array.prototype.slice.call(root.querySelectorAll(".ov-card"));
 
   const RAIL_X = 48, MAXB = 40, NS = 28;
-  let H = 0, regionTop = 0, bAbsTop = 0, bStartRel = 0, bH = 1, lineLen = 0, curveLen = 0;
+  let H = 0, regionTop = 0, bStartRel = 0, bHcurve = 1, endRel = 1;
+  let lineLen = 0, curveLen = 0;
   let active = true;
 
   function bulge(t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return MAXB * Math.pow(t, 1.7); }
@@ -24188,48 +24192,54 @@ function _initOperationalValueAnimations(root) {
     regionTop = rRect.top + window.pageYOffset;
     H = region.offsetHeight;
     const bRect = secB.getBoundingClientRect();
-    bAbsTop = bRect.top + window.pageYOffset;
+    const bAbsTop = bRect.top + window.pageYOffset;
     bStartRel = bAbsTop - regionTop;
-    bH = Math.max(1, H - bStartRel);
+
+    // Pre-pass: measure every card centre relative to the region so we
+    // know where the LAST node sits — both the rail + curve terminate
+    // there, and section-B nodes ride the curve using the same span.
+    const metrics = cards.map(card => {
+      const top = card.getBoundingClientRect().top + window.pageYOffset;
+      return { card: card, cy: top - regionTop + card.offsetHeight / 2, inB: top >= bAbsTop - 6 };
+    });
+    endRel = metrics.length ? metrics[metrics.length - 1].cy : H;
+    bHcurve = Math.max(1, endRel - bStartRel);
 
     svg.setAttribute("viewBox", "0 0 96 " + H);
     svg.setAttribute("height", H);
 
-    line.setAttribute("d", "M" + RAIL_X + " 0 L" + RAIL_X + " " + H);
-    lineLen = H;
-    line.style.strokeDasharray = H;
+    // Straight rail: top to the last node.
+    line.setAttribute("d", "M" + RAIL_X + " 0 L" + RAIL_X + " " + endRel.toFixed(1));
+    lineLen = endRel;
+    line.style.strokeDasharray = endRel;
 
+    // Bulging curve: from section B start to the last node.
     let d = "M" + RAIL_X + " " + bStartRel.toFixed(1);
     for (let i = 1; i <= NS; i++) {
       const t = i / NS;
-      const y = bStartRel + t * bH;
+      const y = bStartRel + t * bHcurve;
       const x = RAIL_X - bulge(t);
       d += " L" + x.toFixed(2) + " " + y.toFixed(1);
     }
     curve.setAttribute("d", d);
     curveLen = curve.getTotalLength();
     curve.style.strokeDasharray = curveLen;
-    area.setAttribute("d", d + " L" + RAIL_X + " " + H + " Z");
 
     nodesG.innerHTML = "";
     nodeEls = [];
     let bIdx = 0;
-    cards.forEach(card => {
-      const cr = card.getBoundingClientRect();
-      const top = cr.top + window.pageYOffset;
-      const cy = top - regionTop + card.offsetHeight / 2;
-      const inB = top >= bAbsTop - 6;
+    metrics.forEach(mtr => {
       let cx = RAIL_X, ringR = 11;
-      if (inB) {
-        const t = (cy - bStartRel) / bH;
+      if (mtr.inB) {
+        const t = (mtr.cy - bStartRel) / bHcurve;
         cx = RAIL_X - bulge(t);
         ringR = 12 + bIdx * 5;   // rings grow down section B = accumulation
         bIdx++;
       }
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("class", "ov-node " + (inB ? "ov-nb" : "ov-na"));
-      g.setAttribute("transform", "translate(" + cx.toFixed(2) + " " + cy.toFixed(1) + ")");
-      if (inB) {
+      g.setAttribute("class", "ov-node " + (mtr.inB ? "ov-nb" : "ov-na"));
+      g.setAttribute("transform", "translate(" + cx.toFixed(2) + " " + mtr.cy.toFixed(1) + ")");
+      if (mtr.inB) {
         const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         ring.setAttribute("class", "ov-ring"); ring.setAttribute("r", ringR);
         g.appendChild(ring);
@@ -24238,13 +24248,12 @@ function _initOperationalValueAnimations(root) {
       core.setAttribute("class", "ov-core"); core.setAttribute("r", "4.5");
       g.appendChild(core);
       nodesG.appendChild(g);
-      nodeEls.push({ g: g, card: card });
+      nodeEls.push({ g: g, card: mtr.card });
     });
 
     if (RM) {
       line.style.strokeDashoffset = 0;
       curve.style.strokeDashoffset = 0;
-      area.style.opacity = 0.15;
     }
     updateNodes();
     onScroll();
@@ -24252,12 +24261,14 @@ function _initOperationalValueAnimations(root) {
 
   function onScroll() {
     if (!active || RM) return;
-    const ref = window.pageYOffset + window.innerHeight * 0.78;
-    let p = (ref - regionTop) / H; p = p < 0 ? 0 : (p > 1 ? 1 : p);
+    // Trigger line at 62% of the viewport — both rail + curve reach 100%
+    // when the last card's centre passes it, which is scrollable because
+    // the summary section sits below the timeline.
+    const refRel = window.pageYOffset + window.innerHeight * 0.62 - regionTop;
+    let p = refRel / endRel; p = p < 0 ? 0 : (p > 1 ? 1 : p);
     line.style.strokeDashoffset = (lineLen * (1 - p)).toFixed(1);
-    let pb = (ref - bAbsTop) / bH; pb = pb < 0 ? 0 : (pb > 1 ? 1 : pb);
+    let pb = (refRel - bStartRel) / bHcurve; pb = pb < 0 ? 0 : (pb > 1 ? 1 : pb);
     curve.style.strokeDashoffset = (curveLen * (1 - pb)).toFixed(1);
-    area.style.opacity = (0.15 * pb).toFixed(3);
   }
 
   let ticking = false;
