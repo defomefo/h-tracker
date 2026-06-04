@@ -1204,7 +1204,10 @@ def sheets_writeback():
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with _urlreq.urlopen(req, timeout=10) as resp:
+        # Apps Script locks the spreadsheet per write and can be slow on a
+        # cold path; 10s was too tight and surfaced "read operation timed
+        # out" under bursts. 20s gives it headroom without hanging the UI.
+        with _urlreq.urlopen(req, timeout=20) as resp:
             raw = resp.read()
         try:
             inner = json.loads(raw.decode("utf-8"))

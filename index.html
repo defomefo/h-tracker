@@ -9685,26 +9685,39 @@ function _persistEntityContacts(entityId, contacts) {
     console.warn("[entity_override] contacts save deferred (offline):", e.message));
 }
 
-// Re-write all 3 contact slots to the Sheet (empty string clears a slot).
-// One summary toast instead of nine. `actionLabel` ("Contact added" /
-// "Contact removed") leads the toast so the operator always gets explicit
-// feedback — including when writeback is OFF (saved to platform only).
-async function _syncContactsToSheet(entityId, contacts, actionLabel) {
+// Sync contact slots to the Sheet. Writes ONLY the cells that actually
+// changed (diff vs `oldContacts`), and does them SEQUENTIALLY — firing all
+// nine in parallel made Apps Script (single-threaded per spreadsheet) queue
+// and blow the backend's read timeout ("read operation timed out"). Adding
+// one contact now writes 3 cells; removing writes only the shifted slots.
+// `actionLabel` leads the toast so the operator always gets explicit
+// feedback, including when writeback is OFF (saved to platform only).
+async function _syncContactsToSheet(entityId, contacts, actionLabel, oldContacts) {
   actionLabel = actionLabel || "Contacts updated";
-  const calls = [];
+  oldContacts = oldContacts || [];
+  // Build the minimal cell-write list (only differences).
+  const writes = [];
   for (let i = 1; i <= CONTACT_SLOT_MAX; i++) {
-    const c = contacts[i - 1] || {};
-    calls.push(_pushFieldToSheetsQuiet(entityId, `contact_${i}_name`,  c.name  || ""));
-    calls.push(_pushFieldToSheetsQuiet(entityId, `contact_${i}_role`,  c.role  || ""));
-    calls.push(_pushFieldToSheetsQuiet(entityId, `contact_${i}_email`, c.email || ""));
+    const nu = contacts[i - 1] || {}, od = oldContacts[i - 1] || {};
+    const cells = [
+      [`contact_${i}_name`,  nu.name  || "", od.name  || ""],
+      [`contact_${i}_role`,  nu.role  || "", od.role  || ""],
+      [`contact_${i}_email`, nu.email || "", od.email || ""],
+    ];
+    cells.forEach(([field, val, oldVal]) => { if (val !== oldVal) writes.push([field, val]); });
   }
-  const results = await Promise.all(calls);
-  if (results.some(r => r && r.configured === false)) {
-    // Writeback not configured — still confirm the platform save clearly.
+  if (!writes.length) { showSyncToast(`✓ ${actionLabel}`, "ok"); return; }
+
+  let configuredOff = false, failed = null;
+  for (const [field, val] of writes) {        // sequential — one at a time
+    const r = await _pushFieldToSheetsQuiet(entityId, field, val);
+    if (r && r.configured === false) { configuredOff = true; break; }
+    if (!r || !r.ok || (r.apps_script && !r.apps_script.ok)) { failed = r; break; }
+  }
+  if (configuredOff) {
     showSyncToast(`✓ ${actionLabel} · saved to platform (Google Sheets sync not set up)`, "ok");
     return;
   }
-  const failed = results.find(r => !r || !r.ok || (r.apps_script && !r.apps_script.ok));
   if (failed) {
     const msg = (failed.apps_script && failed.apps_script.error) || failed.error || "unknown error";
     showSyncToast(`✓ ${actionLabel} · ⚠ Google Sheets sync failed — ${msg}`, "warn");
@@ -9733,6 +9746,7 @@ function addEntityContact(entityId) {
     showSyncToast(`Max ${CONTACT_SLOT_MAX} contacts sync to the Sheet — remove one first`, "warn");
     return;
   }
+  const oldContacts = contacts.map(c => Object.assign({}, c));  // snapshot before push
   contacts.push({ name: n, role: r, email: e });
   _DP_CONTACT_FORM_OPEN[entityId] = false;   // close the form on success
   _persistEntityContacts(entityId, contacts);  // re-renders the panel
@@ -9740,7 +9754,7 @@ function addEntityContact(entityId) {
   // can take a moment (Render cold-start), so we don't leave the operator
   // wondering. The sync result replaces this toast if writeback is on.
   showSyncToast(`✓ Contact added — ${n || e} · syncing to Google Sheets…`, "ok");
-  _syncContactsToSheet(entityId, contacts, "Contact added");
+  _syncContactsToSheet(entityId, contacts, "Contact added", oldContacts);
 }
 
 function removeEntityContact(entityId, idx) {
@@ -9750,10 +9764,11 @@ function removeEntityContact(entityId, idx) {
   if (idx < 0 || idx >= contacts.length) return;
   const removed = contacts[idx];
   if (!confirm(`Remove contact "${(removed.name || removed.email || "").slice(0, 60)}"?\n\nThis also clears the matching contact slot in the Google Sheet.`)) return;
+  const oldContacts = contacts.map(c => Object.assign({}, c));  // snapshot before splice
   contacts.splice(idx, 1);
   _persistEntityContacts(entityId, contacts);
   showSyncToast("✓ Contact removed · syncing to Google Sheets…", "ok");
-  _syncContactsToSheet(entityId, contacts, "Contact removed");
+  _syncContactsToSheet(entityId, contacts, "Contact removed", oldContacts);
 }
 
 // Toggle the inline "add contact" form open/closed without a full re-render.
@@ -12259,7 +12274,14 @@ function _dpProfileTabHtml(u) {
   const tags = (typeof entityClassification === "function") ? entityClassification(u) : [];
   // Chips: derive from classification + region + key trait
   const typeLabel = (ENTITY_LABELS && ENTITY_LABELS[u.type]) || u.type || "Partner";
-  const traitTags = tags.slice(0, 4).map(t =>
+  // entityClassification returns [type, continent, strategic_tier?,
+  // source_priority?, ...focus traits] in that order. The type + continent
+  // already render as their own dedicated chips below, so skip them here —
+  // otherwise they'd show twice (this was the duplicate "Higher Ed
+  // Institution" / "Europe" chips). Drop the leading type, and the
+  // continent if it's present.
+  const skipCount = 1 + ((u.continent && u.continent !== "Unknown") ? 1 : 0);
+  const traitTags = tags.slice(skipCount).slice(0, 4).map(t =>
     `<span class="dp-chip dp-chip-trait" style="background:${t.color};color:#fff;border-color:transparent">${escape(t.label)}</span>`
   ).join("");
   const chipsHtml = `
