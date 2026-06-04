@@ -9826,8 +9826,13 @@ function recommendTeams(u) {
 // Brief entity classification (for the colourful profile card)
 function entityClassification(u) {
   const tags = [];
-  // Type tag
-  tags.push({label: ENTITY_LABELS[u.type], color: u.type === "university" ? "var(--ink)" : u.type === "agency" ? "#6D28D9" : u.type === "school" ? "#059669" : "#B85C00"});
+  // Type tag. Fall back to a humanised version of the raw type when it's
+  // not one of the four canonical labels — otherwise an AI-discovered
+  // prospect saved with a non-canonical type (e.g. "higher_ed_institution")
+  // rendered as an empty orange chip (undefined label + default colour).
+  const typeLabel = ENTITY_LABELS[u.type]
+    || (u.type ? String(u.type).replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : "Partner");
+  tags.push({label: typeLabel, color: u.type === "university" ? "var(--ink)" : u.type === "agency" ? "#6D28D9" : u.type === "school" ? "#059669" : "#B85C00"});
   // Region
   if (u.continent && u.continent !== "Unknown") tags.push({label: u.continent, color:"#2D2D2D"});
   // Strategic Tier if set
