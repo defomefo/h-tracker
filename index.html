@@ -9686,8 +9686,11 @@ function _persistEntityContacts(entityId, contacts) {
 }
 
 // Re-write all 3 contact slots to the Sheet (empty string clears a slot).
-// One summary toast instead of nine.
-async function _syncContactsToSheet(entityId, contacts) {
+// One summary toast instead of nine. `actionLabel` ("Contact added" /
+// "Contact removed") leads the toast so the operator always gets explicit
+// feedback — including when writeback is OFF (saved to platform only).
+async function _syncContactsToSheet(entityId, contacts, actionLabel) {
+  actionLabel = actionLabel || "Contacts updated";
   const calls = [];
   for (let i = 1; i <= CONTACT_SLOT_MAX; i++) {
     const c = contacts[i - 1] || {};
@@ -9696,13 +9699,17 @@ async function _syncContactsToSheet(entityId, contacts) {
     calls.push(_pushFieldToSheetsQuiet(entityId, `contact_${i}_email`, c.email || ""));
   }
   const results = await Promise.all(calls);
-  if (results.some(r => r && r.configured === false)) return;  // writeback off → stay quiet
+  if (results.some(r => r && r.configured === false)) {
+    // Writeback not configured — still confirm the platform save clearly.
+    showSyncToast(`✓ ${actionLabel} · saved to platform (Google Sheets sync not set up)`, "ok");
+    return;
+  }
   const failed = results.find(r => !r || !r.ok || (r.apps_script && !r.apps_script.ok));
   if (failed) {
     const msg = (failed.apps_script && failed.apps_script.error) || failed.error || "unknown error";
-    showSyncToast("⚠ Contact sync to Sheets failed — " + msg, "warn");
+    showSyncToast(`✓ ${actionLabel} · ⚠ Google Sheets sync failed — ${msg}`, "warn");
   } else {
-    showSyncToast("✓ Contacts synced to Google Sheets", "ok");
+    showSyncToast(`✓ ${actionLabel} · synced to Google Sheets`, "ok");
   }
 }
 
@@ -9729,7 +9736,11 @@ function addEntityContact(entityId) {
   contacts.push({ name: n, role: r, email: e });
   _DP_CONTACT_FORM_OPEN[entityId] = false;   // close the form on success
   _persistEntityContacts(entityId, contacts);  // re-renders the panel
-  _syncContactsToSheet(entityId, contacts);
+  // Immediate confirmation that it saved to the platform — the Sheet sync
+  // can take a moment (Render cold-start), so we don't leave the operator
+  // wondering. The sync result replaces this toast if writeback is on.
+  showSyncToast(`✓ Contact added — ${n || e} · syncing to Google Sheets…`, "ok");
+  _syncContactsToSheet(entityId, contacts, "Contact added");
 }
 
 function removeEntityContact(entityId, idx) {
@@ -9741,7 +9752,8 @@ function removeEntityContact(entityId, idx) {
   if (!confirm(`Remove contact "${(removed.name || removed.email || "").slice(0, 60)}"?\n\nThis also clears the matching contact slot in the Google Sheet.`)) return;
   contacts.splice(idx, 1);
   _persistEntityContacts(entityId, contacts);
-  _syncContactsToSheet(entityId, contacts);
+  showSyncToast("✓ Contact removed · syncing to Google Sheets…", "ok");
+  _syncContactsToSheet(entityId, contacts, "Contact removed");
 }
 
 // Toggle the inline "add contact" form open/closed without a full re-render.
