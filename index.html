@@ -522,12 +522,22 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .kv-grid{display:grid;grid-template-columns:100px 1fr;gap:8px 14px;font-size:12px}
 .kv-grid .k{font-weight:600;color:var(--ink-soft);text-transform:uppercase;font-size:10px;letter-spacing:.8px;padding-top:2px}
 .kv-grid .v{color:var(--ink)}
-.contact-row{display:grid;grid-template-columns:1fr;gap:4px;padding:10px 12px;background:var(--paper);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--gold)}
+.contact-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;padding:10px 12px;background:var(--paper);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--gold)}
+.contact-row-main{display:grid;grid-template-columns:1fr;gap:4px;min-width:0}
 .contact-row .nm{font-weight:700;color:var(--navy);font-size:12px}
 .contact-row .ro{font-size:11px;color:var(--ink-soft)}
 .contact-row .em{font-size:11px;color:var(--navy-light);font-family:'Consolas',monospace;word-break:break-all}
 .contact-row .em a{color:inherit;text-decoration:none}
 .contact-row .em a:hover{text-decoration:underline;color:var(--navy)}
+.contact-remove{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--rule);background:#fff;color:var(--ink-mute);font-size:15px;line-height:1;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .12s;padding:0}
+.contact-remove:hover{background:var(--hf-red);color:#fff;border-color:var(--hf-red)}
+/* Inline add-contact form */
+.contact-form{margin-top:10px;padding:12px;background:#fff;border:1px solid var(--rule);border-radius:7px}
+.contact-form-grid{display:flex;flex-direction:column;gap:7px}
+.contact-input{font-family:inherit;font-size:12px;padding:8px 10px;border:1px solid var(--rule);border-radius:5px;color:var(--ink);background:var(--off-white);width:100%;box-sizing:border-box}
+.contact-input:focus{outline:none;border-color:var(--hf-red);background:#fff}
+.contact-form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.contact-form-hint{font-size:10.5px;color:var(--ink-mute);margin-top:8px;line-height:1.4}
 .program-row{display:grid;grid-template-columns:1fr 100px 40px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px}
 .program-row:last-child{border-bottom:none}
 .program-row .pn{font-weight:600;color:var(--navy);line-height:1.3}
@@ -7346,6 +7356,14 @@ function applyEntityOverridesToUnis() {
       }
       if (Object.prototype.hasOwnProperty.call(ov, f)) u[f] = ov[f];
     });
+    // Contacts are an ARRAY (not a scalar overridable field), so they're
+    // handled separately: when the operator adds/edits contacts in the
+    // detail panel we store the full array under ov.contacts. Snapshot the
+    // CSV-pristine array once so Revert restores it.
+    if (Object.prototype.hasOwnProperty.call(ov, "contacts") && Array.isArray(ov.contacts)) {
+      if (!("contacts" in ENTITY_ORIGINALS[u.id])) ENTITY_ORIGINALS[u.id].contacts = u.contacts;
+      u.contacts = ov.contacts;
+    }
     recomputeEntityDerived(u);
   });
 
@@ -9619,6 +9637,121 @@ async function pushFieldToSheets(entityId, field, value) {
     }
   } catch (e) {
     showSyncToast("⚠ Sheets sync error — " + e.message, "warn");
+  }
+}
+
+// Quiet single-cell writeback — no toast (used by batch contact sync so we
+// can fire all 9 cells and show ONE summary toast). Returns the parsed
+// result, or {configured:false} / {ok:false,...} on error.
+async function _pushFieldToSheetsQuiet(entityId, field, value) {
+  try {
+    const r = await apiFetch("/api/sheets/writeback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entity_id: entityId, field, value }),
+    });
+    return await r.json();
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ============================================================================
+// CONTACTS — add / remove from the detail panel + mirror to the Sheet.
+// ----------------------------------------------------------------------------
+// The Sheet has exactly contact_1/2/3_{name,role,email} columns, so up to 3
+// contacts sync. We store the full contacts array as an entity_override
+// (handled specially in applyEntityOverridesToUnis), recompute the score
+// (named-contact + email both feed it), and re-write all 3 slots to the
+// Sheet so it always matches the array regardless of add/remove order.
+// ============================================================================
+const CONTACT_SLOT_MAX = 3;
+
+function _persistEntityContacts(entityId, contacts) {
+  const u = UNIS.find(x => x.id === entityId);
+  if (!u) return;
+  // Snapshot pristine once (so Revert can restore the CSV contacts).
+  if (!ENTITY_ORIGINALS[entityId]) ENTITY_ORIGINALS[entityId] = {};
+  if (!("contacts" in ENTITY_ORIGINALS[entityId])) ENTITY_ORIGINALS[entityId].contacts = u.contacts;
+  // Merge into the override blob + persist locally + mirror to kv_store.
+  const next = Object.assign({}, ENTITY_OVERRIDES[entityId] || {}, { contacts });
+  ENTITY_OVERRIDES[entityId] = next;
+  _writeLocalEntityOverrides(ENTITY_OVERRIDES);
+  u.contacts = contacts;
+  recomputeEntityDerived(u);   // named-contact / email contribute to the score
+  if (STATE.detailId === entityId) openDetail(entityId);
+  if (typeof renderCurrentView === "function") renderCurrentView();
+  kvStore.put("entity_override", entityId, next).catch(e =>
+    console.warn("[entity_override] contacts save deferred (offline):", e.message));
+}
+
+// Re-write all 3 contact slots to the Sheet (empty string clears a slot).
+// One summary toast instead of nine.
+async function _syncContactsToSheet(entityId, contacts) {
+  const calls = [];
+  for (let i = 1; i <= CONTACT_SLOT_MAX; i++) {
+    const c = contacts[i - 1] || {};
+    calls.push(_pushFieldToSheetsQuiet(entityId, `contact_${i}_name`,  c.name  || ""));
+    calls.push(_pushFieldToSheetsQuiet(entityId, `contact_${i}_role`,  c.role  || ""));
+    calls.push(_pushFieldToSheetsQuiet(entityId, `contact_${i}_email`, c.email || ""));
+  }
+  const results = await Promise.all(calls);
+  if (results.some(r => r && r.configured === false)) return;  // writeback off → stay quiet
+  const failed = results.find(r => !r || !r.ok || (r.apps_script && !r.apps_script.ok));
+  if (failed) {
+    const msg = (failed.apps_script && failed.apps_script.error) || failed.error || "unknown error";
+    showSyncToast("⚠ Contact sync to Sheets failed — " + msg, "warn");
+  } else {
+    showSyncToast("✓ Contacts synced to Google Sheets", "ok");
+  }
+}
+
+function addEntityContact(entityId) {
+  const u = UNIS.find(x => x.id === entityId);
+  if (!u) return;
+  const name  = (document.getElementById("dp-contact-name")  || {}).value || "";
+  const role  = (document.getElementById("dp-contact-role")  || {}).value || "";
+  const email = (document.getElementById("dp-contact-email") || {}).value || "";
+  const n = name.trim(), r = role.trim(), e = email.trim();
+  if (!n && !e) {
+    showSyncToast("Add at least a name or an email", "warn");
+    return;
+  }
+  if (e && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) {
+    showSyncToast("That email doesn't look valid", "warn");
+    return;
+  }
+  const contacts = (u.contacts || []).filter(c => c.name || c.email);
+  if (contacts.length >= CONTACT_SLOT_MAX) {
+    showSyncToast(`Max ${CONTACT_SLOT_MAX} contacts sync to the Sheet — remove one first`, "warn");
+    return;
+  }
+  contacts.push({ name: n, role: r, email: e });
+  _DP_CONTACT_FORM_OPEN[entityId] = false;   // close the form on success
+  _persistEntityContacts(entityId, contacts);  // re-renders the panel
+  _syncContactsToSheet(entityId, contacts);
+}
+
+function removeEntityContact(entityId, idx) {
+  const u = UNIS.find(x => x.id === entityId);
+  if (!u) return;
+  const contacts = (u.contacts || []).filter(c => c.name || c.email);
+  if (idx < 0 || idx >= contacts.length) return;
+  const removed = contacts[idx];
+  if (!confirm(`Remove contact "${(removed.name || removed.email || "").slice(0, 60)}"?\n\nThis also clears the matching contact slot in the Google Sheet.`)) return;
+  contacts.splice(idx, 1);
+  _persistEntityContacts(entityId, contacts);
+  _syncContactsToSheet(entityId, contacts);
+}
+
+// Toggle the inline "add contact" form open/closed without a full re-render.
+let _DP_CONTACT_FORM_OPEN = {};
+function dpToggleContactForm(entityId) {
+  _DP_CONTACT_FORM_OPEN[entityId] = !_DP_CONTACT_FORM_OPEN[entityId];
+  if (STATE.detailId === entityId) openDetail(entityId);
+  // Focus the name field when opening.
+  if (_DP_CONTACT_FORM_OPEN[entityId]) {
+    setTimeout(() => { const el = document.getElementById("dp-contact-name"); if (el) el.focus(); }, 30);
   }
 }
 
@@ -12391,33 +12524,54 @@ function _dpProfileTabHtml(u) {
 
 // ---- Contacts tab ----------------------------------------------------
 function _dpContactsTabHtml(u) {
-  const ROLE_PRIORITY = ["provost","president","dean","rector","head","director","vice president","vp","international","admission","erasmus","global","intl"];
-  const sortedContacts = (u.contacts || []).filter(c => c.name || c.email).sort((a,b) => {
-    const score = c => {
-      const r = (c.role || "").toLowerCase();
-      for (let i = 0; i < ROLE_PRIORITY.length; i++) if (r.includes(ROLE_PRIORITY[i])) return i;
-      return 99;
-    };
-    return score(a) - score(b);
-  });
-  if (!sortedContacts.length) {
-    return `<div class="dp-empty">
-      <div class="dp-empty-icon">+</div>
-      <div class="dp-empty-h">No contacts on file yet</div>
-      <div class="dp-empty-p">Add a named contact via the source CSV or Sheets row so outreach can attribute to a real person.</div>
-    </div>`;
-  }
-  const rows = sortedContacts.map(c => `<div class="contact-row">
-    ${c.name ? `<div class="nm">${escape(c.name)}</div>` : ""}
-    ${c.role ? `<div class="ro">${escape(c.role)}</div>` : ""}
-    ${c.email ? `<div class="em"><a href="mailto:${escape(c.email)}">${escape(c.email)}</a></div>` : ""}
+  // Keep contacts in their stored order so the remove buttons map to the
+  // right slot (sorting by role would desync the index from u.contacts).
+  const contacts = (u.contacts || []).filter(c => c.name || c.email);
+  const formOpen = !!_DP_CONTACT_FORM_OPEN[u.id];
+  const atMax = contacts.length >= CONTACT_SLOT_MAX;
+
+  const rows = contacts.map((c, i) => `<div class="contact-row">
+    <div class="contact-row-main">
+      ${c.name ? `<div class="nm">${escape(c.name)}</div>` : ""}
+      ${c.role ? `<div class="ro">${escape(c.role)}</div>` : ""}
+      ${c.email ? `<div class="em"><a href="mailto:${escape(c.email)}">${escape(c.email)}</a></div>` : ""}
+    </div>
+    <button type="button" class="contact-remove" title="Remove contact (also clears the Sheet slot)" onclick="removeEntityContact('${escapeAttr(u.id)}',${i})">×</button>
   </div>`).join("");
+
+  const listHtml = contacts.length
+    ? rows
+    : `<div class="dp-empty" style="padding:18px 0">
+        <div class="dp-empty-icon">+</div>
+        <div class="dp-empty-h">No contacts on file yet</div>
+        <div class="dp-empty-p">Add one below — it saves to the platform and writes straight back to the Google Sheet.</div>
+      </div>`;
+
+  const formHtml = formOpen ? `
+    <div class="contact-form">
+      <div class="contact-form-grid">
+        <input id="dp-contact-name"  class="contact-input" type="text"  placeholder="Full name" autocomplete="off">
+        <input id="dp-contact-role"  class="contact-input" type="text"  placeholder="Role / title (optional)" autocomplete="off">
+        <input id="dp-contact-email" class="contact-input" type="email" placeholder="email@org.edu (optional)" autocomplete="off">
+      </div>
+      <div class="contact-form-actions">
+        <button type="button" class="btn outline" onclick="dpToggleContactForm('${escapeAttr(u.id)}')">Cancel</button>
+        <button type="button" class="btn" onclick="addEntityContact('${escapeAttr(u.id)}')">＋ Save contact</button>
+      </div>
+      <div class="contact-form-hint">Saves to the platform + syncs to the Google Sheet (contact slot ${contacts.length + 1} of ${CONTACT_SLOT_MAX}).</div>
+    </div>` : "";
+
+  const addBtn = atMax
+    ? `<div class="dp-sec-aside" style="color:var(--ink-mute)">${CONTACT_SLOT_MAX}/${CONTACT_SLOT_MAX} — Sheet slots full</div>`
+    : `<button type="button" class="dp-sec-link" onclick="dpToggleContactForm('${escapeAttr(u.id)}')">${formOpen ? "▾ Adding…" : "＋ Add contact"}</button>`;
+
   return `<div class="dp-sec">
     <div class="dp-sec-head">
       <div class="dp-sec-title">Contacts on file</div>
-      <div class="dp-sec-aside">${sortedContacts.length} named</div>
+      ${addBtn}
     </div>
-    ${rows}
+    ${listHtml}
+    ${formHtml}
   </div>`;
 }
 
