@@ -728,6 +728,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .outreach-entry.replied{border-left-color:var(--warm)}
 .outreach-entry.bounced{border-left-color:var(--ni)}
 .outreach-entry.draft{border-left-color:var(--rule)}
+.outreach-entry.logged{border-left-color:var(--ur)}
 .outreach-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .outreach-meta{display:flex;gap:8px;align-items:center;font-size:10px;color:var(--ink-soft);font-weight:600}
 .outreach-meta .channel-icon{font-size:14px}
@@ -736,6 +737,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .outreach-meta .status-pill.replied{background:var(--warm);color:var(--ink)}
 .outreach-meta .status-pill.bounced{background:var(--ni);color:#fff}
 .outreach-meta .status-pill.draft{background:var(--paper);color:var(--ink-soft)}
+.outreach-meta .status-pill.logged{background:var(--ur);color:#fff}
 /* Sentiment pill — only shown on replied entries. Tone matches the
    feedback color (green positive, slate neutral, amber soft-no, red hard-no). */
 .outreach-meta .sentiment-pill{padding:1px 7px;border-radius:9px;font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px}
@@ -11909,11 +11911,11 @@ function _dpLastInteractionHtml(u) {
     else if (days < 365) ago = `${Math.round(days/30)}mo ago`;
     else ago = `${Math.round(days/365)}y ago`;
   }
-  // Status / sentiment pill — sentiment overrides status when set so the
-  // operator sees the OUTCOME (positive / negative / rejected) immediately,
-  // not just "replied".
-  const sentClass = (last.status === "replied" && last.sentiment) ? last.sentiment : (last.status || "draft");
-  const sentLabel = (last.status === "replied" && last.sentiment) ? last.sentiment : (last.status || "—");
+  // Status / sentiment pill — sentiment overrides status WHENEVER set (any
+  // channel) so the operator sees the OUTCOME (positive / negative /
+  // rejected) immediately, e.g. a call where they decided not to proceed.
+  const sentClass = last.sentiment ? last.sentiment : (last.status || "draft");
+  const sentLabel = last.sentiment ? last.sentiment : (last.status || "—");
   // Channel — first of channels[] or legacy channel field
   const chan = (Array.isArray(last.channels) && last.channels[0]) || last.channel || "email";
   // Subject snippet — strip channel prefixes the modal adds for non-email
@@ -12741,7 +12743,7 @@ function renderTrackingBody(entity) {
           <span class="channel-icon">${channelIcons(e)}</span>
           <span>${escape(e.date || "")}</span>
           <span class="status-pill ${e.status || 'draft'}">${escape(e.status || "draft")}</span>
-          ${(e.status === "replied" && e.sentiment) ? `<span class="sentiment-pill ${escape(e.sentiment)}" title="Reply sentiment">${escape(e.sentiment)}</span>` : ""}
+          ${e.sentiment ? `<span class="sentiment-pill ${escape(e.sentiment)}" title="Outcome">${escape(e.sentiment)}</span>` : ""}
         </div>
       </div>
       <div class="outreach-subject">${escape(e.subject || "(no subject)")}</div>
@@ -14069,7 +14071,7 @@ function renderOutreachLog(entity) {
           <span class="channel-tag">${channelLabel(e.channel)}</span>
           <span>${escape(e.date || "")}</span>
           <span class="status-pill ${e.status || 'draft'}">${escape(e.status || "draft")}</span>
-          ${(e.status === "replied" && e.sentiment) ? `<span class="sentiment-pill ${escape(e.sentiment)}" title="Reply sentiment">${escape(e.sentiment)}</span>` : ""}
+          ${e.sentiment ? `<span class="sentiment-pill ${escape(e.sentiment)}" title="Outcome">${escape(e.sentiment)}</span>` : ""}
         </div>
       </div>
       <div class="outreach-subject">${escape(e.subject || "(no subject)")}</div>
@@ -14333,7 +14335,12 @@ function showOutreachForm(entityId, entryId) {
         <span class="lo-lbl">Date</span>
         <input type="date" id="ol-date" class="lo-input" value="${e.date}"/>
       </div>
-      <div class="lo-field small">
+      <!-- Status is an EMAIL concept (Sent / Replied / Bounced). For
+           call / meeting / event it makes no sense ("Sent" a call?), so
+           it's hidden for those channels via lo-not-* gating and the
+           entry is stored as status="logged" by _collectOutreachEntry.
+           The Conversation-outcome selector below replaces it there. -->
+      <div class="lo-field small lo-not-call lo-not-meeting lo-not-event">
         <span class="lo-lbl">Status</span>
         <select id="ol-status" class="lo-input lo-select" onchange="_loToggleSentiment(this.value)">
           <option value="draft"   ${e.status==="draft"  ?"selected":""}>Draft</option>
@@ -14342,10 +14349,13 @@ function showOutreachForm(entityId, entryId) {
           <option value="bounced" ${e.status==="bounced"?"selected":""}>Bounced</option>
         </select>
       </div>
-      <!-- Sentiment — only meaningful when status = Replied. Hidden otherwise
-           via inline display style flipped by _loToggleSentiment(status). -->
+      <!-- Sentiment / outcome. For EMAIL it's gated on status=Replied
+           (a reply you can read). For call/meeting/event it's ALWAYS
+           shown and relabelled "Conversation outcome" (loSwitchChannel),
+           because every conversation has an outcome — including a hard
+           no like a student deciding not to proceed. -->
       <div class="lo-field small" id="lo-sentiment-wrap" style="display:${e.status === 'replied' ? 'flex' : 'none'}">
-        <span class="lo-lbl">Reply sentiment</span>
+        <span class="lo-lbl" id="lo-sentiment-lbl">Reply sentiment</span>
         <select id="ol-sentiment" class="lo-input lo-select">
           <option value=""         ${!e.sentiment             ?"selected":""}>— not set —</option>
           <option value="positive" ${e.sentiment==="positive" ?"selected":""}>Positive — moving forward</option>
@@ -14510,6 +14520,26 @@ function loSwitchChannel(ch) {
     event:   "Note who was actually present and any verbal commitments. Conference floors are where Maybes turn into a path forward.",
   };
   if (tipBody && tipMessages[ch]) tipBody.textContent = tipMessages[ch];
+  // Status vs outcome per channel:
+  //   email → Status field visible (CSS), sentiment gated on Replied.
+  //   call/meeting/event → Status hidden (CSS), the outcome selector is
+  //     ALWAYS shown and relabelled, so a hard-no on a call is loggable.
+  _loSyncOutcomeForChannel(ch);
+}
+
+// Show/relabel the sentiment ("outcome") selector for the active channel.
+function _loSyncOutcomeForChannel(ch) {
+  const wrap = document.getElementById("lo-sentiment-wrap");
+  const lbl  = document.getElementById("lo-sentiment-lbl");
+  const statusSel = document.getElementById("ol-status");
+  if (!wrap) return;
+  if (ch === "email") {
+    if (lbl) lbl.textContent = "Reply sentiment";
+    wrap.style.display = (statusSel && statusSel.value === "replied") ? "flex" : "none";
+  } else {
+    if (lbl) lbl.textContent = "Conversation outcome";
+    wrap.style.display = "flex";   // always — every call/meeting has an outcome
+  }
 }
 
 // Toggle a program chip + keep the "N selected" hint in sync.
@@ -15286,11 +15316,23 @@ function _collectOutreachEntry() {
   } else if (activeChan === "event") {
     if (body && !body.startsWith("[")) body = `[Event]\n\n${body}`;
   }
-  // Sentiment is only persisted when status === replied. Stripped to "" for
-  // any other status so we don't carry stale labels through edits.
-  const statusVal = document.getElementById("ol-status").value;
+  // Status + sentiment are channel-aware:
+  //   EMAIL → the Status field (Draft/Sent/Replied/Bounced) is the source
+  //           of truth; sentiment is only kept when status=Replied (a reply
+  //           you can actually read).
+  //   CALL / MEETING / EVENT → there's no "Sent/Replied" — the interaction
+  //           just happened. Store status="logged" (or "draft" if saving a
+  //           draft) so it never trips the email-only "no reply" badge, and
+  //           ALWAYS keep the conversation outcome (positive…rejected) so a
+  //           hard no on a call is recorded.
+  const rawStatus = document.getElementById("ol-status").value;
   const sentEl    = document.getElementById("ol-sentiment");
-  const sentiment = (statusVal === "replied" && sentEl) ? (sentEl.value || "") : "";
+  const isEmail   = (activeChan === "email" || !activeChan);
+  const statusVal = isEmail ? rawStatus : (rawStatus === "draft" ? "draft" : "logged");
+  const sentiment = !sentEl ? "" : (
+    isEmail ? (rawStatus === "replied" ? (sentEl.value || "") : "")
+            : (sentEl.value || "")
+  );
   return {
     id, entityId,
     date:           document.getElementById("ol-date").value,
@@ -21310,8 +21352,8 @@ function renderDatabaseView() {
     let lcCell;
     if (u.last_contacted) {
       const lastOutreach = _dbLastOutreach(u.id);
-      const sentDot = (lastOutreach && lastOutreach.status === "replied" && lastOutreach.sentiment)
-        ? `<span class="db-sentiment-dot ${escape(lastOutreach.sentiment)}" title="Last reply: ${escape(lastOutreach.sentiment)}"></span>` : "";
+      const sentDot = (lastOutreach && lastOutreach.sentiment)
+        ? `<span class="db-sentiment-dot ${escape(lastOutreach.sentiment)}" title="Last outcome: ${escape(lastOutreach.sentiment)}"></span>` : "";
       const noResp = _dbNoResponseFlag(u, lastOutreach);
       lcCell = `<span class="db-dorm db-dorm-ok">${sentDot}${escape(u.last_contacted)}${noResp}</span>`;
     } else {
