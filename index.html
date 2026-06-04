@@ -8101,8 +8101,16 @@ function renderProspectsView() {
       </div>`;
     }
   } else {
-    // Sort by fit score desc within the visible set
-    visible.sort((a, b) => (b.ai_fit_score || 0) - (a.ai_fit_score || 0));
+    // Newest-discovered first (the latest search run sits at the top), with
+    // fit score as the tiebreaker inside a batch. discovered_at is an ISO
+    // string so it compares lexically. Operators expect "what I just found"
+    // up top, not last week's leftovers re-sorted by score.
+    visible.sort((a, b) => {
+      const da = String(a.discovered_at || ""), db = String(b.discovered_at || "");
+      if (da > db) return -1;
+      if (da < db) return 1;
+      return (b.ai_fit_score || 0) - (a.ai_fit_score || 0);
+    });
     html += `<div class="prospects-list">${visible.map(_prospectCardHtml).join("")}</div>`;
   }
 
