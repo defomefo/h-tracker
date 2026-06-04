@@ -3420,18 +3420,22 @@ research-output university. Therefore:
      "hands-on", "experiential learning", "polytechnic",
      "business school".
 
-  ❌ STRONG ANTI-FIT — top research-intensive universities. They
+  ❌ STRONG ANTI-FIT — research-focused universities. They
      look for research-output peers, not applied teaching partners.
      Reviewer's exact framing: "We cannot partner with universities
      which do deep research, because they are looking normally for
-     deep research as well". Specifically NEVER recommend, even if
+     deep research as well". This is NOT limited to the famous names —
+     ANY university described as research-intensive / research-led /
+     PhD- or doctoral-focused / primarily research is a hard exclusion,
+     even a small regional one. Specifically NEVER recommend, even if
      a past decision said YES:
        MIT, Harvard, Stanford, Princeton, Yale, Caltech, Berkeley,
        Columbia, Cornell, UCLA, Chicago, Johns Hopkins, UPenn,
        Carnegie Mellon, Oxford, Cambridge, Imperial, LSE, UCL,
        ETH Zürich, EPFL, Sorbonne, Sciences Po, INSEAD, HEC Paris,
-       Tsinghua, Peking, NUS, Tokyo. Generalise to "top global
-       research universities" in the profile.
+       Tsinghua, Peking, NUS, Tokyo. Generalise to "research-focused
+       universities of any kind, not just the famous names" in the
+       profile.
 
   ❌ STRONG ANTI-FIT — Italian universities. They are GEOGRAPHIC
      COMPETITORS for the same students. Reviewer: "not interesting
@@ -3451,6 +3455,15 @@ research-output university. Therefore:
      specifically: "Out of the Box (Italian) was marked interesting
      for many international universities, which is not — same
      applies to Finance".
+
+  💳 AUDIENCE PREFERENCE (soft, a tiebreaker — NOT a hard rule) —
+     H-FARM's programmes are paid, so a fee-paying audience converts
+     better. Gently lean toward private institutions and a fee-paying
+     base: private universities, private / international / bilingual
+     high schools, agencies serving private-school clientele. This is
+     a light bias applied AFTER the applied-fit test; never penalise a
+     strong PUBLIC applied institution for being public. Reflect this
+     as a soft preference in `softly_prefers`, not in `rejects`.
 
 If the operator's past decisions include any of the above as YES,
 treat them as noise — DO NOT inherit them into strongly_prefers.
