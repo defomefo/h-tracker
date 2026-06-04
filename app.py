@@ -3192,7 +3192,15 @@ reasoning so the user can verify):
 {src_str}
 
 For each genuinely new IN-SCOPE prospect you find, produce:
-- name:             official organization name as it appears in the source
+- name:             official organization name. Some search results are in
+                    the local language (Chinese, Japanese, Korean, etc.) —
+                    that's expected and GOOD (applied universities in those
+                    markets only rank for native-language queries). Recognise
+                    the institution and return its English / romanised name
+                    where one exists (e.g. "Shenzhen Polytechnic University",
+                    "Zhejiang University of Technology"), with the local name
+                    in parentheses if helpful. Do not skip a strong applied
+                    candidate just because its source page is non-English.
 - type:             university | agency | school | student_organization
 - country:          ISO country name
 - region:           continent (Europe / Asia / North America / etc.)
@@ -3801,7 +3809,12 @@ def prospects_discover():
     #      consultancies often have weak English web presence.
     search_terms = []
     if criteria["type"] == "university":
-        search_terms.append("universities")
+        # Applied bias. A generic "universities in <country>" query surfaces
+        # mostly famous RESEARCH universities — which are hard-excluded
+        # downstream — so for non-English markets like China almost nothing
+        # survives. Bias the English query toward the applied / polytechnic
+        # institutions H-FARM actually partners with.
+        search_terms.append("universities of applied sciences OR polytechnics OR applied-science universities OR universities of technology")
     elif criteria["type"] == "agency":
         # Directional English (Tavily understands both English and local
         # language results — adding both terms broadens recall)
@@ -3815,49 +3828,84 @@ def prospects_discover():
     else:
         search_terms.append("partnership prospects")
 
-    if criteria["country"]:
-        search_terms.append("in " + criteria["country"])
-
-    # Native-language outbound-agency boost. Many top-tier outbound
-    # consultancies in non-English markets only rank for native-language
-    # search ("yurtdışı eğitim danışmanlığı" finds 100× more relevant
-    # firms than "Turkish education agency"). Only fires for type=agency.
-    if criteria["type"] == "agency" and criteria["country"]:
-        native = {
-            "turkey":   "yurtdışı eğitim danışmanlığı",
-            "türkiye":  "yurtdışı eğitim danışmanlığı",
-            "spain":    "agencia de estudios en el extranjero",
-            "españa":   "agencia de estudios en el extranjero",
-            "italy":    "agenzia studio all'estero",
-            "italia":   "agenzia studio all'estero",
-            "germany":  "Auslandsstudium Beratung",
-            "deutschland": "Auslandsstudium Beratung",
-            "france":   "agence études à l'étranger",
-            "poland":   "agencja studiów za granicą",
-            "polska":   "agencja studiów za granicą",
-            "greece":   "πρακτορείο σπουδών στο εξωτερικό",
-            "ελλάδα":   "πρακτορείο σπουδών στο εξωτερικό",
-            "japan":    "留学エージェント",
-            "china":    "留学中介",
-            "korea":    "유학원",
-            "south korea": "유학원",
-            "vietnam":  "tư vấn du học",
-            "thailand": "เอเจนซี่เรียนต่อต่างประเทศ",
-            "indonesia": "konsultan pendidikan luar negeri",
-            "brazil":   "intercâmbio agência",
-            "brasil":   "intercâmbio agência",
-            "mexico":   "agencia de intercambio educativo",
-            "méxico":   "agencia de intercambio educativo",
-        }.get((criteria["country"] or "").strip().lower())
-        if native:
-            search_terms.append(native)
-
-    if criteria["focus"]:                    search_terms.append("focusing on " + criteria["focus"])
-    if criteria["query"]:                    search_terms.append(criteria["query"])
+    if criteria["country"]:                   search_terms.append("in " + criteria["country"])
+    if criteria["focus"]:                     search_terms.append("focusing on " + criteria["focus"])
+    if criteria["query"]:                     search_terms.append(criteria["query"])
     final_query = " ".join(search_terms).strip() or "international higher-education partnerships"
 
-    # ----- Step 1: Tavily web search -----
+    # Native-language SECOND query. In non-English markets the relevant
+    # institutions rank only for native-language terms: "应用技术大学" finds the
+    # applied universities in China that an English query misses entirely,
+    # and "yurtdışı eğitim danışmanlığı" finds 100× more outbound Turkish
+    # agencies than "Turkish education agency". We run a separate Tavily
+    # search with the native term and MERGE it with the English results,
+    # rather than diluting one query. Keyed by (type, country).
+    country_key = (criteria["country"] or "").strip().lower()
+    native_agency = {
+        "turkey":   "yurtdışı eğitim danışmanlığı",
+        "türkiye":  "yurtdışı eğitim danışmanlığı",
+        "spain":    "agencia de estudios en el extranjero",
+        "españa":   "agencia de estudios en el extranjero",
+        "italy":    "agenzia studio all'estero",
+        "italia":   "agenzia studio all'estero",
+        "germany":  "Auslandsstudium Beratung",
+        "deutschland": "Auslandsstudium Beratung",
+        "france":   "agence études à l'étranger",
+        "poland":   "agencja studiów za granicą",
+        "polska":   "agencja studiów za granicą",
+        "greece":   "πρακτορείο σπουδών στο εξωτερικό",
+        "ελλάδα":   "πρακτορείο σπουδών στο εξωτερικό",
+        "japan":    "留学エージェント",
+        "china":    "留学中介",
+        "korea":    "유학원",
+        "south korea": "유학원",
+        "vietnam":  "tư vấn du học",
+        "thailand": "เอเจนซี่เรียนต่อต่างประเทศ",
+        "indonesia": "konsultan pendidikan luar negeri",
+        "brazil":   "intercâmbio agência",
+        "brasil":   "intercâmbio agência",
+        "mexico":   "agencia de intercambio educativo",
+        "méxico":   "agencia de intercambio educativo",
+    }
+    # Applied / polytechnic / university-of-applied-sciences terms per market.
+    native_uni = {
+        "china":       "应用技术大学 职业技术大学 理工学院 应用型大学",
+        "japan":       "専門職大学 工科大学 応用科学大学",
+        "korea":       "전문대학 산업대학 폴리텍",
+        "south korea": "전문대학 산업대학 폴리텍",
+        "vietnam":     "trường đại học ứng dụng cao đẳng nghề kỹ thuật",
+        "thailand":    "มหาวิทยาลัยเทคโนโลยี วิทยาลัยอาชีวศึกษา",
+        "indonesia":   "politeknik universitas terapan",
+        "germany":     "Fachhochschule Hochschule für angewandte Wissenschaften",
+        "deutschland": "Fachhochschule Hochschule für angewandte Wissenschaften",
+        "france":      "université de technologie IUT école d'ingénieurs",
+        "spain":       "universidad politécnica formación profesional superior",
+        "españa":      "universidad politécnica formación profesional superior",
+        "italy":       "politecnico università scienze applicate",
+        "italia":      "politecnico università scienze applicate",
+        "poland":      "politechnika uczelnia zawodowa",
+        "polska":      "politechnika uczelnia zawodowa",
+        "brazil":      "instituto federal universidade tecnológica",
+        "brasil":      "instituto federal universidade tecnológica",
+        "mexico":      "universidad tecnológica politécnica",
+        "méxico":      "universidad tecnológica politécnica",
+    }
+    native_term = None
+    if criteria["type"] == "agency":
+        native_term = native_agency.get(country_key)
+    elif criteria["type"] == "university":
+        native_term = native_uni.get(country_key)
+    native_query = (native_term + " " + criteria["country"]).strip() if (native_term and criteria["country"]) else None
+
+    # ----- Step 1: Tavily web search (English + optional native, merged) -----
     search_results = _tavily_search(final_query, max_results=max(8, limit * 2))
+    if native_query:
+        extra = _tavily_search(native_query, max_results=max(6, limit))
+        seen_urls = {r.get("url") for r in search_results if r.get("url")}
+        for r in extra:
+            if r.get("url") and r["url"] not in seen_urls:
+                search_results.append(r)
+                seen_urls.add(r["url"])
     raw_count = len(search_results)
     if not search_results:
         return jsonify({"ok": False, "error": "no search results — Tavily returned empty",
