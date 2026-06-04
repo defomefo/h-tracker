@@ -3768,6 +3768,69 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ppi-policy-foot{font-size:11px;color:rgba(255,255,255,.60);line-height:1.5;padding-top:10px;margin-top:10px;border-top:1px solid rgba(255,255,255,.10);font-style:italic}
 .ppi-policy-foot em{color:rgba(255,255,255,.80);font-style:normal;font-weight:700}
 
+/* ============================================================
+   PREFERENCE PROFILE INSPECT — redesigned (.ppi2). Editorial,
+   emoji-free, with R-NN rule cards that 3D-pop on hover.
+   ============================================================ */
+#prospect-profile-modal .compare-box{background:var(--off-white)}
+/* Drop the navy title bar — the editorial header lives in the body now.
+   Keep only a minimal "ESC ×" close affordance, top-right. */
+#prospect-profile-modal .compare-head{background:transparent;border-bottom:none;padding:14px 22px 0;min-height:0}
+#prospect-profile-modal .compare-head h2{display:none}
+#prospect-profile-modal .compare-close{color:var(--ink-mute);font-size:22px;line-height:1;display:inline-flex;align-items:center}
+#prospect-profile-modal .compare-close::before{content:"ESC";font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--ink-mute);margin-right:8px}
+#prospect-profile-modal .compare-close:hover{color:var(--hf-red)}
+#prospect-profile-modal .compare-body{padding:8px 28px 28px}
+.ppi2{--ppi2-ease:cubic-bezier(.2,.7,.2,1);color:var(--ink)}
+.ppi2-head{padding:2px 0 18px;border-bottom:2px solid var(--hf-red);margin-bottom:24px}
+.ppi2-eyebrow{font-size:11px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:var(--hf-red);margin-bottom:12px}
+.ppi2-name{font-size:30px;font-weight:800;letter-spacing:-.4px;color:var(--ink);line-height:1.05;margin:0 0 10px}
+.ppi2-sub{font-size:12px;color:var(--ink-mute);font-family:'Consolas','SF Mono',monospace;letter-spacing:.2px}
+
+.ppi2-sec{margin-bottom:26px}
+.ppi2-sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.ppi2-sec-num{font-family:'Consolas','SF Mono',monospace;font-size:14px;font-weight:800;color:var(--hf-red)}
+.ppi2-sec-title{font-size:15px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink)}
+.ppi2-sec-sub{font-size:12.5px;font-style:italic;color:var(--ink-soft);margin:0 0 16px 26px}
+
+/* Rule cards — white on the cream sheet, 3D-pop on hover */
+.ppi2-rules{display:flex;flex-direction:column;gap:2px}
+.ppi2-rule{display:grid;grid-template-columns:140px 1fr;gap:18px;background:#fff;border:1px solid transparent;border-radius:10px;padding:18px 22px;transition:transform .26s var(--ppi2-ease),box-shadow .26s var(--ppi2-ease),border-color .26s ease;transform-origin:center;will-change:transform}
+.ppi2-rule:hover{transform:translateY(-5px) scale(1.03);box-shadow:0 20px 44px rgba(20,20,25,.16),0 5px 12px rgba(20,20,25,.08);border-color:var(--rule);position:relative;z-index:3}
+.ppi2-rule-left{display:flex;flex-direction:column;gap:10px}
+.ppi2-rule-id{font-family:'Consolas','SF Mono',monospace;font-size:13px;font-weight:700;color:var(--ink-mute);letter-spacing:1px}
+.ppi2-tag{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.ppi2-tag::before{content:"";width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.ppi2-tag.include{color:#1F6E48}.ppi2-tag.include::before{background:#1F6E48}
+.ppi2-tag.exclude{color:#B0322E}.ppi2-tag.exclude::before{background:#B0322E}
+.ppi2-tag.filter{color:#1F6FB4}.ppi2-tag.filter::before{background:#1F6FB4}
+.ppi2-tag.boost{color:#B07A18}.ppi2-tag.boost::before{background:#B07A18}
+.ppi2-rule-title{font-size:14.5px;font-weight:800;letter-spacing:.2px;color:var(--ink);margin:0 0 7px}
+.ppi2-rule-body{font-size:13px;line-height:1.6;color:#39382F;margin:0}
+.ppi2-rule-body b{font-weight:700;color:var(--ink)}
+.ppi2-rule-soft{font-size:9px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--ink-mute);border:1px solid var(--rule);border-radius:9px;padding:2px 7px;margin-left:8px;vertical-align:middle}
+.ppi2-foot-note{font-size:11.5px;line-height:1.55;color:var(--ink-mute);font-style:italic;margin:14px 0 0 26px;max-width:62ch}
+.ppi2-foot-note b{font-style:normal;font-weight:700;color:var(--ink-soft)}
+
+/* Learned-preferences section (summary + lists) */
+.ppi2-notes{font-size:13.5px;line-height:1.6;color:var(--ink);background:#fff;border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:0 8px 8px 0;padding:14px 18px;font-style:italic}
+.ppi2-pref{background:#fff;border:1px solid var(--rule);border-radius:9px;padding:14px 18px;margin-top:10px;transition:transform .26s var(--ppi2-ease),box-shadow .26s var(--ppi2-ease)}
+.ppi2-pref:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 16px 36px rgba(20,20,25,.13)}
+.ppi2-pref-lbl{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.ppi2-pref-lbl::before{content:"";width:9px;height:9px;border-radius:2px}
+.ppi2-pref.strong .ppi2-pref-lbl{color:#1F6E48}.ppi2-pref.strong .ppi2-pref-lbl::before{background:#1F6E48}
+.ppi2-pref.soft .ppi2-pref-lbl{color:#B07A18}.ppi2-pref.soft .ppi2-pref-lbl::before{background:#B07A18}
+.ppi2-pref.rej .ppi2-pref-lbl{color:#B0322E}.ppi2-pref.rej .ppi2-pref-lbl::before{background:#B0322E}
+.ppi2-pref ul{margin:0;padding-left:20px;list-style:disc}
+.ppi2-pref li{font-size:13px;line-height:1.55;color:var(--ink);margin-bottom:5px}
+.ppi2-pref-empty{font-size:12px;color:var(--ink-mute);font-style:italic}
+.ppi2-meta{font-size:11px;color:var(--ink-mute);line-height:1.6;padding:14px 0 0;border-top:1px solid var(--rule);margin-top:20px}
+
+@media (prefers-reduced-motion: reduce){
+  .ppi2-rule,.ppi2-pref{transition:box-shadow .2s ease}
+  .ppi2-rule:hover,.ppi2-pref:hover{transform:none}
+}
+
 .prospects-tabs{display:flex;gap:6px;border-bottom:1px solid var(--rule);padding-bottom:0;align-items:center}
 .prospects-tabs .pt-tab{background:transparent;border:none;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:8px;transition:all .12s;text-transform:uppercase}
 .prospects-tabs .pt-tab:hover{color:var(--navy)}
@@ -5253,7 +5316,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 <div class="compare-modal" id="prospect-profile-modal" style="z-index:427">
   <div class="compare-box" style="max-width:640px">
     <div class="compare-head">
-      <h2 id="prospect-profile-title">🧠 Preference profile</h2>
+      <h2 id="prospect-profile-title">Preference profile</h2>
       <button class="compare-close" onclick="closeProspectsProfileInspect()">&times;</button>
     </div>
     <div class="compare-body" id="prospect-profile-body"></div>
@@ -7761,7 +7824,7 @@ async function decideProspect(prospectId, decision, reasonOverride) {
     // Refresh from server so status flips visibly (also pulls fresh profile)
     await syncProspectsFromServer();
     if (respJson && respJson.profile_distilled && respJson.profile_distilled.ok) {
-      showSyncToast(`🧠 Profile auto-updated · ${respJson.profile_distilled.decision_count || 0} decisions analysed`, "ok");
+      showSyncToast(`Profile auto-updated · ${respJson.profile_distilled.decision_count || 0} decisions analysed`, "ok");
     } else {
       showSyncToast(`Decision recorded · ${decision}`, "ok");
     }
@@ -7970,7 +8033,7 @@ async function rebuildProspectsProfile() {
       decision_count: j.decision_count,
       threshold:      PROSPECTS_STATE.profile && PROSPECTS_STATE.profile.threshold || 5,
     };
-    showSyncToast("🧠 Profile rebuilt from " + (j.decision_count || 0) + " decisions", "ok");
+    showSyncToast("Profile rebuilt from " + (j.decision_count || 0) + " decisions", "ok");
   } catch (e) {
     alert("Network error: " + e.message);
   } finally {
@@ -8017,7 +8080,7 @@ function _renderProfileDistillError(j, status) {
     ${rawBlock}
     <div class="ppi-actions">
       <button class="btn outline" onclick="closeProspectsProfileInspect()">Close</button>
-      <button class="btn gold" onclick="closeProspectsProfileInspect(); rebuildProspectsProfile()">🧠 Retry rebuild</button>
+      <button class="btn gold" onclick="closeProspectsProfileInspect(); rebuildProspectsProfile()">Retry rebuild</button>
     </div>
   `;
   if (titleEl) titleEl.textContent = "⚠ Profile rebuild failed";
@@ -8122,29 +8185,29 @@ function renderProspectsView() {
 // Three states:
 //   (1) no display name set — gentle prompt
 //   (2) no profile yet (decisions < threshold) — "Learning from N/5 decisions"
-//   (3) profile exists — "Learning from N decisions · updated Xh ago · 🧠 Rebuild · ⓘ Inspect"
+//   (3) profile exists — "Learning from N decisions · updated Xh ago · Rebuild · ⓘ Inspect"
 function _prospectProfileBadgeHtml() {
   const handle = (typeof getDisplayName === "function" ? getDisplayName() : "") || "";
   if (!handle) {
-    return `<div class="ph-profile ph-profile-noid">🧠 Set your display name to enable smart learning from your decisions.</div>`;
+    return `<div class="ph-profile ph-profile-noid">Set your display name to enable smart learning from your decisions.</div>`;
   }
   const ps = PROSPECTS_STATE.profile;
   const loading = PROSPECTS_STATE.profileLoading;
   if (loading) {
-    return `<div class="ph-profile ph-profile-loading">🧠 Rebuilding preference profile…</div>`;
+    return `<div class="ph-profile ph-profile-loading">Rebuilding preference profile…</div>`;
   }
   if (!ps) {
     // Haven't fetched yet — quiet placeholder; sync will fill it in
-    return `<div class="ph-profile ph-profile-loading">🧠 Loading preference profile…</div>`;
+    return `<div class="ph-profile ph-profile-loading">Loading preference profile…</div>`;
   }
   const threshold = ps.threshold || 5;
   if (!ps.exists) {
     const dc = ps.decision_count || 0;
     const remaining = Math.max(0, threshold - (dc % threshold || threshold));
     if (dc === 0) {
-      return `<div class="ph-profile ph-profile-bootstrap">🧠 No preference profile yet. Make ${threshold} yes/no decisions and I'll auto-distil what you actually want into the next search.</div>`;
+      return `<div class="ph-profile ph-profile-bootstrap">No preference profile yet. Make ${threshold} yes/no decisions and I'll auto-distil what you actually want into the next search.</div>`;
     }
-    return `<div class="ph-profile ph-profile-bootstrap">🧠 Learning from ${dc}/${threshold} decisions · ${remaining} more to unlock auto-bias on the next search.</div>`;
+    return `<div class="ph-profile ph-profile-bootstrap">Learning from ${dc}/${threshold} decisions · ${remaining} more to unlock auto-bias on the next search.</div>`;
   }
   // Profile exists — show summary line + actions
   const updatedHuman = _humanTimeAgo(ps.distilled_at);
@@ -8154,10 +8217,10 @@ function _prospectProfileBadgeHtml() {
     ? escape(ps.profile.notes)
     : `${sp.length} preferences · ${rj.length} rejects identified`;
   return `<div class="ph-profile ph-profile-active" title="${escapeAttr(summary)}">
-    <span class="pp-icon">🧠</span>
+    
     <span class="pp-text"><b>Learning from ${ps.decision_count || 0} decisions</b> · updated ${escape(updatedHuman)}</span>
     <button class="pp-btn" onclick="openProspectsProfileInspect()" title="See what the AI thinks you want">ⓘ Inspect</button>
-    <button class="pp-btn" onclick="rebuildProspectsProfile()" title="Force a rebuild from your most recent ${ps.decision_count || 0} decisions">🧠 Rebuild</button>
+    <button class="pp-btn" onclick="rebuildProspectsProfile()" title="Force a rebuild from your most recent ${ps.decision_count || 0} decisions">Rebuild</button>
   </div>`;
 }
 
@@ -8185,73 +8248,93 @@ function openProspectsProfileInspect() {
     return;
   }
   const p = ps.profile;
-  const list = (arr) => (arr && arr.length)
-    ? `<ul class="ppi-list">${arr.map(x => `<li>${escape(x)}</li>`).join("")}</ul>`
-    : `<div class="ppi-empty">— none identified —</div>`;
-  // Institutional policy panel — the hard rules that override operator
-  // habit in BOTH the discovery + distillation prompts. Surfacing them
-  // here so the operator can audit why the AI is biased the way it is,
-  // and reviewers can see that the bias is institution-policy, not
-  // operator whim.
-  const policyHtml = `
-    <div class="ppi-section ppi-policy">
-      <div class="ppi-label">📜 H-FARM College institutional policy <small style="font-weight:600;color:var(--ink-soft);letter-spacing:0;text-transform:none;margin-left:8px">(hard rules — override operator habit)</small></div>
-      <div class="ppi-policy-body">
-        <div class="ppi-policy-row ppi-policy-yes">
-          <b>✅ FIT</b> — Applied / hands-on / project-based partners. Polytechnics, business schools, design schools, applied-science universities, schools with strong internship + company-visit programmes. H-FARM is an applied teaching institution, not a research-output peer.
-        </div>
-        <div class="ppi-policy-row ppi-policy-no">
-          <b>❌ ANTI-FIT</b> — Research-focused universities. Not just the 33 named (MIT, Harvard, Stanford, Oxford, Cambridge, ETH, INSEAD, NUS, Tsinghua, etc.) — ANY university described as research-intensive / research-led / PhD- or doctoral-focused is a hard exclusion, even a small regional one. They want research peers, not us. Reviewer mandate.
-        </div>
-        <div class="ppi-policy-row ppi-policy-no">
-          <b>❌ ANTI-FIT</b> — Every Italian university (Bocconi, LUISS, Politecnico, Bologna, Padova, Ca' Foscari, etc.) — geographic competitors for the same students. Non-university Italian partners (agencies, student orgs, high schools) stay in scope.
-        </div>
-        <div class="ppi-policy-row ppi-policy-lang">
-          <b>🌐 LANGUAGE</b> — For international (non-Italian-speaking) partners, only English-language H-FARM programmes are valid pitches. Italian-only programmes (Out of the Box, Finanza per il tuo futuro) never surface for them.
-        </div>
-        <div class="ppi-policy-row ppi-policy-dir">
-          <b>↗ DIRECTION</b> — Outbound entities only (those sending local students abroad). Inbound recruitment agencies ("Study in X" portals) are competitors, not partners.
-        </div>
-        <div class="ppi-policy-row ppi-policy-soft">
-          <b>💳 AUDIENCE</b><span class="ppi-soft-tag">soft · tiebreaker</span> — H-FARM's programmes are paid, so a fee-paying audience converts better. A light boost toward private universities, private / international / bilingual schools, and agencies serving private-school clientele — applied AFTER the fit test. Strong PUBLIC applied institutions are never penalised; a comparable private one just ranks slightly higher.
-        </div>
+  const handle = (typeof getDisplayName === "function" ? getDisplayName() : "") || "Operator";
+
+  // Institutional policy = hard rules injected into the discovery +
+  // distillation prompts. Surfaced here (emoji-free, code-style R-NN
+  // cards that 3D-pop on hover) so operators + reviewers can audit why
+  // the AI is biased the way it is — institution policy, not whim.
+  const rules = [
+    { id: "R-01", tag: "include", tagLabel: "Include", title: "Fit",
+      body: "Applied / hands-on / project-based partners. Polytechnics, business schools, design schools, applied-science universities, schools with strong internship and company-visit programmes. <b>H-FARM is an applied teaching institution, not a research-output peer.</b>" },
+    { id: "R-02", tag: "exclude", tagLabel: "Exclude", title: "Anti-fit · Research",
+      body: "Research-focused universities. Not just the 33 named (MIT, Harvard, Stanford, Oxford, Cambridge, ETH, INSEAD, NUS, Tsinghua…) — <b>any</b> university described as research-intensive, research-led, or PhD/doctoral-focused is a hard exclusion, even a small regional one. They want research peers, not us." },
+    { id: "R-03", tag: "exclude", tagLabel: "Exclude", title: "Anti-fit · Italian universities",
+      body: "Every Italian university (Bocconi, LUISS, Politecnico, Bologna, Padova, Ca' Foscari…) — geographic competitors for the same students. Non-university Italian partners (agencies, student orgs, high schools) stay in scope." },
+    { id: "R-04", tag: "filter", tagLabel: "Filter", title: "Language",
+      body: "For international (non-Italian-speaking) partners, only English-language H-FARM programmes are valid pitches. Italian-only programmes (Out of the Box, Finanza per il tuo futuro) never surface for them." },
+    { id: "R-05", tag: "filter", tagLabel: "Filter", title: "Direction",
+      body: "Outbound entities only — those sending local students abroad. Inbound recruitment agencies (\"Study in X\" portals) are competitors, not partners." },
+    { id: "R-06", tag: "boost", tagLabel: "Boost", soft: "soft · tiebreaker", title: "Audience",
+      body: "H-FARM's programmes are paid, so a fee-paying audience converts better. A light boost toward private universities, private / international / bilingual schools, and agencies serving private-school clientele — applied <b>after</b> the fit test. Strong public applied institutions are never penalised; a comparable private one just ranks slightly higher." },
+  ];
+  const ruleCard = (r) => `
+    <div class="ppi2-rule">
+      <div class="ppi2-rule-left">
+        <span class="ppi2-rule-id">${escape(r.id)}</span>
+        <span class="ppi2-tag ${r.tag}">${escape(r.tagLabel)}</span>
       </div>
-      <div class="ppi-policy-foot">
-        These rules are injected into every <i>Find prospects</i> call AND the profile-rebuild prompt. The operator's past decisions inform <em>style</em> within these rules (which countries, which entity types are emphasised) — they don't override the rules themselves.
+      <div>
+        <p class="ppi2-rule-title">${escape(r.title)}${r.soft ? `<span class="ppi2-rule-soft">${escape(r.soft)}</span>` : ""}</p>
+        <p class="ppi2-rule-body">${r.body}</p>
       </div>
     </div>`;
+
+  const prefList = (arr) => (arr && arr.length)
+    ? `<ul>${arr.map(x => `<li>${escape(x)}</li>`).join("")}</ul>`
+    : `<div class="ppi2-pref-empty">— none identified —</div>`;
+
+  // Distilled-at → friendly date for the header meta
+  let distilledLabel = "—";
+  if (ps.distilled_at) {
+    const d = new Date(ps.distilled_at);
+    distilledLabel = isNaN(d) ? String(ps.distilled_at)
+      : d.toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
   const body = `
-    ${policyHtml}
-    <div class="ppi-section">
-      <div class="ppi-label">🧠 Summary (steering preamble)</div>
-      <div class="ppi-notes">${escape(p.notes || "—")}</div>
-    </div>
-    <div class="ppi-section">
-      <div class="ppi-label ppi-strong">✅ Strongly prefers</div>
-      ${list(p.strongly_prefers)}
-    </div>
-    <div class="ppi-section">
-      <div class="ppi-label ppi-soft">➕ Softly prefers</div>
-      ${list(p.softly_prefers)}
-    </div>
-    <div class="ppi-section">
-      <div class="ppi-label ppi-rej">❌ Rejects</div>
-      ${list(p.rejects)}
-    </div>
-    <div class="ppi-meta">
-      Distilled at ${escape(ps.distilled_at || "—")} from ${ps.decision_count || 0} decisions.<br/>
-      This profile is injected into every future <i>Find prospects</i> call so Gemini biases toward what you actually want.
-    </div>
-    <div class="ppi-actions">
-      <button class="btn outline" onclick="closeProspectsProfileInspect()">Close</button>
-      <button class="btn gold" onclick="closeProspectsProfileInspect(); rebuildProspectsProfile()">🧠 Rebuild now</button>
+    <div class="ppi2">
+      <div class="ppi2-head">
+        <div class="ppi2-eyebrow">AI-distilled preference profile</div>
+        <h2 class="ppi2-name">${escape(handle)}</h2>
+        <div class="ppi2-sub">${ps.decision_count || 0} decisions · distilled ${escape(distilledLabel)}</div>
+      </div>
+
+      <section class="ppi2-sec">
+        <div class="ppi2-sec-head">
+          <span class="ppi2-sec-num">01</span>
+          <span class="ppi2-sec-title">Institutional policy</span>
+        </div>
+        <p class="ppi2-sec-sub">Hard rules — these override operator habit.</p>
+        <div class="ppi2-rules">${rules.map(ruleCard).join("")}</div>
+        <p class="ppi2-foot-note">Injected into every <b>Find prospects</b> call and the profile-rebuild prompt. Your past decisions inform <b>style</b> within these rules (which countries, which entity types) — they don't override the rules themselves.</p>
+      </section>
+
+      <section class="ppi2-sec">
+        <div class="ppi2-sec-head">
+          <span class="ppi2-sec-num">02</span>
+          <span class="ppi2-sec-title">Learned from your decisions</span>
+        </div>
+        <p class="ppi2-sec-sub">Style preferences distilled from ${ps.decision_count || 0} yes / no calls — a steer, not a rule.</p>
+        <div class="ppi2-notes">${escape(p.notes || "—")}</div>
+        <div class="ppi2-pref strong"><div class="ppi2-pref-lbl">Strongly prefers</div>${prefList(p.strongly_prefers)}</div>
+        <div class="ppi2-pref soft"><div class="ppi2-pref-lbl">Softly prefers</div>${prefList(p.softly_prefers)}</div>
+        <div class="ppi2-pref rej"><div class="ppi2-pref-lbl">Rejects</div>${prefList(p.rejects)}</div>
+      </section>
+
+      <div class="ppi2-meta">
+        Distilled ${escape(distilledLabel)} from ${ps.decision_count || 0} decisions. Re-injected into every future search so the AI biases toward what you actually approve.
+      </div>
+      <div class="ppi-actions">
+        <button class="btn outline" onclick="closeProspectsProfileInspect()">Close</button>
+        <button class="btn gold" onclick="closeProspectsProfileInspect(); rebuildProspectsProfile()">Rebuild now</button>
+      </div>
     </div>
   `;
-  const handle = (typeof getDisplayName === "function" ? getDisplayName() : "") || "";
   const titleEl = document.getElementById("prospect-profile-title");
   const bodyEl  = document.getElementById("prospect-profile-body");
   const modal   = document.getElementById("prospect-profile-modal");
-  if (titleEl) titleEl.textContent = `🧠 Preference profile · ${handle}`;
+  if (titleEl) titleEl.textContent = "";   // header now lives in the body
   if (bodyEl)  bodyEl.innerHTML = body;
   if (modal)   modal.classList.add("open");
 }
