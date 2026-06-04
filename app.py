@@ -3106,6 +3106,19 @@ share that DNA. When you find a candidate, boost fit_score for any of:
   ✅ Industry partnership / dual-education programs
   ✅ Hands-on / experiential learning emphasis
 
+SECONDARY PREFERENCE — fee-paying audience (soft, a tiebreaker, NOT a
+hard rule): H-FARM's programmes are paid, so partners whose student /
+family base is accustomed and able to pay tuition convert better.
+Gently LEAN toward private institutions and a fee-paying audience:
+  ✅ Private universities, private business / design schools
+  ✅ Private, international, or bilingual high schools (fee-paying families)
+  ✅ Agencies serving private-school / affluent outbound clientele
+This is a light boost (a few points) and a tiebreaker between two
+otherwise-similar candidates — apply it AFTER the applied-fit test
+above. Do NOT exclude strong PUBLIC applied institutions (a public
+polytechnic with great hands-on programmes is still an excellent
+partner); just rank a comparable private one a little higher.
+
 And the LANGUAGE rule for matching summer programmes:
   • For INTERNATIONAL (non-Italian) partners → suggest only
     English-language H-FARM programmes (Startup Summer (AD)Venture,
@@ -4204,6 +4217,13 @@ For everyone else:
      internship + company-visit + project-based programmes
   ✅ OUTBOUND-direction agencies (sending local students abroad)
   ❌ INBOUND-direction agencies ("Study in X" portals — competitors)
+
+SECONDARY (soft, tiebreaker only): H-FARM's programmes are paid, so a
+fee-paying audience converts better. Apply a LIGHT boost (a few points)
+to private universities, private / international / bilingual schools,
+and agencies serving private-school clientele — AFTER the applied-fit
+test. Never penalise a strong PUBLIC applied institution for being
+public; just nudge a comparable private one slightly higher.
 
 For international (non-Italian-speaking) partners, only English-
 language H-FARM programmes are valid pitches. Italian-only
