@@ -3070,10 +3070,20 @@ OUT OF SCOPE — REJECT these even if the search results return them:
        Carnegie Mellon, Oxford, Cambridge, Imperial, LSE, UCL,
        ETH Zürich, EPFL, Sorbonne, Sciences Po, INSEAD, HEC Paris,
        Tsinghua, Peking University, NUS, Tokyo University.
-     If a search result describes a university as "research-intensive",
-     "deep research", "PhD-focused", "doctoral-focused", or
-     "primarily research", treat that as a soft signal to deprioritise
-     (fit_score under 30) and explain the mismatch in fit_reasoning.
+     This is NOT limited to the named list above. If a search result
+     describes ANY university as "research-intensive", "research
+     university", "deep research", "PhD-focused", "doctoral-focused",
+     "primarily research", or otherwise research-led — even a small
+     regional one nobody famous — treat it as a HARD EXCLUSION and do
+     NOT surface it at all. The mandate is categorical: H-FARM cannot
+     partner with research-focused universities, because they seek
+     research peers, not an applied teaching partner. The ONLY
+     universities worth surfacing are ones clearly identified as
+     APPLIED / teaching-focused / vocational / polytechnic / applied-
+     sciences / universities of applied sciences (Fachhochschule,
+     Hogeschool, Polytechnic, Politécnico, etc.). When a university's
+     orientation is genuinely unclear from the sources, lean toward
+     NOT surfacing it rather than risking a research institution.
 
   ❌ ITALIAN UNIVERSITIES — H-FARM College is Italian; other Italian
      universities are GEOGRAPHIC COMPETITORS for the same students.
@@ -4170,6 +4180,19 @@ AVOID even if surfaced:
   Sorbonne, Sciences Po, INSEAD, HEC Paris, Tsinghua, Peking, NUS,
   Tokyo. If the candidate is in this group → fit_score 5-15 with
   reasoning explaining the policy mismatch.
+
+This is NOT limited to the named list. If the candidate's description
+or sources indicate a RESEARCH orientation of ANY kind — "research-
+intensive", "research university", "deep research", "PhD-focused",
+"doctoral-focused", "primarily research", or research-led — even a
+small regional one → fit_score 5-15. The rule is categorical: H-FARM
+cannot partner with research-focused universities. A university only
+scores well if it is clearly APPLIED / teaching-focused / vocational /
+polytechnic / applied-sciences (Fachhochschule, Hogeschool,
+Polytechnic, Politécnico, university of applied sciences). The example
+in front of you is a guide: a "Polytechnic Institute … known for
+practical and vocational training" is exactly right and SHOULD score
+high; a research university must not.
 
 NEVER recommend Italian universities (Bocconi, LUISS, Sapienza,
 Politecnico Milano / Torino, Bologna, Padova, Cattolica, Ca' Foscari,
