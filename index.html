@@ -1372,6 +1372,21 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ov-meter-labels .ov-before b{font-weight:700;color:#46453E;font-style:normal}
 .ov-meter-labels .ov-after{color:var(--ov-green);font-weight:700;text-align:right}
 
+/* SECTION C — "Beyond a spreadsheet entirely". Compact 2-col grid of
+   generative/analytical capabilities. Deliberately lighter than A/B
+   (no HOW? / meters) because the whole point is "Excel can't do this
+   at any level of discipline" — the capability IS the argument. Sits
+   OUTSIDE the timeline so the spine stays scoped to Quick + Long-Term
+   Wins and section C reads as a distinct category. */
+.ov-secC{margin-top:64px}
+.ov-c-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.ov-c-card{position:relative;background:#fff;border:1px solid var(--rule);border-top:2px solid var(--hf-red);border-radius:9px;padding:16px 18px 14px}
+.ov-c-title{font-size:14.5px;font-weight:800;letter-spacing:-.01em;line-height:1.3;color:var(--ink);margin:0}
+.ov-c-title .ov-c-ico{color:var(--hf-red);margin-right:7px;font-weight:700}
+.ov-c-desc{font-size:12.8px;line-height:1.55;color:#39382F;margin:7px 0 0}
+.ov-c-badge{display:inline-block;margin-top:10px;font-size:8.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--hf-red);background:var(--hf-red-soft);border:1px solid rgba(217,83,79,.3);border-radius:12px;padding:3px 8px}
+@media (max-width:860px){.ov-c-grid{grid-template-columns:1fr}}
+
 /* SUMMARY */
 .ov-summary{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:9px;padding:22px 26px;margin-top:60px}
 .ov-summary-eyebrow{font-size:10.5px;letter-spacing:.2em;color:var(--hf-red);font-weight:800;text-transform:uppercase;margin-bottom:9px}
@@ -24016,6 +24031,25 @@ function renderOperationalValueView() {
       ${it.meter ? meterHtml(it.meter) : (it.vs ? `<p class="ov-card-foot">${escape(it.vs)}</p>` : "")}
     </article>`;
 
+  // Section C — generative / analytical capabilities. Deliberately terse:
+  // the argument isn't "faster", it's "a spreadsheet cannot do this at all,
+  // however well-maintained". Each gets a one-line description + a uniform
+  // "No spreadsheet equivalent" badge.
+  const capabilities = [
+    { ico: "◈", title: "AI prospect discovery", desc: "Actively surfaces NEW partnership candidates — web-sourced, then verified before they enter the pipeline — with a decision-learning loop that improves what it suggests. A spreadsheet only holds rows you already typed." },
+    { ico: "✦", title: "Mira — ask the platform in plain language", desc: "“Which Italy-only agencies fit AI Fashion Lab?” is answered in seconds across the full dataset, with reasoning. Not a formula — a question answered." },
+    { ico: "✎", title: "Context-aware outreach drafting", desc: "A tailored email per partner — built from their programmes, contacts, and interaction history — not a mail-merge template with the name swapped in." },
+    { ico: "⚑", title: "Tailor-made flexibility map", desc: "A live, in-meeting reference for “can you flex on X?” so every rep answers consistently in the room, instead of improvising or promising what we can't deliver." },
+    { ico: "◎", title: "Aspirational planning → AI action plan", desc: "Drag a partner to a target position on the strategy map and get 4–6 concrete actions to actually get it there — each one-click into the follow-up queue." },
+    { ico: "∿", title: "90-day signing forecast (Monte Carlo)", desc: "A probabilistic projection of how many partnerships realistically close in the next quarter — a simulation, not a static count someone typed." },
+  ];
+  const capabilityCard = (c) => `
+    <article class="ov-c-card" data-ov-reveal>
+      <h3 class="ov-c-title"><span class="ov-c-ico">${escape(c.ico)}</span>${escape(c.title)}</h3>
+      <p class="ov-c-desc">${escape(c.desc)}</p>
+      <span class="ov-c-badge">No spreadsheet equivalent</span>
+    </article>`;
+
   el.innerHTML = `
     <div class="ov-shell">
       <header class="ov-hero">
@@ -24080,6 +24114,19 @@ function renderOperationalValueView() {
           <div class="ov-cards">${longTermWins.map(cardHtml).join("")}</div>
         </section>
       </div>
+
+      <section class="ov-secC">
+        <div class="ov-sec-head" data-ov-reveal>
+          <div class="ov-dropcap">C</div>
+          <div>
+            <p class="ov-sec-kicker">Beyond a spreadsheet entirely</p>
+            <h2 class="ov-sec-title">Things Excel can't do at all</h2>
+            <p class="ov-sec-sub">Not faster spreadsheet work — work a spreadsheet cannot do at any level of discipline. A sheet stores what you put in it; these surface things you didn't.</p>
+          </div>
+        </div>
+        <div class="ov-sec-rule" data-ov-reveal></div>
+        <div class="ov-c-grid">${capabilities.map(capabilityCard).join("")}</div>
+      </section>
 
       <section class="ov-summary" data-ov-reveal>
         <div class="ov-summary-eyebrow">Summary for the reviewer</div>
