@@ -19195,10 +19195,15 @@ function _renderAspirationModal() {
         <div style="font-size:11px;color:var(--ink-mute);margin-top:8px">90-day TTL · auto-archives when partner reaches target quadrant · you can abandon any time</div>
       </div>`;
   } else if (m.stage === "persisted" && !m.loadingActions) {
+    const errBanner = m.lastError ? `
+      <div style="background:var(--hf-red-soft);border:1px solid rgba(217,83,79,.35);border-left:3px solid var(--hf-red);border-radius:7px;padding:11px 14px;margin-bottom:14px;text-align:left;font-size:12.5px;line-height:1.55;color:var(--hf-red-deep)">
+        <b>Couldn't generate the plan.</b><br>${escape(m.lastError)}
+      </div>` : "";
     bodyHtml += `
       <div style="text-align:center;padding:10px 0">
+        ${errBanner}
         <button class="btn gold" type="button" onclick="generateAspirationPlan()" style="font-size:13px;padding:10px 22px">
-          🤖 Generate AI action plan
+          Generate AI action plan
         </button>
         <div style="font-size:11px;color:var(--ink-mute);margin-top:8px">Specific 4-6 actions to actually move this partner. Sources: entity + recent outreach + open follow-ups + contacts.</div>
       </div>`;
@@ -19332,6 +19337,27 @@ async function confirmAspiration() {
   }
 }
 
+// Turn a raw Gemini / backend error string into a clean, actionable line.
+// The raw 429 dump ("RESOURCE_EXHAUSTED {'error': {'code': 429 …prepayment
+// credits are depleted…}}") is meaningless to an operator — translate the
+// known failure modes to plain English with the fix.
+function _aiErrorMessage(raw) {
+  const s = String(raw || "");
+  if (/429|RESOURCE_EXHAUSTED|prepayment credits|quota|rate limit/i.test(s)) {
+    return "AI is temporarily unavailable — the Gemini API quota / credits are used up. Top up billing in Google AI Studio, then try again. (All AI features — action plans, Mira, AI drafts, prospect discovery — share this quota.)";
+  }
+  if (/GEMINI_API_KEY|not configured|key.?set/i.test(s)) {
+    return "AI isn't configured on the server — the Gemini API key is missing. Set it in the Render environment, then retry.";
+  }
+  if (/timed out|timeout|deadline/i.test(s)) {
+    return "AI request timed out — likely a cold start. Give it a few seconds and try again.";
+  }
+  if (/50\d|unavailable|server error/i.test(s)) {
+    return "AI service hiccup on Gemini's side — try again in a moment.";
+  }
+  return s || "Unknown error.";
+}
+
 async function generateAspirationPlan(force) {
   const m = _ASPIRATION_MODAL;
   if (!m || !m.asp) return;
@@ -19354,6 +19380,7 @@ async function generateAspirationPlan(force) {
     const resp = await generateAspirationActions(m.asp.id, fullEntity, !!force);
     m.actionsResp = { headline: resp.headline, actions: resp.actions || [], reality_check: resp.reality_check };
     m.loadingActions = false;
+    m.lastError = null;   // clear any prior failure banner
     m.stage = "ready";
     _renderAspirationModal();
     if (resp.cached) {
@@ -19364,8 +19391,9 @@ async function generateAspirationPlan(force) {
   } catch (e) {
     m.loadingActions = false;
     m.stage = "persisted";
+    m.lastError = _aiErrorMessage(e.message);   // surfaced inline in the modal
     _renderAspirationModal();
-    alert("Could not generate action plan: " + e.message);
+    showSyncToast("⚠ " + m.lastError, "warn");
   }
 }
 
