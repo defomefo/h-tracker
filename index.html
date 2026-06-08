@@ -2557,6 +2557,57 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .fd-tiers .fdt-h{font-size:9px;letter-spacing:.3px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;padding:4px 2px;text-align:center}
 .fd-leak-card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 18px}
 
+/* ============== PORTFOLIO REVIEW (BCG / GE buckets) ============== */
+.pf-shell{padding:0 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.pf-intro{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:16px 18px}
+.pf-intro-h{font-size:13px;font-weight:800;letter-spacing:.3px;color:var(--navy);margin-bottom:6px}
+.pf-intro-p{font-size:12px;line-height:1.6;color:var(--ink-soft)}
+.pf-intro-p b{color:var(--ink);font-weight:700}
+.pf-axes{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:11px;color:var(--ink-soft);margin-top:10px;padding-top:11px;border-top:1px dashed var(--rule)}
+.pf-axes b{font-weight:800;color:var(--navy)}
+/* Reallocation read-out banner */
+.pf-realloc{border-left:4px solid var(--hf-red);background:var(--hf-red-soft);border-radius:0 8px 8px 0;padding:14px 18px}
+.pf-realloc.calm{border-left-color:#1F6E48;background:#EAF3EE}
+.pf-realloc-tag{font-size:10px;letter-spacing:1.2px;font-weight:800;text-transform:uppercase;color:var(--hf-red-deep);margin-bottom:5px}
+.pf-realloc.calm .pf-realloc-tag{color:#1F6E48}
+.pf-realloc-p{font-size:13px;line-height:1.55;color:var(--ink)}
+.pf-realloc-p b{font-weight:800}
+/* 2×2 matrix of bucket cards (BCG orientation) */
+.pf-matrix{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:stretch}
+.pf-yaxis{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-mute);padding:6px 0}
+.pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pf-xaxis{grid-column:2;text-align:center;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-mute);padding-top:2px}
+.pf-card{background:#fff;border:1px solid var(--rule);border-top:3px solid var(--accent,#888);border-radius:8px;padding:15px 16px 14px;display:flex;flex-direction:column;min-height:200px}
+.pf-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pf-verb{font-size:9.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--accent,#888)}
+.pf-label{font-size:18px;font-weight:800;color:var(--navy);letter-spacing:-.2px;margin:2px 0 0;display:flex;align-items:baseline;gap:8px}
+.pf-bcg{font-size:10px;font-weight:700;color:var(--ink-mute);letter-spacing:.3px;text-transform:none}
+.pf-count{font-size:30px;font-weight:800;color:var(--accent,#888);line-height:1;font-variant-numeric:tabular-nums}
+.pf-quad{font-size:8.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--ink-mute);margin:7px 0 4px}
+.pf-desc{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin:0 0 10px}
+.pf-list{display:flex;flex-direction:column;gap:1px;margin-top:auto}
+.pf-ent{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:5px;cursor:pointer;transition:background .12s}
+.pf-ent:hover{background:var(--paper)}
+.pf-ent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pf-ent-name{font-size:12px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.pf-ent-metrics{font-size:10px;color:var(--ink-mute);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pf-more{font-size:10.5px;color:var(--ink-soft);font-weight:700;padding:5px 7px;cursor:pointer}
+.pf-more:hover{color:var(--hf-red)}
+.pf-empty{font-size:11px;color:var(--ink-mute);font-style:italic;padding:6px 7px}
+.pf-share{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-mute);margin-top:10px;padding-top:8px;border-top:1px dashed var(--rule)}
+.pf-share b{color:var(--accent,#888)}
+/* Divest-sooner sunk-cost strip */
+.pf-sunk{background:#fff;border:1px solid var(--rule);border-left:4px solid #8A4B4B;border-radius:0 8px 8px 0;padding:15px 18px}
+.pf-sunk-h{font-size:12px;font-weight:800;letter-spacing:.3px;color:#8A4B4B;text-transform:uppercase;margin-bottom:4px}
+.pf-sunk-p{font-size:11.5px;line-height:1.55;color:var(--ink-soft);margin-bottom:10px}
+.pf-sunk-p b{color:var(--ink);font-weight:700}
+.pf-sunk-list{display:flex;flex-direction:column;gap:2px}
+.pf-sunk-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:5px;cursor:pointer;transition:background .12s}
+.pf-sunk-row:hover{background:var(--paper)}
+.pf-sunk-name{font-size:12.5px;font-weight:700;color:var(--navy);min-width:170px}
+.pf-sunk-why{font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+@media (max-width:880px){.pf-grid{grid-template-columns:1fr}.pf-matrix{grid-template-columns:1fr}.pf-yaxis{writing-mode:horizontal-tb;transform:none}.pf-xaxis{grid-column:1}}
+
 /* ============== STRATEGIC 2x2 MAPS ============== */
 .sm-shell{padding:18px 24px 60px;max-width:1400px;margin:0 auto}
 .sm-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--rule)}
@@ -5174,6 +5225,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
           <button class="nav-subitem" data-sub="reachReadiness" onclick="navStrategyAxis('reachReadiness', event)" title="Reach × Readiness — how far the partner is from us vs how ready they are to engage">Reach × Readiness</button>
           <button class="nav-subitem" data-sub="costRoi" onclick="navStrategyAxis('costRoi', event)" title="Cost × ROI — cost to land vs payoff if landed">Cost × ROI</button>
           <button class="nav-subitem nav-subitem-divider nav-subitem-with-icon" data-sub="funnel" onclick="navStrategyFunnel(event)" title="Pipeline conversion funnel + Monte Carlo 90-day signing forecast"><svg class="nav-sub-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Funnel &amp; forecast</button>
+          <button class="nav-subitem nav-subitem-with-icon" data-sub="portfolio" onclick="navStrategyPortfolio(event)" title="Portfolio review — BCG buckets (Build / Double down / Maintain / Divest), sunk-cost traps + effort reallocation"><svg class="nav-sub-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>Portfolio review</button>
         </div>
       </div>
       <button class="nav-item" data-view="database" onclick="switchView('database')" title="Full sortable table — search by name, country, priority, tier, focus">
@@ -5318,6 +5370,9 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 
     <!-- STRATEGIC 2x2 MAPS VIEW -->
     <section id="view-strategy" class="view hidden"></section>
+
+    <!-- PORTFOLIO REVIEW (BCG / GE buckets) — Strategy umbrella -->
+    <section id="view-portfolio" class="view hidden"></section>
 
     <!-- DATABASE VIEW -->
     <section id="view-database" class="view hidden"></section>
@@ -10382,6 +10437,7 @@ function renderCurrentView() {
   if (viewId === "pipeline")  renderPipelineView();
   if (viewId === "funnel")    renderFunnelView();
   if (viewId === "strategy")  renderStrategicView();
+  if (viewId === "portfolio") renderPortfolioView();
   if (viewId === "database")  renderDatabaseView();
   if (viewId === "outreach")  renderOutreachView();
   if (viewId === "followups") renderFollowupsView();
@@ -10449,16 +10505,23 @@ function navStrategyFunnel(ev) {
   switchView("funnel");
 }
 
+function navStrategyPortfolio(ev) {
+  if (ev) ev.preventDefault();
+  switchView("portfolio");
+}
+
 // Keep the Strategy dropdown's open state + sub-item active highlight in
 // sync with the current view. Called from switchView and renderStrategicView.
 function _syncStrategyDropdown() {
   const group = document.getElementById("nav-group-strategy");
   if (!group) return;
-  const inUmbrella = (STATE.view === "strategy" || STATE.view === "funnel");
+  const inUmbrella = (STATE.view === "strategy" || STATE.view === "funnel" || STATE.view === "portfolio");
   if (inUmbrella) group.classList.add("open");
   // Sub-item active state
   const activeSub = STATE.view === "funnel"
     ? "funnel"
+    : STATE.view === "portfolio"
+    ? "portfolio"
     : (STATE.view === "strategy" && typeof STRAT_STATE === "object" ? STRAT_STATE.axisKey : null);
   group.querySelectorAll(".nav-subitem").forEach(el => {
     el.classList.toggle("active", el.dataset.sub === activeSub);
@@ -20600,12 +20663,224 @@ function _renderUnifiedStrategyTabs(activeKey) {
   // Inline funnel SVG icon — same one the sidebar sub-item uses, kept
   // consistent with the rest of the monoline icon language (no emoji).
   const funnelTab = `<button class="sm-tab sm-tab-with-icon ${activeKey === 'funnel' ? 'active' : ''}" onclick="switchView('funnel')" title="Conversion funnel · Monte Carlo signing forecast · stage-bottleneck diagnosis"><svg class="sm-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Funnel &amp; forecast</button>`;
-  return `<div class="sm-tabs">${axisTabs}${funnelTab}</div>`;
+  // Portfolio Review — BCG/GE buckets across the whole partner book. Sister
+  // tab under the Strategy umbrella (no new sidebar item). Four-cell icon.
+  const portfolioTab = `<button class="sm-tab sm-tab-with-icon ${activeKey === 'portfolio' ? 'active' : ''}" onclick="switchView('portfolio')" title="Portfolio review · BCG buckets (Build / Double down / Maintain / Divest) · sunk-cost &amp; reallocation read"><svg class="sm-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>Portfolio</button>`;
+  return `<div class="sm-tabs">${axisTabs}${funnelTab}${portfolioTab}</div>`;
 }
 function stratToggleShowAll() {
   STRAT_STATE.showAll = !STRAT_STATE.showAll;
   renderStrategicView();
 }
+
+// ============================================================================
+// PORTFOLIO REVIEW — a BCG / GE-McKinsey lens over the whole partner book.
+// Strategy-consulting skill #11 (portfolio review: BCG matrix, dynamic
+// reallocation, "divest sooner"). Two axes, both already computed per entity
+// (no AI, no extra API call):
+//   Attractiveness (Y) = top_program_score — strategic fit / value of a signed deal
+//   Momentum (X)       = engagementDepth.total — how invested + warm we already are
+// Four buckets, BCG-oriented (attractive at top, well-positioned at right):
+//   Build       (hi fit, lo mom)  question marks → invest to convert  [top-left]
+//   Double down (hi fit, hi mom)  stars          → protect & accelerate [top-right]
+//   Maintain    (lo fit, hi mom)  cash cows      → harvest cheaply     [bottom-right]
+//   Divest      (lo fit, lo mom)  dogs           → archive             [bottom-left]
+// "Not interested" partners are forced to Divest (they declined — dead).
+// ============================================================================
+const PORTFOLIO_FIT_CUT = 60;   // top_program_score >= 60 → attractive
+const PORTFOLIO_MOM_CUT = 25;   // engagementDepth.total >= 25 → engaged / warm
+const PORTFOLIO_SUNK_CUT = 35;  // engagement depth that counts as "real effort sunk"
+
+const PORTFOLIO_BUCKETS = {
+  build:      { label:"Build",       bcg:"Question marks", verb:"Invest to convert",
+                quad:"High fit · low momentum", accent:"#2C56C6", cell:"tl",
+                desc:"High-value partners we've barely engaged. The portfolio's biggest upside — start or intensify outreach to move them right." },
+  doubledown: { label:"Double down", bcg:"Stars",          verb:"Protect & accelerate",
+                quad:"High fit · high momentum", accent:"#1F6E48", cell:"tr",
+                desc:"High value and well-positioned. Your best deals — push them to signing before they cool." },
+  maintain:   { label:"Maintain",    bcg:"Cash cows",      verb:"Keep warm, cheaply",
+                quad:"Low fit · high momentum", accent:"#9A6A12", cell:"br",
+                desc:"We've invested but the strategic fit is modest. Harvest events / referrals at low cost — don't pour in more effort." },
+  divest:     { label:"Divest",      bcg:"Dogs",           verb:"Archive / deprioritize",
+                quad:"Low fit · low momentum", accent:"#8A4B4B", cell:"bl",
+                desc:"Low value and cold. Free the attention for Build — re-qualify only if something material changes." },
+};
+
+function _pfEffort(u) {
+  return (typeof engagementDepth === "function") ? (engagementDepth(u).total || 0) : 0;
+}
+function _portfolioBucketOf(u) {
+  if (u.priority === "Not interested") return "divest";      // declined = dead, archive
+  const fit = u.top_program_score || 0;
+  const mom = _pfEffort(u);
+  const hiFit = fit >= PORTFOLIO_FIT_CUT;
+  const hiMom = mom >= PORTFOLIO_MOM_CUT;
+  if (hiFit && hiMom)  return "doubledown";
+  if (hiFit && !hiMom) return "build";
+  if (!hiFit && hiMom) return "maintain";
+  return "divest";
+}
+// The portfolio is what we've ENGAGED (outreach / contacts / past 'identified')
+// PLUS every high-fit target even if untouched (those are the Build upside).
+// The long tail of low-fit, never-contacted cold leads is a prospect pool, not
+// a portfolio — excluded here and counted separately.
+function _portfolioCohort() {
+  return (UNIS || []).filter(u => {
+    const engaged = ((typeof OUTREACH === "object" && OUTREACH[u.id]) || []).length > 0
+      || (u.contacts || []).length > 0
+      || (u.pipeline_stage && u.pipeline_stage !== "identified");
+    const highFit = (u.top_program_score || 0) >= PORTFOLIO_FIT_CUT;
+    return engaged || highFit;
+  });
+}
+function _portfolioTrapReason(u) {
+  const bits = [`${_pfEffort(u)} engagement`];
+  if (u.priority === "Not interested") bits.push("they declined");
+  else if (u.priority === "Cold-storage") bits.push("cold-storage");
+  if (u.days_dormant != null && u.days_dormant >= 180) bits.push(`dormant ${u.days_dormant}d`);
+  else if (["Dormant","Cold"].includes(u.partnership_readiness)) bits.push(`${u.partnership_readiness.toLowerCase()}`);
+  return bits.join(" · ");
+}
+// Sunk-cost traps: low-fit partners that have absorbed REAL effort but are
+// going nowhere (dormant / declined / cold). Consulting rule — divest sooner.
+function _portfolioSunkCostTraps(cohort) {
+  return cohort.filter(u => {
+    if ((u.top_program_score || 0) >= PORTFOLIO_FIT_CUT) return false;
+    if (_pfEffort(u) < PORTFOLIO_SUNK_CUT) return false;
+    const dormant = (u.days_dormant != null && u.days_dormant >= 180);
+    const dead = ["Not interested","Cold-storage"].includes(u.priority);
+    const coldReady = ["Dormant","Cold"].includes(u.partnership_readiness);
+    return dormant || dead || coldReady;
+  }).sort((a, b) => _pfEffort(b) - _pfEffort(a));
+}
+function _pfPrioColor(u) {
+  const g = (typeof PRIO_GRADIENT === "object" && PRIO_GRADIENT[u.priority]) || (PRIO_GRADIENT && PRIO_GRADIENT.default);
+  return (g && g.base) || "#888";
+}
+function _pfEntRow(u) {
+  const fit = u.top_program_score || 0;
+  const mom = _pfEffort(u);
+  return `<div class="pf-ent" onclick="openDetail('${escapeAttr(u.id)}')" title="${escapeAttr(u.name || "")} — open detail">
+    <span class="pf-ent-dot" style="background:${_pfPrioColor(u)}"></span>
+    <span class="pf-ent-name">${escape(u.name || "—")}</span>
+    <span class="pf-ent-metrics">fit ${fit} · mom ${mom}</span>
+  </div>`;
+}
+
+function renderPortfolioView() {
+  const el = document.getElementById("view-portfolio");
+  if (!el) return;
+  try {
+    const cohort = _portfolioCohort();
+    const excluded = (UNIS || []).length - cohort.length;
+
+    // Bucket the cohort.
+    const buckets = { build: [], doubledown: [], maintain: [], divest: [] };
+    cohort.forEach(u => { (buckets[_portfolioBucketOf(u)] || buckets.divest).push(u); });
+    const byScore = (a, b) => (b.partnership_score || 0) - (a.partnership_score || 0);
+    Object.values(buckets).forEach(arr => arr.sort(byScore));
+
+    // Effort distribution for the reallocation read.
+    const effortOf = _pfEffort;
+    const totalEffort = cohort.reduce((s, u) => s + effortOf(u), 0);
+    const lowFitEffort = [...buckets.maintain, ...buckets.divest].reduce((s, u) => s + effortOf(u), 0);
+    const lowFitShare = totalEffort ? Math.round(lowFitEffort / totalEffort * 100) : 0;
+    const buildN = buckets.build.length;
+
+    let header = `<div class="view-header"><h1>Portfolio Review — where to invest, hold, and divest</h1><p>A BCG / GE-McKinsey lens over every partner you've engaged: strategic fit against the momentum you've built. Tells you where to pour effort, what to keep warm cheaply, and where to cut losses.</p></div>`;
+    header += `<div class="sm-shell" style="margin-bottom:0;padding-bottom:0">${_renderUnifiedStrategyTabs("portfolio")}</div>`;
+
+    let html = header + `<div class="pf-shell">`;
+
+    // Intro / axes legend
+    html += `<div class="pf-intro">
+      <div class="pf-intro-h">Two questions, four buckets</div>
+      <div class="pf-intro-p">Every engaged partner is placed by <b>how valuable a signed partnership would be</b> (strategic fit) versus <b>how much momentum we've already built</b> (logged outreach, named contacts, sustained dialogue). That gives the classic BCG four — <b>Build</b> the high-value newcomers, <b>Double down</b> on the stars, <b>Maintain</b> the warm-but-modest at low cost, and <b>Divest</b> the cold low-value. The point is reallocation: stop feeding dogs, feed the upside.</div>
+      <div class="pf-axes">
+        <span><b>Fit</b> — strategic-fit score ≥ ${PORTFOLIO_FIT_CUT} counts as high-value</span>
+        <span><b>Momentum</b> — engagement depth ≥ ${PORTFOLIO_MOM_CUT} counts as warm</span>
+        <span><b>Portfolio</b> — ${cohort.length} engaged + high-fit partners${excluded > 0 ? ` (${excluded} un-engaged low-fit leads sit in the prospect pool, not shown)` : ""}</span>
+      </div>
+    </div>`;
+
+    // Reallocation read-out
+    let realloc, calm = false;
+    if (totalEffort === 0) {
+      realloc = `No engagement logged yet across the portfolio. Once outreach and contacts accumulate, this read shows where your effort is concentrated.`;
+      calm = true;
+    } else if (lowFitShare >= 40 && buildN > 0) {
+      realloc = `<b>${lowFitShare}%</b> of your engagement effort is going into <b>low-fit</b> partners (Maintain + Divest), while <b>${buildN}</b> high-value <b>Build</b> target${buildN === 1 ? "" : "s"} sit under-engaged. Reallocate attention from the harvest/dog cells toward Build — that's where the upside is.`;
+    } else if (lowFitShare >= 40) {
+      realloc = `<b>${lowFitShare}%</b> of your engagement effort is on <b>low-fit</b> partners, and there are no high-fit Build targets waiting. Either re-qualify the Maintain/Divest cells upward, or go find new high-fit prospects in Discovery.`;
+    } else if (buildN > 0) {
+      realloc = `Effort is concentrated on <b>high-fit</b> partners — healthy. Keep feeding the <b>${buildN}</b> Build target${buildN === 1 ? "" : "s"} to convert your biggest upside into Double-down.`;
+      calm = true;
+    } else {
+      realloc = `Effort is on high-fit partners and there are no under-engaged Build targets right now. The book is well-tended — watch for stars cooling and feed the pipeline from Discovery.`;
+      calm = true;
+    }
+    html += `<div class="pf-realloc${calm ? " calm" : ""}">
+      <div class="pf-realloc-tag">Reallocation read</div>
+      <div class="pf-realloc-p">${realloc}</div>
+    </div>`;
+
+    // 2×2 matrix (BCG orientation). Row 1: Build, Double down. Row 2: Divest, Maintain.
+    const order = ["build", "doubledown", "divest", "maintain"];
+    const CAP = 10;
+    const cardHtml = (key) => {
+      const meta = PORTFOLIO_BUCKETS[key];
+      const arr = buckets[key];
+      const bucketEffort = arr.reduce((s, u) => s + effortOf(u), 0);
+      const sharePct = totalEffort ? Math.round(bucketEffort / totalEffort * 100) : 0;
+      const shown = arr.slice(0, CAP);
+      let list = shown.map(_pfEntRow).join("");
+      if (arr.length > CAP) list += `<div class="pf-more">+ ${arr.length - CAP} more in ${escape(meta.label)}</div>`;
+      if (!arr.length) list = `<div class="pf-empty">No partners in this cell.</div>`;
+      return `<div class="pf-card" style="--accent:${meta.accent}">
+        <div class="pf-card-top">
+          <div>
+            <div class="pf-verb">${escape(meta.verb)}</div>
+            <h3 class="pf-label">${escape(meta.label)}<span class="pf-bcg">${escape(meta.bcg)}</span></h3>
+          </div>
+          <div class="pf-count">${arr.length}</div>
+        </div>
+        <div class="pf-quad">${escape(meta.quad)}</div>
+        <p class="pf-desc">${escape(meta.desc)}</p>
+        <div class="pf-list">${list}</div>
+        <div class="pf-share"><b>${sharePct}%</b> of engagement effort</div>
+      </div>`;
+    };
+    html += `<div class="pf-matrix">
+      <div class="pf-yaxis">Strategic fit / value →</div>
+      <div>
+        <div class="pf-grid">${order.map(cardHtml).join("")}</div>
+        <div class="pf-xaxis">Our momentum — engagement &amp; warmth →</div>
+      </div>
+    </div>`;
+
+    // Divest-sooner sunk-cost strip
+    const traps = _portfolioSunkCostTraps(cohort);
+    if (traps.length) {
+      const rows = traps.slice(0, 8).map(u => `<div class="pf-sunk-row" onclick="openDetail('${escapeAttr(u.id)}')" title="${escapeAttr(u.name || "")} — open detail">
+        <span class="pf-sunk-name">${escape(u.name || "—")}</span>
+        <span class="pf-sunk-why">${escape(_portfolioTrapReason(u))}</span>
+      </div>`).join("");
+      const more = traps.length > 8 ? `<div class="pf-more">+ ${traps.length - 8} more</div>` : "";
+      html += `<div class="pf-sunk">
+        <div class="pf-sunk-h">Divest sooner — ${traps.length} sunk-cost trap${traps.length === 1 ? "" : "s"}</div>
+        <div class="pf-sunk-p">These <b>low-fit</b> partners have each absorbed real effort but are dormant, cold, or have declined. The consulting rule is to <b>cut losses early</b> — that effort converts better on a Build target. Review each and archive or re-qualify.</div>
+        <div class="pf-sunk-list">${rows}${more}</div>
+      </div>`;
+    }
+
+    html += `</div>`; // close pf-shell
+    el.innerHTML = html;
+  } catch (err) {
+    console.error("[renderPortfolioView] FAILED:", err);
+    el.innerHTML = '<div style="padding:60px;color:#A32D2D;font-family:monospace;font-size:13px"><h2 style="color:#A32D2D">Portfolio view error</h2><pre style="white-space:pre-wrap">' + (err && err.stack ? err.stack : err) + '</pre></div>';
+  }
+}
+
 // ============================================================================
 // TOP OPPORTUNITIES — used by both the recommendation card and the
 // "hero ring" labels around the headline bubbles. Computed per axis so the
