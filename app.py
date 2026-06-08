@@ -4830,6 +4830,13 @@ def market_sizing_get():
         est = json.loads(row["estimate_json"] or "{}")
     except Exception:
         est = {}
+    # Ignore stale empty estimates (tam_total <= 0) cached by an earlier bug, so
+    # the band shows the "estimate with AI" prompt instead of "unavailable".
+    try:
+        if int(est.get("tam_total") or 0) <= 0:
+            return jsonify({"exists": False})
+    except Exception:
+        return jsonify({"exists": False})
     return jsonify({
         "exists": True,
         "estimate": est,
@@ -4865,15 +4872,24 @@ def market_sizing_estimate():
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
+        cfg_kwargs = dict(
+            system_instruction=MARKET_SIZING_PROMPT,
+            response_mime_type="application/json",
+            temperature=0.3,
+            max_output_tokens=4096,
+        )
+        # Gemini 2.5 Flash enables "thinking" by default, which can consume the
+        # entire output-token budget on a small structured call and return an
+        # empty candidate (no JSON) — the cause of the "estimate unavailable"
+        # bug. Disable thinking when the SDK supports it.
+        try:
+            cfg_kwargs["thinking_config"] = _gtypes.ThinkingConfig(thinking_budget=0)
+        except Exception:  # noqa: BLE001 — older SDK without ThinkingConfig
+            pass
         resp = client_ai.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
-            config=_gtypes.GenerateContentConfig(
-                system_instruction=MARKET_SIZING_PROMPT,
-                response_mime_type="application/json",
-                temperature=0.3,
-                max_output_tokens=1536,
-            ),
+            config=_gtypes.GenerateContentConfig(**cfg_kwargs),
         )
     except Exception as e:  # noqa: BLE001
         return jsonify({"ok": False, "error": "Gemini API error: %s" % e}), 502
@@ -4895,6 +4911,20 @@ def market_sizing_estimate():
         tam_total = int(parsed.get("tam_total") or 0)
     except Exception:
         tam_total = 0
+
+    # No usable number — DON'T report success and DON'T cache an empty estimate
+    # (otherwise the green "ready" toast contradicts an "unavailable" band, and
+    # the bad zero gets cached for next load). Most common cause on the free
+    # Gemini tier: an empty model response or a transient rate limit.
+    if tam_total <= 0:
+        detail = "the AI returned an empty response" if not raw_text else "the AI returned no usable market size"
+        return jsonify({
+            "ok": False,
+            "error": ("Market estimate unavailable — %s. On the free Gemini tier "
+                      "this is usually a temporary rate limit or token cap; wait a "
+                      "moment and hit Re-estimate." % detail),
+        }), 200
+
     conf = (parsed.get("confidence") or "medium").strip().lower()
     if conf not in ("high", "medium", "low"):
         conf = "medium"
