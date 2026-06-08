@@ -19,7 +19,7 @@
     "lang": "English",
     "color": "#D9534F",
     "audience": "Aspiring founders, future entrepreneurs",
-    "primary_kw": ["entrepreneurship", "startup", "innovation", "entrepreneurial", "venture", "accelerator", "incubator", "business creation", "business", "management", "mba", "business school", "business administration", "business studies"],
+    "primary_kw": ["consulting", "advisory", "scale-up", "transformation consulting", "professional services", "venture capital", "accelerator", "incubation", "m&a", "corporate venture","entrepreneurship", "startup", "innovation", "entrepreneurial", "venture", "accelerator", "incubator", "business creation", "business", "management", "mba", "business school", "business administration", "business studies"],
     "secondary_kw": ["commerce", "economics", "strategy", "leadership", "design thinking", "pitch", "prototype", "ai", "artificial intelligence", "applied ai", "applied", "hands-on", "project-based", "industry partnership", "company visits"],
     "pitch_to": "Business schools (Bocconi, Corvinus, Warwick), MBA programmes, JEBO/Junior Enterprise, AIESEC"
   },
@@ -31,7 +31,7 @@
     "lang": "English",
     "color": "#2E7D5B",
     "audience": "Engineering / CS students",
-    "primary_kw": ["iot", "internet of things", "robotics", "embedded", "sensors", "mechatronics", "electrical engineering", "mechanical engineering", "automation", "engineering", "computer science", "applied sciences", "technology", "tech", "software engineering", "polytechnic", "politecnico"],
+    "primary_kw": ["industrial iot", "iiot", "edge computing", "smart infrastructure", "networking infrastructure", "industrial networks", "it/ot", "ict infrastructure","iot", "internet of things", "robotics", "embedded", "sensors", "mechatronics", "electrical engineering", "mechanical engineering", "automation", "engineering", "computer science", "applied sciences", "technology", "tech", "software engineering", "polytechnic", "politecnico"],
     "secondary_kw": ["cs", "ai", "data", "informatics", "computing", "systems", "smart", "applied ai", "hardware", "industrial", "manufacturing"],
     "pitch_to": "Engineering schools (CTU Prague, KTU, TalTech), polytechnics, BEST chapters"
   },
@@ -43,7 +43,7 @@
     "lang": "English",
     "color": "#6B4C7D",
     "audience": "CS students with security focus",
-    "primary_kw": ["cybersecurity", "cyber", "infosec", "information security", "data protection", "privacy", "network security", "penetration testing", "computer science", "information technology", "it", "software engineering", "cs"],
+    "primary_kw": ["ai cybersecurity", "wireless security", "ot security", "industrial security", "ai governance", "ai risk", "responsible ai","cybersecurity", "cyber", "infosec", "information security", "data protection", "privacy", "network security", "penetration testing", "computer science", "information technology", "it", "software engineering", "cs"],
     "secondary_kw": ["security", "ai", "data", "digital", "networks", "cloud", "defense", "computing", "informatics", "tech"],
     "pitch_to": "CS departments, IT-focused unis, defense/intelligence academies, ELSA (cyber-law)"
   },
@@ -55,7 +55,7 @@
     "lang": "English",
     "color": "#C97A1A",
     "audience": "Marketing & communications students",
-    "primary_kw": ["marketing", "branding", "digital marketing", "advertising", "communications", "public relations", "content", "social media", "pr", "media studies", "media"],
+    "primary_kw": ["martech", "adtech", "premium brand", "consumer brand", "lifestyle brand", "made in italy", "data-driven marketing", "creative campaign", "brand storytelling","marketing", "branding", "digital marketing", "advertising", "communications", "public relations", "content", "social media", "pr", "media studies", "media"],
     "secondary_kw": ["business", "mba", "commerce", "strategy", "ai", "digital", "creative", "design", "journalism"],
     "pitch_to": "Marketing/comms programmes, business schools, AIESEC, AEGEE, FARMedia-style student agencies"
   },
@@ -91,7 +91,7 @@
     "lang": "Italian",
     "color": "#8B1A1A",
     "audience": "Italian-speaking finance/econ students",
-    "primary_kw": ["finance", "financial", "economics", "banking", "investment", "markets", "trading", "accounting", "wealth", "capital", "tax", "italian university", "italian high school"],
+    "primary_kw": ["insurance", "insurtech", "audit", "big 4", "wealth management", "risk management", "professional services", "financial advisory","finance", "financial", "economics", "banking", "investment", "markets", "trading", "accounting", "wealth", "capital", "tax", "italian university", "italian high school"],
     "secondary_kw": ["business", "mba", "commerce", "money", "equity", "fintech"],
     "pitch_to": "Italian universities, business schools w/ finance focus, ELSA (financial-law track)"
   },
@@ -103,8 +103,8 @@
     "lang": "English",
     "color": "#1F6FB4",
     "audience": "Marketing / creative / digital students",
-    "primary_kw": ["marketing", "creativity", "creative", "advertising", "generative ai", "content", "design", "media", "ai", "artificial intelligence"],
-    "secondary_kw": ["digital", "branding", "communications", "innovation", "tech"],
+    "primary_kw": ["ai consulting", "ai strategy", "ai transformation", "ai adoption", "generative ai", "agentic ai", "llm", "enterprise ai", "ai use cases", "responsible ai", "ai platform", "ai governance","marketing", "creativity", "creative", "advertising", "generative ai", "content", "design", "media", "ai", "artificial intelligence"],
+    "secondary_kw": ["ai upskilling", "ai compliance", "ai risk", "predictive analytics", "data-driven", "data transformation", "martech", "adtech", "customer experience", "loyalty", "engagement","digital", "branding", "communications", "innovation", "tech"],
     "pitch_to": "Marketing programmes, design schools, communications students"
   }
 ]

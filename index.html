@@ -2470,7 +2470,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .fd-market-legend b{font-weight:800;letter-spacing:.4px}
 .fd-leg-tam{color:#3a3f52}.fd-leg-sam{color:#2C56C6}.fd-leg-som{color:#1F6E48}
 .fd-leg-gap{flex-basis:100%;font-style:italic;color:var(--ink-mute)}
-.fd-funnel{display:flex;flex-direction:column;gap:6px;align-items:center}
+.fd-market-funnel{display:flex;flex-direction:column;gap:6px;align-items:center}
 .fd-band{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 18px;border-radius:6px;color:#fff;transition:width .5s cubic-bezier(.22,.61,.36,1);min-width:200px}
 .fd-band-tam{background:linear-gradient(135deg,#3a3f52,#2a2d3c)}
 .fd-band-sam{background:linear-gradient(135deg,#2C56C6,#21429b)}
@@ -2480,6 +2480,13 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .fd-band-note{font-size:9.5px;font-weight:700;letter-spacing:.4px;opacity:.7;margin-left:6px;text-transform:uppercase}
 .fd-market-foot{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin-top:13px;padding-top:11px;border-top:1px dashed var(--rule)}
 .fd-market-foot b{color:var(--ink);font-weight:700}
+.fd-mkt-regions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fd-mkt-region{font-size:10.5px;background:var(--paper);border:1px solid var(--rule);border-radius:5px;padding:4px 9px;color:var(--ink-soft);line-height:1.35}
+.fd-mkt-region b{color:var(--navy);font-weight:700}
+.fd-mkt-meth{font-size:10.5px;line-height:1.5;color:var(--ink-mute);margin-top:10px;font-style:italic}
+.fd-mkt-meth b{color:var(--ink-soft);font-weight:700;font-style:normal}
+.fd-mkt-conf{display:inline-block;font-style:normal;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:10px;margin-left:6px}
+.fd-conf-high{background:#E2F0E8;color:#1F6E48}.fd-conf-medium{background:#FBF1DD;color:#9A6A12}.fd-conf-low{background:#F6E2E2;color:#A32D2D}
 .fd-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
 .fd-kpi{background:#fff;border:1px solid var(--rule);padding:10px 14px;border-radius:6px}
 .fd-kpi-l{font-size:10px;letter-spacing:.6px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;margin-bottom:2px}
@@ -18115,7 +18122,7 @@ function renderFunnelView() {
       <span><b class="fd-leg-som">SOM</b> — what we can realistically win</span>
       <span class="fd-leg-gap">The gap between TAM and SAM is undiscovered market → go find it in Prospect Discovery.</span>
     </div>
-    <div class="fd-funnel">
+    <div class="fd-market-funnel">
       <div class="fd-band fd-band-tam" id="fd-band-tam" style="width:100%">
         <div class="fd-band-l">TAM · total addressable</div>
         <div class="fd-band-v" id="fd-tam-v">— <span class="fd-band-note">estimate with AI ↗</span></div>
@@ -18279,31 +18286,68 @@ function _marketTypeBreakdown() {
   (UNIS || []).forEach(u => { const t = u.type || "other"; b[t] = (b[t] || 0) + 1; });
   return b;
 }
-function _applyTamToFunnel(tam) {
+// Render a full market estimate into the TAM band + foot. Always updates the
+// display (never leaves "AI estimating…" stuck) and surfaces what the AI
+// actually estimated: the number, the per-region breakdown, the methodology,
+// and the confidence. `est` is the full estimate object from the API.
+function _applyMarketEstimate(est) {
   const samEl = document.getElementById("fd-band-sam");
   const somEl = document.getElementById("fd-band-som");
-  const tamV = document.getElementById("fd-tam-v");
-  const foot = document.getElementById("fd-market-foot");
-  if (!samEl || !somEl) return;
-  // Current SAM/SOM counts from the rendered labels
+  const tamV  = document.getElementById("fd-tam-v");
+  const foot  = document.getElementById("fd-market-foot");
+  if (!samEl || !somEl || !tamV) return;
+  est = est || {};
+  const tam = parseInt(est.tam_total) || 0;
   const sam = parseInt((samEl.querySelector(".fd-band-v") || {}).textContent) || 0;
   const som = parseInt((somEl.querySelector(".fd-band-v") || {}).textContent) || 0;
-  if (tam && tam > sam) {
-    // Rescale: TAM = full width; SAM/SOM proportional (min widths so labels fit).
+
+  // ----- 1. TAM band number (always set) -----
+  let lead = "";
+  if (tam > sam) {
+    // Healthy estimate: TAM = full width, SAM/SOM proportional.
     samEl.style.width = Math.max(22, Math.round(sam / tam * 100)) + "%";
     somEl.style.width = Math.max(16, Math.round(som / tam * 100)) + "%";
-    if (tamV) tamV.innerHTML = `${tam.toLocaleString()} <span class="fd-band-note">estimated</span>`;
+    tamV.innerHTML = `${tam.toLocaleString()} <span class="fd-band-note">estimated</span>`;
     const undiscovered = tam - sam;
     const pct = Math.round(sam / tam * 100);
-    if (foot) foot.innerHTML = `You've identified <b>${pct}%</b> of the estimated market (${sam.toLocaleString()} of ~${tam.toLocaleString()}). <b>${undiscovered.toLocaleString()}</b> partnerable institutions are still undiscovered — <a onclick="switchView('prospects')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">go find them in Prospect Discovery</a>.`;
+    lead = `You've identified <b>${pct}%</b> of the estimated market (${sam.toLocaleString()} of ~${tam.toLocaleString()}). <b>${undiscovered.toLocaleString()}</b> partnerable institutions are still undiscovered — <a onclick="switchView('prospects')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">go find them in Prospect Discovery</a>.`;
+  } else if (tam > 0) {
+    // AI returned a TAM at or below what we've already qualified — unusual.
+    // Show it, but flag it so the band isn't silently stuck.
+    tamV.innerHTML = `${tam.toLocaleString()} <span class="fd-band-note">estimated · looks low</span>`;
+    lead = `The AI estimated a TAM of <b>~${tam.toLocaleString()}</b>, at or below what you've already qualified (${sam.toLocaleString()}). That usually means the region / type mix fed to the model was too narrow — hit <b>Re-estimate</b>, or it genuinely reflects a focused market.`;
+  } else {
+    // No usable number came back.
+    tamV.innerHTML = `<span class="fd-band-note" style="color:var(--hf-red)">estimate unavailable</span>`;
+    lead = `The AI didn't return a usable market size. Try <b>Re-estimate</b> in a moment — on the free Gemini tier this can be a temporary rate limit.`;
   }
+
+  // ----- 2. Surface the breakdown the AI produced -----
+  let detail = lead;
+  const regions = Array.isArray(est.by_region) ? est.by_region : [];
+  if (regions.length) {
+    detail += `<div class="fd-mkt-regions">` + regions.map(rg => {
+      const n = parseInt(rg && rg.estimate) || 0;
+      const note = rg && rg.note ? ` · ${escape(String(rg.note))}` : "";
+      return `<span class="fd-mkt-region"><b>${escape(String((rg && rg.region) || "—"))}</b> ~${n.toLocaleString()}${note}</span>`;
+    }).join("") + `</div>`;
+  }
+  if (est.methodology) {
+    const conf = (est.confidence || "").toLowerCase();
+    const confPill = ["high","medium","low"].includes(conf)
+      ? `<span class="fd-mkt-conf fd-conf-${conf}">${conf} confidence</span>` : "";
+    detail += `<div class="fd-mkt-meth"><b>How this was estimated:</b> ${escape(String(est.methodology))}${confPill}</div>`;
+  }
+  if (foot) foot.innerHTML = detail;
 }
+// Back-compat shim — older call sites passed just the number.
+function _applyTamToFunnel(tam) { _applyMarketEstimate({ tam_total: tam }); }
 async function loadMarketSizing() {
   try {
     const r = await apiFetch("/api/market-sizing");
     const data = await r.json().catch(() => ({}));
     if (data && data.exists && data.estimate) {
-      _applyTamToFunnel(data.estimate.tam_total);
+      _applyMarketEstimate(data.estimate);
       const btn = document.getElementById("fd-tam-btn");
       if (btn) btn.textContent = "⟳ Re-estimate (AI)";
       const tamV = document.getElementById("fd-tam-v");
@@ -18334,7 +18378,7 @@ async function estimateMarketSizing() {
       if (btn) { btn.disabled = false; btn.textContent = "⟳ Estimate market (AI)"; }
       return;
     }
-    _applyTamToFunnel(data.estimate.tam_total);
+    _applyMarketEstimate(data.estimate);
     if (btn) { btn.disabled = false; btn.textContent = "⟳ Re-estimate (AI)"; }
     if (tamV && data.estimate.methodology) tamV.title = data.estimate.methodology;
     if (typeof showSyncToast === "function") showSyncToast("✓ Market estimate ready", "ok");
