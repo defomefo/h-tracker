@@ -4701,13 +4701,17 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ci-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px dashed var(--rule);padding-top:10px}
 .ci-foot-meta{font-size:10.5px;color:var(--ink-mute);font-style:italic}
 @media (max-width:560px){.ci-cols{grid-template-columns:1fr}}
-/* Partnership Decision Memo modal */
-#partner-memo-modal .compare-box{background:var(--off-white)}
-#partner-memo-modal .compare-head{background:transparent;border-bottom:none;padding:14px 22px 0;min-height:0}
-#partner-memo-modal .compare-head h2{display:none}
-#partner-memo-modal .compare-close{color:var(--ink-mute);font-size:22px}
-#partner-memo-modal .compare-close:hover{color:var(--hf-red)}
-#partner-memo-modal .compare-body{padding:6px 28px 28px}
+/* AI Intelligence panel (Decision Memo + Competitive Intel) */
+#ai-panel-modal .compare-box{background:var(--off-white)}
+#ai-panel-modal .compare-head{background:transparent;border-bottom:none;padding:14px 22px 0;min-height:0}
+#ai-panel-modal .compare-head h2{display:none}
+#ai-panel-modal .compare-close{color:var(--ink-mute);font-size:22px}
+#ai-panel-modal .compare-close:hover{color:var(--hf-red)}
+#ai-panel-modal .compare-body{padding:4px 28px 28px}
+.ai-tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule);margin-bottom:18px}
+.ai-tab{background:transparent;border:none;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;transition:all .12s}
+.ai-tab:hover{color:var(--navy)}
+.ai-tab.on{color:var(--hf-red);border-bottom-color:var(--hf-red)}
 .memo-bootstrap{text-align:center;padding:30px 18px}
 .memo-bootstrap-h{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:8px}
 .memo-bootstrap-p{font-size:12.5px;line-height:1.55;color:var(--ink-soft);max-width:48ch;margin:0 auto 16px}
@@ -5409,14 +5413,18 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
   </div>
 </div>
 
-<!-- Partnership Decision Memo modal -->
-<div class="compare-modal" id="partner-memo-modal" style="z-index:429">
-  <div class="compare-box" style="max-width:760px">
+<!-- AI Intelligence panel — Decision Memo + Competitive Intel under one
+     entry point (keeps the detail panel's tab row + footer uncluttered). -->
+<div class="compare-modal" id="ai-panel-modal" style="z-index:429">
+  <div class="compare-box" style="max-width:820px">
     <div class="compare-head">
-      <h2 id="partner-memo-title">Decision memo</h2>
-      <button class="compare-close" onclick="closePartnerMemo()">&times;</button>
+      <h2 id="ai-panel-title">Intelligence</h2>
+      <button class="compare-close" onclick="closeAiPanel()">&times;</button>
     </div>
-    <div class="compare-body" id="partner-memo-body"></div>
+    <div class="compare-body">
+      <div class="ai-tabs" id="ai-panel-tabs"></div>
+      <div id="ai-panel-host"></div>
+    </div>
   </div>
 </div>
 
@@ -11983,10 +11991,6 @@ function openDetail(id) {
   if (_dpActiveTab === "activity" && typeof loadEntityActivity === "function") {
     loadEntityActivity(u.id);
   }
-  // Competitive Intel tab — lazy-load cached intel (or the empty state).
-  if (_dpActiveTab === "intel" && typeof loadCompetitiveIntel === "function") {
-    loadCompetitiveIntel(u.id);
-  }
 }
 function closeDetail() {
   // Clearing STATE.detailId is essential: every sync function does
@@ -12423,10 +12427,6 @@ function _dpTabsHtml(u, active) {
     {key:"outreach",  label:"Outreach",  count: (OUTREACH[u.id] || []).length},
     {key:"contracts", label:"Contracts", count: (typeof CONTRACTS !== "undefined" ? (CONTRACTS || []).filter(c => c.entity_id === u.id).length : 0)},
     {key:"followups", label:"Follow-ups",count: (typeof _followupsForEntity === "function" ? _followupsForEntity(u.id).length : 0)},
-    // Competitive Intel — universities only (what they offer + differentiate
-    // / collaborate verdict). Other entity types (agencies, schools, orgs)
-    // don't have a competing-offering to analyse the same way.
-    ...(u.type === "university" ? [{key:"intel", label:"Intel", count: null}] : []),
     {key:"activity",  label:"Activity",  count: null},
   ];
   return tabs.map(t => {
@@ -12448,9 +12448,6 @@ function _dpTabBodyHtml(u, tab) {
     case "outreach":  return `<div class="eng-panel active" data-panel="tracking">${renderTrackingBody(u)}</div>`;
     case "contracts": return `<div class="eng-panel active" data-panel="contracts">${renderEntityContractsBody(u)}</div>`;
     case "followups": return `<div class="eng-panel active" data-panel="followups">${renderEntityFollowupsBody(u)}</div>`;
-    case "intel":     return `<div class="eng-panel active" data-panel="intel">
-        <div id="ci-host-${escapeAttr(u.id)}" class="ci-host"><div class="ci-loading">Loading competitive intel…</div></div>
-      </div>`;
     case "activity":  return `<div class="eng-panel active" data-panel="activity">
         <div id="activity-list-${u.id}" class="activity-list"><div class="activity-empty">Loading…</div></div>
       </div>`;
@@ -12469,9 +12466,9 @@ function _dpFootHtml(u) {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Brief
     </button>
-    <button type="button" class="dp-btn ghost" onclick="openPartnerMemo('${escapeAttr(u.id)}')" title="AI decision memo — should we pursue this partner, and how?">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Memo
+    <button type="button" class="dp-btn ghost" onclick="openAiPanel('${escapeAttr(u.id)}')" title="AI intelligence — decision memo${u.type === 'university' ? ' + competitive intel' : ''}">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3 4.9 4.9M19.1 19.1l-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg>
+      Intelligence
     </button>`;
 }
 
@@ -12980,7 +12977,7 @@ function _ciRenderIntel(host, entityId, data) {
 }
 
 async function loadCompetitiveIntel(entityId) {
-  const host = document.getElementById("ci-host-" + entityId);
+  const host = document.getElementById("ai-panel-host");
   if (!host) return;
   try {
     const r = await apiFetch("/api/competitive-intel/" + encodeURIComponent(entityId));
@@ -13002,7 +12999,7 @@ async function loadCompetitiveIntel(entityId) {
 }
 
 async function researchCompetitiveIntel(entityId) {
-  const host = document.getElementById("ci-host-" + entityId);
+  const host = document.getElementById("ai-panel-host");
   const u = UNIS.find(x => x.id === entityId);
   if (!host || !u) return;
   host.innerHTML = `<div class="ci-loading"><div class="ci-spin"></div>Researching ${escape(u.name || "")} — web search + analysis. This can take 10-20s…</div>`;
@@ -13048,9 +13045,57 @@ async function researchCompetitiveIntel(entityId) {
 // this partner?" answer-first memo: verdict + MECE options + quantified
 // case + premortem + next actions. Cached per entity, re-generatable.
 // ============================================================================
-function closePartnerMemo() {
-  const m = document.getElementById("partner-memo-modal");
+// ============================================================================
+// AI INTELLIGENCE panel — one modal, two sub-tabs (Decision Memo +
+// Competitive Intel). Replaces the separate Memo footer button and the
+// university-only Intel detail-panel tab, so the detail panel's tab row +
+// footer stay uncluttered. Competitive Intel is universities-only; for
+// other entity types only the Memo tab shows.
+// ============================================================================
+let _AI_PANEL = { entityId: null, tab: "memo" };
+
+function closeAiPanel() {
+  const m = document.getElementById("ai-panel-modal");
   if (m) m.classList.remove("open");
+}
+// Back-compat alias (old render foot still references closePartnerMemo).
+function closePartnerMemo() { closeAiPanel(); }
+
+function openAiPanel(entityId, tab) {
+  const u = UNIS.find(x => x.id === entityId);
+  const isUni = u && u.type === "university";
+  _AI_PANEL.entityId = entityId;
+  // Default to Memo; only allow the Intel tab for universities.
+  _AI_PANEL.tab = (tab === "intel" && isUni) ? "intel" : "memo";
+  const modal = document.getElementById("ai-panel-modal");
+  if (modal) modal.classList.add("open");
+  _aiPanelRenderTabs(isUni);
+  _aiPanelLoad();
+}
+
+function _aiPanelRenderTabs(isUni) {
+  const bar = document.getElementById("ai-panel-tabs");
+  if (!bar) return;
+  const tabs = [{ key: "memo", label: "Decision memo" }];
+  if (isUni) tabs.push({ key: "intel", label: "Competitive intel" });
+  bar.innerHTML = tabs.map(t =>
+    `<button type="button" class="ai-tab${t.key === _AI_PANEL.tab ? " on" : ""}" onclick="aiPanelSwitch('${t.key}')">${escape(t.label)}</button>`
+  ).join("");
+}
+
+function aiPanelSwitch(tab) {
+  if (tab === _AI_PANEL.tab) return;
+  _AI_PANEL.tab = tab;
+  const u = UNIS.find(x => x.id === _AI_PANEL.entityId);
+  _aiPanelRenderTabs(u && u.type === "university");
+  _aiPanelLoad();
+}
+
+function _aiPanelLoad() {
+  const id = _AI_PANEL.entityId;
+  if (!id) return;
+  if (_AI_PANEL.tab === "intel") loadCompetitiveIntel(id);
+  else loadPartnerMemo(id);
 }
 
 // Compact context the memo reasons over — kept small (token budget).
@@ -13097,8 +13142,8 @@ function _memoVerdictPill(v) {
 }
 
 function _renderPartnerMemo(data) {
-  const body = document.getElementById("partner-memo-body");
-  const titleEl = document.getElementById("partner-memo-title");
+  const body = document.getElementById("ai-panel-host");
+  const titleEl = document.getElementById("ai-panel-title");
   if (!body) return;
   const m = data.memo || {};
   if (titleEl) titleEl.textContent = "";   // header lives in body
@@ -13137,11 +13182,9 @@ function _renderPartnerMemo(data) {
     </div>`;
 }
 
-async function openPartnerMemo(entityId) {
-  const modal = document.getElementById("partner-memo-modal");
-  const body  = document.getElementById("partner-memo-body");
-  if (!modal || !body) return;
-  modal.classList.add("open");
+async function loadPartnerMemo(entityId) {
+  const body = document.getElementById("ai-panel-host");
+  if (!body) return;
   body.innerHTML = `<div class="ci-loading">Loading decision memo…</div>`;
   try {
     const r = await apiFetch("/api/partner-memo/" + encodeURIComponent(entityId));
@@ -13163,7 +13206,7 @@ async function openPartnerMemo(entityId) {
 }
 
 async function generatePartnerMemo(entityId) {
-  const body = document.getElementById("partner-memo-body");
+  const body = document.getElementById("ai-panel-host");
   const u = UNIS.find(x => x.id === entityId);
   if (!body || !u) return;
   body.innerHTML = `<div class="ci-loading"><div class="ci-spin"></div>Drafting the decision memo for ${escape(u.name || "")} — this can take 10-20s…</div>`;
