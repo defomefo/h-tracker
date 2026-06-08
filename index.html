@@ -4701,6 +4701,42 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .ci-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px dashed var(--rule);padding-top:10px}
 .ci-foot-meta{font-size:10.5px;color:var(--ink-mute);font-style:italic}
 @media (max-width:560px){.ci-cols{grid-template-columns:1fr}}
+/* Partnership Decision Memo modal */
+#partner-memo-modal .compare-box{background:var(--off-white)}
+#partner-memo-modal .compare-head{background:transparent;border-bottom:none;padding:14px 22px 0;min-height:0}
+#partner-memo-modal .compare-head h2{display:none}
+#partner-memo-modal .compare-close{color:var(--ink-mute);font-size:22px}
+#partner-memo-modal .compare-close:hover{color:var(--hf-red)}
+#partner-memo-modal .compare-body{padding:6px 28px 28px}
+.memo-bootstrap{text-align:center;padding:30px 18px}
+.memo-bootstrap-h{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.memo-bootstrap-p{font-size:12.5px;line-height:1.55;color:var(--ink-soft);max-width:48ch;margin:0 auto 16px}
+.memo{display:flex;flex-direction:column;gap:18px}
+.memo-head{border-bottom:2px solid var(--hf-red);padding-bottom:16px}
+.memo-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--hf-red);margin-bottom:12px}
+.memo-verdict-row{display:flex;gap:14px;align-items:flex-start}
+.memo-verdict{flex-shrink:0;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;border-radius:7px;color:#fff}
+.memo-v-pursue{background:#1F6E48}
+.memo-v-nurture{background:#C97A1A}
+.memo-v-park{background:#8A8A8A}
+.memo-verdict-line{font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;line-height:1.32;color:var(--ink);letter-spacing:-.2px}
+.memo-sec-lbl{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+.memo-p{font-size:13px;line-height:1.6;color:var(--ink);margin:0}
+.memo-opts{display:flex;flex-direction:column;gap:8px}
+.memo-opt{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:8px;padding:12px 15px}
+.memo-opt-name{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:3px}
+.memo-opt-thrust{font-size:12.5px;line-height:1.5;color:var(--ink);margin-bottom:7px}
+.memo-opt-meta{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft)}
+.memo-opt-meta b{color:var(--ink-mute);font-weight:700;letter-spacing:.3px;text-transform:uppercase;font-size:9px;margin-right:4px}
+.memo-premortem{background:rgba(201,122,26,.07);border:1px solid rgba(201,122,26,.32);border-left:3px solid #C97A1A;border-radius:8px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#5C4310}
+.memo-premortem-lbl{display:inline-block;font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#B07A18;border:1px solid rgba(201,122,26,.4);border-radius:9px;padding:2px 7px;margin-right:8px;vertical-align:middle}
+.memo-actions{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.memo-actions li{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--ink)}
+.memo-act-n{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--gold-light);color:var(--hf-red-deep);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.memo-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--rule);padding-top:14px;font-size:10.5px;color:var(--ink-mute)}
+.memo-foot-actions{display:flex;gap:14px}
+.memo-conf{text-transform:uppercase;font-weight:800;letter-spacing:.4px}
+.memo-conf-high{color:#1F6E48}.memo-conf-medium{color:#C97A1A}.memo-conf-low{color:#B0322E}
 .activity-row{display:flex;gap:12px;padding:8px 4px;border-bottom:1px dashed var(--rule);align-items:flex-start}
 .activity-row:last-child{border-bottom:none}
 .activity-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0;box-shadow:0 0 0 2px var(--paper)}
@@ -5370,6 +5406,17 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
       <button class="compare-close" onclick="closeProspectsProfileInspect()">&times;</button>
     </div>
     <div class="compare-body" id="prospect-profile-body"></div>
+  </div>
+</div>
+
+<!-- Partnership Decision Memo modal -->
+<div class="compare-modal" id="partner-memo-modal" style="z-index:429">
+  <div class="compare-box" style="max-width:760px">
+    <div class="compare-head">
+      <h2 id="partner-memo-title">Decision memo</h2>
+      <button class="compare-close" onclick="closePartnerMemo()">&times;</button>
+    </div>
+    <div class="compare-body" id="partner-memo-body"></div>
   </div>
 </div>
 
@@ -12418,9 +12465,13 @@ function _dpFootHtml(u) {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Snooze 7d
     </button>
-    <button type="button" class="dp-btn ghost" onclick="generateBrief('${u.id}', event)" title="Generate one-page PDF brief">
+    <button type="button" class="dp-btn ghost" onclick="generateBrief('${u.id}', event)" title="Generate one-page PDF brief (promotional)">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Brief
+    </button>
+    <button type="button" class="dp-btn ghost" onclick="openPartnerMemo('${escapeAttr(u.id)}')" title="AI decision memo — should we pursue this partner, and how?">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Memo
     </button>`;
 }
 
@@ -12989,6 +13040,165 @@ async function researchCompetitiveIntel(entityId) {
     if (typeof showSyncToast === "function") showSyncToast(`✓ Competitive intel ready · ${u.name}`, "ok");
   } catch (e) {
     host.innerHTML = `<div class="ci-loading">Research error — ${escape(e.message)}.</div>`;
+  }
+}
+
+// ============================================================================
+// PARTNERSHIP DECISION MEMO — flagship. A McKinsey-style "should we pursue
+// this partner?" answer-first memo: verdict + MECE options + quantified
+// case + premortem + next actions. Cached per entity, re-generatable.
+// ============================================================================
+function closePartnerMemo() {
+  const m = document.getElementById("partner-memo-modal");
+  if (m) m.classList.remove("open");
+}
+
+// Compact context the memo reasons over — kept small (token budget).
+function _memoContext(u) {
+  const recentOutreach = (OUTREACH[u.id] || [])
+    .slice()
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))
+    .slice(0, 5)
+    .map(o => ({ date: o.date, channel: o.channel, status: o.status, sentiment: o.sentiment,
+                 subject: o.subject, sender: o.sender }));
+  const openFollowups = (typeof _followupsForEntity === "function" ? _followupsForEntity(u.id) : [])
+    .filter(f => f.status !== "done")
+    .map(f => ({ title: f.title, due_date: f.due_date, owner: f.owner_handle }));
+  const contracts = (typeof CONTRACTS !== "undefined" ? (CONTRACTS || []) : [])
+    .filter(c => c.entity_id === u.id)
+    .map(c => ({ type: c.type, status: c.status, value: c.value }));
+  // Flatten the score breakdown into plain {component: contribution}
+  const bd = u.partnership_breakdown || {};
+  const scoreBreakdown = {};
+  Object.keys(bd).forEach(k => { scoreBreakdown[k] = Math.round((bd[k].contrib || 0) * 10) / 10; });
+  return {
+    partnership_score: u.partnership_score,
+    partnership_readiness: u.partnership_readiness,
+    pipeline_stage: u.pipeline_stage,
+    days_dormant: u.days_dormant,
+    last_contacted: u.last_contacted,
+    score_breakdown: scoreBreakdown,
+    named_contacts: (u.contacts || []).filter(c => c.name).map(c => ({ name: c.name, role: c.role })),
+    recent_outreach: recentOutreach,
+    open_followups: openFollowups,
+    contracts: contracts,
+    fit_tags: Array.isArray(u.fit_tags) ? u.fit_tags.map(t => (typeof t === "string" ? t : (t && t.tag) || "")).filter(Boolean) : [],
+  };
+}
+
+function _memoVerdictPill(v) {
+  const map = {
+    Pursue:  { cls: "memo-v-pursue",  lbl: "Pursue" },
+    Nurture: { cls: "memo-v-nurture", lbl: "Nurture" },
+    Park:    { cls: "memo-v-park",    lbl: "Park" },
+  };
+  const s = map[v] || map.Nurture;
+  return `<span class="memo-verdict ${s.cls}">${s.lbl}</span>`;
+}
+
+function _renderPartnerMemo(data) {
+  const body = document.getElementById("partner-memo-body");
+  const titleEl = document.getElementById("partner-memo-title");
+  if (!body) return;
+  const m = data.memo || {};
+  if (titleEl) titleEl.textContent = "";   // header lives in body
+  const when = data.generated_at ? new Date(data.generated_at) : null;
+  const whenLbl = (when && !isNaN(when)) ? when.toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : (data.generated_at || "—");
+  const conf = (m.confidence || "medium");
+  const options = (m.options || []).map(o => `
+    <div class="memo-opt">
+      <div class="memo-opt-name">${escape(o.name || "")}</div>
+      <div class="memo-opt-thrust">${escape(o.thrust || "")}</div>
+      <div class="memo-opt-meta"><span><b>Expected</b> ${escape(o.expected || "—")}</span><span><b>Cost</b> ${escape(o.cost || "—")}</span></div>
+    </div>`).join("");
+  const actions = (m.next_actions || []).map((a, i) => `<li><span class="memo-act-n">${i + 1}</span>${escape(a)}</li>`).join("");
+
+  body.innerHTML = `
+    <div class="memo">
+      <div class="memo-head">
+        <div class="memo-eyebrow">AI decision memo · ${escape(data.entity_name || "")}</div>
+        <div class="memo-verdict-row">
+          ${_memoVerdictPill(m.verdict)}
+          <div class="memo-verdict-line">${escape(m.verdict_line || "")}</div>
+        </div>
+      </div>
+      ${m.situation ? `<div class="memo-sec"><div class="memo-sec-lbl">Situation</div><p class="memo-p">${escape(m.situation)}</p></div>` : ""}
+      ${options ? `<div class="memo-sec"><div class="memo-sec-lbl">Options</div><div class="memo-opts">${options}</div></div>` : ""}
+      ${m.quantified ? `<div class="memo-sec"><div class="memo-sec-lbl">The case</div><p class="memo-p">${escape(m.quantified)}</p></div>` : ""}
+      ${m.premortem ? `<div class="memo-premortem"><span class="memo-premortem-lbl">Premortem</span>${escape(m.premortem)}</div>` : ""}
+      ${actions ? `<div class="memo-sec"><div class="memo-sec-lbl">Next actions</div><ol class="memo-actions">${actions}</ol></div>` : ""}
+      <div class="memo-foot">
+        <span>Confidence <b class="memo-conf memo-conf-${escape(conf)}">${escape(conf)}</b> · generated ${escape(whenLbl)}${data.generated_by ? " · by " + escape(data.generated_by) : ""}</span>
+        <span class="memo-foot-actions">
+          <button type="button" class="dp-sec-link" onclick="generatePartnerMemo('${escapeAttr(data.entity_id)}')">↻ Regenerate</button>
+          <button type="button" class="dp-sec-link" onclick="closePartnerMemo()">Close</button>
+        </span>
+      </div>
+    </div>`;
+}
+
+async function openPartnerMemo(entityId) {
+  const modal = document.getElementById("partner-memo-modal");
+  const body  = document.getElementById("partner-memo-body");
+  if (!modal || !body) return;
+  modal.classList.add("open");
+  body.innerHTML = `<div class="ci-loading">Loading decision memo…</div>`;
+  try {
+    const r = await apiFetch("/api/partner-memo/" + encodeURIComponent(entityId));
+    const data = await r.json().catch(() => ({}));
+    if (data && data.exists) {
+      _renderPartnerMemo(data);
+    } else {
+      const u = UNIS.find(x => x.id === entityId) || {};
+      body.innerHTML = `
+        <div class="memo-bootstrap">
+          <div class="memo-bootstrap-h">No decision memo yet</div>
+          <div class="memo-bootstrap-p">Generate an answer-first memo for <b>${escape(u.name || "this partner")}</b> — verdict (pursue / nurture / park), the case, a premortem, and the next 3 actions, reasoned from its current state.</div>
+          <button type="button" class="btn gold" onclick="generatePartnerMemo('${escapeAttr(entityId)}')">Generate decision memo</button>
+        </div>`;
+    }
+  } catch (e) {
+    body.innerHTML = `<div class="ci-loading">Couldn't load — ${escape(e.message)}.</div>`;
+  }
+}
+
+async function generatePartnerMemo(entityId) {
+  const body = document.getElementById("partner-memo-body");
+  const u = UNIS.find(x => x.id === entityId);
+  if (!body || !u) return;
+  body.innerHTML = `<div class="ci-loading"><div class="ci-spin"></div>Drafting the decision memo for ${escape(u.name || "")} — this can take 10-20s…</div>`;
+  const hfarmPrograms = (typeof PROGRAMS !== "undefined" && Array.isArray(PROGRAMS))
+    ? PROGRAMS.map(p => ({ name: p.name, topic: p.topic || "", audience: p.audience || p.age || "" }))
+    : [];
+  try {
+    const r = await apiFetch("/api/partner-memo/" + encodeURIComponent(entityId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body: JSON.stringify({
+        entity: {
+          name: u.name, type: u.type, country: u.country_canonical || u.country,
+          continent: u.continent, priority: u.priority, strategic_tier: u.strategic_tier,
+          focus_areas: u.focus_areas, notes: u.notes, website: u.website,
+          top_program_id: u.top_program_id, top_program_score: u.top_program_score,
+        },
+        context: _memoContext(u),
+        hfarm_programs: hfarmPrograms,
+      }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) {
+      const msg = (typeof _aiErrorMessage === "function") ? _aiErrorMessage(data.error || ("HTTP " + r.status)) : (data.error || "Memo generation failed");
+      body.innerHTML = `<div class="memo-bootstrap">
+        <div class="memo-bootstrap-h" style="color:var(--hf-red)">Couldn't generate the memo</div>
+        <div class="memo-bootstrap-p">${escape(msg)}</div>
+        <button type="button" class="btn outline" onclick="generatePartnerMemo('${escapeAttr(entityId)}')">Try again</button>
+      </div>`;
+      return;
+    }
+    _renderPartnerMemo(data);
+    if (typeof showSyncToast === "function") showSyncToast(`✓ Decision memo ready · ${u.name}`, "ok");
+  } catch (e) {
+    body.innerHTML = `<div class="ci-loading">Memo error — ${escape(e.message)}.</div>`;
   }
 }
 
