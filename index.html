@@ -2714,58 +2714,72 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .fnx .fc-counter input[type=range]{vertical-align:middle;accent-color:var(--hf-red);width:160px;margin:0 6px}
 @media (max-width:980px){.fnx .kpis{grid-template-columns:repeat(2,1fr)}.fnx .grid-2{grid-template-columns:1fr}.fnx .fn-row{grid-template-columns:150px 1fr 44px}.fnx .fn-bench{display:none}.fnx .fn-droprow{grid-template-columns:150px 1fr}}
 
-/* ============== PORTFOLIO REVIEW (BCG / GE buckets) ============== */
-.pf-shell{padding:0 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-.pf-intro{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:16px 18px}
-.pf-intro-h{font-size:13px;font-weight:800;letter-spacing:.3px;color:var(--navy);margin-bottom:6px}
-.pf-intro-p{font-size:12px;line-height:1.6;color:var(--ink-soft)}
-.pf-intro-p b{color:var(--ink);font-weight:700}
-.pf-axes{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:11px;color:var(--ink-soft);margin-top:10px;padding-top:11px;border-top:1px dashed var(--rule)}
-.pf-axes b{font-weight:800;color:var(--navy)}
-/* Reallocation read-out banner */
-.pf-realloc{border-left:4px solid var(--hf-red);background:var(--hf-red-soft);border-radius:0 8px 8px 0;padding:14px 18px}
-.pf-realloc.calm{border-left-color:#1F6E48;background:#EAF3EE}
-.pf-realloc-tag{font-size:10px;letter-spacing:1.2px;font-weight:800;text-transform:uppercase;color:var(--hf-red-deep);margin-bottom:5px}
-.pf-realloc.calm .pf-realloc-tag{color:#1F6E48}
-.pf-realloc-p{font-size:13px;line-height:1.55;color:var(--ink)}
-.pf-realloc-p b{font-weight:800}
-.pf-realloc-what{font-size:11px;line-height:1.5;color:var(--ink-soft);margin-top:9px;padding-top:8px;border-top:1px dashed rgba(0,0,0,.13);font-style:italic}
-.pf-realloc-what b{font-style:normal;font-weight:700;color:var(--ink)}
-/* 2×2 matrix of bucket cards (BCG orientation) */
-.pf-matrix{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:stretch}
-.pf-yaxis{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-mute);padding:6px 0}
-.pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.pf-xaxis{grid-column:2;text-align:center;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-mute);padding-top:2px}
-.pf-card{background:#fff;border:1px solid var(--rule);border-top:3px solid var(--accent,#888);border-radius:8px;padding:15px 16px 14px;display:flex;flex-direction:column;min-height:200px}
-.pf-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.pf-verb{font-size:9.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--accent,#888)}
-.pf-label{font-size:18px;font-weight:800;color:var(--navy);letter-spacing:-.2px;margin:2px 0 0;display:flex;align-items:baseline;gap:8px}
-.pf-bcg{font-size:10px;font-weight:700;color:var(--ink-mute);letter-spacing:.3px;text-transform:none}
-.pf-count{font-size:30px;font-weight:800;color:var(--accent,#888);line-height:1;font-variant-numeric:tabular-nums}
-.pf-quad{font-size:8.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--ink-mute);margin:7px 0 4px}
-.pf-desc{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin:0 0 10px}
-.pf-list{display:flex;flex-direction:column;gap:1px;margin-top:auto}
-.pf-ent{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:5px;cursor:pointer;transition:background .12s}
-.pf-ent:hover{background:var(--paper)}
-.pf-ent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.pf-ent-name{font-size:12px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
-.pf-ent-metrics{font-size:10px;color:var(--ink-mute);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pf-more{font-size:10.5px;color:var(--ink-soft);font-weight:700;padding:5px 7px;cursor:pointer}
-.pf-more:hover{color:var(--hf-red)}
-.pf-empty{font-size:11px;color:var(--ink-mute);font-style:italic;padding:6px 7px}
-.pf-share{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-mute);margin-top:10px;padding-top:8px;border-top:1px dashed var(--rule)}
-.pf-share b{color:var(--accent,#888)}
-/* Divest-sooner sunk-cost strip */
-.pf-sunk{background:#fff;border:1px solid var(--rule);border-left:4px solid #8A4B4B;border-radius:0 8px 8px 0;padding:15px 18px}
-.pf-sunk-h{font-size:12px;font-weight:800;letter-spacing:.3px;color:#8A4B4B;text-transform:uppercase;margin-bottom:4px}
-.pf-sunk-p{font-size:11.5px;line-height:1.55;color:var(--ink-soft);margin-bottom:10px}
-.pf-sunk-p b{color:var(--ink);font-weight:700}
-.pf-sunk-list{display:flex;flex-direction:column;gap:2px}
-.pf-sunk-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:5px;cursor:pointer;transition:background .12s}
-.pf-sunk-row:hover{background:var(--paper)}
-.pf-sunk-name{font-size:12.5px;font-weight:700;color:var(--navy);min-width:170px}
-.pf-sunk-why{font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-@media (max-width:880px){.pf-grid{grid-template-columns:1fr}.pf-matrix{grid-template-columns:1fr}.pf-yaxis{writing-mode:horizontal-tb;transform:none}.pf-xaxis{grid-column:1}}
+/* ====== PORTFOLIO REVIEW — BCG growth-share matrix (Exhibit 06, .fnx scope) ====== */
+.fnx .report-desc{margin-top:12px;font-size:14px;color:rgba(255,255,255,0.62);line-height:1.55;max-width:760px}
+.fnx .matrix-wrap{margin-top:30px;display:grid;grid-template-columns:26px 1fr;gap:12px}
+.fnx .axis-y{writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;justify-content:center;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+.fnx .matrix-col{display:flex;flex-direction:column}
+.fnx .matrix{position:relative;width:100%;height:600px;border:1px solid #DADCE3;border-radius:5px;background:#FCFCFD;overflow:hidden}
+.fnx .plot{position:absolute;inset:0}
+.fnx .quad{position:absolute}
+.fnx .quad.build{background:rgba(31,111,180,0.045)}
+.fnx .quad.double{background:rgba(46,125,91,0.055)}
+.fnx .quad.maintain{background:rgba(201,145,31,0.06)}
+.fnx .quad.divest{background:rgba(139,26,26,0.035)}
+.fnx .thr{position:absolute}
+.fnx .thr.x{width:1px;top:0;bottom:0;border-left:1px dashed var(--ink-mute);opacity:0.45}
+.fnx .thr.y{height:1px;left:0;right:0;border-top:1px dashed var(--ink-mute);opacity:0.45}
+.fnx .qlabel{position:absolute;max-width:240px;z-index:1}
+.fnx .qlabel.tl{top:16px;left:18px}
+.fnx .qlabel.tr{top:16px;right:18px;text-align:right}
+.fnx .qlabel.bl{bottom:16px;left:18px}
+.fnx .qlabel.br{bottom:16px;right:18px;text-align:right}
+.fnx .qrole{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.fnx .qname{font-size:16px;font-weight:800;color:var(--ink);margin-top:3px}
+.fnx .qname .term{font-size:11px;font-weight:400;color:var(--ink-mute);margin-left:6px}
+.fnx .qstat{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.fnx .qlabel.tr .qstat,.fnx .qlabel.br .qstat{justify-content:flex-end}
+.fnx .qcount{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}
+.fnx .qeffort{font-size:11px;color:var(--ink-soft)}
+.fnx .dot{position:absolute;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid rgba(255,255,255,0.9);box-shadow:0 1px 3px rgba(28,32,54,0.22);cursor:pointer;transition:transform .12s,width .12s,height .12s;z-index:2}
+.fnx .dot:hover{width:18px;height:18px;z-index:5}
+.fnx .dot-tag{position:absolute;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:3;background:rgba(255,255,255,0.78);padding:1px 4px;border-radius:3px}
+.fnx .axis-x{text-align:center;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--ink-mute);font-weight:700;margin-top:10px}
+.fnx .legend{margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.fnx .lg{display:flex;gap:10px;align-items:flex-start}
+.fnx .lg-key{width:12px;height:12px;border-radius:50%;flex:none;margin-top:3px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.06)}
+.fnx .lg-t{font-size:11px;line-height:1.4}
+.fnx .lg-t .nm{font-weight:700;color:var(--ink)}
+.fnx .lg-t .ds{color:var(--ink-soft)}
+.fnx .effort{margin-top:34px}
+.fnx .effort-h{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft)}
+.fnx .effort-bar{margin-top:12px;display:flex;height:46px;border-radius:4px;overflow:hidden;box-shadow:var(--sh-1)}
+.fnx .seg{display:flex;flex-direction:column;justify-content:center;padding-left:14px;color:#fff;min-width:0;overflow:hidden}
+.fnx .seg .sg-p{font-size:17px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.fnx .seg .sg-l{font-size:9px;letter-spacing:0.6px;text-transform:uppercase;opacity:0.92;margin-top:3px;white-space:nowrap}
+.fnx .effort-axis{margin-top:8px;display:grid;font-size:11px}
+.fnx .effort-axis .hi{color:var(--ur);font-weight:700;border-top:2px solid var(--ur);padding-top:5px}
+.fnx .effort-axis .lo{color:var(--hf-red);font-weight:700;text-align:left;border-top:2px solid var(--hf-red);padding-top:5px}
+.fnx .reall{margin-top:30px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:#F8F9FC;border:1px solid #E3E5EB;border-left:4px solid var(--hf-red);border-radius:6px;padding:20px 26px}
+.fnx .reall.calm{border-left-color:var(--ur)}
+.fnx .reall-big{font-size:42px;font-weight:800;color:var(--hf-red-deep);letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums}
+.fnx .reall.calm .reall-big{color:var(--ur)}
+.fnx .reall-txt{font-size:14px;color:var(--ink);line-height:1.55}
+.fnx .reall-txt b{font-weight:700}
+.fnx .upside{margin-top:32px}
+.fnx .upside-h{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.fnx .upside-h .sub{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink-mute);font-size:11px}
+.fnx .upside-grid{margin-top:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px}
+.fnx .up-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule-cool);cursor:pointer}
+.fnx .up-row:hover .up-name{color:var(--hf-red)}
+.fnx .up-name{font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:10px}
+.fnx .up-dot{width:9px;height:9px;border-radius:50%;background:var(--dp);flex:none}
+.fnx .up-sc{font-size:11px;color:var(--ink-mute);font-family:var(--font-mono);white-space:nowrap}
+.fnx .up-sc .mom0{color:var(--hf-red)}
+.fnx .pf-tip{position:fixed;z-index:9000;pointer-events:none;opacity:0;background:var(--ink);color:#fff;padding:7px 11px;border-radius:5px;font-size:11px;line-height:1.4;box-shadow:var(--sh-4);transition:opacity .12s;max-width:240px}
+.fnx .pf-tip b{font-weight:700}
+.fnx .pf-tip .tt-sc{color:rgba(255,255,255,0.7);font-family:var(--font-mono)}
+@media (max-width:980px){.fnx .legend{grid-template-columns:repeat(2,1fr)}.fnx .upside-grid{grid-template-columns:1fr}.fnx .matrix{height:460px}}
 
 /* ============== STRATEGIC 2x2 MAPS ============== */
 .sm-shell{padding:18px 24px 60px;max-width:1400px;margin:0 auto}
@@ -21047,114 +21061,183 @@ function _pfEntRow(u) {
   </div>`;
 }
 
+// Dot colors (BCG palette) + quadrant role colors from the standalone design.
+const PF_DOT  = { build: "#1F6FB4", doubledown: "#2E7D5B", maintain: "#C9911F", divest: "#B08A8A" };
+const PF_ROLE = { build: "#1F6FB4", doubledown: "#2E7D5B", maintain: "#C9911F", divest: "#8B1A1A" };
+function _pfShort(name) {
+  const s = String(name || "").replace(/\s+/g, " ").trim();
+  let out = s.split(" ").slice(0, 2).join(" ");
+  if (out.length > 20) out = out.slice(0, 19) + "…";
+  return out || "—";
+}
+function _pfTip(e, id) {
+  const u = (UNIS || []).find(x => x.id === id); if (!u) return;
+  const tip = document.getElementById("pf-tip"); if (!tip) return;
+  const fit = u.top_program_score || 0, mom = _pfEffort(u);
+  tip.innerHTML = `<b>${escape(u.name || "")}</b><br><span class="tt-sc">fit ${fit} · mom ${mom}</span>`;
+  tip.style.opacity = "1";
+  tip.style.left = (e.clientX + 14) + "px";
+  tip.style.top  = (e.clientY - 10) + "px";
+}
+function _pfTipHide() { const t = document.getElementById("pf-tip"); if (t) t.style.opacity = "0"; }
+
 function renderPortfolioView() {
   const el = document.getElementById("view-portfolio");
   if (!el) return;
   try {
     const cohort = _portfolioCohort();
     const excluded = (UNIS || []).length - cohort.length;
+    const effortOf = _pfEffort;
 
-    // Bucket the cohort.
+    // Bucket + per-bucket effort share.
     const buckets = { build: [], doubledown: [], maintain: [], divest: [] };
     cohort.forEach(u => { (buckets[_portfolioBucketOf(u)] || buckets.divest).push(u); });
-    const byScore = (a, b) => (b.partnership_score || 0) - (a.partnership_score || 0);
-    Object.values(buckets).forEach(arr => arr.sort(byScore));
-
-    // Effort distribution for the reallocation read.
-    const effortOf = _pfEffort;
-    const totalEffort = cohort.reduce((s, u) => s + effortOf(u), 0);
-    const lowFitEffort = [...buckets.maintain, ...buckets.divest].reduce((s, u) => s + effortOf(u), 0);
-    const lowFitShare = totalEffort ? Math.round(lowFitEffort / totalEffort * 100) : 0;
+    const totalEffort = cohort.reduce((s, u) => s + effortOf(u), 0) || 0;
+    const bucketEffort = {};
+    Object.keys(buckets).forEach(k => bucketEffort[k] = buckets[k].reduce((s, u) => s + effortOf(u), 0));
+    const denom = totalEffort || cohort.length || 1;
+    const shareOf = k => Math.round((totalEffort ? bucketEffort[k] : buckets[k].length) / denom * 100);
+    const sBuild = shareOf("build"), sDouble = shareOf("doubledown"), sMaintain = shareOf("maintain"), sDivest = shareOf("divest");
+    const lowFitShare = sMaintain + sDivest;
+    const highFitShare = sBuild + sDouble;
     const buildN = buckets.build.length;
 
-    let header = `<div class="view-header"><h1>Portfolio Review — where to invest, hold, and divest</h1><p>A BCG / GE-McKinsey lens over every partner you've engaged: strategic fit against the momentum you've built. Tells you where to pour effort, what to keep warm cheaply, and where to cut losses.</p></div>`;
-    header += `<div class="sm-shell" style="margin-bottom:0;padding-bottom:0">${_renderUnifiedStrategyTabs("portfolio")}</div>`;
+    // ---- Plot geometry (fit on Y high-at-top, momentum on X) ----
+    const FIT_THR = PORTFOLIO_FIT_CUT, MOM_THR = PORTFOLIO_MOM_CUT, FIT_MAX = 100, INSET = 5;
+    const maxMom = cohort.reduce((m, u) => Math.max(m, effortOf(u)), 0);
+    const MOM_MAX = Math.max(80, Math.ceil((maxMom + 5) / 10) * 10);
+    const xPct = mom => INSET + (Math.min(mom, MOM_MAX) / MOM_MAX) * (100 - 2 * INSET);
+    const yPct = fit => INSET + ((FIT_MAX - Math.min(fit, FIT_MAX)) / FIT_MAX) * (100 - 2 * INSET);
+    const XT = xPct(MOM_THR).toFixed(2), YT = yPct(FIT_THR).toFixed(2);
+    const jit = i => ((i * 53 % 11) - 5) * 0.42;
 
-    let html = header + `<div class="pf-shell">`;
+    // Standout labels: the star, the top Build target, the biggest sunk cost.
+    const labelled = {};
+    const topStar = buckets.doubledown.slice().sort((a, b) => effortOf(b) - effortOf(a))[0];
+    if (topStar) labelled[topStar.id] = _pfShort(topStar.name) + " ★";
+    const topBuild = buckets.build.slice().sort((a, b) => (b.top_program_score||0)-(a.top_program_score||0) || effortOf(a)-effortOf(b))[0];
+    if (topBuild && !labelled[topBuild.id]) labelled[topBuild.id] = _pfShort(topBuild.name);
+    const sunk = buckets.divest.slice().filter(u => effortOf(u) >= PORTFOLIO_SUNK_CUT).sort((a, b) => effortOf(b) - effortOf(a))[0];
+    if (sunk && !labelled[sunk.id]) labelled[sunk.id] = _pfShort(sunk.name);
 
-    // Intro / axes legend
-    html += `<div class="pf-intro">
-      <div class="pf-intro-h">Two questions, four buckets</div>
-      <div class="pf-intro-p">Every engaged partner is placed by <b>how valuable a signed partnership would be</b> (strategic fit) versus <b>how much momentum we've already built</b> (logged outreach, named contacts, sustained dialogue). That gives the classic BCG four — <b>Build</b> the high-value newcomers, <b>Double down</b> on the stars, <b>Maintain</b> the warm-but-modest at low cost, and <b>Divest</b> the cold low-value. The point is reallocation: stop feeding dogs, feed the upside.</div>
-      <div class="pf-axes">
-        <span><b>Fit</b> — strategic-fit score ≥ ${PORTFOLIO_FIT_CUT} counts as high-value</span>
-        <span><b>Momentum</b> — engagement depth ≥ ${PORTFOLIO_MOM_CUT} counts as warm</span>
-        <span><b>Portfolio</b> — ${cohort.length} engaged + high-fit partners${excluded > 0 ? ` (${excluded} un-engaged low-fit leads sit in the prospect pool, not shown)` : ""}</span>
-      </div>
-    </div>`;
+    // ---- Report ----
+    let html = `<div class="fnx"><div class="fnx-nav">${_renderUnifiedStrategyTabs("portfolio")}</div><main class="sheet">`;
+    html += `<header class="report-head">
+      <div class="report-kicker">H-FARM Global Partnerships · Portfolio</div>
+      <h1 class="report-title">Portfolio Review — where to invest, hold, and divest</h1>
+      <p class="report-desc">A BCG / GE-McKinsey lens over every engaged partner: strategic fit against the momentum you've built. Where to pour effort, what to keep warm cheaply, and where to cut losses.</p>
+    </header>`;
 
-    // Reallocation read-out
-    let realloc, calm = false;
+    let headline;
     if (totalEffort === 0) {
-      realloc = `No engagement logged yet across the portfolio. Once outreach and contacts accumulate, this read shows where your effort is concentrated.`;
-      calm = true;
+      headline = `<span class="hl">${cohort.length} partners</span> are mapped by fit and momentum — start logging outreach to see where effort concentrates.`;
     } else if (lowFitShare >= 40 && buildN > 0) {
-      realloc = `<b>${lowFitShare}%</b> of your engagement effort is going into <b>low-fit</b> partners (Maintain + Divest), while <b>${buildN}</b> high-value <b>Build</b> target${buildN === 1 ? "" : "s"} sit under-engaged. Reallocate attention from the harvest/dog cells toward Build — that's where the upside is.`;
-    } else if (lowFitShare >= 40) {
-      realloc = `<b>${lowFitShare}%</b> of your engagement effort is on <b>low-fit</b> partners, and there are no high-fit Build targets waiting. Either re-qualify the Maintain/Divest cells upward, or go find new high-fit prospects in Discovery.`;
+      headline = `Effort is pooled in the wrong cells: <span class="hl">${lowFitShare}% of engagement sits on low-fit partners</span>, while <span class="hl">${buildN} high-value Build target${buildN===1?"":"s"}</span> stay under-engaged.`;
     } else if (buildN > 0) {
-      realloc = `Effort is concentrated on <b>high-fit</b> partners — healthy. Keep feeding the <b>${buildN}</b> Build target${buildN === 1 ? "" : "s"} to convert your biggest upside into Double-down.`;
-      calm = true;
+      headline = `Effort tracks value: <span class="hl">${highFitShare}% of engagement is on high-fit partners</span>, with <span class="hl">${buildN} Build target${buildN===1?"":"s"}</span> queued for the next push.`;
     } else {
-      realloc = `Effort is on high-fit partners and there are no under-engaged Build targets right now. The book is well-tended — watch for stars cooling and feed the pipeline from Discovery.`;
-      calm = true;
+      headline = `The book is well-tended: <span class="hl">${highFitShare}% of engagement is on high-fit partners</span> and no high-value targets sit under-engaged.`;
     }
-    html += `<div class="pf-realloc${calm ? " calm" : ""}">
-      <div class="pf-realloc-tag">Reallocation read</div>
-      <div class="pf-realloc-p">${realloc}</div>
-      <div class="pf-realloc-what"><b>What this measures:</b> the share of your logged engagement effort — outreach, named contacts, sustained dialogue — sitting on <b>low-fit</b> partners (the Maintain + Divest cells) versus the high-value <b>Build</b> targets you've under-engaged. The consulting move is <b>dynamic reallocation</b>: pull attention off the cash-cows and dogs and put it where the upside actually is. The banner turns red when too much effort is mis-allocated, green when the book is well-tended.</div>
-    </div>`;
 
-    // 2×2 matrix (BCG orientation). Row 1: Build, Double down. Row 2: Divest, Maintain.
-    const order = ["build", "doubledown", "divest", "maintain"];
-    const CAP = 10;
-    const cardHtml = (key) => {
-      const meta = PORTFOLIO_BUCKETS[key];
-      const arr = buckets[key];
-      const bucketEffort = arr.reduce((s, u) => s + effortOf(u), 0);
-      const sharePct = totalEffort ? Math.round(bucketEffort / totalEffort * 100) : 0;
-      const shown = arr.slice(0, CAP);
-      let list = shown.map(_pfEntRow).join("");
-      if (arr.length > CAP) list += `<div class="pf-more">+ ${arr.length - CAP} more in ${escape(meta.label)}</div>`;
-      if (!arr.length) list = `<div class="pf-empty">No partners in this cell.</div>`;
-      return `<div class="pf-card" style="--accent:${meta.accent}">
-        <div class="pf-card-top">
-          <div>
-            <div class="pf-verb">${escape(meta.verb)}</div>
-            <h3 class="pf-label">${escape(meta.label)}<span class="pf-bcg">${escape(meta.bcg)}</span></h3>
-          </div>
-          <div class="pf-count">${arr.length}</div>
-        </div>
-        <div class="pf-quad">${escape(meta.quad)}</div>
-        <p class="pf-desc">${escape(meta.desc)}</p>
-        <div class="pf-list">${list}</div>
-        <div class="pf-share"><b>${sharePct}%</b> of engagement effort</div>
+    html += `<section class="exhibit">
+      <div class="ex-top"><div class="ex-eyebrow">Exhibit 06 &nbsp;·&nbsp; <b>Portfolio · BCG growth-share matrix</b></div></div>
+      <h2 class="ex-title">${headline}</h2>
+      <p class="ex-sub">Every engaged partner is placed by <b>strategic fit</b> (how valuable a signed partnership would be) against <b>momentum</b> (outreach logged, named contacts, sustained dialogue). Thresholds: <b>fit ≥ ${FIT_THR}</b> = high-value, <b>momentum ≥ ${MOM_THR}</b> = warm. ${cohort.length} engaged + high-fit partners shown.</p>`;
+
+    // matrix
+    const qmeta = {
+      build:      { cell:"tl", role:"Invest to convert",    name:"Build",       term:"Question marks" },
+      doubledown: { cell:"tr", role:"Protect &amp; accelerate", name:"Double down", term:"Stars" },
+      divest:     { cell:"bl", role:"Archive / deprioritize", name:"Divest",     term:"Dogs" },
+      maintain:   { cell:"br", role:"Keep warm, cheaply",   name:"Maintain",    term:"Cash cows" },
+    };
+    const qlabelHtml = k => {
+      const m = qmeta[k];
+      return `<div class="qlabel ${m.cell}">
+        <div class="qrole" style="color:${PF_ROLE[k]}">${m.role}</div>
+        <div class="qname">${m.name}<span class="term">${m.term}</span></div>
+        <div class="qstat"><span class="qcount" style="color:${PF_ROLE[k]}">${buckets[k].length}</span><span class="qeffort">${shareOf(k)}% of effort</span></div>
       </div>`;
     };
-    html += `<div class="pf-matrix">
-      <div class="pf-yaxis">Strategic fit / value →</div>
-      <div>
-        <div class="pf-grid">${order.map(cardHtml).join("")}</div>
-        <div class="pf-xaxis">Our momentum — engagement &amp; warmth →</div>
+    let dots = "";
+    cohort.forEach((u, i) => {
+      const k = _portfolioBucketOf(u);
+      const x = (xPct(effortOf(u)) + jit(i)).toFixed(2);
+      const y = (yPct(u.top_program_score || 0) + jit(i + 3)).toFixed(2);
+      dots += `<div class="dot" style="left:${x}%;top:${y}%;background:${PF_DOT[k]}" onmousemove="_pfTip(event,'${escapeAttr(u.id)}')" onmouseleave="_pfTipHide()" onclick="openDetail('${escapeAttr(u.id)}')"></div>`;
+      if (labelled[u.id]) dots += `<div class="dot-tag" style="left:${x}%;top:${(parseFloat(y) - 4.4).toFixed(2)}%">${escape(labelled[u.id])}</div>`;
+    });
+    html += `<div class="matrix-wrap">
+      <div class="axis-y">Strategic fit / value →</div>
+      <div class="matrix-col">
+        <div class="matrix"><div class="plot">
+          <div class="quad build" style="top:0;left:0;width:${XT}%;height:${YT}%"></div>
+          <div class="quad double" style="top:0;left:${XT}%;right:0;height:${YT}%"></div>
+          <div class="quad divest" style="top:${YT}%;left:0;width:${XT}%;bottom:0"></div>
+          <div class="quad maintain" style="top:${YT}%;left:${XT}%;right:0;bottom:0"></div>
+          <div class="thr x" style="left:${XT}%"></div>
+          <div class="thr y" style="top:${YT}%"></div>
+          ${qlabelHtml("build")}${qlabelHtml("doubledown")}${qlabelHtml("divest")}${qlabelHtml("maintain")}
+          ${dots}
+        </div></div>
+        <div class="axis-x">Momentum — engagement &amp; warmth →</div>
       </div>
     </div>`;
 
-    // Divest-sooner sunk-cost strip
-    const traps = _portfolioSunkCostTraps(cohort);
-    if (traps.length) {
-      const rows = traps.slice(0, 8).map(u => `<div class="pf-sunk-row" onclick="openDetail('${escapeAttr(u.id)}')" title="${escapeAttr(u.name || "")} — open detail">
-        <span class="pf-sunk-name">${escape(u.name || "—")}</span>
-        <span class="pf-sunk-why">${escape(_portfolioTrapReason(u))}</span>
-      </div>`).join("");
-      const more = traps.length > 8 ? `<div class="pf-more">+ ${traps.length - 8} more</div>` : "";
-      html += `<div class="pf-sunk">
-        <div class="pf-sunk-h">Divest sooner — ${traps.length} sunk-cost trap${traps.length === 1 ? "" : "s"}</div>
-        <div class="pf-sunk-p">These <b>low-fit</b> partners have each absorbed real effort but are dormant, cold, or have declined. The consulting rule is to <b>cut losses early</b> — that effort converts better on a Build target. Review each and archive or re-qualify.</div>
-        <div class="pf-sunk-list">${rows}${more}</div>
-      </div>`;
-    }
+    // legend
+    html += `<div class="legend">
+      <div class="lg"><span class="lg-key" style="background:${PF_DOT.build}"></span><span class="lg-t"><span class="nm">Build</span> <span class="ds">— high fit, barely engaged. The upside.</span></span></div>
+      <div class="lg"><span class="lg-key" style="background:${PF_DOT.doubledown}"></span><span class="lg-t"><span class="nm">Double down</span> <span class="ds">— high fit, high momentum. Best deals.</span></span></div>
+      <div class="lg"><span class="lg-key" style="background:${PF_DOT.maintain}"></span><span class="lg-t"><span class="nm">Maintain</span> <span class="ds">— modest fit, warm. Harvest cheaply.</span></span></div>
+      <div class="lg"><span class="lg-key" style="background:${PF_DOT.divest}"></span><span class="lg-t"><span class="nm">Divest</span> <span class="ds">— low fit, cold. Free the attention.</span></span></div>
+    </div>`;
 
-    html += `</div>`; // close pf-shell
+    // reallocation callout
+    const misallocated = totalEffort > 0 && lowFitShare >= 40 && buildN > 0;
+    const reallTxt = misallocated
+      ? `<b>of engagement effort is going into low-fit partners</b> (Maintain + Divest), while ${buildN} high-value Build target${buildN===1?"":"s"} sit under-engaged. The consulting move is <b>dynamic reallocation</b>: pull attention off the cash-cows and dogs and put it where the upside actually is.`
+      : `<b>of engagement effort is on high-fit partners</b> (Build + Double down). The book is well-tended — keep feeding the ${buildN} Build target${buildN===1?"":"s"} and watch for stars cooling.`;
+    html += `<div class="reall${misallocated ? "" : " calm"}">
+      <div class="reall-big">${misallocated ? lowFitShare : highFitShare}%</div>
+      <div class="reall-txt">${reallTxt}</div>
+    </div>`;
+
+    // effort allocation strip
+    const seg = (k, lbl, color) => {
+      const w = shareOf(k);
+      if (w <= 0) return "";
+      return `<div class="seg" style="width:${w}%;background:${color}"><span class="sg-p">${w}%</span><span class="sg-l">${lbl}</span></div>`;
+    };
+    html += `<div class="effort">
+      <div class="effort-h">Where engagement effort goes today</div>
+      <div class="effort-bar">${seg("build","Build","#1F6FB4")}${seg("doubledown","Double","#2E7D5B")}${seg("maintain","Maintain","#C9911F")}${seg("divest","Divest","#9A5B5B")}</div>
+      <div class="effort-axis" style="grid-template-columns:${Math.max(highFitShare,1)}% ${Math.max(lowFitShare,1)}%">
+        <div class="hi">${highFitShare}% high-fit (Build + Double down)</div>
+        <div class="lo">${lowFitShare}% low-fit (Maintain + Divest)${misallocated ? " — the misallocation" : ""}</div>
+      </div>
+    </div>`;
+
+    // build upside list
+    const upside = buckets.build.slice().sort((a, b) => (b.top_program_score||0)-(a.top_program_score||0) || effortOf(a)-effortOf(b));
+    const UCAP = 10;
+    let rows = upside.slice(0, UCAP).map(u => {
+      const fit = u.top_program_score || 0, mom = effortOf(u);
+      const momCls = mom === 0 ? ' class="mom0"' : "";
+      return `<div class="up-row" onclick="openDetail('${escapeAttr(u.id)}')" title="${escapeAttr(u.name||"")} — open detail">
+        <div class="up-name"><span class="up-dot"></span>${escape(u.name || "—")}</div>
+        <div class="up-sc">fit ${fit} · <span${momCls}>mom ${mom}</span></div>
+      </div>`;
+    }).join("");
+    if (upside.length > UCAP) rows += `<div class="up-row" style="border-bottom:none"><div class="up-name" style="color:var(--ink-mute);font-style:italic">+ ${upside.length - UCAP} more in Build</div><div class="up-sc"></div></div>`;
+    if (!upside.length) rows = `<div class="up-row" style="border-bottom:none"><div class="up-name" style="color:var(--ink-mute);font-style:italic">No under-engaged Build targets — your high-fit partners already have momentum.</div><div class="up-sc"></div></div>`;
+    html += `<div class="upside">
+      <div class="upside-h">Where the upside is — top under-engaged Build targets <span class="sub">high fit, low momentum · start or intensify outreach</span></div>
+      <div class="upside-grid">${rows}</div>
+    </div>`;
+
+    html += `<p class="ex-source"><b>Source:</b> Engagement log + strategic-fit scores, n=${cohort.length} engaged/high-fit partners${excluded > 0 ? ` (${excluded} un-engaged low-fit leads sit in the prospect pool, not shown)` : ""}. Each bubble plots one partner at (momentum, fit). The reallocation banner turns red when too much effort is mis-allocated, green when the book is well-tended.</p>`;
+
+    html += `</section></main><div class="pf-tip" id="pf-tip"></div></div>`;
     el.innerHTML = html;
   } catch (err) {
     console.error("[renderPortfolioView] FAILED:", err);
