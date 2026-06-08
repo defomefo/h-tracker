@@ -2458,6 +2458,24 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .fd-banner-tag{font-size:10px;letter-spacing:1.5px;color:var(--hf-red);font-weight:700;margin-bottom:4px;text-transform:uppercase}
 .fd-banner-h{font-size:20px;font-weight:600;letter-spacing:-.2px;line-height:1.3}
 .fd-banner-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:6px;font-style:italic}
+/* Market opportunity funnel (TAM / SAM / SOM) */
+.fd-market{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:16px 18px;margin-bottom:8px}
+.fd-market-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.fd-market-h{font-size:13px;font-weight:800;letter-spacing:.3px;color:var(--navy)}
+.fd-market-sub{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--ink-mute);text-transform:uppercase;margin-left:8px}
+.fd-market-cta{background:transparent;border:1px solid var(--rule);border-radius:6px;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);padding:6px 12px;cursor:pointer;transition:all .12s}
+.fd-market-cta:hover{border-color:var(--hf-red);color:var(--hf-red)}
+.fd-market-cta:disabled{opacity:.6;cursor:wait}
+.fd-funnel{display:flex;flex-direction:column;gap:6px;align-items:center}
+.fd-band{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 18px;border-radius:6px;color:#fff;transition:width .5s cubic-bezier(.22,.61,.36,1);min-width:200px}
+.fd-band-tam{background:linear-gradient(135deg,#3a3f52,#2a2d3c)}
+.fd-band-sam{background:linear-gradient(135deg,#2C56C6,#21429b)}
+.fd-band-som{background:linear-gradient(135deg,#1F6E48,#16513a)}
+.fd-band-l{font-size:11.5px;font-weight:700;letter-spacing:.2px;opacity:.92}
+.fd-band-v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fd-band-note{font-size:9.5px;font-weight:700;letter-spacing:.4px;opacity:.7;margin-left:6px;text-transform:uppercase}
+.fd-market-foot{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin-top:13px;padding-top:11px;border-top:1px dashed var(--rule)}
+.fd-market-foot b{color:var(--ink);font-weight:700}
 .fd-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
 .fd-kpi{background:#fff;border:1px solid var(--rule);padding:10px 14px;border-radius:6px}
 .fd-kpi-l{font-size:10px;letter-spacing:.6px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;margin-bottom:2px}
@@ -18067,6 +18085,43 @@ function renderFunnelView() {
     <div class="fd-banner-sub">Snapshot diagnosis · benchmarks from 12+ EU higher-ed institutions · forecast via Monte Carlo (10k runs)</div>
   </div>`;
 
+  // ===== Market opportunity (TAM / SAM / SOM) =====
+  // SAM = entities in our DB that pass H-FARM policy (partnerable — not
+  // research-intensive, not Italian-university competitors). SOM = the
+  // obtainable subset (warm / ready). TAM is an AI-estimated ceiling,
+  // loaded async by loadMarketSizing() after render. The gap TAM − SAM is
+  // the undiscovered market → a nudge toward Prospect Discovery.
+  const _flagged = (typeof _isFitHiddenFromCandidates === "function")
+    ? u => _isFitHiddenFromCandidates(u)
+    : u => Array.isArray(u.fit_tags) && u.fit_tags.some(t => ["research_intensive","italian_competitor"].includes((t && t.tag) || t));
+  const samSet = UNIS.filter(u => !_flagged(u));
+  const sam = samSet.length;
+  const _obtainable = u => ["Ready","Warming"].includes(u.partnership_readiness)
+    || ["Hot","Critical","Up & Running"].includes(u.priority)
+    || ["proposal","negotiation","signed","active"].includes(u.pipeline_stage);
+  const som = samSet.filter(_obtainable).length;
+  html += `<div class="fd-market" id="fd-market">
+    <div class="fd-market-head">
+      <div class="fd-market-h">Market opportunity <span class="fd-market-sub">TAM → SAM → SOM</span></div>
+      <button type="button" class="fd-market-cta" onclick="estimateMarketSizing()" id="fd-tam-btn" title="Estimate the total addressable market with AI">⟳ Estimate market (AI)</button>
+    </div>
+    <div class="fd-funnel">
+      <div class="fd-band fd-band-tam" id="fd-band-tam" style="width:100%">
+        <div class="fd-band-l">TAM · total addressable</div>
+        <div class="fd-band-v" id="fd-tam-v">— <span class="fd-band-note">estimate with AI ↗</span></div>
+      </div>
+      <div class="fd-band fd-band-sam" id="fd-band-sam" style="width:62%">
+        <div class="fd-band-l">SAM · serviceable (in our pipeline, policy-fit)</div>
+        <div class="fd-band-v">${sam}<span class="fd-band-note" id="fd-sam-pct"></span></div>
+      </div>
+      <div class="fd-band fd-band-som" id="fd-band-som" style="width:${Math.max(18, Math.round(som / Math.max(1, sam) * 62))}%">
+        <div class="fd-band-l">SOM · obtainable (warm / ready)</div>
+        <div class="fd-band-v">${som}<span class="fd-band-note">${Math.round(som / Math.max(1, sam) * 100)}% of SAM</span></div>
+      </div>
+    </div>
+    <div class="fd-market-foot" id="fd-market-foot">SAM + SOM are exact, from your pipeline. Estimate the TAM to see how much of the market is still undiscovered.</div>
+  </div>`;
+
   // ===== KPIs =====
   html += `<div class="fd-kpis">
     <div class="fd-kpi"><div class="fd-kpi-l">In pipeline</div><div class="fd-kpi-v">${total}</div></div>
@@ -18191,10 +18246,91 @@ function renderFunnelView() {
   html += `</div>`; // close fd-shell
   el.innerHTML = html;
   console.log("[renderFunnelView] done, content length=", html.length);
+  // Fill the TAM band from a cached AI estimate (no auto-spend; the button
+  // triggers a fresh estimate).
+  if (typeof loadMarketSizing === "function") loadMarketSizing();
   } catch (err) {
     console.error("[renderFunnelView] FAILED:", err);
     const el = document.getElementById("view-funnel");
     if (el) el.innerHTML = '<div style="padding:60px;color:#A32D2D;font-family:monospace;font-size:13px;"><h2 style="color:#A32D2D">Funnel view error</h2><pre style="white-space:pre-wrap">' + (err && err.stack ? err.stack : err) + '</pre></div>';
+  }
+}
+
+// ---------- Market sizing (TAM band) ----------
+// SAM/SOM are rendered inline from data; this fills the AI-estimated TAM
+// ceiling + rescales the band widths so the undiscovered gap is visible.
+function _marketRegions() {
+  const set = new Set();
+  (UNIS || []).forEach(u => { if (u.continent && u.continent !== "Unknown") set.add(u.continent); });
+  return Array.from(set);
+}
+function _marketTypeBreakdown() {
+  const b = {};
+  (UNIS || []).forEach(u => { const t = u.type || "other"; b[t] = (b[t] || 0) + 1; });
+  return b;
+}
+function _applyTamToFunnel(tam) {
+  const samEl = document.getElementById("fd-band-sam");
+  const somEl = document.getElementById("fd-band-som");
+  const tamV = document.getElementById("fd-tam-v");
+  const foot = document.getElementById("fd-market-foot");
+  if (!samEl || !somEl) return;
+  // Current SAM/SOM counts from the rendered labels
+  const sam = parseInt((samEl.querySelector(".fd-band-v") || {}).textContent) || 0;
+  const som = parseInt((somEl.querySelector(".fd-band-v") || {}).textContent) || 0;
+  if (tam && tam > sam) {
+    // Rescale: TAM = full width; SAM/SOM proportional (min widths so labels fit).
+    samEl.style.width = Math.max(22, Math.round(sam / tam * 100)) + "%";
+    somEl.style.width = Math.max(16, Math.round(som / tam * 100)) + "%";
+    if (tamV) tamV.innerHTML = `${tam.toLocaleString()} <span class="fd-band-note">estimated</span>`;
+    const undiscovered = tam - sam;
+    const pct = Math.round(sam / tam * 100);
+    if (foot) foot.innerHTML = `You've identified <b>${pct}%</b> of the estimated market (${sam.toLocaleString()} of ~${tam.toLocaleString()}). <b>${undiscovered.toLocaleString()}</b> partnerable institutions are still undiscovered — <a onclick="switchView('prospects')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">go find them in Prospect Discovery</a>.`;
+  }
+}
+async function loadMarketSizing() {
+  try {
+    const r = await apiFetch("/api/market-sizing");
+    const data = await r.json().catch(() => ({}));
+    if (data && data.exists && data.estimate) {
+      _applyTamToFunnel(data.estimate.tam_total);
+      const btn = document.getElementById("fd-tam-btn");
+      if (btn) btn.textContent = "⟳ Re-estimate (AI)";
+      const tamV = document.getElementById("fd-tam-v");
+      if (tamV && data.estimate.methodology) tamV.title = data.estimate.methodology;
+    }
+  } catch (e) { /* leave the estimate button */ }
+}
+async function estimateMarketSizing() {
+  const btn = document.getElementById("fd-tam-btn");
+  const tamV = document.getElementById("fd-tam-v");
+  if (btn) { btn.disabled = true; btn.textContent = "Estimating…"; }
+  if (tamV) tamV.innerHTML = `<span class="fd-band-note">AI estimating…</span>`;
+  try {
+    const r = await apiFetch("/api/market-sizing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body: JSON.stringify({
+        regions: _marketRegions(),
+        type_breakdown: _marketTypeBreakdown(),
+        identified_total: (UNIS || []).length,
+      }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) {
+      const msg = (typeof _aiErrorMessage === "function") ? _aiErrorMessage(data.error || ("HTTP " + r.status)) : (data.error || "Estimate failed");
+      if (tamV) tamV.innerHTML = `<span class="fd-band-note" style="color:var(--hf-red)">estimate failed</span>`;
+      if (typeof showSyncToast === "function") showSyncToast("⚠ " + msg, "warn");
+      if (btn) { btn.disabled = false; btn.textContent = "⟳ Estimate market (AI)"; }
+      return;
+    }
+    _applyTamToFunnel(data.estimate.tam_total);
+    if (btn) { btn.disabled = false; btn.textContent = "⟳ Re-estimate (AI)"; }
+    if (tamV && data.estimate.methodology) tamV.title = data.estimate.methodology;
+    if (typeof showSyncToast === "function") showSyncToast("✓ Market estimate ready", "ok");
+  } catch (e) {
+    if (tamV) tamV.innerHTML = `<span class="fd-band-note" style="color:var(--hf-red)">error</span>`;
+    if (btn) { btn.disabled = false; btn.textContent = "⟳ Estimate market (AI)"; }
   }
 }
 

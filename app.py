@@ -533,6 +533,18 @@ def _ensure_schema():
                     generated_at    TEXT NOT NULL,
                     generated_by    TEXT
                 )""",
+            # ====================================================================
+            # MARKET SIZING — AI-estimated TAM (total partnerable institutions in
+            # H-FARM's target regions). SAM/SOM are computed client-side from our
+            # own pipeline; only the TAM ceiling needs an estimate. Cached by
+            # scope ("global" today; per-country later).
+            # ====================================================================
+            """CREATE TABLE IF NOT EXISTS market_estimates (
+                    scope           TEXT PRIMARY KEY,
+                    estimate_json   TEXT NOT NULL,
+                    estimated_at    TEXT NOT NULL,
+                    estimated_by    TEXT
+                )""",
         ]
         conn = _connect()
         try:
@@ -4784,6 +4796,132 @@ def partner_memo_generate(entity_id):
     except Exception as e:  # noqa: BLE001
         return jsonify({"ok": False, "error": "Gemini API error: %s" % e}), 502
     return jsonify({"ok": True, **result})
+
+
+# ============================================================================
+# MARKET SIZING — AI-estimated TAM. SAM/SOM are computed client-side from our
+# own pipeline (exact, instant); only the TAM ceiling — how many partnerable
+# institutions exist in H-FARM's target regions — needs an estimate. Cached.
+# ============================================================================
+MARKET_SIZING_PROMPT = """You are a market analyst for H-FARM College — an APPLIED, hands-on teaching institution near Venice, Italy. It partners (for summer programmes, exchange, student mobility, degree pathways) with: applied / polytechnic / applied-science UNIVERSITIES, outbound education AGENCIES (firms sending local students abroad), and international / private HIGH SCHOOLS — but NOT research-intensive universities and NOT other Italian universities (competitors).
+
+Estimate the TOTAL ADDRESSABLE MARKET (TAM): how many partnerable institutions matching that policy plausibly exist across H-FARM's target regions. You are given the regions H-FARM is active in and a breakdown of how many it has already identified. Produce a defensible ORDER-OF-MAGNITUDE estimate — round numbers, clearly an estimate, not false precision. Be realistic: applied universities + outbound agencies + international schools in Europe + key Asian / MENA / LatAm markets number in the thousands, not millions.
+
+Return ONLY a JSON object, no markdown:
+{
+  "tam_total": <integer — total estimated partnerable institutions across all listed regions>,
+  "by_region": [{"region": "<region/continent>", "estimate": <integer>, "note": "<1 short phrase on the driver>"}],
+  "methodology": "<1-2 sentences: how you arrived at the estimate and its main caveat>",
+  "confidence": "<one of: high | medium | low>"
+}"""
+
+
+@app.route("/api/market-sizing", methods=["GET"])
+@auth_required
+def market_sizing_get():
+    """Return the cached TAM estimate (scope 'global'), if any."""
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM market_estimates WHERE scope = ?", ("global",)
+    ).fetchone()
+    if not row:
+        return jsonify({"exists": False})
+    try:
+        est = json.loads(row["estimate_json"] or "{}")
+    except Exception:
+        est = {}
+    return jsonify({
+        "exists": True,
+        "estimate": est,
+        "estimated_at": row["estimated_at"],
+        "estimated_by": row["estimated_by"],
+    })
+
+
+@app.route("/api/market-sizing", methods=["POST"])
+@auth_required
+def market_sizing_estimate():
+    """Estimate (or refresh) the global TAM. Body:
+       { regions: [str], type_breakdown: {university:N, agency:N, school:N, org:N},
+         identified_total: N }"""
+    if not GEMINI_KEY:
+        return jsonify({"ok": False, "error": "GEMINI_API_KEY not configured"}), 500
+    body = request.get_json(force=True, silent=True) or {}
+    regions = body.get("regions") or []
+    type_breakdown = body.get("type_breakdown") or {}
+    identified_total = body.get("identified_total") or 0
+
+    prompt = "\n".join([
+        "## H-FARM TARGET REGIONS (where it has partners / prospects today)",
+        ", ".join(str(r) for r in regions) or "(not specified — assume Europe + key global markets)",
+        "",
+        "## WHAT H-FARM HAS ALREADY IDENTIFIED",
+        "Total in pipeline / discovered: %d" % identified_total,
+        "By type: " + json.dumps(type_breakdown, ensure_ascii=False),
+        "",
+        "Estimate the total addressable market (TAM) of partnerable institutions across these regions. JSON only.",
+    ])
+
+    try:
+        from google.genai import types as _gtypes
+        client_ai = genai.Client(api_key=GEMINI_KEY)
+        resp = client_ai.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=_gtypes.GenerateContentConfig(
+                system_instruction=MARKET_SIZING_PROMPT,
+                response_mime_type="application/json",
+                temperature=0.3,
+                max_output_tokens=1536,
+            ),
+        )
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"ok": False, "error": "Gemini API error: %s" % e}), 502
+
+    text_parts = []
+    if getattr(resp, "candidates", None):
+        for cand in resp.candidates:
+            content = getattr(cand, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if parts:
+                for p in parts:
+                    t = getattr(p, "text", None)
+                    if t:
+                        text_parts.append(t)
+    raw_text = "".join(text_parts).strip() or (resp.text or "").strip()
+    parsed = _parse_email_json(raw_text) or {}
+
+    try:
+        tam_total = int(parsed.get("tam_total") or 0)
+    except Exception:
+        tam_total = 0
+    conf = (parsed.get("confidence") or "medium").strip().lower()
+    if conf not in ("high", "medium", "low"):
+        conf = "medium"
+    est = {
+        "tam_total":   tam_total,
+        "by_region":   [r for r in (parsed.get("by_region") or []) if isinstance(r, dict)][:12],
+        "methodology": (parsed.get("methodology") or "").strip()[:500],
+        "confidence":  conf,
+    }
+    estimated_at = _now_iso()
+    estimated_by = (request.headers.get("X-Display-Name") or "").strip()
+    db = get_db()
+    db.execute(
+        """INSERT INTO market_estimates (scope, estimate_json, estimated_at, estimated_by)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT (scope) DO UPDATE SET
+             estimate_json = excluded.estimate_json,
+             estimated_at  = excluded.estimated_at,
+             estimated_by  = excluded.estimated_by""",
+        ("global", json.dumps(est), estimated_at, estimated_by),
+    )
+    db.commit()
+    _record_edit("market_sizing", "estimate", "global")
+    return jsonify({
+        "ok": True, "exists": True, "estimate": est,
+        "estimated_at": estimated_at, "estimated_by": estimated_by,
+    })
 
 
 @app.route("/api/prospects/profile/<handle>", methods=["GET"])
