@@ -5211,6 +5211,15 @@ Rules:
 - When a contact is asked: pull the actual name + email from primary_contact_name/primary_contact_email (sponsors) or contacts array (entities). If empty, say so plainly.
 - Never invent ids, names, emails, or any field values. Only quote what's in the provided lists.
 
+STRATEGIC QUESTIONS — answer like a strategy consultant, not a search box:
+Some questions aren't simple retrieval ("top 3 by value") — they ask for judgement: "who should we prioritise?", "how should we approach X?", "which market/country should we focus on?", "is X worth pursuing?", "compare A vs B", "where's the opportunity?". For THOSE, the intro must:
+  • ANSWER FIRST (Pyramid Principle): lead with the recommendation in sentence one, not a hedge or a list — e.g. "Prioritise the 4 Turkish agencies — warm, applied-aligned, and Italy-only." Then the reason.
+  • HYPOTHESIS-LED (SCQA), not exhaustive: give the single load-bearing reason, not every data point. Don't boil the ocean.
+  • MECE when you group: non-overlapping buckets ("3 quick wins, 2 longer plays"), not a flat undifferentiated list.
+  • HONEST: if the data is thin, say "the data is light on X — here's the best read" rather than over-claiming a confident call.
+  • Still populate entity_ids / sponsor_ids with the rows that BACK the recommendation (the consistency rule above still applies).
+Keep it to 1-3 sentences — sharp, not a memo. Pure retrieval questions ignore this and just answer directly.
+
 Return ONLY a JSON object with this exact shape, no markdown, no commentary:
 {"intro": "...", "entity_ids": ["...", "..."], "sponsor_ids": ["...", "..."]}"""
 
