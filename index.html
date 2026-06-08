@@ -2678,6 +2678,11 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .asp-action-add:hover{background:var(--hf-red);color:#fff;transform:translateY(-1px)}
 .asp-action-add:disabled{background:rgba(31,110,72,.18);color:#1F6E48;cursor:default;transform:none}
 .asp-reality-check{background:rgba(176,50,46,.06);border:1px solid rgba(176,50,46,.3);border-radius:7px;padding:12px 14px;font-size:12px;line-height:1.5;color:var(--ink);font-style:italic;display:flex;gap:10px;align-items:flex-start}
+/* Premortem (strategy-consulting #15) — "assume this failed, why?" — the
+   weakest assumption + which action de-risks it. Amber, sits above the
+   reality check so the operator reads the risk before committing. */
+.asp-premortem{background:rgba(201,122,26,.07);border:1px solid rgba(201,122,26,.32);border-left:3px solid #C97A1A;border-radius:7px;padding:11px 14px;font-size:12px;line-height:1.55;color:#5C4310;margin-bottom:8px}
+.asp-premortem-lbl{display:inline-block;font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#B07A18;border:1px solid rgba(201,122,26,.4);border-radius:9px;padding:2px 7px;margin-right:8px;vertical-align:middle}
 .asp-reality-check::before{content:"⚠";font-style:normal;color:#B0322E;font-size:18px;font-weight:bold;line-height:1;flex-shrink:0}
 .asp-loading{padding:30px;text-align:center;color:var(--ink-soft);font-size:12px;font-style:italic}
 .asp-loading-dots{display:inline-block;margin-left:4px;animation:asp-dots 1.4s infinite;width:18px;text-align:left}
@@ -19263,6 +19268,7 @@ function _renderAspirationModal() {
           </div>`;
         }).join('')}
       </div>
+      ${r.premortem ? `<div class="asp-premortem"><span class="asp-premortem-lbl">Premortem</span>${escape(r.premortem)}</div>` : ''}
       ${r.reality_check ? `<div class="asp-reality-check">${escape(r.reality_check)}</div>` : ''}`;
   }
 
@@ -19378,7 +19384,7 @@ async function generateAspirationPlan(force) {
       contacts: u.contacts || [],
     };
     const resp = await generateAspirationActions(m.asp.id, fullEntity, !!force);
-    m.actionsResp = { headline: resp.headline, actions: resp.actions || [], reality_check: resp.reality_check };
+    m.actionsResp = { headline: resp.headline, actions: resp.actions || [], premortem: resp.premortem, reality_check: resp.reality_check };
     m.loadingActions = false;
     m.lastError = null;   // clear any prior failure banner
     m.stage = "ready";

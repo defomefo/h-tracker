@@ -2080,6 +2080,12 @@ ASPIRATION_SYSTEM_PROMPT = """You are a senior partnership strategist for H-FARM
 
 The operator has DRAGGED a partner on a 2×2 strategic map from its current position to where they want it to be. Your job: return a concrete, specific action plan that would actually move the partner there. Not generic CRM advice — specific to THIS entity, using THIS data.
 
+Reason like a strategy consultant (not a to-do generator):
+A. HYPOTHESIS-LED (SCQA): the `headline` is a falsifiable HYPOTHESIS about the ONE thing that unlocks this move — "Edunita converts to a signed MOU if we clear the agent-portal blocker", not "deepen the Edunita relationship". State the bet, not the wish.
+B. WHAT WOULD HAVE TO BE TRUE (assumption audit): every action exists to SECURE or TEST a load-bearing assumption behind that hypothesis. Don't pad with busywork that wouldn't change the outcome.
+C. VALUE × EASE ordering: cheapest, highest-leverage moves first. The first action should be the one that, if it fails fast, kills the hypothesis cheaply.
+D. PREMORTEM: assume in 90 days this push FAILED — name the single most likely reason, and make sure one action directly de-risks it.
+
 Hard rules:
 1. Output 4-6 actions. No more, no less. Fewer for micro tweaks, more for transformational jumps.
 2. Each action is ONE concrete step the operator can do in 1-30 days. Not a multi-month epic.
@@ -2095,16 +2101,17 @@ Hard rules:
 
 Return ONLY a JSON object with this exact shape, no markdown, no commentary:
 {
-  "headline": "1-sentence framing of what the operator is actually trying to do — not a restatement of the drag, but the strategic intent behind it.",
+  "headline": "The strategic HYPOTHESIS — the falsifiable bet about what unlocks this move (one sentence). Not a restatement of the drag.",
   "actions": [
     {
       "title":   "<5-12 word imperative action — e.g. 'Email Anna Sokolova about Q3 startup summer placement'>",
-      "detail":  "<1-2 sentences explaining WHY this action moves the entity toward the target. Reference the entity's data.>",
+      "detail":  "<1-2 sentences explaining WHICH load-bearing assumption this secures or tests, and why it moves the entity toward the target. Reference the entity's data.>",
       "owner_hint": "<role best suited to drive this — Marketing / Programmes / Executive / Operator>",
       "due_in_days": <integer 1-90>,
       "evidence": "<which entity field or score component justifies this — e.g. 'days_dormant=87' or 'no contacts on file'>"
     }
   ],
+  "premortem": "<1-2 sentences: assume this push failed in 90 days — the single most likely reason (the weakest assumption), and which action above de-risks it. Always present.>",
   "reality_check": "<OPTIONAL — only present for transformational jumps. 1-2 sentences acknowledging this is a long arc, not a sprint. Empty string otherwise.>"
 }"""
 
@@ -2290,10 +2297,12 @@ def aspirations_generate_actions(aspiration_id):
             "evidence":    (a.get("evidence") or "").strip()[:200],
         })
     reality_check = (parsed.get("reality_check") or "").strip()
+    premortem = (parsed.get("premortem") or "").strip()[:400]
 
     payload = {
         "headline":      headline,
         "actions":       clean_actions,
+        "premortem":     premortem,
         "reality_check": reality_check,
         "generated_at":  _now_iso(),
         "model":         MODEL,
