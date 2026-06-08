@@ -2466,6 +2466,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .fd-market-cta{background:transparent;border:1px solid var(--rule);border-radius:6px;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);padding:6px 12px;cursor:pointer;transition:all .12s}
 .fd-market-cta:hover{border-color:var(--hf-red);color:var(--hf-red)}
 .fd-market-cta:disabled{opacity:.6;cursor:wait}
+.fd-market-legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:11px;color:var(--ink-soft);margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed var(--rule);line-height:1.5}
+.fd-market-legend b{font-weight:800;letter-spacing:.4px}
+.fd-leg-tam{color:#3a3f52}.fd-leg-sam{color:#2C56C6}.fd-leg-som{color:#1F6E48}
+.fd-leg-gap{flex-basis:100%;font-style:italic;color:var(--ink-mute)}
 .fd-funnel{display:flex;flex-direction:column;gap:6px;align-items:center}
 .fd-band{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 18px;border-radius:6px;color:#fff;transition:width .5s cubic-bezier(.22,.61,.36,1);min-width:200px}
 .fd-band-tam{background:linear-gradient(135deg,#3a3f52,#2a2d3c)}
@@ -18104,6 +18108,12 @@ function renderFunnelView() {
     <div class="fd-market-head">
       <div class="fd-market-h">Market opportunity <span class="fd-market-sub">TAM → SAM → SOM</span></div>
       <button type="button" class="fd-market-cta" onclick="estimateMarketSizing()" id="fd-tam-btn" title="Estimate the total addressable market with AI">⟳ Estimate market (AI)</button>
+    </div>
+    <div class="fd-market-legend">
+      <span><b class="fd-leg-tam">TAM</b> — the whole market (AI estimate)</span>
+      <span><b class="fd-leg-sam">SAM</b> — what we've found &amp; qualified</span>
+      <span><b class="fd-leg-som">SOM</b> — what we can realistically win</span>
+      <span class="fd-leg-gap">The gap between TAM and SAM is undiscovered market → go find it in Prospect Discovery.</span>
     </div>
     <div class="fd-funnel">
       <div class="fd-band fd-band-tam" id="fd-band-tam" style="width:100%">
