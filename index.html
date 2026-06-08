@@ -2572,6 +2572,8 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .pf-realloc.calm .pf-realloc-tag{color:#1F6E48}
 .pf-realloc-p{font-size:13px;line-height:1.55;color:var(--ink)}
 .pf-realloc-p b{font-weight:800}
+.pf-realloc-what{font-size:11px;line-height:1.5;color:var(--ink-soft);margin-top:9px;padding-top:8px;border-top:1px dashed rgba(0,0,0,.13);font-style:italic}
+.pf-realloc-what b{font-style:normal;font-weight:700;color:var(--ink)}
 /* 2×2 matrix of bucket cards (BCG orientation) */
 .pf-matrix{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:stretch}
 .pf-yaxis{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-mute);padding:6px 0}
@@ -7021,6 +7023,29 @@ const STRAT_SLUG = {"Digital Pioneer":"DP","Prestige Hub":"PH","Applied Leader":
 const STRAT_COLORS = {"Digital Pioneer":"#1F6FB4","Prestige Hub":"#C97A1A","Applied Leader":"#2E7D5B","Established Partner":"#6B4C7D"};
 const ENTITY_TYPES = ["university","agency","school","org"];
 const ENTITY_LABELS = {"university":"University","agency":"Agency","school":"High School","org":"Student Org"};
+
+// Canonicalize an entity type to one of the four the app reasons over:
+// university | agency | school | org. AI prospect discovery and hand-entered
+// rows sometimes use synonyms ("higher_ed_institution", "college",
+// "consultancy", "international school"). Without this, strict checks like
+// `u.type === "university"` silently fail and whole features (Competitive
+// Intel, Portfolio momentum, intel cards, type chips) skip the entity.
+function _canonEntityType(raw) {
+  const t = (raw == null ? "" : String(raw)).trim().toLowerCase().replace(/[\s/.-]+/g, "_");
+  if (!t) return "university";
+  if (t === "university" || t === "agency" || t === "school" || t === "org") return t;
+  // Agencies / consultancies / recruiters — checked first so a generic
+  // "education" token doesn't pull them into an institutional bucket.
+  if (/(agenc|consult|recruit|placement|counsel|advisor|broker|edu_?agent|representative)/.test(t)) return "agency";
+  // Universities / higher-ed (incl. the compound *_school terms that ARE
+  // tertiary, so they win over the generic school catch below).
+  if (/(univ|higher_?ed|highered|higher_?education|college|polytechnic|institut|faculty|hochschule|grande_?ecole|business_school|graduate_school|conservator|tertiary)/.test(t)) return "university";
+  // Student orgs / associations / NGOs / foundations.
+  if (/(student_?org|associat|society|union|club|ngo|foundation|nonprofit|non_profit|federation|aiesec)/.test(t)) return "org";
+  // K-12 / secondary / prep / academies.
+  if (/(school|secondary|k_?12|gymnasium|lyce|lise|liceo|prep|academy|gimnaz)/.test(t)) return "school";
+  return "university"; // safe institutional default — most prospects are unis
+}
 const READINESS_LEVELS = ["Ready","Warming","Early","Cold","Dormant"];
 const CONTINENTS = ["Europe","Middle East","Asia","Central Asia","North America","Latin America","Oceania"];
 
@@ -7137,7 +7162,7 @@ function normalizeRow(row, idx) {
   const appliedBonus = (fitMeta.applied_signal_bonus !== undefined) ? fitMeta.applied_signal_bonus : 10;
   const appliedCap = (fitMeta.applied_signal_cap !== undefined) ? fitMeta.applied_signal_cap : 10;
   const seenTags = new Set();
-  const entityType = (row.type || "university").toLowerCase();
+  const entityType = _canonEntityType(row.type);
 
   // Geographic rule — every Italian university is, by default, a
   // competitor. Reviewer made the "not interesting to have other Italian
@@ -7282,7 +7307,7 @@ function normalizeRow(row, idx) {
   return {
     id: row.id || `e${String(idx + 1).padStart(4, "0")}`,
     name: row.name || "",
-    type: row.type || "university",
+    type: entityType,
     region_label: regionLabel,
     country: country,
     country_canonical: country_canonical,
@@ -8087,7 +8112,7 @@ async function approveProspect(prospectId) {
       country:       p.country || "",
       country_canonical: p.country || "",
       continent:     p.region || "",
-      type:          p.type || "university",
+      type:          _canonEntityType(p.type),
       priority:      "Warm",
       strategic_tier: "",
       partnership_readiness: "Early",
@@ -20822,6 +20847,7 @@ function renderPortfolioView() {
     html += `<div class="pf-realloc${calm ? " calm" : ""}">
       <div class="pf-realloc-tag">Reallocation read</div>
       <div class="pf-realloc-p">${realloc}</div>
+      <div class="pf-realloc-what"><b>What this measures:</b> the share of your logged engagement effort — outreach, named contacts, sustained dialogue — sitting on <b>low-fit</b> partners (the Maintain + Divest cells) versus the high-value <b>Build</b> targets you've under-engaged. The consulting move is <b>dynamic reallocation</b>: pull attention off the cash-cows and dogs and put it where the upside actually is. The banner turns red when too much effort is mis-allocated, green when the book is well-tended.</div>
     </div>`;
 
     // 2×2 matrix (BCG orientation). Row 1: Build, Double down. Row 2: Divest, Maintain.
