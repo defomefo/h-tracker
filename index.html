@@ -7634,7 +7634,12 @@ function applyEntityOverridesToUnis() {
       if (Object.prototype.hasOwnProperty.call(ov, f) && !(f in ENTITY_ORIGINALS[u.id])) {
         ENTITY_ORIGINALS[u.id][f] = u[f];
       }
-      if (Object.prototype.hasOwnProperty.call(ov, f)) u[f] = ov[f];
+      if (Object.prototype.hasOwnProperty.call(ov, f)) {
+        // Canonicalize type overrides so a stored synonym (e.g. an AI prospect
+        // saved as "higher_ed_institution") doesn't override a clean type with
+        // a non-canonical one that breaks `u.type === "university"` checks.
+        u[f] = (f === "type") ? _canonEntityType(ov[f]) : ov[f];
+      }
     });
     // Contacts are an ARRAY (not a scalar overridable field), so they're
     // handled separately: when the operator adds/edits contacts in the
@@ -7676,7 +7681,7 @@ function applyEntityOverridesToUnis() {
         lat:                   (_geo[1] === undefined ? null : _geo[1]),
         lng:                   (_geo[2] === undefined ? null : _geo[2]),
         city:                  "",
-        type:                  ov.type || "university",
+        type:                  _canonEntityType(ov.type),
         priority:              ov.priority || "Warm",
         strategic_tier:        ov.strategic_tier || "",
         focus_areas:           ov.focus_areas || "",
