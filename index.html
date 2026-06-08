@@ -2557,6 +2557,163 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .fd-tiers .fdt-h{font-size:9px;letter-spacing:.3px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;padding:4px 2px;text-align:center}
 .fd-leak-card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px 18px}
 
+/* ============================================================================
+   FUNNEL — McKinsey "exhibit" report (.fnx scope). All selectors are namespaced
+   under .fnx so the generic class names (.bar, .panel, .chip, .kpi…) can't
+   collide with the rest of the app. Tokens (--brand-navy, --hf-red, --ur…) are
+   the app's own :root variables.
+   ============================================================================ */
+.fnx{background:#E5E7EC;background-image:linear-gradient(rgba(45,49,80,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(45,49,80,0.04) 1px,transparent 1px);background-size:34px 34px;padding:30px 32px 80px;-webkit-font-smoothing:antialiased;min-height:100%}
+.fnx .fnx-nav{max-width:1180px;margin:0 auto 18px}
+.fnx .fnx-nav .sm-tabs{margin-bottom:0;border-bottom:none}
+.fnx .sheet{width:100%;max-width:1180px;margin:0 auto}
+/* masthead */
+.fnx .report-head{position:relative;overflow:hidden;background:var(--brand-navy);background-image:linear-gradient(135deg,#313656 0%,#262a44 100%);border-radius:12px;padding:36px 44px 34px;box-shadow:0 14px 36px rgba(28,32,54,0.20)}
+.fnx .report-head::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--hf-red)}
+.fnx .report-kicker{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.55)}
+.fnx .report-title{margin-top:10px;font-size:30px;font-weight:800;letter-spacing:-0.6px;color:#fff;line-height:1.1}
+.fnx .report-meta{margin-top:10px;font-size:11px;color:rgba(255,255,255,0.5);font-family:var(--font-mono);letter-spacing:0.3px}
+/* exhibit frame */
+.fnx .exhibit{margin-top:24px;background:#fff;border:1px solid #E3E5EB;border-radius:12px;padding:34px 44px 40px;box-shadow:0 1px 2px rgba(28,32,54,0.04),0 14px 34px rgba(28,32,54,0.07)}
+.fnx .ex-top{display:flex;align-items:baseline;justify-content:space-between;gap:24px;border-top:2px solid var(--ink);padding-top:12px}
+.fnx .ex-eyebrow{font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--ink-mute)}
+.fnx .ex-eyebrow b{color:var(--ink);font-weight:700}
+.fnx .ex-btn{font-family:var(--font-mono);font-size:11px;letter-spacing:0.4px;color:var(--ink-soft);background:#fff;border:1px solid var(--rule);border-radius:5px;padding:7px 13px;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s}
+.fnx .ex-btn:hover{border-color:var(--ink);color:var(--ink)}
+.fnx .ex-btn:disabled{opacity:.55;cursor:wait}
+.fnx .ex-title{margin-top:16px;font-size:24px;line-height:1.24;font-weight:700;letter-spacing:-0.4px;color:var(--ink);max-width:960px;text-wrap:balance}
+.fnx .ex-title .hl{box-shadow:inset 0 -0.42em 0 var(--hf-red-soft)}
+.fnx .ex-sub{margin-top:12px;font-size:14px;color:var(--ink-soft);line-height:1.6;max-width:860px}
+.fnx .ex-sub b{color:var(--ink);font-weight:700}
+.fnx .ex-source{margin-top:18px;padding-top:11px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-mute);line-height:1.5}
+.fnx .ex-source b{color:var(--ink-soft);font-weight:700}
+.fnx .chip{display:inline-block;font-size:11px;letter-spacing:0.2px;padding:2px 9px;border-radius:14px;white-space:nowrap;font-weight:600}
+.fnx .chip.good{background:rgba(46,125,91,0.12);color:var(--ur)}
+.fnx .chip.warn{background:rgba(224,169,59,0.16);color:#9A6B12}
+.fnx .chip.neutral{background:#EBEDF1;color:var(--ink-mute)}
+/* Exhibit 01 — market */
+.fnx .ex-defs{margin-top:18px;display:flex;flex-wrap:wrap;gap:18px 40px;padding-bottom:22px;border-bottom:1px solid var(--rule)}
+.fnx .def{display:flex;gap:11px;align-items:flex-start}
+.fnx .def-key{width:11px;height:11px;flex:none;margin-top:3px;border-radius:2px}
+.fnx .def-key.tam{background:var(--ink)}.fnx .def-key.sam{background:var(--brand-navy)}.fnx .def-key.som{background:var(--ur)}
+.fnx .def-t{font-size:13px;line-height:1.35}
+.fnx .def-t .nm{font-weight:700;color:var(--ink)}.fnx .def-t .ds{color:var(--ink-soft)}
+.fnx .chart{margin-top:26px}
+.fnx .bar-row{margin-bottom:14px}
+.fnx .bar{position:relative;height:58px;border-radius:4px;display:flex;align-items:center;padding:0 22px;color:#fff;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+.fnx .bar-tam{width:100%;background:transparent;border:1.5px dashed var(--ink-mute);color:var(--ink-soft)}
+.fnx .bar-tam.estimated{border-style:solid;border-color:var(--ink);background:linear-gradient(135deg,#2b2f4d,#22253b);color:#fff}
+.fnx .bar-sam{width:63%;background:var(--brand-navy);box-shadow:var(--sh-1)}
+.fnx .bar-som{width:34%;background:var(--ur);box-shadow:var(--sh-1)}
+.fnx .bar-lbl{font-size:14px;font-weight:700;letter-spacing:0.1px;white-space:nowrap}
+.fnx .bar-lbl .bar-lbl-sub{display:block;font-size:11px;font-weight:400;letter-spacing:0;opacity:0.78;margin-top:2px}
+.fnx .bar-tam .bar-lbl .bar-lbl-sub{opacity:1;color:var(--ink-mute)}
+.fnx .bar-tam.estimated .bar-lbl .bar-lbl-sub{color:rgba(255,255,255,0.7)}
+.fnx .bar-end{margin-left:auto;display:flex;align-items:baseline;gap:9px}
+.fnx .bar-num{font-size:25px;font-weight:800;letter-spacing:-0.5px;line-height:1;font-variant-numeric:tabular-nums}
+.fnx .bar-pct{font-size:11px;letter-spacing:0.6px;text-transform:uppercase;opacity:0.82;white-space:nowrap}
+.fnx .bar-estimate{margin-left:auto;font-family:var(--font-mono);font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--ink-mute);padding-bottom:1px;cursor:pointer}
+.fnx .bar-estimate:hover{color:var(--ink);border-color:var(--ink)}
+.fnx .gap-text{display:flex;align-items:center;gap:12px;margin:-2px 0 14px;font-size:11px;color:var(--ink-mute);font-style:italic}
+.fnx .gap-text .dash{flex:1;border-top:1px dotted var(--rule);min-width:24px}
+.fnx .gap-text a{color:var(--hf-red);text-decoration:none;font-style:normal;font-weight:700;border-bottom:1px solid transparent;cursor:pointer}
+.fnx .gap-text a:hover{border-color:var(--hf-red)}
+.fnx .kpis{margin-top:28px;display:grid;grid-template-columns:repeat(5,1fr);border:1px solid #E3E5EB;border-radius:6px;background:#F8F9FC;overflow:hidden}
+.fnx .kpi{padding:18px 20px 20px;border-left:1px solid #E3E5EB}
+.fnx .kpi:first-child{border-left:none}
+.fnx .kpi-l{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-mute)}
+.fnx .kpi-v{margin-top:12px;font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.fnx .kpi-sub{font-size:14px;font-weight:600;letter-spacing:0;color:var(--ink-mute)}
+.fnx .kpi-trend{margin-top:8px;font-size:11px;color:var(--ink-soft)}
+.fnx .kpi.accent{background:var(--hf-red-soft)}
+.fnx .kpi.accent .kpi-l,.fnx .kpi.accent .kpi-v{color:var(--hf-red-deep)}
+.fnx .kpi.accent .kpi-sub,.fnx .kpi.accent .kpi-trend{color:var(--hf-red)}
+/* Exhibit 02 — funnel */
+.fnx .fn{margin-top:28px}
+.fnx .fn-row{display:grid;grid-template-columns:210px 1fr 52px 200px;align-items:center;column-gap:20px}
+.fnx .fn-name{font-size:14px;font-weight:700;color:var(--ink)}
+.fnx .fn-desc{font-size:11px;color:var(--ink-mute);margin-top:2px;line-height:1.3}
+.fnx .fn-track{position:relative;height:40px;background:#EBEDF1;border-radius:4px;display:flex;align-items:center}
+.fnx .fn-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:14px;min-width:8px;transition:width .5s}
+.fnx .fn-in{font-size:14px;font-weight:700;color:#fff;white-space:nowrap}
+.fnx .fn-out{font-size:14px;font-weight:700;color:var(--ink);margin-left:12px;white-space:nowrap}
+.fnx .fn-pct{font-size:14px;font-weight:800;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.fnx .fn-bench{font-size:11px}
+.fnx .fn-droprow{display:grid;grid-template-columns:210px 1fr;column-gap:20px}
+.fnx .fn-drop{padding:7px 0 7px 14px;font-size:11px;color:var(--ink-mute);font-weight:600}
+.fnx .fn-drop.crit{color:var(--hf-red);font-weight:700}
+.fnx .fn-drop .lost{font-weight:700}
+/* Exhibit 03 — diagnosis */
+.fnx .diag{margin-top:26px;border:1px solid #E3E5EB;border-left:4px solid var(--hf-red);border-radius:6px;background:#F8F9FC;overflow:hidden}
+.fnx .diag-head{padding:22px 28px 20px;border-bottom:1px solid var(--rule)}
+.fnx .diag-tag{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--hf-red)}
+.fnx .diag-h{margin-top:11px;font-size:18px;font-weight:700;color:var(--ink);line-height:1.35;max-width:880px}
+.fnx .diag-cols{display:grid;grid-template-columns:1fr 1fr}
+.fnx .diag-col{padding:22px 28px 24px}
+.fnx .diag-col+.diag-col{border-left:1px solid var(--rule);background:#F6F7FA}
+.fnx .diag-k{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-mute)}
+.fnx .diag-p{margin-top:10px;font-size:14px;color:var(--ink);line-height:1.6}
+.fnx .lift{margin-top:16px;display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(46,125,91,0.08);border-radius:5px;width:fit-content}
+.fnx .lift-from{font-size:18px;font-weight:700;color:var(--ink-mute);font-variant-numeric:tabular-nums}
+.fnx .lift-arrow{color:var(--ur);font-size:16px}
+.fnx .lift-to{font-size:22px;font-weight:800;color:var(--ur);font-variant-numeric:tabular-nums}
+.fnx .lift-cap{font-size:11px;color:var(--ink-soft);margin-left:4px}
+.fnx .diag-actions{display:flex;gap:10px;padding:18px 28px 22px}
+.fnx .btn-primary{background:var(--hf-red);color:#fff;border:none;font-size:14px;font-weight:700;padding:10px 18px;border-radius:5px;cursor:pointer;transition:background .15s}
+.fnx .btn-primary:hover{background:var(--hf-red-deep)}
+.fnx .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--rule);font-size:14px;font-weight:600;padding:10px 18px;border-radius:5px;cursor:pointer}
+.fnx .btn-ghost:hover{border-color:var(--ink)}
+/* Exhibit 04 — tiers + dormancy */
+.fnx .grid-2{margin-top:26px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.fnx .panel{border:1px solid #E3E5EB;border-radius:6px;background:#F8F9FC;padding:22px 24px 20px}
+.fnx .panel-h{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);padding-bottom:14px;border-bottom:1px solid var(--rule)}
+.fnx .tier-row{display:grid;grid-template-columns:1fr 64px 56px;align-items:center;column-gap:12px;padding:13px 0 4px}
+.fnx .tier-name{font-size:14px;font-weight:600;color:var(--ink)}
+.fnx .tier-counts{font-size:11px;color:var(--ink-mute);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fnx .tier-pct{font-size:14px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.fnx .tier-pct.good{color:var(--ur)}.fnx .tier-pct.bad{color:var(--ink-mute)}
+.fnx .tier-bar-track{height:8px;background:#EBEDF1;border-radius:4px;overflow:hidden;margin:0 0 9px}
+.fnx .tier-bar-fill{height:100%;border-radius:4px}
+.fnx .panel-foot{margin-top:14px;padding-top:13px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-soft);line-height:1.55}
+.fnx .panel-foot b{color:var(--ink);font-weight:700}
+.fnx .histo-wrap{margin-top:18px;position:relative;padding-top:20px}
+.fnx .histo{display:grid;grid-template-columns:repeat(7,1fr);align-items:end;gap:8px;height:150px}
+.fnx .histo-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.fnx .histo-n{font-size:11px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.fnx .histo-bar{width:100%;border-radius:3px 3px 0 0;background:var(--cold);min-height:2px}
+.fnx .histo-bar.amber{background:var(--warm)}.fnx .histo-bar.red{background:var(--hf-red)}
+.fnx .histo-bar.median{box-shadow:0 -3px 0 var(--ink) inset}
+.fnx .histo-axis{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:8px}
+.fnx .histo-axis span{font-size:9px;color:var(--ink-mute);text-align:center;letter-spacing:0.2px}
+.fnx .stale-band{position:absolute;top:0;bottom:0;right:0;width:calc((100% - 48px) / 7 * 2 + 8px);background:rgba(217,83,79,0.06);border-left:1px dashed rgba(217,83,79,0.4);pointer-events:none}
+.fnx .stale-tag{position:absolute;top:0;right:6px;font-size:9px;letter-spacing:0.4px;text-transform:uppercase;color:var(--hf-red);font-weight:700}
+.fnx .median-tag{position:absolute;top:0;left:14px;font-size:9px;letter-spacing:0.4px;text-transform:uppercase;color:var(--ink);font-weight:700}
+/* Exhibit 05 — forecast */
+.fnx .fc{margin-top:26px;border:1px solid #E3E5EB;border-top:3px solid var(--hf-red);border-radius:6px;background:#F8F9FC;padding:26px 30px 28px}
+.fnx .fc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:30px;flex-wrap:wrap}
+.fnx .fc-head{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft)}
+.fnx .fc-head span{color:var(--ink-mute);font-weight:400;letter-spacing:0.3px}
+.fnx .fc-contrib{text-align:right}
+.fnx .fc-contrib-k{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink-mute)}
+.fnx .fc-contrib-v{margin-top:4px;font-size:14px;font-weight:700;color:var(--ink)}
+.fnx .fc-contrib-x{font-size:11px;color:var(--ink-soft);margin-top:2px}
+.fnx .fc-band-wrap{margin-top:28px}
+.fnx .fc-band-head{display:flex;align-items:baseline;gap:12px}
+.fnx .fc-p50{font-size:52px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.fnx .fc-p50-cap{font-size:14px;color:var(--ink-soft)}.fnx .fc-p50-cap b{color:var(--ink)}
+.fnx .fc-track{position:relative;height:12px;margin:34px 60px 0;background:#EBEDF1;border-radius:6px}
+.fnx .fc-range{position:absolute;top:0;bottom:0;background:rgba(45,49,80,0.18);border-radius:6px}
+.fnx .fc-marker{position:absolute;top:-6px;width:4px;height:24px;background:var(--hf-red);border-radius:2px;transform:translateX(-50%)}
+.fnx .fc-tick{position:absolute;top:30px;transform:translateX(-50%);text-align:center}
+.fnx .fc-tick .v{font-size:14px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.fnx .fc-tick.mid .v{color:var(--hf-red)}
+.fnx .fc-tick .l{font-size:9px;letter-spacing:0.6px;text-transform:uppercase;color:var(--ink-mute);margin-top:2px}
+.fnx .fc-counter{margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);font-size:14px;color:var(--ink);line-height:1.7}
+.fnx .fc-counter b{font-weight:700}
+.fnx .fc-counter .out{color:var(--hf-red);font-weight:800;font-variant-numeric:tabular-nums}
+.fnx .fc-counter input[type=range]{vertical-align:middle;accent-color:var(--hf-red);width:160px;margin:0 6px}
+@media (max-width:980px){.fnx .kpis{grid-template-columns:repeat(2,1fr)}.fnx .grid-2{grid-template-columns:1fr}.fnx .fn-row{grid-template-columns:150px 1fr 44px}.fnx .fn-bench{display:none}.fnx .fn-droprow{grid-template-columns:150px 1fr}}
+
 /* ============== PORTFOLIO REVIEW (BCG / GE buckets) ============== */
 .pf-shell{padding:0 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .pf-intro{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:16px 18px}
@@ -18173,28 +18330,10 @@ function renderFunnelView() {
   // ---------- Build HTML ----------
   const engagedCount = ["engaged","discovery","proposal","negotiation","signed","active"].reduce((a,s)=>a+stageCounts[s],0);
   const activeCount = stageCounts.active;
-  let html = `<div class="view-header"><h1>Funnel & Conversion — diagnostic</h1><p>Where partnerships die in the pipeline, why, and what to do about it. McKinsey-style structured diagnosis, live from your CSV.</p></div>`;
-  // Same unified tab strip as Strategic Maps — Funnel is now a sister
-  // tab under the Strategy umbrella, not a standalone sidebar item.
-  // Clicking an axis tab here jumps back to Strategic Maps view.
-  // No margin between tabs and the navy banner — banner sits flush with
-  // the tab-strip underline (square top corners on .fd-banner do the join).
-  html += `<div class="sm-shell" style="margin-bottom:0;padding-bottom:0">${_renderUnifiedStrategyTabs("funnel")}</div>`;
-  html += `<div class="fd-shell">`;
-
-  // ===== Banner =====
-  html += `<div class="fd-banner">
-    <div class="fd-banner-tag">FUNNEL & CONVERSION</div>
-    <div class="fd-banner-h">Where partnerships die — and what to do about it</div>
-    <div class="fd-banner-sub">Snapshot diagnosis · benchmarks from 12+ EU higher-ed institutions · forecast via Monte Carlo (10k runs)</div>
-  </div>`;
-
-  // ===== Market opportunity (TAM / SAM / SOM) =====
-  // SAM = entities in our DB that pass H-FARM policy (partnerable — not
-  // research-intensive, not Italian-university competitors). SOM = the
-  // obtainable subset (warm / ready). TAM is an AI-estimated ceiling,
-  // loaded async by loadMarketSizing() after render. The gap TAM − SAM is
-  // the undiscovered market → a nudge toward Prospect Discovery.
+  // ---------- Market sizing inputs (SAM/SOM computed from our own pipeline) ----------
+  // SAM = entities that pass H-FARM policy (partnerable — not research-intensive,
+  // not Italian-university competitors). SOM = the obtainable (warm / ready)
+  // subset. TAM is AI-estimated and filled in async by loadMarketSizing().
   const _flagged = (typeof _isFitHiddenFromCandidates === "function")
     ? u => _isFitHiddenFromCandidates(u)
     : u => Array.isArray(u.fit_tags) && u.fit_tags.some(t => ["research_intensive","italian_competitor"].includes((t && t.tag) || t));
@@ -18204,156 +18343,252 @@ function renderFunnelView() {
     || ["Hot","Critical","Up & Running"].includes(u.priority)
     || ["proposal","negotiation","signed","active"].includes(u.pipeline_stage);
   const som = samSet.filter(_obtainable).length;
-  html += `<div class="fd-market" id="fd-market">
-    <div class="fd-market-head">
-      <div class="fd-market-h">Market opportunity <span class="fd-market-sub">TAM → SAM → SOM</span></div>
-      <button type="button" class="fd-market-cta" onclick="estimateMarketSizing()" id="fd-tam-btn" title="Estimate the total addressable market with AI">⟳ Estimate market (AI)</button>
-    </div>
-    <div class="fd-market-legend">
-      <span><b class="fd-leg-tam">TAM</b> — the whole market (AI estimate)</span>
-      <span><b class="fd-leg-sam">SAM</b> — what we've found &amp; qualified</span>
-      <span><b class="fd-leg-som">SOM</b> — what we can realistically win</span>
-      <span class="fd-leg-gap">The gap between TAM and SAM is undiscovered market → go find it in Prospect Discovery.</span>
-    </div>
-    <div class="fd-market-funnel">
-      <div class="fd-band fd-band-tam" id="fd-band-tam" style="width:100%">
-        <div class="fd-band-l">TAM · total addressable</div>
-        <div class="fd-band-v" id="fd-tam-v">— <span class="fd-band-note">estimate with AI ↗</span></div>
-      </div>
-      <div class="fd-band fd-band-sam" id="fd-band-sam" style="width:62%">
-        <div class="fd-band-l">SAM · serviceable (in our pipeline, policy-fit)</div>
-        <div class="fd-band-v">${sam}<span class="fd-band-note" id="fd-sam-pct"></span></div>
-      </div>
-      <div class="fd-band fd-band-som" id="fd-band-som" style="width:${Math.max(18, Math.round(som / Math.max(1, sam) * 62))}%">
-        <div class="fd-band-l">SOM · obtainable (warm / ready)</div>
-        <div class="fd-band-v">${som}<span class="fd-band-note">${Math.round(som / Math.max(1, sam) * 100)}% of SAM</span></div>
-      </div>
-    </div>
-    <div class="fd-market-foot" id="fd-market-foot">SAM + SOM are exact, from your pipeline. Estimate the TAM to see how much of the market is still undiscovered.</div>
-  </div>`;
+  const somPct = Math.round(som / Math.max(1, sam) * 100);
+  const somW = Math.max(18, Math.round(som / Math.max(1, sam) * 63));
 
-  // ===== KPIs =====
-  html += `<div class="fd-kpis">
-    <div class="fd-kpi"><div class="fd-kpi-l">In pipeline</div><div class="fd-kpi-v">${total}</div></div>
-    <div class="fd-kpi"><div class="fd-kpi-l">Contacted</div><div class="fd-kpi-v">${total - stageCounts.identified}<span class="fd-kpi-sub"> · ${Math.round((total-stageCounts.identified)/total*100)}%</span></div></div>
-    <div class="fd-kpi"><div class="fd-kpi-l">Engaged or beyond</div><div class="fd-kpi-v">${engagedCount}<span class="fd-kpi-sub"> · ${Math.round(engagedCount/total*100)}%</span></div></div>
-    <div class="fd-kpi"><div class="fd-kpi-l">Active partner</div><div class="fd-kpi-v">${activeCount}<span class="fd-kpi-sub"> · ${Math.round(activeCount/total*100)}%</span></div></div>
-    <div class="fd-kpi gold"><div class="fd-kpi-l">90-day forecast</div><div class="fd-kpi-v">${forecast.p50}<span class="fd-kpi-sub"> signings</span></div></div>
-  </div>`;
+  // ---------- Tier composition (Exhibit 04 + its headline) ----------
+  const tierRows = Object.entries(tierStages)
+    .filter(([t,v]) => v.total > 0 && t !== "(unset)")
+    .sort((a,b) => (b[1].engaged_plus/b[1].total) - (a[1].engaged_plus/a[1].total));
+  const bestTier = tierRows.length ? tierRows[0][0] : "—";
+  const untouchedTiers = tierRows.filter(([t,v]) => v.contacted === 0);
+  const untouchedN = untouchedTiers.reduce((s,[t,v]) => s + v.total, 0);
 
-  // ===== Section A: Stage-by-stage leakage =====
-  html += `<div class="fd-sec-label">A · STAGE-BY-STAGE LEAKAGE</div>`;
-  html += `<div class="fd-leak-card"><div class="fd-funnel">`;
+  // ---------- Headline numbers for the leakage exhibit ----------
+  const firstTouchLost = Math.max(0, (cum[stageOrder[0]]||0) - (cum[stageOrder[1]]||0));
+  const worstDrop = worstStage ? drops[worstStage] : 0;
   const ent = n => `${n} ${n === 1 ? 'entity' : 'entities'}`;
+
+  // ============================================================
+  // McKinsey "exhibit" report — scoped under .fnx (see CSS). The unified
+  // strategy tab strip sits inside .fnx-nav so navigation still works.
+  // ============================================================
+  let html = `<div class="fnx"><div class="fnx-nav">${_renderUnifiedStrategyTabs("funnel")}</div><main class="sheet">`;
+
+  // ----- Masthead -----
+  html += `<header class="report-head">
+    <div class="report-kicker">H-FARM Global Partnerships · Funnel &amp; Conversion</div>
+    <h1 class="report-title">Where partnerships die — and what to do about it</h1>
+    <div class="report-meta">Snapshot diagnosis · benchmarks from 12+ EU higher-ed institutions · forecast via Monte Carlo (10k runs) · live from pipeline</div>
+  </header>`;
+
+  // ===== EXHIBIT 01 — Market opportunity =====
+  html += `<section class="exhibit">
+    <div class="ex-top">
+      <div class="ex-eyebrow">Exhibit 01 &nbsp;·&nbsp; Market opportunity &nbsp;·&nbsp; <b>TAM → SAM → SOM</b></div>
+      <button type="button" class="ex-btn" id="fd-tam-btn" onclick="estimateMarketSizing()" title="Estimate the total addressable market with AI">↻ Estimate with AI</button>
+    </div>
+    <h2 class="ex-title" id="fd-ex1-title">Of <span class="hl">${sam} qualified prospects</span>, only <span class="hl">${som} are warm enough to win</span> this quarter — and the total market is still unmeasured.</h2>
+    <p class="ex-sub" id="fd-ex1-sub"><b>SAM</b> and <b>SOM</b> are exact figures, pulled live from the pipeline. <b>TAM</b> has not yet been estimated — until it is, the size of the undiscovered market is unknown.</p>
+    <div class="ex-defs">
+      <div class="def"><span class="def-key tam"></span><span class="def-t"><span class="nm">TAM — Total addressable</span><br><span class="ds">The whole market, AI-estimated</span></span></div>
+      <div class="def"><span class="def-key sam"></span><span class="def-t"><span class="nm">SAM — Serviceable</span><br><span class="ds">Found, qualified &amp; policy-fit in our pipeline</span></span></div>
+      <div class="def"><span class="def-key som"></span><span class="def-t"><span class="nm">SOM — Obtainable</span><br><span class="ds">Warm / ready — what we can realistically win</span></span></div>
+    </div>
+    <div class="chart">
+      <div class="bar-row">
+        <div class="bar bar-tam" id="fd-band-tam">
+          <span class="bar-lbl">TAM · total addressable<span class="bar-lbl-sub" id="fd-tam-sub">whole market — not yet measured</span></span>
+          <span class="bar-estimate" id="fd-tam-end" onclick="estimateMarketSizing()">— &nbsp; Estimate with AI ↗</span>
+        </div>
+      </div>
+      <div class="gap-text" id="fd-gap-text">
+        <span>Gap between TAM and SAM = undiscovered market</span>
+        <span class="dash"></span>
+        <a onclick="switchView('prospects')">Go find it in Prospect Discovery →</a>
+      </div>
+      <div class="bar-row">
+        <div class="bar bar-sam" id="fd-band-sam">
+          <span class="bar-lbl">SAM · serviceable<span class="bar-lbl-sub">in our pipeline · policy-fit</span></span>
+          <span class="bar-end"><span class="bar-num">${sam}</span></span>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="bar bar-som" id="fd-band-som" style="width:${somW}%">
+          <span class="bar-lbl">SOM · obtainable<span class="bar-lbl-sub">warm / ready</span></span>
+          <span class="bar-end"><span class="bar-num">${som}</span><span class="bar-pct">${somPct}% of SAM</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="ex-source" id="fd-mkt-method" style="display:none"></div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-l">In pipeline</div><div class="kpi-v">${total}</div><div class="kpi-trend">All tracked entities</div></div>
+      <div class="kpi"><div class="kpi-l">Contacted</div><div class="kpi-v">${total - stageCounts.identified} <span class="kpi-sub">· ${Math.round((total-stageCounts.identified)/total*100)}%</span></div><div class="kpi-trend">of pipeline reached</div></div>
+      <div class="kpi"><div class="kpi-l">Engaged or beyond</div><div class="kpi-v">${engagedCount} <span class="kpi-sub">· ${Math.round(engagedCount/total*100)}%</span></div><div class="kpi-trend">in active dialogue</div></div>
+      <div class="kpi"><div class="kpi-l">Active partner</div><div class="kpi-v">${activeCount} <span class="kpi-sub">· ${Math.round(activeCount/total*100)}%</span></div><div class="kpi-trend">signed &amp; live</div></div>
+      <div class="kpi accent"><div class="kpi-l">90-day forecast</div><div class="kpi-v">${forecast.p50} <span class="kpi-sub">signings</span></div><div class="kpi-trend">Monte Carlo · P50</div></div>
+    </div>
+  </section>`;
+
+  // ===== EXHIBIT 02 — Stage-by-stage leakage =====
+  html += `<section class="exhibit">
+    <div class="ex-top"><div class="ex-eyebrow">Exhibit 02 &nbsp;·&nbsp; <b>Stage-by-stage leakage</b></div></div>
+    <h2 class="ex-title">${
+      worstStage
+        ? `Two leaks account for most attrition: <span class="hl">${firstTouchLost} prospect${firstTouchLost===1?'':'s'} never get a first touch</span>, and <span class="hl">${worstDrop}% of ${wStage.label} entities never reach ${wNextStage.label}</span>.`
+        : `<span class="hl">${firstTouchLost} prospect${firstTouchLost===1?'':'s'}</span> sit in the database but have never been contacted.`
+    }</h2>
+    <p class="ex-sub">${wNextStage ? `Conversion past <b>${wNextStage.label}</b> is healthy — every later stage holds. ` : ""}The funnel is front-loaded: fix the top leaks and the back half compounds.</p>
+    <div class="fn">`;
   stageOrder.forEach((sid, i) => {
     const stage = STAGE_BY_ID[sid];
     const count = cum[sid];
     const pct = Math.round(count/total*100);
-    const w = Math.max(2, pct); // min 2% bar
+    const w = Math.max(2, pct);
     const isLast = i === stageOrder.length - 1;
     const bench = benchmarks[sid];
     const delta = bench ? drops[sid] - bench.drop : 0;
-    const fillTextColor = i >= 4 ? '#fff' : (i >= 2 ? '#fff' : '#0C447C');
-    // If the bar is too narrow to fit the count label, render it OUTSIDE
-    // the fill in the dark navy text colour. Threshold tuned to ~10ch needed.
-    const inside  = w >= 50;
-    const labelText = ent(count);
-    const fillContent  = inside ? labelText : '';
-    const outerContent = inside ? '' : `<span class="fd-bar-outer">${labelText}</span>`;
-    html += `<div class="fd-bar-row">
-      <div class="fd-bar-label">${stage.label}<span class="fd-bar-desc">${stage.desc}</span></div>
-      <div class="fd-bar-track"><div class="fd-bar-fill" style="width:${w}%;background:${stage.color};color:${fillTextColor}">${fillContent}</div>${outerContent}</div>
-      <div class="fd-bar-pct">${pct}%</div>
-      <div class="fd-bar-bench">${(!bench || i===0) ? "" : (delta < -5 ? `↑ better than ${bench.label}` : delta > 8 ? `⚠ above ${bench.label}` : `~ ${bench.label}`)}</div>
+    const inside = w >= 38;
+    const countLbl = ent(count);
+    const fillInner = inside ? `<span class="fn-in">${countLbl}</span>` : "";
+    const outer = inside ? "" : `<span class="fn-out">${countLbl}</span>`;
+    let chip = "";
+    if (bench && i !== 0) {
+      chip = delta < -5 ? `<span class="chip good">↑ better than ${bench.label}</span>`
+           : delta > 8  ? `<span class="chip warn">⚠ above ${bench.label}</span>`
+           : `<span class="chip neutral">~ ${bench.label}</span>`;
+    }
+    html += `<div class="fn-row">
+      <div class="fn-side"><div class="fn-name">${stage.label}</div><div class="fn-desc">${stage.desc}</div></div>
+      <div class="fn-track"><div class="fn-fill" style="width:${w}%;background:${stage.color}">${fillInner}</div>${outer}</div>
+      <div class="fn-pct">${pct}%</div>
+      <div class="fn-bench">${chip}</div>
     </div>`;
     if (!isLast) {
       const dropPct = drops[sid];
       const benchDrop = benchmarks[sid]?.drop || 30;
-      const severity = dropPct > benchDrop + 10 ? "critical" : dropPct > benchDrop + 3 ? "warning" : "normal";
-      const arrow = severity === "critical" ? "▼" : "↓";
+      const severity = dropPct > benchDrop + 10 ? "crit" : "";
+      const arrow = severity === "crit" ? "▼" : "↓";
       const lost = cum[sid] - cum[stageOrder[i+1]];
-      // Only the single worst stage gets the "biggest bottleneck" tag.
-      const isWorst = sid === worstStage;
-      const tail = isWorst ? ' · biggest bottleneck' : '';
-      html += `<div class="fd-drop ${severity}"><div></div><div class="fd-drop-text">${arrow} ${dropPct}% drop · ${ent(lost)} lost${tail}</div><div></div><div></div></div>`;
+      const tail = sid === worstStage ? ' · biggest bottleneck' : '';
+      html += `<div class="fn-droprow"><div></div><div class="fn-drop ${severity}">${arrow} ${dropPct}% drop · <span class="lost">${ent(lost)} lost</span>${tail}</div></div>`;
     }
   });
-  html += `</div></div>`;
+  html += `</div>
+    <p class="ex-source"><b>Source:</b> Pipeline stage counts (cumulative reach), n=${total}. Benchmarks: 12+ EU higher-ed institutions. Drop = share of prior stage lost before reaching the next.</p>
+  </section>`;
 
-  // ===== Section B: Bottleneck diagnosis =====
+  // ===== EXHIBIT 03 — Diagnosis & prescription =====
   if (wStage && wNextStage) {
     const benchDrop = benchmarks[worstStage]?.drop || 30;
-    html += `<div class="fd-sec-label">B · DIAGNOSIS & PRESCRIPTION</div>`;
-    html += `<div class="fd-bottleneck">
-      <div class="fd-bottleneck-tag">⚠  CRITICAL BOTTLENECK · ${wStage.label} → ${wNextStage.label}</div>
-      <div class="fd-bottleneck-h">${drops[worstStage]}% of entities drop here — benchmark ${benchmarks[worstStage]?.label || 'typical 25-35%'}. ${stuck.length} entities are stuck at this stage with no follow-up.</div>
-      <div class="fd-bottleneck-p"><strong>Why this happens:</strong> ${bottleneckExplanation(worstStage)}<br><br><strong>Recommended play:</strong> ${bottleneckPrescription(worstStage)}</div>
-      <div class="fd-bottleneck-actions">
-        <button class="fd-btn fd-btn-primary" onclick="showStuckEntities('${worstStage}')">View ${stuck.length} stuck entities →</button>
-        <button class="fd-btn fd-btn-ghost" onclick="switchView('database')">Open in database</button>
+    const curAdvance = Math.max(0, 100 - drops[worstStage]);
+    const targetAdvance = Math.max(curAdvance, 100 - benchDrop);
+    html += `<section class="exhibit">
+      <div class="ex-top"><div class="ex-eyebrow">Exhibit 03 &nbsp;·&nbsp; <b>Diagnosis &amp; prescription</b></div></div>
+      <h2 class="ex-title">The biggest bottleneck is <span class="hl">${wStage.label} → ${wNextStage.label}</span> — fixing it compounds through every later stage.</h2>
+      <div class="diag">
+        <div class="diag-head">
+          <div class="diag-tag">⚠ Critical bottleneck · ${wStage.label} → ${wNextStage.label}</div>
+          <div class="diag-h">${drops[worstStage]}% of entities drop here — benchmark ${benchmarks[worstStage]?.label || 'typical 25-35%'}. ${stuck.length} entities are stuck at this stage with no follow-up.</div>
+        </div>
+        <div class="diag-cols">
+          <div class="diag-col">
+            <div class="diag-k">Diagnosis · why this happens</div>
+            <p class="diag-p">${bottleneckExplanation(worstStage)}</p>
+          </div>
+          <div class="diag-col">
+            <div class="diag-k">Prescription · recommended play</div>
+            <p class="diag-p">${bottleneckPrescription(worstStage)}</p>
+            <div class="lift">
+              <span class="lift-from">${curAdvance}%</span>
+              <span class="lift-arrow">→</span>
+              <span class="lift-to">~${targetAdvance}%</span>
+              <span class="lift-cap">expected conversion to ${wNextStage.label}</span>
+            </div>
+          </div>
+        </div>
+        <div class="diag-actions">
+          <button class="btn-primary" onclick="showStuckEntities('${worstStage}')">View ${stuck.length} stuck entities →</button>
+          <button class="btn-ghost" onclick="switchView('database')">Open in database</button>
+        </div>
       </div>
-    </div>`;
+    </section>`;
   }
 
-  // ===== Section C + D side-by-side =====
-  html += `<div class="fd-grid-2">`;
-
-  // ===== Section C: Strategic Tier composition =====
-  html += `<div class="fd-card">
-    <div class="fd-card-h">C · CONVERSION BY STRATEGIC TIER</div>
-    <table class="fd-table">
-      <thead><tr><th>Tier</th><th class="num">Contacted</th><th class="num">Engaged+</th><th class="num">Conv %</th></tr></thead>
-      <tbody>`;
-  const tierRows = Object.entries(tierStages).filter(([t,v]) => v.total > 0 && t !== "(unset)").sort((a,b) => (b[1].engaged_plus/b[1].total) - (a[1].engaged_plus/a[1].total));
-  tierRows.forEach(([t, v]) => {
-    const pct = v.total ? Math.round(v.engaged_plus/v.total*100) : 0;
-    const cls = pct > 25 ? "good" : pct < 10 ? "bad" : "";
-    html += `<tr><td>${t}</td><td class="num">${v.contacted}/${v.total}</td><td class="num">${v.engaged_plus}</td><td class="num ${cls}">${pct}%</td></tr>`;
-  });
-  html += `</tbody></table>`;
-  if (tierRows.length > 0) {
-    const best = tierRows[0]; const worst = tierRows[tierRows.length-1];
+  // ===== EXHIBIT 04 — Tier conversion + dormancy =====
+  html += `<section class="exhibit">
+    <div class="ex-top"><div class="ex-eyebrow">Exhibit 04 &nbsp;·&nbsp; <b>Where conversion concentrates — and where contact goes cold</b></div></div>
+    <h2 class="ex-title">Conversion lives almost entirely in <span class="hl">${bestTier}</span> tier${untouchedN > 0 ? `; <span class="hl">${untouchedN} high-potential prospect${untouchedN===1?'':'s'}</span> in other tiers remain untouched` : ""}.</h2>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-h">C · Conversion by strategic tier</div>`;
+  if (tierRows.length) {
+    tierRows.forEach(([t, v]) => {
+      const pct = v.total ? Math.round(v.engaged_plus/v.total*100) : 0;
+      const cls = pct > 25 ? "good" : pct < 10 ? "bad" : "";
+      const barColor = pct > 25 ? "var(--ur)" : pct >= 10 ? "var(--cold)" : "var(--ink-mute)";
+      html += `<div class="tier-row">
+        <div class="tier-name">${t}</div>
+        <div class="tier-counts">${v.engaged_plus} / ${v.total}</div>
+        <div class="tier-pct ${cls}">${pct}%</div>
+      </div>
+      <div class="tier-bar-track"><div class="tier-bar-fill" style="width:${Math.max(2, pct)}%;background:${barColor}"></div></div>`;
+    });
+    const best = tierRows[0];
     const bestPct = Math.round(best[1].engaged_plus/best[1].total*100) || 0;
-    const worstPct = Math.round(worst[1].engaged_plus/worst[1].total*100) || 0;
-    html += `<div class="fd-card-foot"><b>${best[0]}</b> tier converts at ${bestPct}% — ${bestPct > worstPct + 5 ? `<b>${(bestPct/(worstPct||1)).toFixed(1)}×</b> better than <b>${worst[0]}</b>` : `roughly matched across tiers`}. ${bestPct > 20 ? "Double down here." : "All tiers underperforming — review outreach quality."}</div>`;
+    html += `<div class="panel-foot"><b>${best[0]}</b> converts at ${bestPct}%${untouchedN > 0 ? ` — but the real signal: <b>${untouchedN} prospects</b> in ${untouchedTiers.map(([t]) => t).join(" & ")} have <b>zero</b> contacted. Untapped, not failing.` : `. ${bestPct > 20 ? "Double down here." : "Review outreach quality across tiers."}`}</div>`;
   }
-  html += `</div>`;
-
-  // ===== Section D: Time histogram =====
-  html += `<div class="fd-card">
-    <div class="fd-card-h">D · DAYS SINCE LAST CONTACT — DISTRIBUTION</div>
-    <div class="fd-histo">`;
+  html += `</div>
+      <div class="panel">
+        <div class="panel-h">D · Days since last contact — distribution</div>
+        <div class="histo-wrap">
+          <div class="stale-band"></div>
+          <div class="median-tag" style="left:calc(${(medianIdx/7*100).toFixed(1)}% + 6px)">▾ median</div>
+          <div class="stale-tag">12m+ stale</div>
+          <div class="histo">`;
   buckets.forEach((b, i) => {
-    const h = (b/maxBucket)*100;
-    const color = i < 2 ? "#85B7EB" : i < 4 ? "#378ADD" : i < 6 ? "#185FA5" : "#A32D2D";
-    const isMed = i === medianIdx;
-    html += `<div class="fd-histo-bar ${isMed?'median':''}" style="height:${h}%;background:${color}" title="${b} entities · ${bucketLabels[i]}"></div>`;
+    const h = Math.round((b/maxBucket)*100);
+    const cls = i === medianIdx ? "median" : (i === 5 ? "amber" : (i === 6 ? "red" : ""));
+    html += `<div class="histo-col"><div class="histo-n">${b}</div><div class="histo-bar ${cls}" style="height:${h}%"></div></div>`;
   });
-  html += `</div><div class="fd-histo-axis">${bucketLabels.map(l => `<span>${l}</span>`).join("")}</div>`;
-  html += `<div class="fd-card-foot">Median dormancy = <b>${medianMonths < 1 ? "<1 month" : medianMonths + " months"}</b> across ${totalContacted} contacted entities. ${buckets[5]+buckets[6]} entities are 12+ months stale — re-warm or archive.</div></div>`;
-
-  html += `</div>`; // close grid-2
-
-  // ===== Section E: Monte Carlo forecast =====
-  html += `<div class="fd-sec-label">E · 90-DAY SIGNING FORECAST</div>`;
-  html += `<div class="fd-forecast">
-    <div class="fd-forecast-h">Monte Carlo simulation <span>· 10,000 runs · stage-conditional advance probabilities</span></div>
-    <div class="fd-forecast-row">
-      <div class="fd-forecast-block"><label>Most likely (P50)</label><div class="big">${forecast.p50}</div><div class="x">signings in 90 days</div></div>
-      <div class="fd-forecast-block"><label>Conservative (P10)</label><div class="mid">${forecast.p10}</div></div>
-      <div class="fd-forecast-block"><label>Optimistic (P90)</label><div class="mid">${forecast.p90}</div></div>
-      <div class="fd-forecast-block right">
-        <label>Largest expected contributor</label>
-        <div class="small">${forecast.topContributor ? escape(forecast.topContributor.name) : "—"}</div>
-        <div class="x">${forecast.topContributor ? STAGE_BY_ID[forecast.topContributor.pipeline_stage].label : ""} · P(sign 90d) = ${forecast.topContributor ? Math.round(forecast.topContributor.p_sign*100) : 0}%</div>
+  html += `</div>
+          <div class="histo-axis">${bucketLabels.map(l => `<span>${l}</span>`).join("")}</div>
+        </div>
+        <div class="panel-foot">Median dormancy = <b>${medianMonths < 1 ? "<1 month" : medianMonths + " months"}</b> across ${totalContacted} contacted entities. <b>${buckets[5]+buckets[6]} entities</b> are 12+ months stale — re-warm or archive before they sour.</div>
       </div>
     </div>
-    <div class="fd-counter">
-      <strong>Counterfactual:</strong> If you advance <input type="range" min="0" max="20" value="5" id="cf-slider" oninput="updateCounterfactual()"> <span id="cf-val" class="out">5</span> cold entities from <b>Identified</b> to <b>First-touch</b> over the next 30 days, your 90-day forecast becomes <span id="cf-out" class="out">${forecast.p50 + 1}</span> signings.
-    </div>
-  </div>`;
+  </section>`;
 
-  html += `</div>`; // close fd-shell
+  // ===== EXHIBIT 05 — 90-day forecast =====
+  const _p10 = forecast.p10, _p50 = forecast.p50, _p90 = forecast.p90;
+  const _lo = Math.min(_p10, _p50, _p90), _hi = Math.max(_p10, _p50, _p90);
+  const _span = Math.max(1, _hi - _lo);
+  const _pos = x => 15 + (x - _lo) / _span * 70; // P10→15%, P90→85%
+  const _pp10 = _pos(_p10), _pp50 = _pos(_p50), _pp90 = _pos(_p90);
+  const tc = forecast.topContributor;
+  html += `<section class="exhibit">
+    <div class="ex-top"><div class="ex-eyebrow">Exhibit 05 &nbsp;·&nbsp; <b>90-day signing forecast</b></div></div>
+    <h2 class="ex-title">A <span class="hl">central case of ${_p50} signing${_p50===1?'':'s'}</span> in the next 90 days, with a plausible range of ${_p10} to ${_p90}.</h2>
+    <div class="fc">
+      <div class="fc-top">
+        <div class="fc-head">Monte Carlo simulation <span>· 10,000 runs · stage-conditional advance probabilities</span></div>
+        <div class="fc-contrib">
+          <div class="fc-contrib-k">Largest expected contributor</div>
+          <div class="fc-contrib-v">${tc ? escape(tc.name) : "—"}</div>
+          <div class="fc-contrib-x">${tc ? escape(STAGE_BY_ID[tc.pipeline_stage].label) + ` · P(sign 90d) = ${Math.round(tc.p_sign*100)}%` : ""}</div>
+        </div>
+      </div>
+      <div class="fc-band-wrap">
+        <div class="fc-band-head">
+          <span class="fc-p50">${_p50}</span>
+          <span class="fc-p50-cap"><b>signings most likely (P50)</b><br>in the next 90 days</span>
+        </div>
+        <div class="fc-track">
+          <div class="fc-range" style="left:${_pp10.toFixed(1)}%;right:${(100-_pp90).toFixed(1)}%"></div>
+          <div class="fc-marker" style="left:${_pp50.toFixed(1)}%"></div>
+          <div class="fc-tick" style="left:${_pp10.toFixed(1)}%"><div class="v">${_p10}</div><div class="l">Conservative · P10</div></div>
+          <div class="fc-tick mid" style="left:${_pp50.toFixed(1)}%"><div class="v">${_p50}</div><div class="l">Most likely · P50</div></div>
+          <div class="fc-tick" style="left:${_pp90.toFixed(1)}%"><div class="v">${_p90}</div><div class="l">Optimistic · P90</div></div>
+        </div>
+      </div>
+      <div class="fc-counter">
+        <strong>Counterfactual lever:</strong> If you advance <input type="range" min="0" max="20" value="5" id="cf-slider" oninput="updateCounterfactual()"> <span id="cf-val" class="out">5</span> cold entities from <b>Identified</b> to <b>First-touch</b> over the next 30 days, your 90-day forecast becomes <span id="cf-out" class="out">${forecast.p50 + 1}</span> signings.
+      </div>
+    </div>
+    <p class="ex-source"><b>Source:</b> Monte Carlo simulation, 10,000 runs, per-entity stage-conditional advance probabilities. P10/P50/P90 are the 10th, 50th and 90th percentiles of simulated 90-day signings.</p>
+  </section>`;
+
+  html += `</main></div>`; // close .sheet + .fnx
   el.innerHTML = html;
   console.log("[renderFunnelView] done, content length=", html.length);
   // Fill the TAM band from a cached AI estimate (no auto-spend; the button
@@ -18384,54 +18619,70 @@ function _marketTypeBreakdown() {
 // actually estimated: the number, the per-region breakdown, the methodology,
 // and the confidence. `est` is the full estimate object from the API.
 function _applyMarketEstimate(est) {
-  const samEl = document.getElementById("fd-band-sam");
-  const somEl = document.getElementById("fd-band-som");
-  const tamV  = document.getElementById("fd-tam-v");
-  const foot  = document.getElementById("fd-market-foot");
-  if (!samEl || !somEl || !tamV) return;
+  const tamEl  = document.getElementById("fd-band-tam");
+  const samEl  = document.getElementById("fd-band-sam");
+  const somEl  = document.getElementById("fd-band-som");
+  const tamEnd = document.getElementById("fd-tam-end");
+  const tamSub = document.getElementById("fd-tam-sub");
+  if (!tamEl || !samEl || !somEl || !tamEnd) return;
   est = est || {};
   const tam = parseInt(est.tam_total) || 0;
-  const sam = parseInt((samEl.querySelector(".fd-band-v") || {}).textContent) || 0;
-  const som = parseInt((somEl.querySelector(".fd-band-v") || {}).textContent) || 0;
+  const numOf = el => { const n = el && el.querySelector(".bar-num"); return n ? (parseInt(n.textContent.replace(/[^\d]/g, "")) || 0) : 0; };
+  const sam = numOf(samEl);
+  const som = numOf(somEl);
+  const meth = est.methodology ? String(est.methodology) : "";
+  const conf = (est.confidence || "").toLowerCase();
+  const confLbl = ["high","medium","low"].includes(conf) ? conf : "";
+  const regions = Array.isArray(est.by_region) ? est.by_region : [];
 
-  // ----- 1. TAM band number (always set) -----
-  let lead = "";
   if (tam > sam) {
-    // Healthy estimate: TAM = full width, SAM/SOM proportional.
-    samEl.style.width = Math.max(22, Math.round(sam / tam * 100)) + "%";
+    // Healthy estimate — TAM full width, SAM/SOM proportional to it.
+    tamEl.classList.add("estimated");
+    if (meth) tamEl.title = meth + (confLbl ? ` (${confLbl} confidence)` : "");
+    samEl.style.width = Math.max(30, Math.round(sam / tam * 100)) + "%";
     somEl.style.width = Math.max(16, Math.round(som / tam * 100)) + "%";
-    tamV.innerHTML = `${tam.toLocaleString()} <span class="fd-band-note">estimated</span>`;
+    tamEnd.className = "bar-end";
+    tamEnd.removeAttribute("onclick");
+    tamEnd.innerHTML = `<span class="bar-num">${tam.toLocaleString()}</span><span class="bar-pct">estimated</span>`;
+    if (tamSub) tamSub.textContent = "AI estimate" + (confLbl ? ` · ${confLbl} confidence` : "");
     const undiscovered = tam - sam;
     const pct = Math.round(sam / tam * 100);
-    lead = `You've identified <b>${pct}%</b> of the estimated market (${sam.toLocaleString()} of ~${tam.toLocaleString()}). <b>${undiscovered.toLocaleString()}</b> partnerable institutions are still undiscovered — <a onclick="switchView('prospects')" style="color:var(--hf-red);cursor:pointer;text-decoration:underline">go find them in Prospect Discovery</a>.`;
+    const gap = document.getElementById("fd-gap-text");
+    if (gap) gap.innerHTML = `<span>You've found <b style="color:var(--ink)">${pct}%</b> of the market — <b style="color:var(--ink)">${undiscovered.toLocaleString()}</b> partnerable institutions still undiscovered</span><span class="dash"></span><a onclick="switchView('prospects')">Go find them in Prospect Discovery →</a>`;
+    const sub = document.getElementById("fd-ex1-sub");
+    if (sub) sub.innerHTML = `<b>SAM</b> and <b>SOM</b> are exact, from the pipeline. <b>TAM</b> is an AI estimate of <b>~${tam.toLocaleString()}</b> partnerable institutions${confLbl ? ` (${confLbl} confidence)` : ""} — you've qualified <b>${pct}%</b> of it so far.`;
   } else if (tam > 0) {
-    // AI returned a TAM at or below what we've already qualified — unusual.
-    // Show it, but flag it so the band isn't silently stuck.
-    tamV.innerHTML = `${tam.toLocaleString()} <span class="fd-band-note">estimated · looks low</span>`;
-    lead = `The AI estimated a TAM of <b>~${tam.toLocaleString()}</b>, at or below what you've already qualified (${sam.toLocaleString()}). That usually means the region / type mix fed to the model was too narrow — hit <b>Re-estimate</b>, or it genuinely reflects a focused market.`;
+    // AI returned a number at or below SAM — unusual; show it, flag it.
+    tamEl.classList.remove("estimated");
+    tamEnd.className = "bar-estimate";
+    tamEnd.setAttribute("onclick", "estimateMarketSizing()");
+    tamEnd.innerHTML = `${tam.toLocaleString()} &nbsp;·&nbsp; looks low — re-estimate ↻`;
+    if (tamSub) tamSub.textContent = "AI estimate looks low (≤ SAM)";
   } else {
-    // No usable number came back.
-    tamV.innerHTML = `<span class="fd-band-note" style="color:var(--hf-red)">estimate unavailable</span>`;
-    lead = `The AI didn't return a usable market size. Try <b>Re-estimate</b> in a moment — on the free Gemini tier this can be a temporary rate limit.`;
+    // No usable number.
+    tamEl.classList.remove("estimated");
+    tamEnd.className = "bar-estimate";
+    tamEnd.setAttribute("onclick", "estimateMarketSizing()");
+    tamEnd.innerHTML = `estimate unavailable — retry ↻`;
+    if (tamSub) tamSub.textContent = "whole market — not yet measured";
   }
 
-  // ----- 2. Surface the breakdown the AI produced -----
-  let detail = lead;
-  const regions = Array.isArray(est.by_region) ? est.by_region : [];
-  if (regions.length) {
-    detail += `<div class="fd-mkt-regions">` + regions.map(rg => {
-      const n = parseInt(rg && rg.estimate) || 0;
-      const note = rg && rg.note ? ` · ${escape(String(rg.note))}` : "";
-      return `<span class="fd-mkt-region"><b>${escape(String((rg && rg.region) || "—"))}</b> ~${n.toLocaleString()}${note}</span>`;
-    }).join("") + `</div>`;
+  // Surface what the AI actually estimated (regions + method + confidence).
+  const methEl = document.getElementById("fd-mkt-method");
+  if (methEl) {
+    if (tam > 0 && (meth || regions.length)) {
+      let h = "";
+      if (regions.length) {
+        h += `<b>By region:</b> ` + regions.map(rg => `${escape(String((rg && rg.region) || "—"))} ~${(parseInt(rg && rg.estimate) || 0).toLocaleString()}`).join(" &nbsp;·&nbsp; ") + `. `;
+      }
+      if (meth) h += `<b>Method:</b> ${escape(meth)}`;
+      if (confLbl) h += ` &nbsp;·&nbsp; ${confLbl} confidence`;
+      methEl.innerHTML = h;
+      methEl.style.display = "";
+    } else {
+      methEl.style.display = "none";
+    }
   }
-  if (est.methodology) {
-    const conf = (est.confidence || "").toLowerCase();
-    const confPill = ["high","medium","low"].includes(conf)
-      ? `<span class="fd-mkt-conf fd-conf-${conf}">${conf} confidence</span>` : "";
-    detail += `<div class="fd-mkt-meth"><b>How this was estimated:</b> ${escape(String(est.methodology))}${confPill}</div>`;
-  }
-  if (foot) foot.innerHTML = detail;
 }
 // Back-compat shim — older call sites passed just the number.
 function _applyTamToFunnel(tam) { _applyMarketEstimate({ tam_total: tam }); }
@@ -18442,17 +18693,17 @@ async function loadMarketSizing() {
     if (data && data.exists && data.estimate) {
       _applyMarketEstimate(data.estimate);
       const btn = document.getElementById("fd-tam-btn");
-      if (btn) btn.textContent = "⟳ Re-estimate (AI)";
-      const tamV = document.getElementById("fd-tam-v");
-      if (tamV && data.estimate.methodology) tamV.title = data.estimate.methodology;
+      if (btn) btn.textContent = "↻ Re-estimate with AI";
     }
-  } catch (e) { /* leave the estimate button */ }
+  } catch (e) { /* leave the estimate button as-is */ }
 }
 async function estimateMarketSizing() {
-  const btn = document.getElementById("fd-tam-btn");
-  const tamV = document.getElementById("fd-tam-v");
+  const btn    = document.getElementById("fd-tam-btn");
+  const tamEl  = document.getElementById("fd-band-tam");
+  const tamEnd = document.getElementById("fd-tam-end");
   if (btn) { btn.disabled = true; btn.textContent = "Estimating…"; }
-  if (tamV) tamV.innerHTML = `<span class="fd-band-note">AI estimating…</span>`;
+  if (tamEl) tamEl.classList.remove("estimated");
+  if (tamEnd) { tamEnd.className = "bar-estimate"; tamEnd.removeAttribute("onclick"); tamEnd.textContent = "AI estimating…"; }
   try {
     const r = await apiFetch("/api/market-sizing", {
       method: "POST",
@@ -18466,18 +18717,17 @@ async function estimateMarketSizing() {
     const data = await r.json().catch(() => ({}));
     if (!r.ok || !data.ok) {
       const msg = (typeof _aiErrorMessage === "function") ? _aiErrorMessage(data.error || ("HTTP " + r.status)) : (data.error || "Estimate failed");
-      if (tamV) tamV.innerHTML = `<span class="fd-band-note" style="color:var(--hf-red)">estimate failed</span>`;
+      if (tamEnd) { tamEnd.className = "bar-estimate"; tamEnd.setAttribute("onclick", "estimateMarketSizing()"); tamEnd.innerHTML = "estimate failed — retry ↻"; }
       if (typeof showSyncToast === "function") showSyncToast("⚠ " + msg, "warn");
-      if (btn) { btn.disabled = false; btn.textContent = "⟳ Estimate market (AI)"; }
+      if (btn) { btn.disabled = false; btn.textContent = "↻ Estimate with AI"; }
       return;
     }
     _applyMarketEstimate(data.estimate);
-    if (btn) { btn.disabled = false; btn.textContent = "⟳ Re-estimate (AI)"; }
-    if (tamV && data.estimate.methodology) tamV.title = data.estimate.methodology;
+    if (btn) { btn.disabled = false; btn.textContent = "↻ Re-estimate with AI"; }
     if (typeof showSyncToast === "function") showSyncToast("✓ Market estimate ready", "ok");
   } catch (e) {
-    if (tamV) tamV.innerHTML = `<span class="fd-band-note" style="color:var(--hf-red)">error</span>`;
-    if (btn) { btn.disabled = false; btn.textContent = "⟳ Estimate market (AI)"; }
+    if (tamEnd) { tamEnd.className = "bar-estimate"; tamEnd.setAttribute("onclick", "estimateMarketSizing()"); tamEnd.innerHTML = "error — retry ↻"; }
+    if (btn) { btn.disabled = false; btn.textContent = "↻ Estimate with AI"; }
   }
 }
 
