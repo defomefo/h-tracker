@@ -4664,6 +4664,43 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 /* ACTIVITY TIMELINE (detail panel tab) */
 .activity-list{display:flex;flex-direction:column;gap:0;padding:4px 0}
 .activity-empty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:18px 6px;text-align:center}
+/* Competitive Intel tab */
+.ci-host{padding:4px 0}
+.ci-loading{font-size:12.5px;color:var(--ink-soft);padding:24px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.ci-spin{width:22px;height:22px;border:2.5px solid var(--rule);border-top-color:var(--hf-red);border-radius:50%;animation:ci-spin .8s linear infinite}
+@keyframes ci-spin{to{transform:rotate(360deg)}}
+.ci-bootstrap{text-align:center;padding:28px 18px}
+.ci-bootstrap-h{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.ci-bootstrap-p{font-size:12.5px;line-height:1.55;color:var(--ink-soft);max-width:46ch;margin:0 auto 16px}
+.ci-card{display:flex;flex-direction:column;gap:16px}
+.ci-verdict-row{display:flex;gap:12px;align-items:flex-start;background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--hf-red);border-radius:8px;padding:13px 15px}
+.ci-verdict{font-size:13px;line-height:1.55;color:var(--ink);flex:1}
+.ci-stance{flex-shrink:0;font-size:9.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:4px 9px;border-radius:11px;border:1px solid}
+.ci-stance-diff{color:#1F6FB4;background:#E8F1F9;border-color:#B9D4ED}
+.ci-stance-collab{color:#1F6E48;background:#E5F0EB;border-color:#B9D6C8}
+.ci-stance-both{color:#8A6D1A;background:#FAF3E3;border-color:#E6D6B0}
+.ci-sec-lbl{font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:7px}
+.ci-list{margin:0;padding-left:18px;list-style:disc}
+.ci-list li{font-size:12.5px;line-height:1.5;color:var(--ink);margin-bottom:5px}
+.ci-empty-line{font-size:12px;color:var(--ink-mute);font-style:italic}
+.ci-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ci-col{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:13px 15px}
+.ci-col-diff{border-top:2px solid #1F6FB4}
+.ci-col-collab{border-top:2px solid #1F6E48}
+.ci-col-lbl{font-size:10.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.ci-col-diff .ci-col-lbl{color:#1F6FB4}
+.ci-col-collab .ci-col-lbl{color:#1F6E48}
+.ci-point{margin-bottom:11px}
+.ci-point:last-child{margin-bottom:0}
+.ci-point-head{font-size:12.5px;font-weight:700;color:var(--navy);line-height:1.4}
+.ci-point-why{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin-top:3px}
+.ci-sources{font-size:11px;color:var(--ink-soft)}
+.ci-sources-lbl{font-weight:800;letter-spacing:.6px;text-transform:uppercase;font-size:9px;color:var(--ink-mute);margin-right:8px}
+.ci-sources a{color:var(--hf-red);text-decoration:none;font-weight:700}
+.ci-sources a:hover{text-decoration:underline}
+.ci-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px dashed var(--rule);padding-top:10px}
+.ci-foot-meta{font-size:10.5px;color:var(--ink-mute);font-style:italic}
+@media (max-width:560px){.ci-cols{grid-template-columns:1fr}}
 .activity-row{display:flex;gap:12px;padding:8px 4px;border-bottom:1px dashed var(--rule);align-items:flex-start}
 .activity-row:last-child{border-bottom:none}
 .activity-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0;box-shadow:0 0 0 2px var(--paper)}
@@ -11899,6 +11936,10 @@ function openDetail(id) {
   if (_dpActiveTab === "activity" && typeof loadEntityActivity === "function") {
     loadEntityActivity(u.id);
   }
+  // Competitive Intel tab — lazy-load cached intel (or the empty state).
+  if (_dpActiveTab === "intel" && typeof loadCompetitiveIntel === "function") {
+    loadCompetitiveIntel(u.id);
+  }
 }
 function closeDetail() {
   // Clearing STATE.detailId is essential: every sync function does
@@ -12335,6 +12376,10 @@ function _dpTabsHtml(u, active) {
     {key:"outreach",  label:"Outreach",  count: (OUTREACH[u.id] || []).length},
     {key:"contracts", label:"Contracts", count: (typeof CONTRACTS !== "undefined" ? (CONTRACTS || []).filter(c => c.entity_id === u.id).length : 0)},
     {key:"followups", label:"Follow-ups",count: (typeof _followupsForEntity === "function" ? _followupsForEntity(u.id).length : 0)},
+    // Competitive Intel — universities only (what they offer + differentiate
+    // / collaborate verdict). Other entity types (agencies, schools, orgs)
+    // don't have a competing-offering to analyse the same way.
+    ...(u.type === "university" ? [{key:"intel", label:"Intel", count: null}] : []),
     {key:"activity",  label:"Activity",  count: null},
   ];
   return tabs.map(t => {
@@ -12356,6 +12401,9 @@ function _dpTabBodyHtml(u, tab) {
     case "outreach":  return `<div class="eng-panel active" data-panel="tracking">${renderTrackingBody(u)}</div>`;
     case "contracts": return `<div class="eng-panel active" data-panel="contracts">${renderEntityContractsBody(u)}</div>`;
     case "followups": return `<div class="eng-panel active" data-panel="followups">${renderEntityFollowupsBody(u)}</div>`;
+    case "intel":     return `<div class="eng-panel active" data-panel="intel">
+        <div id="ci-host-${escapeAttr(u.id)}" class="ci-host"><div class="ci-loading">Loading competitive intel…</div></div>
+      </div>`;
     case "activity":  return `<div class="eng-panel active" data-panel="activity">
         <div id="activity-list-${u.id}" class="activity-list"><div class="activity-empty">Loading…</div></div>
       </div>`;
@@ -12808,6 +12856,139 @@ async function loadEntityActivity(entityId) {
       </div>`).join("");
   } catch (err) {
     host.innerHTML = `<div class="activity-empty">Couldn't load activity — ${escape(err.message)}.</div>`;
+  }
+}
+
+// ============================================================================
+// COMPETITIVE INTEL tab (universities only). Loads cached intel from
+// /api/competitive-intel/<id>, or shows an empty state with a "Research"
+// button that POSTs (Tavily + Gemini) and caches. Renders the offerings +
+// differentiate / collaborate verdict side by side, with source URLs + a
+// researched-on date. Marketing's manual competitor research, automated.
+// ============================================================================
+function _ciStancePill(stance) {
+  const map = {
+    differentiate: { lbl: "Differentiate", cls: "ci-stance-diff" },
+    collaborate:   { lbl: "Collaborate",   cls: "ci-stance-collab" },
+    both:          { lbl: "Both",          cls: "ci-stance-both" },
+  };
+  const s = map[stance] || map.both;
+  return `<span class="ci-stance ${s.cls}">${s.lbl}</span>`;
+}
+
+function _ciRenderIntel(host, entityId, data) {
+  const intel = data.intel || {};
+  const offerings = intel.offerings || [];
+  const diff = intel.differentiate || [];
+  const collab = intel.collaborate || [];
+  const sources = data.sources || [];
+  const when = data.researched_at ? (new Date(data.researched_at)) : null;
+  const whenLbl = (when && !isNaN(when)) ? when.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : (data.researched_at || "—");
+
+  const offeringsHtml = offerings.length
+    ? `<ul class="ci-list">${offerings.map(o => `<li>${escape(String(o))}</li>`).join("")}</ul>`
+    : `<div class="ci-empty-line">No clear student offerings found in the sources — try Refresh, or the university has a thin web presence.</div>`;
+
+  const diffHtml = diff.length
+    ? diff.map(d => `<div class="ci-point"><div class="ci-point-head">${escape(d.point || "")}</div>${d.why ? `<div class="ci-point-why">${escape(d.why)}</div>` : ""}</div>`).join("")
+    : `<div class="ci-empty-line">—</div>`;
+  const collabHtml = collab.length
+    ? collab.map(c => `<div class="ci-point"><div class="ci-point-head">${escape(c.angle || "")}</div>${c.why ? `<div class="ci-point-why">${escape(c.why)}</div>` : ""}</div>`).join("")
+    : `<div class="ci-empty-line">—</div>`;
+
+  const sourcesHtml = sources.length
+    ? `<div class="ci-sources"><span class="ci-sources-lbl">Sources</span>${sources.slice(0, 8).map((url, i) => `<a href="${escapeAttr(url)}" target="_blank" rel="noopener" title="${escapeAttr(url)}">[${i + 1}]</a>`).join(" ")}</div>`
+    : "";
+
+  host.innerHTML = `
+    <div class="ci-card">
+      <div class="ci-verdict-row">
+        ${_ciStancePill(intel.stance)}
+        <div class="ci-verdict">${escape(intel.verdict || "")}</div>
+      </div>
+      <div class="ci-sec">
+        <div class="ci-sec-lbl">What they offer students</div>
+        ${offeringsHtml}
+      </div>
+      <div class="ci-cols">
+        <div class="ci-col ci-col-diff">
+          <div class="ci-col-lbl">How we differentiate</div>
+          ${diffHtml}
+        </div>
+        <div class="ci-col ci-col-collab">
+          <div class="ci-col-lbl">How we collaborate</div>
+          ${collabHtml}
+        </div>
+      </div>
+      ${sourcesHtml}
+      <div class="ci-foot">
+        <span class="ci-foot-meta">Researched ${escape(whenLbl)}${data.researched_by ? " · by " + escape(data.researched_by) : ""} · AI + web search</span>
+        <button type="button" class="dp-sec-link" onclick="researchCompetitiveIntel('${escapeAttr(entityId)}')">↻ Refresh</button>
+      </div>
+    </div>`;
+}
+
+async function loadCompetitiveIntel(entityId) {
+  const host = document.getElementById("ci-host-" + entityId);
+  if (!host) return;
+  try {
+    const r = await apiFetch("/api/competitive-intel/" + encodeURIComponent(entityId));
+    const data = await r.json().catch(() => ({}));
+    if (data && data.exists) {
+      _ciRenderIntel(host, entityId, data);
+    } else {
+      const u = UNIS.find(x => x.id === entityId) || {};
+      host.innerHTML = `
+        <div class="ci-bootstrap">
+          <div class="ci-bootstrap-h">No competitive intel yet</div>
+          <div class="ci-bootstrap-p">Run an AI web search on <b>${escape(u.name || "this university")}</b> — what it offers students (summer schools, exchange, international programmes), then a verdict on how H-FARM can <b>differentiate</b> from it and <b>collaborate</b> with it. Sources are cited.</div>
+          <button type="button" class="btn gold" onclick="researchCompetitiveIntel('${escapeAttr(entityId)}')">Research this university</button>
+        </div>`;
+    }
+  } catch (e) {
+    host.innerHTML = `<div class="ci-loading">Couldn't load — ${escape(e.message)}.</div>`;
+  }
+}
+
+async function researchCompetitiveIntel(entityId) {
+  const host = document.getElementById("ci-host-" + entityId);
+  const u = UNIS.find(x => x.id === entityId);
+  if (!host || !u) return;
+  host.innerHTML = `<div class="ci-loading"><div class="ci-spin"></div>Researching ${escape(u.name || "")} — web search + analysis. This can take 10-20s…</div>`;
+  // Compact H-FARM programme list so Gemini knows what to differentiate /
+  // collaborate against. Pull from the loaded PROGRAMS catalogue.
+  const hfarmPrograms = (typeof PROGRAMS !== "undefined" && Array.isArray(PROGRAMS))
+    ? PROGRAMS.map(p => ({ name: p.name, topic: p.topic || "", audience: p.audience || p.age || "" }))
+    : [];
+  const fitTags = Array.isArray(u.fit_tags)
+    ? u.fit_tags.map(t => (typeof t === "string" ? t : (t && t.tag) || "")).filter(Boolean)
+    : [];
+  try {
+    const r = await apiFetch("/api/competitive-intel/" + encodeURIComponent(entityId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ..._identityHeaders() },
+      body: JSON.stringify({
+        entity: {
+          name: u.name, country: u.country_canonical || u.country, type: u.type,
+          focus_areas: u.focus_areas, fit_tags: fitTags, website: u.website,
+        },
+        hfarm_programs: hfarmPrograms,
+      }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) {
+      const msg = (typeof _aiErrorMessage === "function") ? _aiErrorMessage(data.error || ("HTTP " + r.status)) : (data.error || "Research failed");
+      host.innerHTML = `<div class="ci-bootstrap">
+        <div class="ci-bootstrap-h" style="color:var(--hf-red)">Couldn't research this university</div>
+        <div class="ci-bootstrap-p">${escape(msg)}</div>
+        <button type="button" class="btn outline" onclick="researchCompetitiveIntel('${escapeAttr(entityId)}')">Try again</button>
+      </div>`;
+      return;
+    }
+    _ciRenderIntel(host, entityId, data);
+    if (typeof showSyncToast === "function") showSyncToast(`✓ Competitive intel ready · ${u.name}`, "ok");
+  } catch (e) {
+    host.innerHTML = `<div class="ci-loading">Research error — ${escape(e.message)}.</div>`;
   }
 }
 

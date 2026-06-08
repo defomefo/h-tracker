@@ -504,6 +504,22 @@ def _ensure_schema():
             "CREATE INDEX IF NOT EXISTS idx_aspirations_status ON aspiration_goals(status)",
             "CREATE INDEX IF NOT EXISTS idx_aspirations_expires ON aspiration_goals(expires_at)",
             "CREATE INDEX IF NOT EXISTS idx_aspirations_axis ON aspiration_goals(axis_key)",
+            # ====================================================================
+            # COMPETITIVE INTEL — per-university "what do they offer students,
+            # and should we differentiate from them or collaborate?" One cached
+            # row per entity. Sourced via Tavily web search + Gemini structured
+            # output (same hallucination-defended pipeline as prospect
+            # discovery), so `sources_json` carries the URLs behind the intel.
+            # Marketing's manual competitor research, automated + verdict-tagged.
+            # ====================================================================
+            """CREATE TABLE IF NOT EXISTS competitive_intel (
+                    entity_id       TEXT PRIMARY KEY,
+                    entity_name     TEXT,
+                    intel_json      TEXT NOT NULL,
+                    sources_json    TEXT,
+                    researched_at   TEXT NOT NULL,
+                    researched_by   TEXT
+                )""",
         ]
         conn = _connect()
         try:
@@ -4390,6 +4406,200 @@ Fit-score guide under current policy:
         "fit_reasoning": new_reasoning,
         "suggested_programs": new_programs,
         "policy_version": POLICY_PUSH_AT,
+    })
+
+
+# ============================================================================
+# COMPETITIVE INTEL — per-university "what do they offer, and do we
+# differentiate or collaborate?". Reuses the prospect-discovery engine
+# (Tavily web search + Gemini structured output, source URLs mandatory),
+# but pointed at an entity we ALREADY have rather than discovering new ones.
+# Marketing's manual competitor research, automated + verdict-tagged.
+# ============================================================================
+COMPETITIVE_INTEL_PROMPT = """You are a competitive-intelligence analyst for H-FARM College — an APPLIED, hands-on teaching institution near Venice, Italy. It runs English-language summer programmes (Startup Summer (AD)Venture, AI Fashion Lab, Defending Digital Worlds, Designing Connected Futures, Brand Building, World of AI, Out of the Box) plus Bachelor/Master degrees validated by Ca' Foscari University of Venice and the University of Chichester. Its DNA: real industry projects, company visits, internships, entrepreneurship — NOT deep research.
+
+You are given a TARGET UNIVERSITY and web-search results about what it offers students (especially summer / short / interactive / international / exchange programmes). Your job, reasoning like a strategy consultant doing a compete-vs-ally analysis:
+
+1. OFFERINGS — extract what this university actually offers students, focused on summer schools, short/interactive programmes, and what it provides INTERNATIONAL students (exchange, mobility, English-taught options). Only what the sources support — cite the source index [N]. If the sources are thin, say so honestly rather than inventing.
+
+2. DIFFERENTIATE — where H-FARM has an edge this university does NOT offer. Be SPECIFIC and tie to a real H-FARM programme or strength (e.g. "AI Fashion Lab — applied AI+fashion studio they have no equivalent of", "real-company project weeks vs their lecture-based summer school", "dual Ca' Foscari / Chichester degree"). This is marketing's angle: how H-FARM stands apart.
+
+3. COLLABORATE — a SPECIFIC co-programme / exchange / student-mobility opportunity where the two complement rather than compete. Map THEIR gap or strength to OURS (e.g. "their strong CS theory + our applied Defending Digital Worlds = a joint summer pathway; pitch an exchange sending their CS students to our summer", or "co-host a short innovation week"). Not "we could partner" — a concrete idea.
+
+MOST universities are BOTH at once — a marketing differentiator AND a partnership opportunity. Return both. Calibrate the net VERDICT:
+- Italian universities = geographic competitors for the same students → lean DIFFERENTIATE, but note any NON-degree collaboration (guest lectures, joint events, shared research-light projects) that doesn't cannibalise enrolment.
+- Research-intensive foreign universities = they seek research peers, but their students could attend our applied summer → lean COLLABORATE (their students ↔ our hands-on programmes), differentiate only in marketing tone.
+- Applied / polytechnic foreign universities = strongest COLLABORATE (student mobility, co-summer, exchange), with clear differentiation points too.
+
+NEVER invent programme names, statistics, or facts not in the search results. Where unsure, say "verify" or "not evident from sources".
+
+Return ONLY a JSON object with this exact shape, no markdown, no commentary:
+{
+  "offerings": ["<one offering per line, cite [N]>", "..."],
+  "differentiate": [{"point": "<H-FARM edge they lack — name the programme/strength>", "why": "<1 sentence>"}],
+  "collaborate": [{"angle": "<specific co-programme / exchange / mobility idea>", "why": "<their gap or strength ↔ ours, 1 sentence>"}],
+  "verdict": "<1-2 sentences: net stance — mostly differentiate / mostly collaborate / genuinely both — and the headline reason.>",
+  "stance": "<one of: differentiate | collaborate | both>"
+}"""
+
+
+@app.route("/api/competitive-intel/<entity_id>", methods=["GET"])
+@auth_required
+def competitive_intel_get(entity_id):
+    """Return the cached competitive-intel row for an entity, if any."""
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM competitive_intel WHERE entity_id = ?", (entity_id,)
+    ).fetchone()
+    if not row:
+        return jsonify({"exists": False})
+    try:
+        intel = json.loads(row["intel_json"] or "{}")
+    except Exception:
+        intel = {}
+    try:
+        sources = json.loads(row["sources_json"] or "[]")
+    except Exception:
+        sources = []
+    return jsonify({
+        "exists": True,
+        "entity_id": entity_id,
+        "entity_name": row["entity_name"],
+        "intel": intel,
+        "sources": sources,
+        "researched_at": row["researched_at"],
+        "researched_by": row["researched_by"],
+    })
+
+
+@app.route("/api/competitive-intel/<entity_id>", methods=["POST"])
+@auth_required
+def competitive_intel_research(entity_id):
+    """Run (or refresh) competitive intel for a university. Body:
+       { entity: {name, country, type, focus_areas, fit_tags:[str], website},
+         hfarm_programs: [{name, topic, audience}] }
+    Tavily search → Gemini structured output → cache + return."""
+    if not GEMINI_KEY:
+        return jsonify({"ok": False, "error": "GEMINI_API_KEY not configured"}), 500
+    if not TAVILY_API_KEY:
+        return jsonify({"ok": False, "error": "TAVILY_API_KEY not configured — set it in Render env vars"}), 500
+
+    body = request.get_json(force=True, silent=True) or {}
+    ent = body.get("entity") or {}
+    name = (ent.get("name") or "").strip()
+    if not name:
+        return jsonify({"ok": False, "error": "entity.name is required"}), 400
+    country = (ent.get("country") or "").strip()
+    fit_tags = ent.get("fit_tags") or []
+    if not isinstance(fit_tags, list):
+        fit_tags = []
+    hfarm_programs = body.get("hfarm_programs") or []
+
+    # ----- Step 1: Tavily web search for their student offerings -----
+    q = '"%s" summer school OR short programme OR international students OR exchange OR study abroad' % name
+    if country:
+        q += " " + country
+    search_results = _tavily_search(q, max_results=10)
+    if not search_results:
+        return jsonify({"ok": False, "error": "no search results — Tavily returned empty",
+                        "query": q}), 200
+
+    src_lines = []
+    source_urls = []
+    for i, r in enumerate(search_results[:10]):
+        url = r.get("url") or ""
+        if url:
+            source_urls.append(url)
+        src_lines.append("[%d] %s\n%s" % (i, url, (r.get("content") or "")[:600]))
+    src_str = "\n\n".join(src_lines)
+
+    prog_str = "\n".join(
+        "- %s — %s (%s)" % (p.get("name", "?"), p.get("topic", ""), p.get("audience", ""))
+        for p in hfarm_programs if isinstance(p, dict)
+    ) or "(programme list not supplied)"
+
+    prompt = "\n".join([
+        "## TARGET UNIVERSITY",
+        "Name: %s" % name,
+        "Country: %s" % (country or "unknown"),
+        "Fit tags (our prior classification): %s" % (", ".join(str(t) for t in fit_tags) or "none"),
+        "Focus areas: %s" % (ent.get("focus_areas") or "—"),
+        "Website: %s" % (ent.get("website") or "—"),
+        "",
+        "## H-FARM COLLEGE PROGRAMMES (what we differentiate / collaborate WITH)",
+        prog_str,
+        "",
+        "## WEB SEARCH RESULTS — your only source of truth; cite indices [N]",
+        src_str,
+        "",
+        "Respond with JSON only.",
+    ])
+
+    try:
+        from google.genai import types as _gtypes
+        client_ai = genai.Client(api_key=GEMINI_KEY)
+        resp = client_ai.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=_gtypes.GenerateContentConfig(
+                system_instruction=COMPETITIVE_INTEL_PROMPT,
+                response_mime_type="application/json",
+                temperature=0.3,
+                max_output_tokens=4096,
+            ),
+        )
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"ok": False, "error": "Gemini API error: %s" % e}), 502
+
+    text_parts = []
+    if getattr(resp, "candidates", None):
+        for cand in resp.candidates:
+            content = getattr(cand, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if parts:
+                for p in parts:
+                    t = getattr(p, "text", None)
+                    if t:
+                        text_parts.append(t)
+    raw_text = "".join(text_parts).strip() or (resp.text or "").strip()
+    parsed = _parse_email_json(raw_text) or {}
+
+    intel = {
+        "offerings":     [str(x) for x in (parsed.get("offerings") or []) if x][:12],
+        "differentiate": [d for d in (parsed.get("differentiate") or []) if isinstance(d, dict)][:8],
+        "collaborate":   [c for c in (parsed.get("collaborate") or []) if isinstance(c, dict)][:8],
+        "verdict":       (parsed.get("verdict") or "").strip()[:600],
+        "stance":        (parsed.get("stance") or "both").strip().lower(),
+    }
+    if intel["stance"] not in ("differentiate", "collaborate", "both"):
+        intel["stance"] = "both"
+
+    researched_at = _now_iso()
+    researched_by = (request.headers.get("X-Display-Name") or "").strip()
+    db = get_db()
+    db.execute(
+        """INSERT INTO competitive_intel (entity_id, entity_name, intel_json, sources_json, researched_at, researched_by)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT (entity_id) DO UPDATE SET
+             entity_name   = excluded.entity_name,
+             intel_json    = excluded.intel_json,
+             sources_json  = excluded.sources_json,
+             researched_at = excluded.researched_at,
+             researched_by = excluded.researched_by""",
+        (entity_id, name, json.dumps(intel), json.dumps(source_urls), researched_at, researched_by),
+    )
+    db.commit()
+    _record_edit("competitive_intel", "research", entity_id)
+
+    return jsonify({
+        "ok": True,
+        "exists": True,
+        "entity_id": entity_id,
+        "entity_name": name,
+        "intel": intel,
+        "sources": source_urls,
+        "researched_at": researched_at,
+        "researched_by": researched_by,
     })
 
 
