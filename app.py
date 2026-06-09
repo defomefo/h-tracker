@@ -4004,46 +4004,61 @@ def prospects_discover():
     #       means bump max_output_tokens; SAFETY / RECITATION need a
     #       different fix entirely. We surface this in the error JSON
     #       so the frontend can show it without a Render-log dive.
-    try:
-        from google.genai import types as _gtypes
-        client_ai = genai.Client(api_key=GEMINI_KEY)
-        resp = client_ai.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=_gtypes.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.2,
-                max_output_tokens=8192,   # was 4096 — bumped to be safe
-            ),
-        )
-        # Manually concat every part across every candidate (works around
-        # the SDK quirk where resp.text only returns the first chunk).
-        text_parts = []
-        finish_reason = None
-        if getattr(resp, "candidates", None):
-            for cand in resp.candidates:
-                if finish_reason is None:
-                    finish_reason = str(getattr(cand, "finish_reason", "") or "")
-                content = getattr(cand, "content", None)
-                parts = getattr(content, "parts", None) if content else None
-                if parts:
-                    for p in parts:
-                        t = getattr(p, "text", None)
-                        if t:
-                            text_parts.append(t)
-        concat_text = "".join(text_parts).strip()
-        fallback_text = (resp.text or "").strip() if hasattr(resp, "text") else ""
-        # Use whichever is longer — the parts concat almost always wins on
-        # multi-part responses, but fall back to .text if parts came up empty.
-        raw_text = concat_text if len(concat_text) >= len(fallback_text) else fallback_text
-        print(f"[prospects] Gemini: finish={finish_reason!r} text={len(raw_text)} chars "
-              f"(parts={len(concat_text)} / .text={len(fallback_text)}); first 300: {raw_text[:300]!r}")
-    except Exception as e:
-        import traceback as _tb
-        print(f"[prospects] Gemini call failed: {e}\n{_tb.format_exc()}")
-        return jsonify({"ok": False, "error": f"Gemini call failed: {e}",
-                        "stage": "gemini_call",
-                        "exception_type": type(e).__name__}), 500
+    from google.genai import types as _gtypes
+    client_ai = genai.Client(api_key=GEMINI_KEY)
+    # Gemini intermittently returns 503 "this model is experiencing high demand"
+    # / UNAVAILABLE — a server-side spike, unrelated to billing/quota. Retry
+    # with backoff (2s, 4s) so a transient overload self-heals instead of
+    # failing the whole discovery run.
+    resp = None
+    for _attempt in range(3):
+        try:
+            resp = client_ai.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=_gtypes.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.2,
+                    max_output_tokens=8192,   # was 4096 — bumped to be safe
+                ),
+            )
+            break
+        except Exception as e:  # noqa: BLE001
+            msg = str(e).lower()
+            transient = any(s in msg for s in ("503", "500", "overload", "unavailable", "high demand", "deadline", "timeout", "try again"))
+            if transient and _attempt < 2:
+                time.sleep(2.0 * (_attempt + 1))
+                continue
+            import traceback as _tb
+            print(f"[prospects] Gemini call failed: {e}\n{_tb.format_exc()}")
+            friendly = ("Gemini is briefly overloaded on Google's side (high demand) — "
+                        "this is temporary and unrelated to billing. Try Run discovery again in a moment."
+                        if transient else f"Gemini call failed: {e}")
+            return jsonify({"ok": False, "error": friendly,
+                            "stage": "gemini_call",
+                            "exception_type": type(e).__name__}), 500
+    # Manually concat every part across every candidate (works around
+    # the SDK quirk where resp.text only returns the first chunk).
+    text_parts = []
+    finish_reason = None
+    if getattr(resp, "candidates", None):
+        for cand in resp.candidates:
+            if finish_reason is None:
+                finish_reason = str(getattr(cand, "finish_reason", "") or "")
+            content = getattr(cand, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if parts:
+                for p in parts:
+                    t = getattr(p, "text", None)
+                    if t:
+                        text_parts.append(t)
+    concat_text = "".join(text_parts).strip()
+    fallback_text = (resp.text or "").strip() if hasattr(resp, "text") else ""
+    # Use whichever is longer — the parts concat almost always wins on
+    # multi-part responses, but fall back to .text if parts came up empty.
+    raw_text = concat_text if len(concat_text) >= len(fallback_text) else fallback_text
+    print(f"[prospects] Gemini: finish={finish_reason!r} text={len(raw_text)} chars "
+          f"(parts={len(concat_text)} / .text={len(fallback_text)}); first 300: {raw_text[:300]!r}")
 
     # Defensive JSON parsing — even with response_schema set, models
     # occasionally wrap output in markdown fences or prepend explanatory text.
