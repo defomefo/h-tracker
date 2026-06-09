@@ -15,6 +15,7 @@ import re
 import secrets
 import sqlite3
 import threading
+import time
 from functools import wraps
 from pathlib import Path
 
@@ -2290,20 +2291,35 @@ def aspirations_generate_actions(aspiration_id):
 
     prompt = "\n".join(prompt_parts)
 
-    try:
-        resp = gemini_client.models.generate_content(
-            model=MODEL,
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(
-                system_instruction=ASPIRATION_SYSTEM_PROMPT,
-                max_output_tokens=2048,
-                temperature=0.5,
-                response_mime_type="application/json",
-                thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
-            ),
-        )
-    except Exception as e:  # noqa: BLE001
-        return jsonify({"error": f"Gemini API error: {e}"}), 502
+    # The free Gemini tier intermittently returns transient 503 "model
+    # overloaded" / UNAVAILABLE errors. Retry once with a short backoff so a
+    # momentary hiccup self-heals instead of failing the whole plan.
+    resp = None
+    last_err = None
+    for _attempt in range(2):
+        try:
+            resp = gemini_client.models.generate_content(
+                model=MODEL,
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=ASPIRATION_SYSTEM_PROMPT,
+                    max_output_tokens=2048,
+                    temperature=0.5,
+                    response_mime_type="application/json",
+                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+            break
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            msg = str(e).lower()
+            transient = any(s in msg for s in ("503", "500", "overload", "unavailable", "deadline", "timeout", "try again"))
+            if transient and _attempt == 0:
+                time.sleep(1.6)
+                continue
+            return jsonify({"error": f"Gemini API error: {e}"}), 502
+    if resp is None:
+        return jsonify({"error": f"Gemini API error: {last_err}"}), 502
 
     text = (resp.text or "").strip()
     try:
