@@ -19034,10 +19034,23 @@ function _stratViewBox() {
   return `${(cx - vw / 2).toFixed(1)} ${(cy - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`;
 }
 function _stratApplyViewBox() {
+  if (STRAT_STATE.is3D) return;   // 3D manages its own static viewBox
   const svg = document.getElementById("sm-chart");
-  if (svg) svg.setAttribute("viewBox", _stratViewBox());
+  if (!svg) return;
+  svg.setAttribute("viewBox", _stratViewBox());
+  const z = STRAT_STATE.zoom || 1;
+  // SEMANTIC ZOOM: the viewBox magnifies the coordinate space (gaps between
+  // points grow), but we counter-scale each marker so it keeps a CONSTANT
+  // screen size. Net effect: clustered/overlapping bubbles SEPARATE as you
+  // zoom in, instead of just getting bigger. Standard data-viz behaviour.
+  svg.querySelectorAll(".sm-bubble").forEach(b => {
+    let baseR = parseFloat(b.getAttribute("data-r"));
+    if (!baseR) { baseR = parseFloat(b.getAttribute("r")) || 8; b.setAttribute("data-r", baseR); }
+    b.setAttribute("r", (baseR / z).toFixed(2));
+    b.style.strokeWidth = (0.9 / z).toFixed(3);
+  });
   const ctl = document.querySelector(".sm-zoom-ctl");
-  if (ctl) ctl.classList.toggle("zoomed", (STRAT_STATE.zoom || 1) > 1.01);
+  if (ctl) ctl.classList.toggle("zoomed", z > 1.01);
 }
 function stratZoom(dir) {
   const z0 = STRAT_STATE.zoom || 1;
@@ -20979,14 +20992,18 @@ function renderStrategicView() {
       const { u, override, cxRaw, cyRaw, bucketKey } = p;
       const bucket = _coordBuckets[bucketKey];
       const idx = bucket.indexOf(u.id);
-      // Spiral offset for duplicates: radius grows with dup count, angle
-      // walks around the circle. 0th entity stays at exact computed coord;
-      // 1st gets a small offset; subsequent ones spiral outward.
-      const dupRadius = idx === 0 ? 0 : 6 + Math.floor((idx - 1) / 6) * 4;
-      const dupAngle  = idx === 0 ? 0 : (idx - 1) * (Math.PI / 3);  // 60° per step
-      const cx = cxRaw + Math.cos(dupAngle) * dupRadius;
-      const cy = cyRaw + Math.sin(dupAngle) * dupRadius;
       const r  = Math.max(5, Math.min(14, 5 + Math.sqrt(u.partnership_score) * 0.75));
+      // De-overlap co-located bubbles into a readable ring centred on the true
+      // cell. The Reach×Readiness etc. axes are discrete, so many entities land
+      // on the SAME point — the ring radius scales with the bubble size so the
+      // dots barely overlap at 1×, and semantic zoom then magnifies the gaps so
+      // a cluster fully separates as you zoom in. 0th entity stays put.
+      const _perRing = 6;
+      const _ring = idx === 0 ? 0 : Math.floor((idx - 1) / _perRing) + 1;
+      const dupRadius = _ring * (r * 1.8 + 2);
+      const dupAngle  = idx === 0 ? 0 : (idx - 1) * (Math.PI / 3) + _ring * 0.7;
+      const cx = Math.max(plotL + r, Math.min(plotR - r, cxRaw + Math.cos(dupAngle) * dupRadius));
+      const cy = Math.max(plotT + r, Math.min(plotB - r, cyRaw + Math.sin(dupAngle) * dupRadius));
       const stroke = PRIO_COLORS[u.priority] || "#999";
       const fillUrl = `url(#${_bubbleGradId(u.priority || "default")})`;
       html += `<circle class="sm-bubble${override ? ' override' : ''}" data-id="${u.id}" data-priority="${escape(u.priority || '')}"
@@ -21179,6 +21196,8 @@ function renderStrategicView() {
 
   // Wire drag, hover, click on bubbles
   stratWireBubbleInteractions(plotL, plotT, plotW, plotH);
+  // Apply the current zoom (counter-scales bubbles for semantic zoom / de-cluster)
+  if (!STRAT_STATE.is3D) _stratApplyViewBox();
 
   // If we just came from a 2D/3D toggle, animate bubbles between their old
   // and new positions and let CSS fade in the 3D ornaments. One-shot flag —
