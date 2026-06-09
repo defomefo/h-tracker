@@ -18471,7 +18471,7 @@ function renderFunnelView() {
   // McKinsey "exhibit" report — scoped under .fnx (see CSS). The unified
   // strategy tab strip sits inside .fnx-nav so navigation still works.
   // ============================================================
-  let html = `<div class="fnx"><div class="fnx-nav">${_renderUnifiedStrategyTabs("funnel")}</div><main class="sheet">`;
+  let html = `<div class="fnx"><div class="fnx-nav"><button type="button" class="sm-back-btn" onclick="stratBackToHub()" title="Back to the decision room">← Strategy</button></div><main class="sheet">`;
 
   // ----- Masthead -----
   html += `<header class="report-head">
@@ -20627,7 +20627,9 @@ function stratOpenMap(axisKey) {
 }
 function stratBackToHub() {
   STRAT_STATE.hubMode = true;
-  renderStrategicView();
+  // Works from the maps (view already 'strategy') AND from funnel/portfolio.
+  if (STATE.view !== "strategy") switchView("strategy");
+  else renderStrategicView();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -20739,12 +20741,10 @@ function renderStrategicView() {
   const aspirationModeOn = STRAT_STATE.aspirationMode && !STRAT_STATE.is3D;
   html += `<div class="sm-shell${aspirationModeOn ? ' aspiration-mode' : ''}">`;
 
-  // Back to the decision-room hub + the segmented lens switcher, on one row.
+  // Just a back-to-hub button. Lens / Funnel / Portfolio switching lives in the
+  // left sidebar (Strategy group), so the redundant top tab strip is removed.
   html += `<div class="sm-mapbar">`;
   html += `<button type="button" class="sm-back-btn" onclick="stratBackToHub()" title="Back to the decision room">← Strategy</button>`;
-  // Unified tab strip — shows 3 axis tabs + Funnel tab. See
-  // _renderUnifiedStrategyTabs comment for the consolidation rationale.
-  html += _renderUnifiedStrategyTabs(axisKey);
   html += `</div>`;
 
   // Answer-first, lens-specific header — sits on the gray workspace, below
@@ -21362,7 +21362,7 @@ function renderPortfolioView() {
     if (sunk && !labelled[sunk.id]) labelled[sunk.id] = _pfShort(sunk.name);
 
     // ---- Report ----
-    let html = `<div class="fnx"><div class="fnx-nav">${_renderUnifiedStrategyTabs("portfolio")}</div><main class="sheet">`;
+    let html = `<div class="fnx"><div class="fnx-nav"><button type="button" class="sm-back-btn" onclick="stratBackToHub()" title="Back to the decision room">← Strategy</button></div><main class="sheet">`;
     html += `<header class="report-head">
       <div class="report-kicker">H-FARM Global Partnerships · Portfolio</div>
       <h1 class="report-title">Portfolio Review — where to invest, hold, and divest</h1>
