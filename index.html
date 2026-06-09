@@ -3393,6 +3393,43 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .sm-present-btn[disabled] { opacity: .6; cursor: wait; }
 .sm-present-btn .sm-present-glyph { font-size: 12px; }
 
+/* ===== Strategy lens-switch + toolbar — clean pill design (overrides above) =====
+   Tabs become a segmented gray pill-group (active = white pill); toolbar
+   buttons become white rounded pills, Aspiration black-when-on, 2D/3D
+   segmented dark-active, Export PNG red text. */
+.sm-mapbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.sm-mapbar .sm-back-btn{margin-bottom:0}
+.sm-mapbar .sm-tabs{margin-bottom:0}
+.sm-tabs{display:inline-flex;gap:4px;flex-wrap:wrap;background:#DADDE4;padding:4px;border-radius:22px;margin-bottom:14px;border-bottom:none}
+.sm-tab{background:transparent;border:none;padding:8px 16px;font-size:12.5px;font-weight:600;letter-spacing:.1px;color:var(--ink-soft);cursor:pointer;border-radius:18px;display:inline-flex;align-items:center;gap:7px;font-family:inherit;text-transform:none;transition:background .18s,color .18s,box-shadow .18s}
+.sm-tab:hover{color:var(--ink);background:rgba(255,255,255,.5);border-color:transparent}
+.sm-tab.active,.sm-tab.active:hover{background:#fff;color:var(--ink);border-color:transparent;box-shadow:0 1px 3px rgba(28,32,54,.14);font-weight:700}
+.sm-tab .sm-tab-badge{background:rgba(0,0,0,.10);color:var(--ink-soft);padding:1px 7px;border-radius:9px;font-size:9.5px;font-weight:800}
+.sm-tab.active .sm-tab-badge{background:var(--hf-red-soft);color:var(--hf-red-deep)}
+.sm-toolbar-actions{gap:8px;flex-wrap:wrap}
+/* Aspiration */
+.sm-asp-toggle{border:1px solid var(--rule);border-radius:20px;background:#fff;height:36px;padding:0 15px;font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);gap:8px}
+.sm-asp-toggle:hover{background:#fff;border-color:var(--ink);color:var(--ink)}
+.sm-asp-toggle.active{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:none}
+.sm-asp-toggle.active .sm-asp-count{background:rgba(255,255,255,.22);color:#fff}
+/* Play story */
+.sm-story-btn{background:#fff;color:var(--ink);border:1px solid var(--rule);font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none;padding:0 15px;height:36px;border-radius:20px;gap:8px}
+.sm-story-btn:hover{background:#fff;border-color:var(--ink)}
+.sm-story-btn .sm-play-glyph{color:var(--hf-red);font-size:10px;transform:none}
+/* Present */
+.sm-present-btn{background:#fff;color:var(--ink);border:1px solid var(--rule);font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none;padding:0 15px;height:36px;border-radius:20px;gap:8px}
+.sm-present-btn:hover{background:#fff;color:var(--ink);border-color:var(--ink);transform:none;box-shadow:none}
+/* 2D / 3D segmented */
+.sm-dim-toggle{border:1px solid var(--rule);border-radius:20px;background:#EDEEF2;height:36px;padding:3px;overflow:visible}
+.sm-dim-btn{font-size:12px;font-weight:700;letter-spacing:.2px;text-transform:none;padding:0 14px;border-radius:16px;color:var(--ink-soft)}
+.sm-dim-btn.active{background:var(--ink);color:#fff}
+/* Show all / Reset / Export — scoped so global .btn is untouched */
+.sm-toolbar .btn{height:36px;border-radius:20px;padding:0 16px;font-size:12.5px;font-weight:600;letter-spacing:0;display:inline-flex;align-items:center;gap:6px}
+.sm-toolbar .btn.outline{background:#fff;border:1px solid var(--rule);color:var(--ink)}
+.sm-toolbar .btn.outline:hover{border-color:var(--ink);color:var(--ink);background:#fff}
+.sm-toolbar .btn.gold{background:#fff;color:var(--hf-red);border:1px solid var(--rule)}
+.sm-toolbar .btn.gold:hover{background:#fff;color:var(--hf-red-deep);border-color:var(--hf-red)}
+
 /* ============================================================
    PRESENTATION OVERLAY — fullscreen Three.js stage.
    Backdrop pure black so the spheres glow against nothing.
@@ -20702,12 +20739,13 @@ function renderStrategicView() {
   const aspirationModeOn = STRAT_STATE.aspirationMode && !STRAT_STATE.is3D;
   html += `<div class="sm-shell${aspirationModeOn ? ' aspiration-mode' : ''}">`;
 
-  // Back to the decision-room hub.
+  // Back to the decision-room hub + the segmented lens switcher, on one row.
+  html += `<div class="sm-mapbar">`;
   html += `<button type="button" class="sm-back-btn" onclick="stratBackToHub()" title="Back to the decision room">← Strategy</button>`;
-
   // Unified tab strip — shows 3 axis tabs + Funnel tab. See
   // _renderUnifiedStrategyTabs comment for the consolidation rationale.
   html += _renderUnifiedStrategyTabs(axisKey);
+  html += `</div>`;
 
   // Answer-first, lens-specific header — sits on the gray workspace, below
   // the tabs (matches the report design language).
@@ -21130,7 +21168,7 @@ function stratSwitchAxis(key) {
 function _renderUnifiedStrategyTabs(activeKey) {
   const axisTabs = Object.entries(STRAT_AXES).map(([k, a]) => {
     const ov = Object.keys((STRAT_STATE && STRAT_STATE.overrides && STRAT_STATE.overrides[k]) || {}).length;
-    return `<button class="sm-tab ${k === activeKey ? 'active' : ''}" onclick="stratSwitchAxis('${k}')">${escape(a.label)}${ov ? ` <span style="background:rgba(255,255,255,.25);padding:1px 6px;border-radius:8px;font-size:9px">${ov}</span>` : ''}</button>`;
+    return `<button class="sm-tab ${k === activeKey ? 'active' : ''}" onclick="stratSwitchAxis('${k}')">${escape(a.label)}${ov ? ` <span class="sm-tab-badge">${ov}</span>` : ''}</button>`;
   }).join("");
   // Inline funnel SVG icon — same one the sidebar sub-item uses, kept
   // consistent with the rest of the monoline icon language (no emoji).
