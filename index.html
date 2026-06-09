@@ -10718,6 +10718,33 @@ async function parseAndRender(csvText) {
   UNIS = parsed.data
     .filter(row => row.name && row.name.trim())
     .map((row, i) => normalizeRow(row, i));
+  // Guard against DUPLICATE IDs in the source sheet (e.g. a row copy-pasted
+  // without changing its id). openDetail() resolves an id via
+  // UNIS.find(x => x.id === id) — the FIRST match — so two entities sharing an
+  // id makes the second card open the wrong partner (clicking NUS opened NAIS).
+  // Suffix later duplicates so every entity is uniquely addressable, and warn
+  // so the real id can be fixed in the sheet.
+  (function _dedupeEntityIds() {
+    const seen = new Map(), dups = [];
+    UNIS.forEach(u => {
+      const base = u.id || "";
+      const n = (seen.get(base) || 0) + 1;
+      seen.set(base, n);
+      if (n > 1) {
+        const newId = `${base}__dup${n}`;
+        dups.push(`#${base} "${u.name}" → ${newId}`);
+        u.id = newId;
+        u._dupId = base;   // original (conflicting) id, for the UI hint
+      }
+    });
+    if (dups.length) {
+      console.warn(`[data] ${dups.length} duplicate entity ID(s) in the sheet — auto-suffixed so each is clickable. Give each a UNIQUE id in the Google Sheet to fix permanently:\n` + dups.join("\n"));
+      window._HFARM_DUP_IDS = dups;
+      if (typeof showSyncToast === "function") {
+        showSyncToast(`⚠ ${dups.length} duplicate ID${dups.length === 1 ? "" : "s"} in the sheet — fixed for display. Give each a unique id (see console).`, "warn");
+      }
+    }
+  })();
   // Apply saved per-entity field overrides on top of the fresh CSV data
   if (typeof applyEntityOverridesToUnis === "function") applyEntityOverridesToUnis();
   // Apply Turkey market intel (playbook-derived) on top of overrides so
