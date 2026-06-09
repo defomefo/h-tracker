@@ -4967,6 +4967,48 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .login-btn[disabled]{background:var(--ink-soft);cursor:wait}
 .login-foot{font-size:11px;color:var(--ink-soft);margin-top:4px;font-style:italic}
 
+/* ===== Star-network gate screens (loading / login / config) ===== */
+.sx-svg{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.sx-glow{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(58% 54% at 50% 42%, rgba(217,83,79,.16), rgba(217,83,79,0) 70%)}
+.sx-link{stroke:var(--hf-red);stroke-width:1;opacity:.22;stroke-dasharray:340;stroke-dashoffset:340;animation:sxDraw 7s ease-in-out infinite}
+.sx-node{fill:rgba(255,255,255,.55);opacity:0;transform-box:fill-box;transform-origin:center;animation:sxPop 6s ease-out infinite}
+.sx-home{fill:var(--hf-red);filter:drop-shadow(0 0 7px rgba(217,83,79,.85));animation:sxPulse 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.sx-lbl{fill:rgba(255,255,255,.4);font-size:11px;font-family:var(--font-mono,monospace);letter-spacing:.04em}
+@keyframes sxDraw{0%{stroke-dashoffset:340;opacity:0}22%{opacity:.22}40%,86%{stroke-dashoffset:0;opacity:.22}97%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes sxPop{0%{opacity:0;transform:scale(0)}9%{opacity:1;transform:scale(1.5)}16%,86%{opacity:1;transform:scale(1)}97%,100%{opacity:0;transform:scale(.5)}}
+@keyframes sxPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.78)}}
+@media(prefers-reduced-motion:reduce){.sx-link,.sx-node,.sx-home,.loading-bar span{animation:none}.sx-link{stroke-dashoffset:0}.sx-node{opacity:1;transform:none}}
+/* loading screen → dark star-network */
+.loading-screen{background:linear-gradient(135deg,#141414 0%,#08243d 100%) !important}
+.loading-screen > *:not(.sx-svg):not(.sx-glow){position:relative;z-index:2}
+.loading-screen .loading-logo{filter:none}
+.loading-screen .spinner{border-color:rgba(255,255,255,.18);border-top-color:var(--hf-red)}
+.loading-screen h2{color:#fff}
+.loading-screen p{color:rgba(255,255,255,.6)}
+.loading-screen p.err{color:#ffb3b0;background:rgba(217,83,79,.14);border-left-color:var(--hf-red)}
+.loading-bar{margin-top:16px;width:240px;max-width:60vw;height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
+.loading-bar span{display:block;height:100%;width:40%;background:var(--hf-red);border-radius:2px;animation:sxBar 2.4s cubic-bezier(.5,0,.3,1) infinite}
+@keyframes sxBar{0%{width:5%}82%{width:93%}100%{width:99%}}
+/* glass config card */
+.config-box{background:rgba(18,21,28,.72) !important;border:1px solid rgba(255,255,255,.13) !important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 30px 80px rgba(0,0,0,.5) !important;color:#fff}
+.config-box h3{color:#fff}
+.config-box > p{color:rgba(255,255,255,.6)}
+.config-box code{background:rgba(255,255,255,.08);color:#fff}
+.config-box .help-step{color:rgba(255,255,255,.82)}
+.config-box .config-input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);color:rgba(255,255,255,.78)}
+.config-box .config-input:focus{background:rgba(255,255,255,.1);color:#fff;border-color:var(--hf-red)}
+.config-box .btn-link{color:#fff}
+/* glass login card (overlay already dark) */
+.login-overlay .sx-svg,.login-overlay .sx-glow{z-index:0}
+.login-card{position:relative;z-index:2;background:rgba(18,21,28,.66) !important;border:1px solid rgba(255,255,255,.13);border-top:4px solid var(--hf-red);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 30px 80px rgba(0,0,0,.55) !important}
+.login-logo{filter:none !important}
+.login-card h1{color:#fff}
+.login-sub{color:rgba(255,255,255,.62)}
+.login-row label{color:rgba(255,255,255,.55)}
+.login-row input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);color:#fff}
+.login-row input:focus{background:rgba(255,255,255,.1);border-color:var(--hf-red)}
+.login-foot{color:rgba(255,255,255,.45)}
+
 /* PROFILE EDIT FORM (detail panel) */
 .profile-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
 .profile-head-actions{display:flex;gap:6px;align-items:center}
@@ -5340,6 +5382,8 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 </div>
 
 <div id="login-overlay" class="login-overlay" aria-hidden="true">
+  <div class="sx-glow"></div>
+  <svg class="sx-svg" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
   <form class="login-card" id="login-form" onsubmit="event.preventDefault();submitLogin()">
     <img class="login-logo" src="Logo/logo-h-farm-college-white.png" alt="H-FARM College" />
     <div class="login-eyebrow">H-TRACKER</div>
@@ -5443,12 +5487,14 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 </div>
 
 <div class="loading-screen" id="loading-screen">
+  <div class="sx-glow"></div>
+  <svg class="sx-svg" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
   <img class="loading-logo"
        src="Logo/logo-h-farm-college-white.png"
        alt="H-FARM College" />
-  <div class="spinner"></div>
-  <h2 id="loading-title">Loading partnership data...</h2>
+  <h2 id="loading-title">Mapping the partner network</h2>
   <p id="loading-detail">Fetching the latest from Google Sheets.</p>
+  <div class="loading-bar" id="loading-bar"><span></span></div>
   <p class="err" id="loading-error" style="display:none"></p>
   <div class="config-box" id="config-box" style="display:none">
     <h3>Connect to your Google Sheet</h3>
@@ -10834,12 +10880,45 @@ function _syncStrategyDropdown() {
   if (parent) parent.classList.toggle("active", inUmbrella);
 }
 
+// Animated star-network backdrop for the gate screens (loading / login / config).
+function _buildStarNet(svg) {
+  if (!svg || svg.dataset.built) return;
+  svg.dataset.built = "1";
+  const NS = "http://www.w3.org/2000/svg";
+  const nodes = [[640,400,"home"],[180,140],[360,90],[520,200],[760,120,"London"],[980,180],[1120,300],[1080,520],[900,640],[700,690],[470,640],[240,560],[120,360],[320,300],[840,330],[1010,420],[560,480],[760,520,"Treviso"],[420,430],[300,700],[1160,640],[150,640,"Madrid"],[980,80],[640,150]];
+  const edges = [[0,3],[0,14],[0,16],[0,17],[0,18],[0,13],[3,2],[2,1],[1,12],[12,13],[14,4],[4,23],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,21],[14,15],[15,16],[16,17],[17,9],[18,13],[3,23],[14,5],[15,7],[10,20],[19,11],[1,21]];
+  edges.forEach((e, i) => {
+    const l = document.createElementNS(NS, "line");
+    l.setAttribute("x1", nodes[e[0]][0]); l.setAttribute("y1", nodes[e[0]][1]);
+    l.setAttribute("x2", nodes[e[1]][0]); l.setAttribute("y2", nodes[e[1]][1]);
+    l.setAttribute("class", "sx-link"); l.style.animationDelay = ((i % 12) * 0.22) + "s";
+    svg.appendChild(l);
+  });
+  nodes.forEach((n, i) => {
+    const home = n[2] === "home";
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", n[0]); c.setAttribute("cy", n[1]); c.setAttribute("r", home ? 7 : 3.4);
+    c.setAttribute("class", home ? "sx-home" : "sx-node"); c.style.animationDelay = ((i % 10) * 0.3) + "s";
+    svg.appendChild(c);
+    if (typeof n[2] === "string" && !home) {
+      const t = document.createElementNS(NS, "text");
+      t.setAttribute("x", n[0] + 10); t.setAttribute("y", n[1] + 4); t.setAttribute("class", "sx-lbl");
+      t.textContent = n[2]; svg.appendChild(t);
+    }
+  });
+}
+function _initGateNets() { document.querySelectorAll(".sx-svg").forEach(_buildStarNet); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", _initGateNets);
+else _initGateNets();
+
+function _setLoadingBar(show) { const b = document.getElementById("loading-bar"); if (b) b.style.display = show ? "block" : "none"; }
 function showLoading(title, detail) {
   document.getElementById("loading-screen").style.display = "flex";
   document.getElementById("loading-title").textContent = title;
   document.getElementById("loading-detail").textContent = detail || "";
   document.getElementById("loading-error").style.display = "none";
   document.getElementById("config-box").style.display = "none";
+  _setLoadingBar(true);
 }
 function showError(msg, badUrl) {
   document.getElementById("loading-screen").style.display = "flex";
@@ -10851,6 +10930,7 @@ function showError(msg, badUrl) {
   }
   errEl.innerHTML = html;
   document.getElementById("config-box").style.display = "block";
+  _setLoadingBar(false);
   const existing = localStorage.getItem(LS_URL_KEY);
   if (existing) document.getElementById("config-url").value = existing;
 }
@@ -10860,6 +10940,7 @@ function showConfig() {
   document.getElementById("loading-detail").textContent = "Tell the platform where to read from.";
   document.getElementById("loading-error").style.display = "none";
   document.getElementById("config-box").style.display = "block";
+  _setLoadingBar(false);
   const existing = localStorage.getItem(LS_URL_KEY);
   if (existing) document.getElementById("config-url").value = existing;
 }
