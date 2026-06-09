@@ -2761,7 +2761,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 /* Map = light McKinsey "workspace" surface (matches funnel/portfolio reports);
    the hub's dark .strat-hub covers this when in hub mode. */
 #view-strategy{background:#E5E7EC;background-image:linear-gradient(rgba(45,49,80,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(45,49,80,0.04) 1px,transparent 1px);background-size:34px 34px}
-.sm-map-header{padding:8px 0 0}
+.sm-map-header{margin:4px 0 16px}
 .sm-map-header .sm-map-eyebrow{font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--ur);margin-bottom:7px}
 .sm-map-header h1{font-size:28px;font-weight:800;letter-spacing:-0.6px;color:var(--ink);line-height:1.1}
 .sm-map-header p{margin-top:8px;font-size:14px;color:var(--ink-soft);line-height:1.5;max-width:780px}
@@ -20686,13 +20686,10 @@ function renderStrategicView() {
   const cohort = STRAT_STATE.showAll ? sorted : sorted.slice(0, 50);
   const overrideCount = Object.keys(STRAT_STATE.overrides[axisKey] || {}).length;
 
-  // Header — answer-first, lens-specific (matches the decision-room hub).
+  // Header is rendered INSIDE the gray workspace, AFTER the tabs (see below) —
+  // not as a white .view-header strip above it.
   const _meta = HUB_META[axisKey] || {};
-  let html = `<div class="view-header sm-map-header">
-    <div class="sm-map-eyebrow">Strategic 2×2 · ${escape(ax.xLabel)} × ${escape(ax.yLabel)}</div>
-    <h1>${escape(_meta.question || ax.label)}</h1>
-    <p>${_meta.hint || `Position every partner across the ${escape(ax.label)} lens. Drag any bubble to override its position.`}</p>
-  </div>`;
+  let html = "";
 
   // Count active aspirations on this axis (for the toggle badge)
   const activeAspirationsOnAxis = (typeof ASPIRATIONS !== "undefined" ? ASPIRATIONS : [])
@@ -20711,6 +20708,14 @@ function renderStrategicView() {
   // Unified tab strip — shows 3 axis tabs + Funnel tab. See
   // _renderUnifiedStrategyTabs comment for the consolidation rationale.
   html += _renderUnifiedStrategyTabs(axisKey);
+
+  // Answer-first, lens-specific header — sits on the gray workspace, below
+  // the tabs (matches the report design language).
+  html += `<div class="sm-map-header">
+    <div class="sm-map-eyebrow">Strategic 2×2 · ${escape(ax.xLabel)} × ${escape(ax.yLabel)}</div>
+    <h1>${escape(_meta.question || ax.label)}</h1>
+    <p>${_meta.hint || `Position every partner across the ${escape(ax.label)} lens. Drag any bubble to override its position.`}</p>
+  </div>`;
 
   // Tip banner
   html += `<div class="sm-banner">${_meta.hint || `<b>${escape(ax.xLabel)}</b> goes left→right, <b>${escape(ax.yLabel)}</b> bottom→top.`} <b>Bubble size</b> = partnership score, <b>colour</b> = priority. Drag any bubble to override its position.</div>`;
