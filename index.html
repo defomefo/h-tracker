@@ -2758,6 +2758,14 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 @media (prefers-reduced-motion:no-preference){.strat-hub .lens-card,.strat-hub .sec-card{animation:stratRiseIn .5s var(--ease-cinematic) backwards}.strat-hub .lenses .lens-card:nth-child(2){animation-delay:.07s}.strat-hub .lenses .lens-card:nth-child(3){animation-delay:.14s}.strat-hub .hub-secondary .sec-card:nth-child(2){animation-delay:.06s}}
 .sm-back-btn{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--rule);border-radius:18px;padding:7px 15px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;margin-bottom:12px;transition:border-color .15s,color .15s}
 .sm-back-btn:hover{border-color:var(--hf-red);color:var(--hf-red)}
+/* Map = light McKinsey "workspace" surface (matches funnel/portfolio reports);
+   the hub's dark .strat-hub covers this when in hub mode. */
+#view-strategy{background:#E5E7EC;background-image:linear-gradient(rgba(45,49,80,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(45,49,80,0.04) 1px,transparent 1px);background-size:34px 34px}
+.sm-map-header{padding:8px 0 0}
+.sm-map-header .sm-map-eyebrow{font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--ur);margin-bottom:7px}
+.sm-map-header h1{font-size:28px;font-weight:800;letter-spacing:-0.6px;color:var(--ink);line-height:1.1}
+.sm-map-header p{margin-top:8px;font-size:14px;color:var(--ink-soft);line-height:1.5;max-width:780px}
+.sm-map-header p b{color:var(--ink);font-weight:700}
 @media (max-width:880px){.strat-hub .lenses{grid-template-columns:1fr}.strat-hub .hub-secondary{grid-template-columns:1fr}.strat-hub .hub-q{font-size:34px}}
 
 /* ====== PORTFOLIO REVIEW — BCG growth-share matrix (Exhibit 06, .fnx scope) ====== */
@@ -20563,9 +20571,12 @@ document.addEventListener("keydown", (e) => {
 // Picking a lens opens the EXISTING map (aspiration-drag, 3D, Present preserved).
 // ============================================================================
 const HUB_META = {
-  effortFit:      { c: "#ff7a73", glow: "rgba(255,122,115,0.22)", question: "Where's the easy upside?" },
-  reachReadiness: { c: "#5BC0E0", glow: "rgba(91,192,224,0.22)",  question: "Who's ready to move now?" },
-  costRoi:        { c: "#7BD0A0", glow: "rgba(123,208,160,0.22)", question: "What's worth the spend?" },
+  effortFit:      { c: "#ff7a73", glow: "rgba(255,122,115,0.22)", question: "Where's the easy upside?",
+                    hint: "<b>Top-left</b> is the easy upside — high fit, low effort. <b>Top-right</b> is worth the work. <b>Bottom-right</b>, let go." },
+  reachReadiness: { c: "#5BC0E0", glow: "rgba(91,192,224,0.22)",  question: "Who's ready to move now?",
+                    hint: "<b>Top-right</b> is ready now — high reach, high readiness. <b>Top-left</b> needs nurturing. <b>Bottom-right</b>, warm up first." },
+  costRoi:        { c: "#7BD0A0", glow: "rgba(123,208,160,0.22)", question: "What's worth the spend?",
+                    hint: "<b>Top-left</b> is free money — high ROI, low cost. <b>Top-right</b> is a big swing. <b>Bottom-right</b> is a money pit." },
 };
 const _HUB_TIER_TINT = { best: "rgba(46,125,91,0.07)", second: "rgba(31,111,180,0.06)", neutral: "rgba(138,143,156,0.05)", worst: "rgba(139,26,26,0.05)" };
 
@@ -20675,10 +20686,12 @@ function renderStrategicView() {
   const cohort = STRAT_STATE.showAll ? sorted : sorted.slice(0, 50);
   const overrideCount = Object.keys(STRAT_STATE.overrides[axisKey] || {}).length;
 
-  // Header
-  let html = `<div class="view-header">
-    <h1>Strategic 2×2 Maps</h1>
-    <p>Position every partner across three strategic lenses. Drag any bubble to override its position — overrides persist in your browser. Top 50 by partnership score shown by default; toggle to see all.</p>
+  // Header — answer-first, lens-specific (matches the decision-room hub).
+  const _meta = HUB_META[axisKey] || {};
+  let html = `<div class="view-header sm-map-header">
+    <div class="sm-map-eyebrow">Strategic 2×2 · ${escape(ax.xLabel)} × ${escape(ax.yLabel)}</div>
+    <h1>${escape(_meta.question || ax.label)}</h1>
+    <p>${_meta.hint || `Position every partner across the ${escape(ax.label)} lens. Drag any bubble to override its position.`}</p>
   </div>`;
 
   // Count active aspirations on this axis (for the toggle badge)
@@ -20700,7 +20713,7 @@ function renderStrategicView() {
   html += _renderUnifiedStrategyTabs(axisKey);
 
   // Tip banner
-  html += `<div class="sm-banner"><b>Reading the chart:</b> top-left & top-right are the high-value quadrants; bottom-right is where to deprioritise. Bubble size = partnership score, color = priority. <b>${escape(ax.xLabel)}</b> goes left→right (low to high); <b>${escape(ax.yLabel)}</b> goes bottom→top.</div>`;
+  html += `<div class="sm-banner">${_meta.hint || `<b>${escape(ax.xLabel)}</b> goes left→right, <b>${escape(ax.yLabel)}</b> bottom→top.`} <b>Bubble size</b> = partnership score, <b>colour</b> = priority. Drag any bubble to override its position.</div>`;
 
   // Aspiration-mode hint — shows what to do when mode is on. Disappears
   // automatically when mode is off so the toolbar stays calm by default.
