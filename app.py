@@ -165,6 +165,34 @@ def auth_logout():
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 gemini_client = genai.Client(api_key=GEMINI_KEY) if GEMINI_KEY else None
 
+# Substrings that mark a TRANSIENT, retryable Gemini error (server overload /
+# unavailability), as opposed to a permanent one (bad key, quota exhausted,
+# safety block). The free + standard tiers intermittently return 503 "this
+# model is experiencing high demand" / UNAVAILABLE under load.
+_GEMINI_TRANSIENT = ("503", "500", "overload", "unavailable", "high demand",
+                     "deadline", "timeout", "try again", "internal error")
+
+
+def _gemini_generate_retry(client, contents, config, model=MODEL, attempts=3, base_delay=1.6):
+    """models.generate_content with retry+backoff on transient Gemini errors.
+    Retries up to `attempts` times (1.6s, 3.2s …) on 503/overload/unavailable,
+    then re-raises the last error so the caller's existing except can handle a
+    sustained failure. A successful call returns on the first try with no delay,
+    so the happy path is unaffected. Used by every AI surface (memo, intel,
+    market sizing, chat, draft, aspiration, prospect discovery)."""
+    last = None
+    for i in range(attempts):
+        try:
+            return client.models.generate_content(model=model, contents=contents, config=config)
+        except Exception as e:  # noqa: BLE001
+            last = e
+            msg = str(e).lower()
+            if any(s in msg for s in _GEMINI_TRANSIENT) and i < attempts - 1:
+                time.sleep(base_delay * (i + 1))
+                continue
+            raise
+    raise last  # pragma: no cover
+
 # Optional Google Sheets write-back. Set to the Apps Script Web App URL
 # (looks like https://script.google.com/macros/s/AKfycb.../exec) and every
 # editable-field change is mirrored to the source sheet. See SHEETS_SYNC.md.
@@ -1084,7 +1112,7 @@ def draft_outreach():
     user_msg = _build_prompt(data)
 
     try:
-        resp = gemini_client.models.generate_content(
+        resp = _gemini_generate_retry(gemini_client,
             model=MODEL,
             contents=user_msg,
             config=genai_types.GenerateContentConfig(
@@ -2298,7 +2326,7 @@ def aspirations_generate_actions(aspiration_id):
     last_err = None
     for _attempt in range(2):
         try:
-            resp = gemini_client.models.generate_content(
+            resp = _gemini_generate_retry(gemini_client,
                 model=MODEL,
                 contents=prompt,
                 config=genai_types.GenerateContentConfig(
@@ -3632,7 +3660,7 @@ Rules:
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
-        resp = client_ai.models.generate_content(
+        resp = _gemini_generate_retry(client_ai,
             model="gemini-2.5-flash",
             contents=prompt,
             config=_gtypes.GenerateContentConfig(
@@ -4013,7 +4041,7 @@ def prospects_discover():
     resp = None
     for _attempt in range(3):
         try:
-            resp = client_ai.models.generate_content(
+            resp = _gemini_generate_retry(client_ai,
                 model="gemini-2.5-flash",
                 contents=prompt,
                 config=_gtypes.GenerateContentConfig(
@@ -4407,7 +4435,7 @@ Fit-score guide under current policy:
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
-        resp = client_ai.models.generate_content(
+        resp = _gemini_generate_retry(client_ai,
             model="gemini-2.5-flash",
             contents=prompt,
             config=_gtypes.GenerateContentConfig(
@@ -4594,7 +4622,7 @@ def competitive_intel_research(entity_id):
     try:
         from google.genai import types as _gtypes
         client_ai = genai.Client(api_key=GEMINI_KEY)
-        resp = client_ai.models.generate_content(
+        resp = _gemini_generate_retry(client_ai,
             model="gemini-2.5-flash",
             contents=prompt,
             config=_gtypes.GenerateContentConfig(
@@ -4725,7 +4753,7 @@ def _generate_partner_memo(entity_id, body):
 
     from google.genai import types as _gtypes
     client_ai = genai.Client(api_key=GEMINI_KEY)
-    resp = client_ai.models.generate_content(
+    resp = _gemini_generate_retry(client_ai,
         model="gemini-2.5-flash",
         contents=prompt,
         config=_gtypes.GenerateContentConfig(
@@ -4917,7 +4945,7 @@ def market_sizing_estimate():
             cfg_kwargs["thinking_config"] = _gtypes.ThinkingConfig(thinking_budget=0)
         except Exception:  # noqa: BLE001 — older SDK without ThinkingConfig
             pass
-        resp = client_ai.models.generate_content(
+        resp = _gemini_generate_retry(client_ai,
             model="gemini-2.5-flash",
             contents=prompt,
             config=_gtypes.GenerateContentConfig(**cfg_kwargs),
@@ -5759,7 +5787,7 @@ def chat_query():
     prompt = "\n".join(prompt_parts)
 
     try:
-        resp = gemini_client.models.generate_content(
+        resp = _gemini_generate_retry(gemini_client,
             model=MODEL,
             contents=prompt,
             config=genai_types.GenerateContentConfig(
