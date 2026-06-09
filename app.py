@@ -172,26 +172,46 @@ gemini_client = genai.Client(api_key=GEMINI_KEY) if GEMINI_KEY else None
 _GEMINI_TRANSIENT = ("503", "500", "overload", "unavailable", "high demand",
                      "deadline", "timeout", "try again", "internal error")
 
+# When the primary model stays overloaded, fall back to a lighter 2.5-family
+# model on a SEPARATE capacity pool. Same family => the thinking_config /
+# response_mime_type configs the callers pass still apply. Env-overridable.
+_GEMINI_FALLBACKS = tuple(
+    m.strip() for m in os.environ.get("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash-lite").split(",")
+    if m.strip()
+)
 
-def _gemini_generate_retry(client, contents, config, model=MODEL, attempts=3, base_delay=1.6):
-    """models.generate_content with retry+backoff on transient Gemini errors.
-    Retries up to `attempts` times (1.6s, 3.2s …) on 503/overload/unavailable,
-    then re-raises the last error so the caller's existing except can handle a
-    sustained failure. A successful call returns on the first try with no delay,
-    so the happy path is unaffected. Used by every AI surface (memo, intel,
-    market sizing, chat, draft, aspiration, prospect discovery)."""
+
+def _gemini_generate_retry(client, contents, config, model=MODEL, attempts=2, base_delay=1.6):
+    """models.generate_content with retry+backoff on transient Gemini errors,
+    then a MODEL FALLBACK if the primary stays overloaded.
+
+    Tries `model` up to `attempts` times (1.6s, 3.2s backoff) on transient
+    errors (503 'high demand' / UNAVAILABLE / 500 / timeout); if it's still
+    failing, it moves on to each fallback model (e.g. gemini-2.5-flash-lite,
+    a less-loaded pool) and retries there too. Re-raises the last error only
+    when every model+retry is exhausted, so the caller's except still handles a
+    total outage. The happy path returns on the first try with no delay. Used
+    by every AI surface (memo, intel, market sizing, chat, draft, aspiration,
+    prospect discovery)."""
+    chain = [model] + [m for m in _GEMINI_FALLBACKS if m and m != model]
+    primary_err = None
     last = None
-    for i in range(attempts):
-        try:
-            return client.models.generate_content(model=model, contents=contents, config=config)
-        except Exception as e:  # noqa: BLE001
-            last = e
-            msg = str(e).lower()
-            if any(s in msg for s in _GEMINI_TRANSIENT) and i < attempts - 1:
-                time.sleep(base_delay * (i + 1))
-                continue
-            raise
-    raise last  # pragma: no cover
+    for mdl in chain:
+        for i in range(attempts):
+            try:
+                return client.models.generate_content(model=mdl, contents=contents, config=config)
+            except Exception as e:  # noqa: BLE001
+                last = e
+                if primary_err is None:
+                    primary_err = e   # keep the original (most meaningful) error
+                msg = str(e).lower()
+                if any(s in msg for s in _GEMINI_TRANSIENT) and i < attempts - 1:
+                    time.sleep(base_delay * (i + 1))
+                    continue
+                break  # this model is exhausted — try the next fallback
+    # Prefer surfacing the primary model's error (a fallback may 404 if the id
+    # isn't on this tier, which would be a confusing thing to show).
+    raise primary_err or last
 
 # Optional Google Sheets write-back. Set to the Apps Script Web App URL
 # (looks like https://script.google.com/macros/s/AKfycb.../exec) and every
