@@ -2851,7 +2851,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .sm-toolbar-actions{display:flex;gap:8px}
 .sm-grid{display:grid;grid-template-columns:minmax(560px,1fr) minmax(280px,340px);gap:18px;align-items:start}
 @media (max-width:1100px){.sm-grid{grid-template-columns:1fr}}
-.sm-chart-wrap{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(10,37,64,.05)}
+.sm-chart-wrap{position:relative;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(10,37,64,.05)}
 .sm-chart-svg{display:block;width:100%;height:auto;max-width:760px;margin:0 auto;font-family:inherit}
 .sm-chart-svg .sm-axis-line{stroke:var(--ink);stroke-width:1.5;stroke-linecap:square}
 .sm-chart-svg .sm-mid-line{stroke:var(--rule);stroke-width:1;stroke-dasharray:4,4}
@@ -2864,6 +2864,12 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 .sm-chart-svg .sm-bubble:hover{stroke:var(--ink);stroke-width:2}
 .sm-chart-svg .sm-bubble.dragging{cursor:grabbing;stroke:var(--hf-red);stroke-width:2.5}
 .sm-chart-svg .sm-bubble.override{stroke:var(--hf-red);stroke-width:1.5;stroke-dasharray:2,2}
+/* Zoom / pan controls (overlay on the 2D chart) */
+.sm-zoom-ctl{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:5px;z-index:4}
+.sm-zoom-ctl button{width:34px;height:34px;border:1px solid var(--rule);background:#fff;color:var(--ink);font-size:19px;font-weight:700;line-height:1;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(28,32,54,.12);transition:border-color .12s,color .12s,background .12s}
+.sm-zoom-ctl button:hover{border-color:var(--ink)}
+.sm-zoom-ctl .sm-zoom-reset{font-size:15px;color:var(--ink-soft)}
+.sm-zoom-ctl:not(.zoomed) .sm-zoom-reset{display:none}
 
 /* ============================================================
    ASPIRATIONAL DRAG — "where I want this partner to be" overlay.
@@ -19009,7 +19015,42 @@ const STRAT_STATE = {
   // landing (pick a lens) instead of jumping straight into a 2×2 map.
   // Clicking a lens sets this false and opens the chosen map.
   hubMode: true,
+  // 2D chart zoom/pan (viewBox-based; 1 = full 760×700 view, centre 380,350).
+  // Lets the user magnify clusters of overlapping bubbles.
+  zoom: 1, panCx: 380, panCy: 350,
 };
+
+// Compute the 2D chart viewBox from the current zoom + pan centre, clamped so
+// the view never leaves the 760×700 plot. getScreenCTM-based drag math stays
+// correct because it reads the live viewBox.
+function _stratViewBox() {
+  const z = Math.max(1, Math.min(6, STRAT_STATE.zoom || 1));
+  const vw = 760 / z, vh = 700 / z;
+  let cx = (STRAT_STATE.panCx == null ? 380 : STRAT_STATE.panCx);
+  let cy = (STRAT_STATE.panCy == null ? 350 : STRAT_STATE.panCy);
+  cx = Math.max(vw / 2, Math.min(760 - vw / 2, cx));
+  cy = Math.max(vh / 2, Math.min(700 - vh / 2, cy));
+  STRAT_STATE.zoom = z; STRAT_STATE.panCx = cx; STRAT_STATE.panCy = cy;
+  return `${(cx - vw / 2).toFixed(1)} ${(cy - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`;
+}
+function _stratApplyViewBox() {
+  const svg = document.getElementById("sm-chart");
+  if (svg) svg.setAttribute("viewBox", _stratViewBox());
+  const ctl = document.querySelector(".sm-zoom-ctl");
+  if (ctl) ctl.classList.toggle("zoomed", (STRAT_STATE.zoom || 1) > 1.01);
+}
+function stratZoom(dir) {
+  const z0 = STRAT_STATE.zoom || 1;
+  STRAT_STATE.zoom = Math.max(1, Math.min(6, dir > 0 ? z0 * 1.4 : z0 / 1.4));
+  if (STRAT_STATE.zoom <= 1.001) { STRAT_STATE.panCx = 380; STRAT_STATE.panCy = 350; }
+  _stratApplyViewBox();
+}
+function stratZoomReset() {
+  STRAT_STATE.zoom = 1; STRAT_STATE.panCx = 380; STRAT_STATE.panCy = 350;
+  _stratApplyViewBox();
+}
+let _STRAT_PAN = null;            // active pan-drag state (or null)
+let _STRAT_PAN_DOC_WIRED = false; // document move/up listeners attached once
 
 // ============================================================================
 // ASPIRATIONS — partnership goal tracker.
@@ -20621,6 +20662,7 @@ function stratOpenMap(axisKey) {
   if (!STRAT_AXES[axisKey]) return;
   STRAT_STATE.axisKey = axisKey;
   STRAT_STATE.hubMode = false;
+  STRAT_STATE.zoom = 1; STRAT_STATE.panCx = 380; STRAT_STATE.panCy = 350;  // fresh view per lens
   renderStrategicView();
   if (typeof _syncStrategyDropdown === "function") _syncStrategyDropdown();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -20824,7 +20866,7 @@ function renderStrategicView() {
     // ============================================================
     // 2D CHART — the original X×Y bubble plot.
     // ============================================================
-    html += `<div class="sm-chart-wrap ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg" id="sm-chart" viewBox="0 0 760 700" preserveAspectRatio="xMidYMid meet">${_stratSvgDefs()}`;
+    html += `<div class="sm-chart-wrap ${STRAT_STATE._animateNext ? 'sm-animate-in' : ''}"><svg class="sm-chart-svg" id="sm-chart" viewBox="${_stratViewBox()}" preserveAspectRatio="xMidYMid meet">${_stratSvgDefs()}`;
 
     // Quadrant backgrounds — position-based tints matching the sidebar card
     // colors so users can map between the chart and the cards at a glance.
@@ -20956,6 +20998,11 @@ function renderStrategicView() {
       <div class="sm-skip-overlay">
         <span class="sm-skip-stage" id="sm-skip-stage">Scene 1 of 5</span>
         <button class="sm-skip-btn" onclick="stratSkipStory()">Skip ▸</button>
+      </div>
+      <div class="sm-zoom-ctl${(STRAT_STATE.zoom||1) > 1.01 ? ' zoomed' : ''}" title="Zoom in to separate overlapping bubbles — or scroll over the chart; drag empty space to pan when zoomed">
+        <button type="button" onclick="stratZoom(1)" aria-label="Zoom in">+</button>
+        <button type="button" onclick="stratZoom(-1)" aria-label="Zoom out">−</button>
+        <button type="button" class="sm-zoom-reset" onclick="stratZoomReset()" aria-label="Reset zoom" title="Reset zoom">⊡</button>
       </div></div>`;
 
   } else {
@@ -22601,6 +22648,49 @@ function stratWireBubbleInteractions(plotL, plotT, plotW, plotH) {
     const xData = ((local.x - plotL) / plotW) * 100;
     const yData = (1 - (local.y - plotT) / plotH) * 100;
     return { x: Math.max(0, Math.min(100, xData)), y: Math.max(0, Math.min(100, yData)) };
+  }
+
+  // ----- Zoom (scroll) + pan (drag empty space) — viewBox-based so the
+  // bubble-drag coordinate math above keeps working. 2D only. -----
+  if (!STRAT_STATE.is3D) {
+    svg.addEventListener("wheel", (ev) => {
+      ev.preventDefault();
+      const z0 = STRAT_STATE.zoom || 1;
+      const z1 = Math.max(1, Math.min(6, ev.deltaY < 0 ? z0 * 1.18 : z0 / 1.18));
+      if (Math.abs(z1 - z0) < 1e-3) return;
+      // Keep the data point under the cursor anchored while zooming.
+      const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+      const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+      const cx = (STRAT_STATE.panCx == null ? 380 : STRAT_STATE.panCx);
+      const cy = (STRAT_STATE.panCy == null ? 350 : STRAT_STATE.panCy);
+      STRAT_STATE.zoom = z1;
+      if (z1 <= 1.001) { STRAT_STATE.panCx = 380; STRAT_STATE.panCy = 350; }
+      else { STRAT_STATE.panCx = loc.x - (loc.x - cx) * (z0 / z1); STRAT_STATE.panCy = loc.y - (loc.y - cy) * (z0 / z1); }
+      _stratApplyViewBox();
+    }, { passive: false });
+    // Drag empty chart area to pan (only when zoomed; bubbles/aspiration
+    // reticles keep their own drag). Document-level move/up wired once.
+    svg.addEventListener("mousedown", (ev) => {
+      if ((STRAT_STATE.zoom || 1) <= 1.01) return;
+      if (ev.target.closest(".sm-bubble, .sm-asp-group, [data-asp-id], [data-asp-dismiss]")) return;
+      const z = STRAT_STATE.zoom || 1, rect = svg.getBoundingClientRect();
+      _STRAT_PAN = { sx: ev.clientX, sy: ev.clientY, cx: STRAT_STATE.panCx, cy: STRAT_STATE.panCy,
+                     ux: (760 / z) / rect.width, uy: (700 / z) / rect.height };
+      svg.style.cursor = "grabbing";
+      ev.preventDefault();
+    });
+    if (!_STRAT_PAN_DOC_WIRED) {
+      _STRAT_PAN_DOC_WIRED = true;
+      document.addEventListener("mousemove", (ev) => {
+        if (!_STRAT_PAN) return;
+        STRAT_STATE.panCx = _STRAT_PAN.cx - (ev.clientX - _STRAT_PAN.sx) * _STRAT_PAN.ux;
+        STRAT_STATE.panCy = _STRAT_PAN.cy - (ev.clientY - _STRAT_PAN.sy) * _STRAT_PAN.uy;
+        _stratApplyViewBox();
+      });
+      document.addEventListener("mouseup", () => {
+        if (_STRAT_PAN) { _STRAT_PAN = null; const s = document.getElementById("sm-chart"); if (s) s.style.cursor = ""; }
+      });
+    }
   }
 
   // Wire clicks on the persisted aspiration target reticles. Two paths:
