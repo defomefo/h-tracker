@@ -4303,6 +4303,40 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
    SPONSORS — standalone view (Career Day annual records)
    ============================================================ */
 .sponsors-shell{padding:22px 28px 60px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* ====== PROJECT SPONSORSHIPS (manual, independent of Career Day) ====== */
+.psp-shell{padding:0 28px 60px;max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.psp-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:12px 16px}
+.psp-stats{display:flex;gap:18px;font-size:12.5px;color:var(--ink-soft);flex-wrap:wrap}
+.psp-stats b{color:var(--navy);font-weight:800}
+.psp-actions{display:flex;gap:8px}
+.psp-card{background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.psp-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.psp-table th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-soft);background:var(--paper);padding:10px 14px;border-bottom:1px solid var(--rule)}
+.psp-table th.num,.psp-table td.num{text-align:right}
+.psp-table td{padding:11px 14px;border-bottom:1px solid var(--rule-cool);vertical-align:top;color:var(--ink)}
+.psp-table tr:last-child td{border-bottom:none}
+.psp-table tr:hover td{background:var(--off-white)}
+.psp-co{font-weight:700;color:var(--navy)}
+.psp-amt{font-weight:800;font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap}
+.psp-by{color:var(--ink-mute);white-space:nowrap}
+.psp-notes{color:var(--ink-soft);max-width:260px}
+.psp-row-actions{white-space:nowrap;text-align:right}
+.psp-icon-btn{background:none;border:1px solid transparent;border-radius:5px;width:26px;height:26px;font-size:13px;color:var(--ink-mute);cursor:pointer;transition:all .12s}
+.psp-icon-btn:hover{border-color:var(--rule);color:var(--navy);background:#fff}
+.psp-icon-btn.danger:hover{border-color:var(--hf-red);color:var(--hf-red)}
+.psp-empty{background:#fff;border:1px dashed var(--rule);border-radius:8px;padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.psp-empty-h{font-size:16px;font-weight:800;color:var(--navy)}
+.psp-empty-p{font-size:12.5px;color:var(--ink-soft);max-width:440px;line-height:1.6;margin-bottom:6px}
+/* modal form */
+.psp-form{display:flex;flex-direction:column;gap:12px}
+.psp-field{display:flex;flex-direction:column;gap:5px}
+.psp-field-row{display:flex;gap:10px}
+.psp-field label{font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-soft)}
+.psp-field input,.psp-field select,.psp-field textarea{padding:9px 11px;border:1px solid var(--rule);border-radius:6px;font-size:13px;font-family:inherit;background:var(--paper);color:var(--ink);transition:border-color .12s,background .12s}
+.psp-field input:focus,.psp-field select:focus,.psp-field textarea:focus{outline:none;border-color:var(--hf-red);background:#fff}
+.psp-err{font-size:12px;color:var(--hf-red);font-weight:600;min-height:14px}
+.psp-form-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:10px;border-top:1px solid var(--rule)}
 .sponsors-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
 .sponsors-head .sh-title-block{display:flex;flex-direction:column;gap:4px}
 .sponsors-head .sh-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--hf-red)}
@@ -5475,6 +5509,52 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
   </div>
 </div>
 
+<!-- Project sponsorship add/edit modal -->
+<div class="compare-modal" id="projsponsor-modal" style="z-index:415">
+  <div class="compare-box" style="max-width:520px">
+    <div class="compare-head">
+      <h2 id="psp-modal-title">Add project sponsorship</h2>
+      <button class="compare-close" onclick="closeProjSponsorModal()">&times;</button>
+    </div>
+    <div class="compare-body">
+      <input type="hidden" id="psp-f-id" />
+      <div class="psp-form">
+        <div class="psp-field">
+          <label for="psp-f-company">Company / sponsor *</label>
+          <input type="text" id="psp-f-company" placeholder="e.g. Acme S.p.A." />
+        </div>
+        <div class="psp-field">
+          <label for="psp-f-program">Programme / project it funds *</label>
+          <input type="text" id="psp-f-program" placeholder="free text — e.g. AI Fashion Lab 2026, scholarship fund, Open Day" />
+        </div>
+        <div class="psp-field-row">
+          <div class="psp-field" style="flex:2">
+            <label for="psp-f-amount">Amount *</label>
+            <input type="number" id="psp-f-amount" min="0" step="any" placeholder="e.g. 5000" />
+          </div>
+          <div class="psp-field" style="flex:1">
+            <label for="psp-f-currency">Currency</label>
+            <select id="psp-f-currency"><option>EUR</option><option>USD</option><option>GBP</option><option>TRY</option></select>
+          </div>
+          <div class="psp-field" style="flex:1.4">
+            <label for="psp-f-date">Date</label>
+            <input type="date" id="psp-f-date" />
+          </div>
+        </div>
+        <div class="psp-field">
+          <label for="psp-f-notes">Notes</label>
+          <textarea id="psp-f-notes" rows="2" placeholder="optional — terms, contact, in-kind details…"></textarea>
+        </div>
+        <div class="psp-err" id="psp-f-err" role="alert"></div>
+        <div class="psp-form-actions">
+          <button class="btn outline" onclick="closeProjSponsorModal()">Cancel</button>
+          <button class="btn gold" onclick="submitProjSponsor()">Save sponsorship</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- About H-FARM College (knowledge base) modal -->
 <div class="compare-modal" id="hfarm-info-modal">
   <div class="compare-box" style="max-width:980px">
@@ -5570,10 +5650,17 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
         <span class="nav-label">Contracts</span>
       </button>
-      <button class="nav-item" data-view="sponsors" onclick="switchView('sponsors')" title="Career Day annual sponsorship records — financial + contract per company per year">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        <span class="nav-label">Sponsors</span>
-      </button>
+      <div class="nav-group" id="nav-group-sponsors">
+        <button class="nav-item nav-item-parent" data-view="sponsors" onclick="toggleNavDropdown('sponsors', true, event)" title="Sponsorships umbrella — Career Day annual pipeline + manually-logged project sponsorships">
+          <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span class="nav-label">Sponsors</span>
+          <svg class="nav-chev" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-sub">
+          <button class="nav-subitem" data-sub="sponsors" onclick="navSponsorsSub('sponsors', event)" title="Career Day annual sponsorship records — financial + contract per company per year">Career Day</button>
+          <button class="nav-subitem" data-sub="projsponsors" onclick="navSponsorsSub('projsponsors', event)" title="Independent sponsorships — manually logged amount + the programme/project it funds, exportable as CSV">Project sponsorships</button>
+        </div>
+      </div>
       <button class="nav-item" data-view="tailor-made" onclick="switchView('tailor-made')" title="Tailor-made flexibility map — mid-meeting reference for 'can you flex on X?' partner questions">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
         <span class="nav-label">Tailor-made</span>
@@ -5710,6 +5797,9 @@ html { scrollbar-width: thin; scrollbar-color: rgba(10,20,40,.18) transparent; }
 
     <!-- SPONSORS VIEW -->
     <section id="view-sponsors" class="view hidden"></section>
+
+    <!-- PROJECT SPONSORSHIPS — manual, independent of Career Day -->
+    <section id="view-projsponsors" class="view hidden"></section>
 
     <!-- TEAMS VIEW -->
     <section id="view-teams" class="view hidden"></section>
@@ -10816,6 +10906,7 @@ function renderCurrentView() {
   if (viewId === "brochures") renderBrochuresView();
   if (viewId === "contracts") renderContractsView();
   if (viewId === "sponsors")  renderSponsorsView();
+  if (viewId === "projsponsors") renderProjSponsorsView();
   if (viewId === "teams")     renderTeamsView();
   if (viewId === "tailor-made") renderTailorMadeView();
   if (viewId === "about")     renderAboutView();
@@ -10836,6 +10927,7 @@ function switchView(viewId) {
   // Strategy dropdown: keep open + highlight the right sub-item when
   // user lands on either strategy or funnel views (the two it umbrellas).
   _syncStrategyDropdown();
+  if (typeof _syncSponsorsDropdown === "function") _syncSponsorsDropdown();
   renderCurrentView();
   // Scroll to top on view change
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -10861,6 +10953,9 @@ function toggleNavDropdown(groupId, navigate, ev) {
       if (typeof STRAT_STATE === "object") STRAT_STATE.hubMode = true;  // land on the decision room
       switchView("strategy");
     }
+    if (groupId === "sponsors" && STATE.view !== "sponsors" && STATE.view !== "projsponsors") {
+      switchView("sponsors");
+    }
   }
 }
 
@@ -10880,6 +10975,25 @@ function navStrategyFunnel(ev) {
 function navStrategyPortfolio(ev) {
   if (ev) ev.preventDefault();
   switchView("portfolio");
+}
+
+function navSponsorsSub(viewId, ev) {
+  if (ev) ev.preventDefault();
+  switchView(viewId);
+}
+
+// Keep the Sponsors dropdown's open state + sub-item highlight in sync with
+// the current view (mirrors _syncStrategyDropdown).
+function _syncSponsorsDropdown() {
+  const group = document.getElementById("nav-group-sponsors");
+  if (!group) return;
+  const inUmbrella = (STATE.view === "sponsors" || STATE.view === "projsponsors");
+  if (inUmbrella) group.classList.add("open");
+  group.querySelectorAll(".nav-subitem").forEach(el => {
+    el.classList.toggle("active", inUmbrella && el.dataset.sub === STATE.view);
+  });
+  const parent = group.querySelector(".nav-item-parent");
+  if (parent) parent.classList.toggle("active", inUmbrella);
 }
 
 // Keep the Strategy dropdown's open state + sub-item active highlight in
@@ -18366,6 +18480,15 @@ async function undoLastReset() {
       console.warn("[followup-undo] server write failed, kept locally:", e.message);
     }
     showSyncToast("✓ Follow-up restored", "ok");
+  } else if (snap.kind === "projsponsor-delete") {
+    const rec = snap.record;
+    _projSpEpoch++;
+    PROJ_SPONSORS = _projSpSort(PROJ_SPONSORS.concat([rec]));
+    _writeLocalProjSponsors(PROJ_SPONSORS);
+    if (STATE.view === "projsponsors") renderProjSponsorsView();
+    try { await kvStore.put("project_sponsorship", rec.id, rec); }
+    catch (e) { console.warn("[projsponsor-undo] server write failed, kept locally:", e.message); }
+    showSyncToast("✓ Sponsorship restored", "ok");
   } else if (snap.kind === "sponsor-delete") {
     const s = snap.sponsor;
     SPONSORS.push(s);
@@ -24560,6 +24683,212 @@ function _sponsorStatusLabel(s) {
 function _fmtMoneyShort(n) {
   if (n === null || n === undefined || isNaN(n)) return "—";
   return "€" + Number(n).toLocaleString("en-GB");
+}
+
+// ============================================================================
+// PROJECT SPONSORSHIPS — independent of the Career Day pipeline. Manually
+// logged records: who gave money, how much, and WHICH programme/project it
+// funds (free text — can be anything). Shared via kv_store namespace
+// `project_sponsorship` (key = record id, value = the record JSON), so the
+// whole team sees the same list; exportable as CSV. Optimistic local +
+// server mirror, 60s Undo on delete — house patterns.
+// ============================================================================
+let PROJ_SPONSORS = [];
+const LS_PROJSP_KEY = "hfarm_proj_sponsors";
+
+function _readLocalProjSponsors() {
+  try { return JSON.parse(localStorage.getItem(LS_PROJSP_KEY) || "[]"); }
+  catch { return []; }
+}
+function _writeLocalProjSponsors(arr) {
+  try { localStorage.setItem(LS_PROJSP_KEY, JSON.stringify(arr)); } catch {}
+}
+function _projSpSort(arr) {
+  return arr.sort((a, b) => String(b.date || b.created_at || "").localeCompare(String(a.date || a.created_at || "")));
+}
+// Bumped on every LOCAL mutation (add/edit/delete/undo). A fetchAll that was
+// started before a mutation must not overwrite the newer local state when it
+// resolves — on a Render cold start the fetch can take 30s+, plenty of time
+// for the user to add a record that a stale response would then wipe.
+let _projSpEpoch = 0;
+async function syncProjSponsorsFromServer() {
+  const epochAtStart = _projSpEpoch;
+  try {
+    const remote = await kvStore.fetchAll("project_sponsorship");
+    if (epochAtStart !== _projSpEpoch) return true;   // stale — local changed mid-flight
+    PROJ_SPONSORS = _projSpSort(Object.values(remote || {}).filter(r => r && r.company));
+    _writeLocalProjSponsors(PROJ_SPONSORS);
+    return true;
+  } catch (e) {
+    console.warn("[projsponsors] server unreachable, using local cache:", e.message);
+    if (epochAtStart === _projSpEpoch) PROJ_SPONSORS = _projSpSort(_readLocalProjSponsors());
+    return false;
+  }
+}
+
+const _PSP_CURRENCIES = ["EUR", "USD", "GBP", "TRY"];
+function _pspFmtAmount(r) {
+  const sym = { EUR: "€", USD: "$", GBP: "£", TRY: "₺" }[r.currency || "EUR"] || (r.currency + " ");
+  const n = Number(r.amount);
+  return isNaN(n) ? "—" : sym + n.toLocaleString();
+}
+
+function renderProjSponsorsView() {
+  const el = document.getElementById("view-projsponsors");
+  if (!el) return;
+  const total = {};
+  PROJ_SPONSORS.forEach(r => {
+    const c = r.currency || "EUR";
+    const n = Number(r.amount);
+    if (!isNaN(n)) total[c] = (total[c] || 0) + n;
+  });
+  const totalStr = Object.keys(total).length
+    ? Object.entries(total).map(([c, n]) => _pspFmtAmount({ currency: c, amount: n })).join(" + ")
+    : "—";
+  const programs = new Set(PROJ_SPONSORS.map(r => (r.program || "").trim().toLowerCase()).filter(Boolean));
+
+  let html = `<div class="view-header">
+    <h1>Project sponsorships</h1>
+    <p>Sponsorships independent of Career Day — log who gave money and which programme or project it funds. Anything can be a project: a summer programme, an event, a scholarship. Shared with the whole team; export as CSV any time.</p>
+  </div>
+  <div class="psp-shell">
+    <div class="psp-toolbar">
+      <div class="psp-stats">
+        <span><b>${PROJ_SPONSORS.length}</b> sponsorship${PROJ_SPONSORS.length === 1 ? "" : "s"}</span>
+        <span><b>${totalStr}</b> committed</span>
+        <span><b>${programs.size}</b> distinct project${programs.size === 1 ? "" : "s"}</span>
+      </div>
+      <div class="psp-actions">
+        <button class="btn outline" onclick="exportProjSponsorsCsv()" ${PROJ_SPONSORS.length ? "" : "disabled"}>⬇ Export CSV</button>
+        <button class="btn gold" onclick="openProjSponsorModal()">+ Add sponsorship</button>
+      </div>
+    </div>`;
+
+  if (!PROJ_SPONSORS.length) {
+    html += `<div class="psp-empty">
+      <div class="psp-empty-h">No project sponsorships yet</div>
+      <div class="psp-empty-p">Log the first one — company, amount, and the programme/project it funds. It saves to the shared database, so the whole team sees it.</div>
+      <button class="btn gold" onclick="openProjSponsorModal()">+ Add the first sponsorship</button>
+    </div>`;
+  } else {
+    html += `<div class="psp-card"><table class="psp-table">
+      <thead><tr><th>Company / sponsor</th><th>Programme / project</th><th class="num">Amount</th><th>Date</th><th>Added by</th><th>Notes</th><th></th></tr></thead><tbody>`;
+    PROJ_SPONSORS.forEach(r => {
+      html += `<tr>
+        <td class="psp-co">${escape(r.company || "—")}</td>
+        <td>${escape(r.program || "—")}</td>
+        <td class="num psp-amt">${_pspFmtAmount(r)}</td>
+        <td>${r.date ? escape(r.date) : "—"}</td>
+        <td class="psp-by">${escape(r.created_by || "—")}</td>
+        <td class="psp-notes">${escape(r.notes || "")}</td>
+        <td class="psp-row-actions">
+          <button class="psp-icon-btn" title="Edit" onclick="openProjSponsorModal('${escapeAttr(r.id)}')">✎</button>
+          <button class="psp-icon-btn danger" title="Delete (60s Undo)" onclick="deleteProjSponsor('${escapeAttr(r.id)}')">×</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+
+  // First open: pull the shared list, then re-render with fresh data.
+  if (!renderProjSponsorsView._synced) {
+    renderProjSponsorsView._synced = true;
+    syncProjSponsorsFromServer().then(() => {
+      if (STATE.view === "projsponsors") renderProjSponsorsView();
+    });
+  }
+}
+
+// ---------- Add / edit modal ----------
+function openProjSponsorModal(id) {
+  const rec = id ? PROJ_SPONSORS.find(r => r.id === id) : null;
+  const m = document.getElementById("projsponsor-modal");
+  document.getElementById("psp-modal-title").textContent = rec ? "Edit sponsorship" : "Add project sponsorship";
+  document.getElementById("psp-f-id").value = rec ? rec.id : "";
+  document.getElementById("psp-f-company").value = rec ? (rec.company || "") : "";
+  document.getElementById("psp-f-program").value = rec ? (rec.program || "") : "";
+  document.getElementById("psp-f-amount").value = rec && rec.amount != null ? rec.amount : "";
+  document.getElementById("psp-f-currency").value = rec ? (rec.currency || "EUR") : "EUR";
+  document.getElementById("psp-f-date").value = rec ? (rec.date || "") : "";
+  document.getElementById("psp-f-notes").value = rec ? (rec.notes || "") : "";
+  document.getElementById("psp-f-err").textContent = "";
+  m.classList.add("open");
+  setTimeout(() => document.getElementById("psp-f-company").focus(), 50);
+}
+function closeProjSponsorModal() {
+  document.getElementById("projsponsor-modal").classList.remove("open");
+}
+async function submitProjSponsor() {
+  const id      = document.getElementById("psp-f-id").value.trim();
+  const company = document.getElementById("psp-f-company").value.trim();
+  const program = document.getElementById("psp-f-program").value.trim();
+  const amount  = parseFloat(document.getElementById("psp-f-amount").value);
+  const currency = document.getElementById("psp-f-currency").value;
+  const date    = document.getElementById("psp-f-date").value;
+  const notes   = document.getElementById("psp-f-notes").value.trim();
+  const err = document.getElementById("psp-f-err");
+  if (!company) { err.textContent = "Company / sponsor name is required."; return; }
+  if (!program) { err.textContent = "Programme / project is required — what does this money fund?"; return; }
+  if (isNaN(amount) || amount < 0) { err.textContent = "Enter the sponsorship amount (a number)."; return; }
+
+  const existing = id ? PROJ_SPONSORS.find(r => r.id === id) : null;
+  const rec = {
+    id: id || ("psp-" + Math.random().toString(16).slice(2, 10)),
+    company, program, amount, currency,
+    date: date || "",
+    notes,
+    created_by: existing ? (existing.created_by || "") : ((typeof getDisplayName === "function" && getDisplayName()) || ""),
+    created_at: existing ? existing.created_at : new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  // Optimistic local + server mirror.
+  _projSpEpoch++;
+  PROJ_SPONSORS = _projSpSort(PROJ_SPONSORS.filter(r => r.id !== rec.id).concat([rec]));
+  _writeLocalProjSponsors(PROJ_SPONSORS);
+  closeProjSponsorModal();
+  renderProjSponsorsView();
+  try {
+    await kvStore.put("project_sponsorship", rec.id, rec);
+    showSyncToast(existing ? "✓ Sponsorship updated" : "✓ Sponsorship saved — shared with the team", "ok");
+  } catch (e) {
+    console.warn("[projsponsors] save deferred (offline):", e.message);
+    showSyncToast("Saved locally — will sync when the server is reachable", "warn");
+  }
+}
+
+async function deleteProjSponsor(id) {
+  const rec = PROJ_SPONSORS.find(r => r.id === id);
+  if (!rec) return;
+  if (!confirm(`Delete the ${escape(rec.company)} sponsorship (${_pspFmtAmount(rec)})?`)) return;
+  _lastReset = { kind: "projsponsor-delete", record: JSON.parse(JSON.stringify(rec)) };
+  _projSpEpoch++;
+  PROJ_SPONSORS = PROJ_SPONSORS.filter(r => r.id !== id);
+  _writeLocalProjSponsors(PROJ_SPONSORS);
+  renderProjSponsorsView();
+  try { await kvStore.del("project_sponsorship", id); }
+  catch (e) { console.warn("[projsponsors] delete deferred (offline):", e.message); }
+  showResetUndoToast("Sponsorship deleted");
+}
+
+// ---------- CSV export ----------
+function exportProjSponsorsCsv() {
+  if (!PROJ_SPONSORS.length) return;
+  const head = ["company", "program", "amount", "currency", "date", "notes", "added_by", "created_at"];
+  const rows = [head].concat(PROJ_SPONSORS.map(r => [
+    r.company || "", r.program || "", r.amount != null ? r.amount : "", r.currency || "EUR",
+    r.date || "", r.notes || "", r.created_by || "", r.created_at || "",
+  ]));
+  const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `HFARM_project_sponsorships_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 200);
+  showSyncToast("✓ CSV exported", "ok");
 }
 
 function renderSponsorsView() {
