@@ -6464,7 +6464,7 @@ const KB_SCHEMA = {
     ],
   },
   users: {
-    title: "Operators (team roster)",
+    title: "Admins (team roster)",
     file: "data/users.json",
     lsKey: "hfarm_kb_users_draft",
     keyField: "handle",
@@ -6750,7 +6750,7 @@ function renderAdminView() {
 
   // Toolbar
   html += `<div class="admin-toolbar">
-    <button class="btn gold" onclick="adminEdit('${cur}', null)">+ Add new</button>
+    <button class="btn gold" onclick="adminEdit('${cur}', null)">+ Add ${cur === 'users' ? 'admin' : 'new'}</button>
     <div class="admin-toolbar-spacer"></div>
     ${kbHasDraft(cur) ? `<span class="admin-draft-tag">⚠ Draft active — overrides ${escape(KB_SCHEMA[cur].file)}</span>` : ``}
     <button class="btn outline" onclick="kbDownloadJson('${cur}')">⬇ Download JSON</button>
@@ -6759,7 +6759,7 @@ function renderAdminView() {
 
   // Table
   if (!data.length) {
-    html += `<div class="empty" style="margin-top:20px">No entries yet. Click "+ Add new" to create the first one.</div>`;
+    html += `<div class="empty" style="margin-top:20px">${cur === 'users' ? 'No admins yet. Click "+ Add admin" to add your first team member.' : 'No entries yet. Click "+ Add new" to create the first one.'}</div>`;
   } else {
     const cols = schema.fields.slice(0, 4);
     html += `<table class="admin-table"><thead><tr>`;
@@ -14161,9 +14161,13 @@ function showIdentityPicker() {
              <button type="button" class="identity-btn identity-btn-primary" onclick="commitIdentityPicker()">Continue</button>
              <button type="button" class="identity-btn identity-btn-ghost" onclick="hideIdentityPicker()">Skip for now</button>
            </div>
-           <p class="identity-foot">Not in the list? Ask the admin to add you in <b>Admin → Operators (team roster)</b>, then refresh.</p>`
-        : `<p class="identity-empty">No operators in the roster yet. Ask an admin to add team members in <b>Admin → Operators (team roster)</b>, then refresh.</p>
+           <p class="identity-foot">Not in the list? Add yourself (or a teammate) in <b>Admin → Admins</b> — no code needed.</p>
+           <div class="identity-actions" style="margin-top:2px">
+             <button type="button" class="identity-btn identity-btn-ghost" onclick="goToAdminRoster()">Open Admin → Admins →</button>
+           </div>`
+        : `<p class="identity-empty">No admins in the roster yet. Add the first team member in <b>Admin → Admins</b> — no code needed, it syncs to everyone.</p>
            <div class="identity-actions">
+             <button type="button" class="identity-btn identity-btn-primary" onclick="goToAdminRoster()">Open Admin → Admins →</button>
              <button type="button" class="identity-btn identity-btn-ghost" onclick="hideIdentityPicker()">Close</button>
            </div>`}
     </div>`;
@@ -14179,6 +14183,17 @@ function commitIdentityPicker() {
 function hideIdentityPicker() {
   const overlay = document.getElementById("identity-overlay");
   if (overlay) overlay.classList.remove("open");
+}
+// Shortcut from the identity picker → Admin › Admins (team roster) so a new
+// user (or a teammate) can add an admin without hunting for the nav item.
+function goToAdminRoster() {
+  hideIdentityPicker();
+  // Make sure the app shell is visible (in case we're still on the gate).
+  const app = document.getElementById("app"); if (app) app.style.display = "block";
+  const ls = document.getElementById("loading-screen"); if (ls) ls.style.display = "none";
+  if (typeof ADMIN_STATE === "object") ADMIN_STATE.tab = "users";
+  if (typeof switchView === "function") switchView("admin");
+  if (typeof renderAdminView === "function") renderAdminView();
 }
 
 const kvStore = {
